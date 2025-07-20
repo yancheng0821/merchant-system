@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.authservice.mapper.TenantMapper">
+    
+    <resultMap id="TenantResultMap" type="com.merchant.server.authservice.entity.Tenant">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="tenant_code" property="tenantCode" jdbcType="VARCHAR"/>
+        <result column="tenant_name" property="tenantName" jdbcType="VARCHAR"/>
+        <result column="tenant_type" property="tenantType" jdbcType="VARCHAR"/>
+        <result column="parent_tenant_id" property="parentTenantId" jdbcType="BIGINT"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="contact_person" property="contactPerson" jdbcType="VARCHAR"/>
+        <result column="contact_phone" property="contactPhone" jdbcType="VARCHAR"/>
+        <result column="contact_email" property="contactEmail" jdbcType="VARCHAR"/>
+        <result column="address" property="address" jdbcType="VARCHAR"/>
+        <result column="business_license" property="businessLicense" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, tenant_code, tenant_name, tenant_type, parent_tenant_id, status, 
+        contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at
+    </sql>
+    
+    <select id="selectById" parameterType="java.lang.Long" resultMap="TenantResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenants
+        WHERE id = #{id}
+    </select>
+    
+    <select id="selectByTenantCode" parameterType="java.lang.String" resultMap="TenantResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenants
+        WHERE tenant_code = #{tenantCode}
+    </select>
+    
+    <select id="selectAll" resultMap="TenantResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenants
+    </select>
+    
+    <select id="selectByParentTenantId" parameterType="java.lang.Long" resultMap="TenantResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenants
+        WHERE parent_tenant_id = #{parentTenantId}
+    </select>
+    
+    <insert id="insert" parameterType="com.merchant.server.authservice.entity.Tenant" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tenants (
+            tenant_code, tenant_name, tenant_type, parent_tenant_id, status,
+            contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at
+        ) VALUES (
+            #{tenantCode}, #{tenantName}, #{tenantType}, #{parentTenantId}, #{status},
+            #{contactPerson}, #{contactPhone}, #{contactEmail}, #{address}, #{businessLicense}, NOW(), NOW()
+        )
+    </insert>
+    
+    <update id="update" parameterType="com.merchant.server.authservice.entity.Tenant">
+        UPDATE tenants
+        SET tenant_code = #{tenantCode},
+            tenant_name = #{tenantName},
+            tenant_type = #{tenantType},
+            parent_tenant_id = #{parentTenantId},
+            status = #{status},
+            contact_person = #{contactPerson},
+            contact_phone = #{contactPhone},
+            contact_email = #{contactEmail},
+            address = #{address},
+            business_license = #{businessLicense},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM tenants WHERE id = #{id}
+    </delete>
+    
+    <select id="existsByTenantCode" parameterType="java.lang.String" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM tenants WHERE tenant_code = #{tenantCode}
+    </select>
+    
+</mapper> 

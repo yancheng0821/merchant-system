@@ -1,0 +1,80 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&characterSetResults=utf8&connectionCollation=utf8_unicode_ci&zeroDateTimeBehavior=convertToNull
+    username: merchant_app
+    password: MerchantApp@2024
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
+  
+  cloud:
+    discovery:
+      enabled: true
+  
+  # 国际化配置
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+    use-code-as-default-message: false
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.authservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    # 启用MyBatis SQL日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    appname: ${spring.application.name}
+
+jwt:
+  secret: merchant-system-jwt-secret-key-2024
+  expiration: 86400000  # 24小时
+  refresh-expiration: 604800000  # 7天
+
+logging:
+  level:
+    # 启用详细的应用日志
+    com.merchant.server.authservice: DEBUG
+    # 启用Spring Web日志
+    org.springframework.web: INFO
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: DEBUG
+    # 启用Spring Security日志
+    org.springframework.security: INFO
+    # 启用数据库连接池日志
+    com.zaxxer.hikari: INFO
+    # 启用MyBatis日志
+    org.apache.ibatis: DEBUG
+    # 启用SQL日志
+    org.springframework.jdbc.core.JdbcTemplate: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: TRACE
+    # 启用HTTP请求日志
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    # 启用Tomcat访问日志
+    org.apache.catalina.core.ContainerBase.[Catalina].localhost: DEBUG
+    # 根日志级别
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/auth-service.log
+    max-size: 10MB
+    max-history: 30 
