@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - npm install -g pnpm
+      - pnpm install --no-frozen-lockfile
+
+  build:
+    commands:
+      - pnpm run build
+
+artifacts:
+  base-directory: build  # React 默认构建产物目录
+  files:
+    - '**/*'
+
+post_build:
+  commands:
+    - aws cloudfront create-invalidation --distribution-id E3ARHNK1RPNYMO --paths "/index.html" "/*"
