@@ -49,6 +49,14 @@ jwt:
   expiration: 86400000  # 24小时
   refresh-expiration: 604800000  # 7天
 
+# 应用配置
+app:
+  avatar:
+    upload:
+      path: /opt/merchant-system/avatars  # 头像上传路径
+    url:
+      prefix: /api/users/avatar/  # 头像访问URL前缀
+
 logging:
   level:
     # 启用详细的应用日志

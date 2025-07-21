@@ -3,13 +3,28 @@ package com.merchant.server.authservice.service.impl;
 import com.merchant.server.authservice.entity.User;
 import com.merchant.server.authservice.mapper.UserMapper;
 import com.merchant.server.authservice.service.UserService;
+import com.merchant.server.authservice.dto.UserProfileRequest;
+import com.merchant.server.authservice.dto.UserProfileResponse;
+import com.merchant.server.authservice.dto.AvatarUploadResponse;
+import com.merchant.server.authservice.util.JwtUtil;
+import com.merchant.server.authservice.entity.Tenant;
+import com.merchant.server.authservice.mapper.TenantMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -18,6 +33,18 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private UserMapper userMapper;
+    
+    @Autowired
+    private TenantMapper tenantMapper;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    @Value("${app.avatar.upload.path:/tmp/avatars}")
+    private String avatarUploadPath;
+    
+    @Value("${app.avatar.url.prefix:/api/users/avatar/}")
+    private String avatarUrlPrefix;
     
     @Override
     public Optional<User> findById(Long id) {
@@ -138,5 +165,163 @@ public class UserServiceImpl implements UserService {
         boolean exists = userMapper.existsByEmailAndTenantId(email, tenantId);
         logger.debug("邮箱租户存在检查结果: email={}, tenantId={}, exists={}", email, tenantId, exists);
         return exists;
+    }
+    
+    @Override
+    public UserProfileResponse getUserProfile(String token) {
+        logger.debug("获取用户信息 - token: {}", token.substring(0, Math.min(20, token.length())) + "...");
+        
+        // 从token中提取用户ID
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        User user = userOpt.get();
+        Tenant tenant = tenantMapper.selectById(user.getTenantId());
+        
+        UserProfileResponse response = new UserProfileResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setRealName(user.getRealName());
+        response.setEmail(user.getEmail());
+        response.setAvatar(user.getAvatarUrl());
+        response.setTenantId(user.getTenantId());
+        response.setTenantName(tenant != null ? tenant.getTenantName() : null);
+        response.setLastLoginTime(user.getLastLoginAt());
+        response.setUpdateTime(user.getUpdatedAt());
+        
+        // 设置角色和权限（这里简化处理，实际应该从数据库查询）
+        response.setRoles(List.of("ROLE_MERCHANT_ADMIN"));
+        response.setPermissions(List.of("READ", "WRITE"));
+        
+        logger.info("获取用户信息成功 - userId: {}", user.getId());
+        return response;
+    }
+    
+    @Override
+    public UserProfileResponse updateUserProfile(String token, UserProfileRequest request) {
+        logger.debug("更新用户信息 - userId: {}, token: {}", request.getUserId(), 
+                    token.substring(0, Math.min(20, token.length())) + "...");
+        
+        // 从token中提取用户ID
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        User user = userOpt.get();
+        
+        // 验证用户ID是否匹配
+        if (!user.getId().equals(request.getUserId())) {
+            throw new RuntimeException("用户ID不匹配");
+        }
+        
+        // 用户名不允许修改，忽略请求中的用户名
+        // 保持原有的用户名不变
+        
+        // 检查邮箱是否已被其他用户使用
+        if (!user.getEmail().equals(request.getEmail())) {
+            Optional<User> existingUser = findByEmail(request.getEmail());
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
+                throw new RuntimeException("邮箱已被使用");
+            }
+        }
+        
+        // 更新用户信息（不更新用户名）
+        user.setRealName(request.getRealName());
+        user.setEmail(request.getEmail());
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        save(user);
+        
+        // 构建响应
+        Tenant tenant = tenantMapper.selectById(user.getTenantId());
+        UserProfileResponse response = new UserProfileResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setRealName(user.getRealName());
+        response.setEmail(user.getEmail());
+        response.setAvatar(user.getAvatarUrl());
+        response.setTenantId(user.getTenantId());
+        response.setTenantName(tenant != null ? tenant.getTenantName() : null);
+        response.setLastLoginTime(user.getLastLoginAt());
+        response.setUpdateTime(user.getUpdatedAt());
+        response.setRoles(List.of("ROLE_MERCHANT_ADMIN"));
+        response.setPermissions(List.of("READ", "WRITE"));
+        
+        logger.info("更新用户信息成功 - userId: {}", user.getId());
+        return response;
+    }
+    
+    @Override
+    public AvatarUploadResponse uploadAvatar(String token, MultipartFile file) {
+        logger.debug("上传头像 - 文件名: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
+        
+        // 从token中提取用户ID
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        User user = userOpt.get();
+        
+        // 验证文件类型
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new RuntimeException("只支持图片文件");
+        }
+        
+        // 验证文件大小（5MB）
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new RuntimeException("文件大小不能超过5MB");
+        }
+        
+        try {
+            // 创建上传目录
+            Path uploadDir = Paths.get(avatarUploadPath);
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+            
+            // 生成唯一文件名
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String filename = UUID.randomUUID().toString() + extension;
+            
+            // 保存文件
+            Path filePath = uploadDir.resolve(filename);
+            Files.copy(file.getInputStream(), filePath);
+            
+            // 更新用户头像信息
+            String avatarUrl = avatarUrlPrefix + filename;
+            user.setAvatarUrl(avatarUrl);
+            user.setUpdatedAt(LocalDateTime.now());
+            save(user);
+            
+            // 构建响应
+            AvatarUploadResponse response = new AvatarUploadResponse();
+            response.setUserId(user.getId());
+            response.setAvatarUrl(avatarUrl);
+            response.setOriginalFileName(originalFilename);
+            response.setFileSize(file.getSize());
+            response.setFileType(contentType);
+            
+            logger.info("头像上传成功 - userId: {}, 文件路径: {}", user.getId(), filePath);
+            return response;
+            
+        } catch (IOException e) {
+            logger.error("头像上传失败: {}", e.getMessage());
+            throw new RuntimeException("头像上传失败: " + e.getMessage());
+        }
     }
 } 

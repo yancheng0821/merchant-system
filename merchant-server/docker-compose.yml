@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: merchant-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: merchant_auth
+      MYSQL_USER: merchant_app
+      MYSQL_PASSWORD: MerchantApp@2024
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-charset.cnf:/etc/mysql/conf.d/charset.cnf
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - merchant-network
+
+  # Eureka服务发现
+  eureka-server:
+    build: ./eureka-server
+    container_name: merchant-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+    networks:
+      - merchant-network
+
+  # 认证服务
+  auth-service:
+    build: ./auth-service
+    container_name: merchant-auth
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    volumes:
+      - avatar_data:/opt/merchant-system/avatars  # 头像存储目录挂载
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - merchant-network
+
+  # 商户服务
+  merchant-service:
+    build: ./merchant-service
+    container_name: merchant-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - merchant-network
+
+  # 业务服务
+  business-service:
+    build: ./business-service
+    container_name: merchant-business
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - merchant-network
+
+  # AI服务
+  ai-service:
+    build: ./ai-service
+    container_name: merchant-ai
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - eureka-server
+    networks:
+      - merchant-network
+
+  # 分析服务
+  analytics-service:
+    build: ./analytics-service
+    container_name: merchant-analytics
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - merchant-network
+
+  # 通知服务
+  notification-service:
+    build: ./notification-service
+    container_name: merchant-notification
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - eureka-server
+    networks:
+      - merchant-network
+
+  # 网关服务
+  gateway-service:
+    build: ./gateway-service
+    container_name: merchant-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - eureka-server
+    networks:
+      - merchant-network
+
+volumes:
+  mysql_data:
+    driver: local
+  avatar_data:
+    driver: local
+
+networks:
+  merchant-network:
+    driver: bridge 
