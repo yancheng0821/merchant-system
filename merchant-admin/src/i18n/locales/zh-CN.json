@@ -633,6 +633,8 @@
     "merchantAdmin": "商户管理员",
     "orDivider": "或",
     "continueWithGoogle": "使用Google账户继续",
+    "loginWithGoogle": "使用Google登录",
+    "loggingIn": "登录中...",
     "googleLoginSuccess": "Google登录成功！",
     "alreadyHaveAccount": "已有账户？",
     "dontHaveAccount": "还没有账户？",

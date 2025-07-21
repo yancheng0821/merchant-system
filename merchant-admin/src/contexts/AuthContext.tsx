@@ -19,7 +19,7 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<boolean>;
-  loginWithGoogle: () => Promise<boolean>;
+  loginWithGoogle: (idToken: string) => Promise<boolean>;
   logout: () => void;
   updateUserInfo: (userInfo: Partial<User>) => Promise<boolean>;
   uploadAvatar: (file: File) => Promise<boolean>;
@@ -196,17 +196,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginWithGoogle = async (): Promise<boolean> => {
+  const loginWithGoogle = async (idToken: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-
+    
     try {
-      // 这里应该实现Google OAuth登录
-      // 目前返回false，表示功能未实现
-      setError('Google login is not implemented yet');
-      return false;
+      console.log('Google login with token:', idToken.substring(0, 20) + '...');
+      const response = await authApi.googleLogin(idToken);
+      
+      if (response.success && response.data) {
+        const userData = mapApiUserToUser(response.data);
+        
+        // 保存令牌和用户信息
+        tokenManager.setToken(response.data.token);
+        tokenManager.setRefreshToken(response.data.refreshToken);
+        
+        // 获取完整用户资料
+        try {
+          console.log('Google login success, fetching complete profile...');
+          const profileResp = await userApi.getProfile();
+          if (profileResp.success && profileResp.data) {
+            const completeUser = { ...profileResp.data, id: Number(profileResp.data.id) };
+            console.log('Complete user profile:', completeUser);
+            setUser(completeUser);
+            localStorage.setItem('user', JSON.stringify(completeUser));
+          } else {
+            console.warn('Failed to fetch complete profile, using basic info');
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error('Failed to fetch complete profile:', e);
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+        
+        return true;
+      } else {
+        console.error('Google login failed:', response.message);
+        setError(response.message || 'Google login failed');
+        return false;
+      }
     } catch (error) {
       const errorMessage = handleApiError(error);
+      console.error('Google login error:', errorMessage);
       setError(errorMessage);
       return false;
     } finally {

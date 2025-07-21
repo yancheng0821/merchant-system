@@ -118,6 +118,14 @@ export const authApi = {
     });
   },
 
+  // Google登录
+  googleLogin: async (idToken: string): Promise<ApiResponse<LoginResponse>> => {
+    return createRequest('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+  },
+
   // 注册
   register: async (data: RegisterRequest): Promise<ApiResponse<LoginResponse>> => {
     return createRequest('/api/auth/register', {

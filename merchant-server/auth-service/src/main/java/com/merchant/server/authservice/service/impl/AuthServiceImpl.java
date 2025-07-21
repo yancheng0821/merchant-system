@@ -1,11 +1,13 @@
 package com.merchant.server.authservice.service.impl;
 
+import com.merchant.server.authservice.dto.GoogleLoginRequest;
 import com.merchant.server.authservice.dto.LoginRequest;
 import com.merchant.server.authservice.dto.LoginResponse;
 import com.merchant.server.authservice.dto.RegisterRequest;
 import com.merchant.server.authservice.entity.Tenant;
 import com.merchant.server.authservice.entity.User;
 import com.merchant.server.authservice.service.AuthService;
+import com.merchant.server.authservice.service.GoogleOAuthService;
 import com.merchant.server.authservice.service.TenantService;
 import com.merchant.server.authservice.service.UserService;
 import com.merchant.server.authservice.util.JwtUtil;
@@ -38,6 +40,9 @@ public class AuthServiceImpl implements AuthService {
     
     @Autowired
     private MessageUtil messageUtil;
+    
+    @Autowired
+    private GoogleOAuthService googleOAuthService;
     
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
@@ -144,6 +149,95 @@ public class AuthServiceImpl implements AuthService {
         logger.info("用户注册成功 - userId: {}, username: {}", user.getId(), user.getUsername());
         logger.debug("注册响应生成完成 - accessToken长度: {}, refreshToken长度: {}", 
                     accessToken.length(), refreshToken.length());
+        
+        return response;
+    }
+    
+    @Override
+    public LoginResponse googleLogin(GoogleLoginRequest request) {
+        logger.debug("开始处理Google登录请求");
+        
+        // 验证Google ID Token
+        GoogleOAuthService.GoogleUserInfo googleUserInfo = googleOAuthService.verifyGoogleToken(request.getIdToken());
+        if (googleUserInfo == null) {
+            logger.warn("Google登录失败 - 无效的ID Token");
+            throw new RuntimeException(messageUtil.getMessage("auth.login.failed"));
+        }
+        
+        // 检查邮箱是否已验证
+        if (!Boolean.TRUE.equals(googleUserInfo.getEmailVerified())) {
+            logger.warn("Google登录失败 - 邮箱未验证: {}", googleUserInfo.getEmail());
+            throw new RuntimeException(messageUtil.getMessage("user.email.not.verified"));
+        }
+        
+        // 查找或创建用户
+        Optional<User> existingUserOpt = userService.findByEmail(googleUserInfo.getEmail());
+        User user;
+        
+        if (existingUserOpt.isPresent()) {
+            // 用户已存在，更新Google信息
+            user = existingUserOpt.get();
+            logger.info("找到已存在用户 - userId: {}, email: {}", user.getId(), user.getEmail());
+            
+            // 更新用户的Google信息和头像
+            if (googleUserInfo.getPicture() != null && !googleUserInfo.getPicture().isEmpty()) {
+                user.setAvatarUrl(googleUserInfo.getPicture());
+            }
+            user.setLastLoginAt(LocalDateTime.now());
+            userService.save(user);
+            
+        } else {
+            // 创建新用户
+            logger.info("创建新的Google用户 - email: {}", googleUserInfo.getEmail());
+            
+            // 确定租户
+            Tenant tenant = null;
+            if (request.getTenantCode() != null && !request.getTenantCode().isEmpty()) {
+                Optional<Tenant> tenantOpt = tenantService.findByTenantCode(request.getTenantCode());
+                if (tenantOpt.isEmpty()) {
+                    logger.warn("Google登录失败 - 租户不存在: {}", request.getTenantCode());
+                    throw new RuntimeException(messageUtil.getMessage("tenant.not.found"));
+                }
+                tenant = tenantOpt.get();
+            } else {
+                // 使用默认租户
+                Optional<Tenant> defaultTenantOpt = tenantService.findByTenantCode("default");
+                if (defaultTenantOpt.isEmpty()) {
+                    logger.error("系统错误 - 默认租户不存在");
+                    throw new RuntimeException(messageUtil.getMessage("common.server.error"));
+                }
+                tenant = defaultTenantOpt.get();
+            }
+            
+            // 生成用户名（基于邮箱前缀）
+            String username = googleUserInfo.getEmail().split("@")[0];
+            // 如果用户名已存在，添加随机后缀
+            if (userService.existsByUsername(username)) {
+                username = username + "_" + System.currentTimeMillis() % 10000;
+            }
+            
+            user = new User();
+            user.setUsername(username);
+            user.setEmail(googleUserInfo.getEmail());
+            user.setRealName(googleUserInfo.getName() != null ? googleUserInfo.getName() : googleUserInfo.getGivenName());
+            user.setPasswordHash(""); // Google用户不需要密码
+            user.setTenantId(tenant.getId());
+            user.setStatus(User.UserStatus.ACTIVE);
+            user.setAvatarUrl(googleUserInfo.getPicture());
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+            user.setLastLoginAt(LocalDateTime.now());
+            
+            user = userService.save(user);
+            logger.info("Google用户创建成功 - userId: {}, username: {}", user.getId(), user.getUsername());
+        }
+        
+        // 生成JWT令牌
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);
+        
+        LoginResponse response = new LoginResponse(accessToken, refreshToken, user);
+        logger.info("Google登录成功 - userId: {}, email: {}", user.getId(), user.getEmail());
         
         return response;
     }

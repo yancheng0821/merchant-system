@@ -49,6 +49,13 @@ jwt:
   expiration: 86400000  # 24小时
   refresh-expiration: 604800000  # 7天
 
+# Google OAuth2 配置
+google:
+  oauth2:
+    client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
+    client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:3000/auth/google/callback}
+
 # 应用配置
 app:
   avatar:

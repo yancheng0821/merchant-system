@@ -680,6 +680,8 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "orDivider": "or",
     "continueWithGoogle": "Continue with Google",
+    "loginWithGoogle": "Login with Google",
+    "loggingIn": "Logging in...",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
     "switchToLogin": "Switch to Login",

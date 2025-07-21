@@ -18,13 +18,13 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  Google as GoogleIcon,
   Business as BusinessIcon,
   Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
   Lock as LockIcon,
 } from '@mui/icons-material';
+import GoogleLoginButton from './GoogleLoginButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -166,11 +166,21 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    const success = await loginWithGoogle();
-    if (success) {
-      setSuccess(t('auth.googleLoginSuccess'));
+  const handleGoogleSuccess = async (idToken: string) => {
+    try {
+      const success = await loginWithGoogle(idToken);
+      if (success) {
+        setSuccess(t('auth.googleLoginSuccess') || 'Google登录成功');
+      }
+    } catch (error) {
+      console.error('Google login callback error:', error);
+      setError('Google login failed');
     }
+  };
+
+  const handleGoogleError = (error: string) => {
+    console.error('Google login error:', error);
+    setError('Google login failed');
   };
 
   return (
@@ -237,26 +247,13 @@ const LoginPage: React.FC = () => {
               </Box>
 
               {/* Google登录按钮 */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<GoogleIcon />}
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                sx={{
-                  mb: 3,
-                  py: 1.5,
-                  borderRadius: 2,
-                  borderColor: '#4285f4',
-                  color: '#4285f4',
-                  '&:hover': {
-                    borderColor: '#3367d6',
-                    backgroundColor: alpha('#4285f4', 0.04),
-                  },
-                }}
-              >
-                {loading ? <CircularProgress size={20} /> : t('auth.continueWithGoogle')}
-              </Button>
+              <Box sx={{ mb: 3 }}>
+                <GoogleLoginButton
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  disabled={loading}
+                />
+              </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <Divider sx={{ flex: 1 }} />

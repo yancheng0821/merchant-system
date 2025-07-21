@@ -1,5 +1,6 @@
 package com.merchant.server.authservice.controller;
 
+import com.merchant.server.authservice.dto.GoogleLoginRequest;
 import com.merchant.server.authservice.dto.LoginRequest;
 import com.merchant.server.authservice.dto.LoginResponse;
 import com.merchant.server.authservice.dto.RegisterRequest;
@@ -63,6 +64,27 @@ public class AuthController {
             return ApiResponse.success(response);
         } catch (Exception e) {
             logger.error("用户 {} 注册失败: {}", registerRequest.getUsername(), e.getMessage());
+            throw e;
+        }
+    }
+    
+    @PostMapping("/google")
+    public ApiResponse<LoginResponse> googleLogin(
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
+            @Valid @RequestBody GoogleLoginRequest googleLoginRequest) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
+        logger.info("收到Google登录请求");
+        logger.debug("Google登录请求详情: {}", googleLoginRequest);
+        
+        try {
+            LoginResponse response = authService.googleLogin(googleLoginRequest);
+            logger.info("Google登录成功 - userId: {}", response.getUserId());
+            logger.debug("Google登录响应: userId={}, token={}", response.getUserId(), response.getToken().substring(0, 20) + "...");
+            return ApiResponse.success(response);
+        } catch (Exception e) {
+            logger.error("Google登录失败: {}", e.getMessage());
             throw e;
         }
     }
