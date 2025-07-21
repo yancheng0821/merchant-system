@@ -216,6 +216,9 @@ public class UserServiceImpl implements UserService {
         
         User user = userOpt.get();
         
+        // 详细日志
+        logger.info("token username: {}, token userId: {}, request userId: {}", username, user.getId(), request.getUserId());
+        
         // 验证用户ID是否匹配
         if (!user.getId().equals(request.getUserId())) {
             throw new RuntimeException("用户ID不匹配");

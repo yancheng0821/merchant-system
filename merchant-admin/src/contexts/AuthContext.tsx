@@ -76,12 +76,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 检查本地存储中是否有用户信息和令牌
     const savedUser = localStorage.getItem('user');
     const token = tokenManager.getToken();
-    
+
     if (savedUser && token) {
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
-        
+
         // 验证令牌是否有效
         validateStoredToken(token);
       } catch (error) {
@@ -94,7 +94,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const validateStoredToken = async (token: string) => {
     try {
-      const response = await authApi.validateToken(token);
+      // 修复：去掉Bearer前缀
+      const pureToken = token?.startsWith('Bearer ') ? token.slice(7) : token;
+      const response = await authApi.validateToken(pureToken);
       if (!response.success) {
         // 令牌无效，清除本地数据
         tokenManager.clearAll();
@@ -110,26 +112,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await authApi.login({ username, password });
-      
+
       if (response.success && response.data) {
         const userData = mapApiUserToUser(response.data);
-        
+
         // 保存令牌和用户信息
         tokenManager.setToken(response.data.token);
         tokenManager.setRefreshToken(response.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        setUser(userData);
+
+        // 登录成功后，立即获取完整用户资料
+        try {
+          const profileResp = await userApi.getProfile();
+          if (profileResp.success && profileResp.data) {
+            const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
+            setUser(completeUser);
+            localStorage.setItem('user', JSON.stringify(completeUser));
+          } else {
+            // 如果获取完整资料失败，使用登录返回的基本信息
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error('Failed to fetch complete profile:', e);
+          // 出错时使用登录返回的基本信息
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+
         return true;
       } else {
+        console.error('Login failed:', response.message);
         setError(response.message || 'Login failed');
         return false;
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
+      console.error('Login error:', errorMessage);
       setError(errorMessage);
       return false;
     } finally {
@@ -140,7 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterData): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await authApi.register({
         username: userData.username,
@@ -151,15 +172,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         phone: userData.phone,
         tenantCode: userData.tenantCode,
       });
-      
+
       if (response.success && response.data) {
         const user = mapApiUserToUser(response.data);
-        
+
         // 保存令牌和用户信息
         tokenManager.setToken(response.data.token);
         tokenManager.setRefreshToken(response.data.refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
-        
+
         setUser(user);
         return true;
       } else {
@@ -178,7 +199,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginWithGoogle = async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // 这里应该实现Google OAuth登录
       // 目前返回false，表示功能未实现
@@ -209,27 +230,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateUserInfo = async (userInfo: Partial<User>): Promise<boolean> => {
     if (!user) return false;
-    
     setLoading(true);
     setError(null);
-    
-    try {
-      const response = await userApi.updateProfile(userInfo);
-      
-      if (response.success && response.data) {
-        const updatedUser = { ...user, ...response.data };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
 
-        
+    try {
+      // 确保userId是数字类型
+      const updateData = {
+        ...userInfo,
+        userId: userInfo.id || (user.id ? Number(user.id) : undefined)
+      };
+
+      // 验证userId是否存在且为数字
+      if (!updateData.userId || typeof updateData.userId !== 'number') {
+        console.error('Invalid userId in update request:', updateData.userId);
+        setError('Invalid user ID');
+        return false;
+      }
+
+      const response = await userApi.updateProfile(updateData);
+
+      if (response.success && response.data) {
+        // 更新成功后，重新获取完整的用户资料
+        try {
+          const profileResp = await userApi.getProfile();
+          if (profileResp.success && profileResp.data) {
+            const fixedUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
+            setUser(fixedUser);
+            localStorage.setItem('user', JSON.stringify(fixedUser));
+          }
+        } catch (e) {
+          console.error('Failed to fetch latest profile:', e);
+        }
         return true;
       } else {
+        console.error('Update failed:', response.message);
         setError(response.message || 'Update failed');
         return false;
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
+      console.error('Update error:', errorMessage);
       setError(errorMessage);
       return false;
     } finally {
@@ -239,13 +279,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const uploadAvatar = async (file: File): Promise<boolean> => {
     if (!user) return false;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await userApi.uploadAvatar(file);
-      
+
       if (response.success && response.data) {
         const updatedUser = { ...user, avatar: response.data.avatarUrl };
         setUser(updatedUser);

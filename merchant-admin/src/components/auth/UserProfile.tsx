@@ -70,15 +70,37 @@ const UserProfile: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      // 确保包含用户ID，但不包含用户名
+      if (!user || !user.id) {
+        setMessage({ type: 'error', text: t('auth.userNotFound') });
+        return;
+      }
+      
+      // 确保userId是数字类型，而不是undefined或null
       const updateData = {
-        ...formData,
-        userId: user?.id
+        email: formData.email,
+        realName: formData.realName,
+        userId: Number(user.id) // 确保userId是数字类型
       };
-      await updateUserInfo(updateData);
-      setEditing(false);
-      setMessage({ type: 'success', text: t('auth.profileUpdated') });
+      
+      console.log('Updating user profile with data:', updateData);
+      const success = await updateUserInfo(updateData);
+      
+      if (success) {
+        setEditing(false);
+        setMessage({ type: 'success', text: t('auth.profileUpdated') });
+      } else {
+        setFormData({
+          email: user?.email || '',
+          realName: user?.realName || '',
+        });
+        setMessage({ type: 'error', text: t('auth.updateFailed') });
+      }
     } catch (error) {
+      console.error('Profile update error:', error);
+      setFormData({
+        email: user?.email || '',
+        realName: user?.realName || '',
+      });
       setMessage({ type: 'error', text: t('auth.updateFailed') });
     }
   };
@@ -404,7 +426,7 @@ const UserProfile: React.FC = () => {
               <TextField
                 fullWidth
                 label={t('auth.userId')}
-                value={user.id.toString()}
+                value={user?.id ? user.id.toString() : ''}
                 disabled
                 sx={{
                   '& .MuiOutlinedInput-root': {
@@ -426,7 +448,7 @@ const UserProfile: React.FC = () => {
                   <TextField
                     fullWidth
                     label="Tenant Name"
-                    value={user.tenantName}
+                    value={user?.tenantName || ''}
                     disabled
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -437,7 +459,7 @@ const UserProfile: React.FC = () => {
                   <TextField
                     fullWidth
                     label="Tenant ID"
-                    value={user.tenantId.toString()}
+                    value={user?.tenantId ? user.tenantId.toString() : ''}
                     disabled
                     sx={{
                       '& .MuiOutlinedInput-root': {
