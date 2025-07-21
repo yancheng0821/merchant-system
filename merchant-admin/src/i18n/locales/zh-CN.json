@@ -6,7 +6,8 @@
     "cancel": "取消",
     "create": "创建",
     "update": "更新",
-    "delete": "删除"
+    "delete": "删除",
+    "confirm": "确定"
   },
   "nav": {
     "title": "商户后台",
@@ -611,7 +612,7 @@
     "registerSubtitle": "创建您的商户管理系统账户",
     "username": "用户名",
     "password": "密码",
-    "confirmPassword": "确认密码",
+    "confirmPassword": "确认新密码",
     "email": "邮箱",
     "realName": "真实姓名",
     "fullName": "姓名",
@@ -664,7 +665,17 @@
     "invalidCredentials": "用户名或密码错误",
     "accountDisabled": "账户已被禁用",
     "accountLocked": "账户已被锁定",
-    "basicInfo": "基本信息"
+    "basicInfo": "基本信息",
+    "changePassword": "修改密码",
+    "oldPassword": "原密码",
+    "newPassword": "新密码",
+    "passwordNotMatch": "两次输入的新密码不一致。",
+    "passwordNoRepeat": "新密码不能与原密码相同。",
+    "passwordChanged": "密码修改成功！",
+    "confirm": "确定",
+    "tenantInfo": "租户信息",
+    "tenantName": "租户名称",
+    "tenantId": "租户ID"
   },
   "dialogs": {
     "createNewService": "创建新的服务项目",

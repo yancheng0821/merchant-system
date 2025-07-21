@@ -3,6 +3,7 @@ package com.merchant.server.authservice.controller;
 import com.merchant.server.authservice.dto.UserProfileRequest;
 import com.merchant.server.authservice.dto.UserProfileResponse;
 import com.merchant.server.authservice.dto.AvatarUploadResponse;
+import com.merchant.server.authservice.dto.ChangePasswordRequest;
 import com.merchant.server.authservice.service.UserService;
 import com.merchant.server.common.dto.ApiResponse;
 import org.slf4j.Logger;
@@ -12,13 +13,14 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.context.i18n.LocaleContextHolder;
+import java.util.Locale;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 @Validated
 public class UserController {
     
@@ -72,6 +74,26 @@ public class UserController {
             return ApiResponse.success(response);
         } catch (Exception e) {
             logger.error("头像上传失败: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @PutMapping("/password")
+    public ApiResponse<Void> changePassword(
+            @RequestHeader("Authorization") String token,
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        // 设置当前线程的Locale，支持国际化错误信息
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
+        logger.info("收到修改密码请求");
+        try {
+            userService.changePassword(token, request);
+            logger.info("修改密码成功");
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            logger.error("修改密码失败: {}", e.getMessage());
             throw e;
         }
     }

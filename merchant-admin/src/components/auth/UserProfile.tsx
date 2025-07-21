@@ -21,16 +21,29 @@ import {
   Cancel as CancelIcon,
   CameraAlt as CameraIcon,
   Person as PersonIcon,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import InputAdornment from '@mui/material/InputAdornment';
+import LockIcon from '@mui/icons-material/Lock';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { userApi } from '../../services/api';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import { useNavigate } from 'react-router-dom';
 
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
 
 const UserProfile: React.FC = () => {
   const { t } = useTranslation();
-  const { user, updateUserInfo, uploadAvatar, loading } = useAuth();
+  const { user, updateUserInfo, uploadAvatar, loading, logout } = useAuth();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     email: user?.email || '',
@@ -39,6 +52,71 @@ const UserProfile: React.FC = () => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 修改密码弹窗相关状态
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // 新增密码可见性状态
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleOpenPasswordDialog = () => {
+    setPasswordDialogOpen(true);
+    setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordError(null);
+  };
+  const handleClosePasswordDialog = () => {
+    setPasswordDialogOpen(false);
+    setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordError(null);
+  };
+  const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+  };
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError(t('auth.passwordRequired'));
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError(t('auth.passwordTooShort'));
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError(t('auth.passwordNotMatch'));
+      return;
+    }
+    if (passwordForm.oldPassword === passwordForm.newPassword) {
+      setPasswordError(t('auth.passwordNoRepeat'));
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const resp = await userApi.changePassword(passwordForm);
+      if (resp.success) {
+        setPasswordDialogOpen(false);
+        setMessage({ type: 'success', text: t('auth.passwordChanged') });
+        setTimeout(() => {
+          logout();
+          navigate('/login');
+        }, 1200);
+      } else {
+        setPasswordError(t(resp.message) || t('auth.updateFailed'));
+      }
+    } catch (e: any) {
+      setPasswordError(t(e.message) || t('auth.updateFailed'));
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   // 处理头像URL，将相对路径转换为完整URL
   const getAvatarUrl = (avatarPath?: string) => {
@@ -189,7 +267,7 @@ const UserProfile: React.FC = () => {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography 
-              variant="h4" 
+              variant="h5" 
               component="h1" 
               sx={{ 
                 fontWeight: 700,
@@ -197,14 +275,43 @@ const UserProfile: React.FC = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 1,
+                fontSize: 26
               }}
             >
               {t('auth.userProfile')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: 15 }}>
               {t('auth.userProfileSubtitle')}
             </Typography>
           </Box>
+          {/* 修改密码按钮右对齐，缩小尺寸，渐变前深后浅 */}
+          <Button
+            variant="contained"
+            color="primary"
+            size="medium"
+            startIcon={<LockResetIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              borderRadius: 4,
+              fontWeight: 700,
+              fontSize: 15,
+              background: 'linear-gradient(90deg, #4F46E5 0%, #A5B4FC 100%)',
+              boxShadow: '0 2px 8px rgba(99,102,241,0.10)',
+              textTransform: 'none',
+              letterSpacing: 0.5,
+              px: 3,
+              py: 1,
+              transition: 'all 0.2s',
+              '&:hover': {
+                background: 'linear-gradient(90deg, #6366F1 0%, #A5B4FC 100%)',
+                boxShadow: '0 4px 16px rgba(99,102,241,0.15)',
+                transform: 'translateY(-1px) scale(1.02)',
+              },
+              alignSelf: 'flex-start',
+            }}
+            onClick={handleOpenPasswordDialog}
+          >
+            {t('auth.changePassword')}
+          </Button>
         </Box>
       </Box>
 
@@ -442,12 +549,12 @@ const UserProfile: React.FC = () => {
             {user.tenantName && (
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                  Tenant Information
+                  {t('auth.tenantInfo')}
                 </Typography>
                 <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
                   <TextField
                     fullWidth
-                    label="Tenant Name"
+                    label={t('auth.tenantName')}
                     value={user?.tenantName || ''}
                     disabled
                     sx={{
@@ -458,7 +565,7 @@ const UserProfile: React.FC = () => {
                   />
                   <TextField
                     fullWidth
-                    label="Tenant ID"
+                    label={t('auth.tenantId')}
                     value={user?.tenantId ? user.tenantId.toString() : ''}
                     disabled
                     sx={{
@@ -473,6 +580,101 @@ const UserProfile: React.FC = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {/* 修改密码弹窗 */}
+      <Dialog open={passwordDialogOpen} onClose={handleClosePasswordDialog}
+        maxWidth={false}
+        fullWidth={false}
+        PaperProps={{
+          sx: {
+            minWidth: 460,
+            maxWidth: 480,
+            width: 460,
+            borderRadius: 4,
+            boxShadow: '0 8px 32px rgba(99,102,241,0.18)',
+            border: 'none',
+            p: 0,
+            background: 'linear-gradient(135deg, #F3F4F6 60%, #EEF2FF 100%)',
+            position: 'relative',
+            overflow: 'visible',
+          }
+        }}
+      >
+        {/* 顶部渐变条 */}
+        <Box sx={{ height: 6, width: '100%', borderTopLeftRadius: 16, borderTopRightRadius: 16, background: 'linear-gradient(90deg, #4F46E5 0%, #A5B4FC 100%)', position: 'absolute', top: 0, left: 0 }} />
+        <DialogTitle sx={{ fontWeight: 600, color: '#4F46E5', pt: 3, pb: 1, fontSize: 19, letterSpacing: 0.5, textAlign: 'center' }}>{t('auth.changePassword')}</DialogTitle>
+        <DialogContent sx={{ pt: 1, px: 4, pb: 0 }}>
+          <TextField
+            margin="normal"
+            label={t('auth.oldPassword')}
+            name="oldPassword"
+            type="password"
+            fullWidth
+            value={passwordForm.oldPassword}
+            onChange={handlePasswordInputChange}
+            autoComplete="current-password"
+            sx={{ mb: 2, borderRadius: 2, background: '#F3F4F6' }}
+            InputProps={{
+              style: { borderRadius: 8, fontSize: 15, background: '#F3F4F6', height: 40 },
+              startAdornment: <InputAdornment position="start"><VpnKeyIcon color="primary" /></InputAdornment>,
+            }}
+            InputLabelProps={{ style: { fontWeight: 500, fontSize: 15 } }}
+          />
+          <TextField
+            margin="normal"
+            label={t('auth.newPassword')}
+            name="newPassword"
+            type={showNewPassword ? 'text' : 'password'}
+            fullWidth
+            value={passwordForm.newPassword}
+            onChange={handlePasswordInputChange}
+            autoComplete="new-password"
+            sx={{ mb: 2, borderRadius: 2, background: '#F3F4F6' }}
+            InputProps={{
+              style: { borderRadius: 8, fontSize: 15, background: '#F3F4F6', height: 40 },
+              startAdornment: <InputAdornment position="start"><LockIcon color="primary" /></InputAdornment>,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowNewPassword((v) => !v)} edge="end" tabIndex={-1}>
+                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            InputLabelProps={{ style: { fontWeight: 500, fontSize: 15 } }}
+          />
+          <TextField
+            margin="normal"
+            label={t('auth.confirmPassword')}
+            name="confirmPassword"
+            type={showConfirmPassword ? 'text' : 'password'}
+            fullWidth
+            value={passwordForm.confirmPassword}
+            onChange={handlePasswordInputChange}
+            autoComplete="new-password"
+            sx={{ mb: 1, borderRadius: 2, background: '#F3F4F6' }}
+            InputProps={{
+              style: { borderRadius: 8, fontSize: 15, background: '#F3F4F6', height: 40 },
+              startAdornment: <InputAdornment position="start"><LockIcon color="primary" /></InputAdornment>,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowConfirmPassword((v) => !v)} edge="end" tabIndex={-1}>
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            InputLabelProps={{ style: { fontWeight: 500, fontSize: 15 } }}
+          />
+          {passwordError && <Alert severity="error" sx={{ mt: 2, borderRadius: 2, fontWeight: 500, fontSize: 14 }}>{passwordError}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 4, pb: 3, pt: 1, justifyContent: 'center' }}>
+          <Button onClick={handleClosePasswordDialog} disabled={passwordLoading} variant="outlined" sx={{ borderRadius: 4, minWidth: 90, fontWeight: 600, fontSize: 13, height: 38, borderWidth: 1.5, borderColor: '#6366F1', color: '#4F46E5', background: '#F3F4F6', transition: 'all 0.2s', '&:hover': { borderColor: '#4F46E5', background: '#EEF2FF' } }}>{t('common.cancel')}</Button>
+          <Button onClick={handleChangePassword} color="primary" variant="contained" disabled={passwordLoading} sx={{ borderRadius: 4, minWidth: 90, fontWeight: 700, fontSize: 13, height: 38, ml: 2, background: 'linear-gradient(90deg, #4F46E5 0%, #A5B4FC 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.10)', transition: 'all 0.2s', '&:hover': { background: 'linear-gradient(90deg, #6366F1 0%, #A5B4FC 100%)', boxShadow: '0 4px 16px rgba(99,102,241,0.15)', transform: 'scale(1.03)' } }}>
+            {passwordLoading ? <CircularProgress size={20} /> : t('common.confirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

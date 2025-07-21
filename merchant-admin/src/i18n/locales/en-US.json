@@ -6,7 +6,8 @@
     "cancel": "Cancel",
     "create": "Create",
     "update": "Update",
-    "delete": "Delete"
+    "delete": "Delete",
+    "confirm": "Confirm"
   },
   "nav": {
     "title": "Merchant Admin",
@@ -669,7 +670,7 @@
     "avatarUploadTip": "Click the camera icon on the avatar to upload a new one. Supports JPG, PNG formats, file size not exceeding 5MB.",
     "register": "User Registration",
     "registerSubtitle": "Create your merchant management system account",
-    "confirmPassword": "Confirm Password",
+    "confirmPassword": "Confirm New Password",
     "fullName": "Full Name",
     "phoneNumber": "Phone Number",
     "registerButton": "Register",
@@ -694,7 +695,17 @@
     "invalidCredentials": "Invalid username or password",
     "accountDisabled": "Account is disabled",
     "accountLocked": "Account is locked",
-    "basicInfo": "Basic Information"
+    "basicInfo": "Basic Information",
+    "changePassword": "Change Password",
+    "oldPassword": "Current Password",
+    "newPassword": "New Password",
+    "passwordNotMatch": "The new passwords do not match.",
+    "passwordNoRepeat": "The new password cannot be the same as the old password.",
+    "passwordChanged": "Password changed successfully!",
+    "confirm": "Confirm",
+    "tenantInfo": "Tenant Information",
+    "tenantName": "Tenant Name",
+    "tenantId": "Tenant ID"
   },
   "dialogs": {
     "createNewService": "Create New Service Item",

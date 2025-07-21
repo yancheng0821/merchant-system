@@ -8,14 +8,15 @@ import com.merchant.server.common.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 @Validated
 public class AuthController {
     
@@ -25,7 +26,12 @@ public class AuthController {
     private AuthService authService;
     
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ApiResponse<LoginResponse> login(
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
+            @Valid @RequestBody LoginRequest loginRequest) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
         logger.info("收到登录请求 - 用户名: {}, IP: {}", loginRequest.getUsername(), getClientIp());
         logger.debug("登录请求详情: {}", loginRequest);
         
@@ -41,7 +47,12 @@ public class AuthController {
     }
     
     @PostMapping("/register")
-    public ApiResponse<LoginResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ApiResponse<LoginResponse> register(
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
+            @Valid @RequestBody RegisterRequest registerRequest) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
         logger.info("收到注册请求 - 用户名: {}, 邮箱: {}", registerRequest.getUsername(), registerRequest.getEmail());
         logger.debug("注册请求详情: {}", registerRequest);
         
@@ -57,7 +68,12 @@ public class AuthController {
     }
     
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestHeader("Authorization") String token) {
+    public ApiResponse<Void> logout(
+            @RequestHeader("Authorization") String token,
+            @RequestHeader(value = "Accept-Language", required = false) String lang) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
         logger.info("收到登出请求 - token: {}", token.substring(0, Math.min(20, token.length())) + "...");
         
         try {
@@ -71,7 +87,12 @@ public class AuthController {
     }
     
     @PostMapping("/refresh")
-    public ApiResponse<LoginResponse> refreshToken(@RequestParam String refreshToken) {
+    public ApiResponse<LoginResponse> refreshToken(
+            @RequestParam String refreshToken,
+            @RequestHeader(value = "Accept-Language", required = false) String lang) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
         logger.info("收到令牌刷新请求 - refreshToken: {}", refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
         
         try {
@@ -86,7 +107,12 @@ public class AuthController {
     }
     
     @GetMapping("/validate")
-    public ApiResponse<Boolean> validateToken(@RequestParam String token) {
+    public ApiResponse<Boolean> validateToken(
+            @RequestParam String token,
+            @RequestHeader(value = "Accept-Language", required = false) String lang) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
         logger.debug("收到令牌验证请求 - token: {}", token.substring(0, Math.min(20, token.length())) + "...");
         
         try {
@@ -100,7 +126,11 @@ public class AuthController {
     }
     
     @GetMapping("/health")
-    public ApiResponse<String> health() {
+    public ApiResponse<String> health(
+            @RequestHeader(value = "Accept-Language", required = false) String lang) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
         logger.debug("收到健康检查请求");
         return ApiResponse.success("Auth service is running");
     }

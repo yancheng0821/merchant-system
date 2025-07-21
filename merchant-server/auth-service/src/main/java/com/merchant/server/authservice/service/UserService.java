@@ -3,6 +3,7 @@ package com.merchant.server.authservice.service;
 import com.merchant.server.authservice.dto.UserProfileRequest;
 import com.merchant.server.authservice.dto.UserProfileResponse;
 import com.merchant.server.authservice.dto.AvatarUploadResponse;
+import com.merchant.server.authservice.dto.ChangePasswordRequest;
 import com.merchant.server.authservice.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +35,13 @@ public interface UserService {
      * @return 头像上传响应
      */
     AvatarUploadResponse uploadAvatar(String token, MultipartFile file);
+    
+    /**
+     * 修改密码
+     * @param token JWT令牌
+     * @param request 修改密码请求
+     */
+    void changePassword(String token, ChangePasswordRequest request);
     
     // 基础CRUD方法
     Optional<User> findById(Long id);

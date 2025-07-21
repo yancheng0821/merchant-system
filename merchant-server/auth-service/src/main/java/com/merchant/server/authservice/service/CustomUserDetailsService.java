@@ -1,7 +1,6 @@
 package com.merchant.server.authservice.service;
 
 import com.merchant.server.authservice.entity.User;
-import com.merchant.server.authservice.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

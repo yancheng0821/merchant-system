@@ -7,8 +7,11 @@ import com.merchant.server.authservice.dto.UserProfileRequest;
 import com.merchant.server.authservice.dto.UserProfileResponse;
 import com.merchant.server.authservice.dto.AvatarUploadResponse;
 import com.merchant.server.authservice.util.JwtUtil;
+import com.merchant.server.authservice.util.MessageUtil;
 import com.merchant.server.authservice.entity.Tenant;
 import com.merchant.server.authservice.mapper.TenantMapper;
+import com.merchant.server.authservice.dto.ChangePasswordRequest;
+import com.merchant.server.authservice.util.PasswordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +19,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +27,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Locale;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -39,6 +43,12 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private JwtUtil jwtUtil;
+    
+    @Autowired
+    private PasswordUtil passwordUtil;
+
+    @Autowired
+    private MessageUtil messageUtil;
     
     @Value("${app.avatar.upload.path:/tmp/avatars}")
     private String avatarUploadPath;
@@ -326,5 +336,38 @@ public class UserServiceImpl implements UserService {
             logger.error("头像上传失败: {}", e.getMessage());
             throw new RuntimeException("头像上传失败: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void changePassword(String token, ChangePasswordRequest request) {
+        // 打印当前线程的Locale
+        logger.info("当前线程的Locale: {}", LocaleContextHolder.getLocale());
+        logger.info("国际化内容: {}", messageUtil.getMessage("user.old.password.mismatch"));
+        // 1. 从token获取用户名
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findByUsername(username);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
+        }
+        User user = userOpt.get();
+        // 2. 校验原密码
+        if (!passwordUtil.verifyPassword(request.getOldPassword(), user.getPasswordHash(), user.getSalt())) {
+            throw new RuntimeException(messageUtil.getMessage("user.old.password.mismatch"));
+        }
+        // 3. 校验新密码一致性
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException(messageUtil.getMessage("user.new.passwords.mismatch"));
+        }
+        // 4. 新密码不能与原密码相同
+        if (request.getOldPassword().equals(request.getNewPassword())) {
+            throw new RuntimeException(messageUtil.getMessage("user.password.no.repeat"));
+        }
+        // 5. 加密新密码并保存
+        String newSalt = passwordUtil.generateSalt();
+        String newHash = passwordUtil.hashPassword(request.getNewPassword(), newSalt);
+        user.setSalt(newSalt);
+        user.setPasswordHash(newHash);
+        user.setUpdatedAt(java.time.LocalDateTime.now());
+        save(user);
     }
 } 

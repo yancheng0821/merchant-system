@@ -1,3 +1,5 @@
+import i18n from '../i18n/config';
+
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
 
@@ -11,6 +13,7 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
   const defaultHeaders = {
     ...(isFileUpload ? {} : { 'Content-Type': 'application/json' }),
     ...(token && { 'Authorization': `Bearer ${token}` }),
+    'Accept-Language': i18n.language === 'zh-CN' ? 'zh' : 'en',
   };
 
   const config: RequestInit = {
@@ -179,6 +182,13 @@ export const userApi = {
       method: 'POST',
       headers: {}, // 让浏览器自动设置Content-Type
       body: formData,
+    });
+  },
+
+  changePassword: async (data: { oldPassword: string; newPassword: string; confirmPassword: string }): Promise<ApiResponse<void>> => {
+    return createRequest('/api/users/password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
   },
 };
