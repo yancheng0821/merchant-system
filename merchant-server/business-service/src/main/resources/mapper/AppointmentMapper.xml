@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.AppointmentMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="AppointmentResultMap" type="com.merchant.server.businessservice.entity.Appointment">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="staffId" column="staff_id"/>
+        <result property="appointmentDate" column="appointment_date"/>
+        <result property="appointmentTime" column="appointment_time"/>
+        <result property="duration" column="duration"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="status" column="status"/>
+        <result property="notes" column="notes"/>
+        <result property="rating" column="rating"/>
+        <result property="review" column="review"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, customer_id, staff_id, appointment_date, appointment_time,
+        duration, total_amount, status, notes, rating, review, created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询预约 -->
+    <select id="selectById" resultMap="AppointmentResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointments
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据客户ID查询预约 -->
+    <select id="selectByCustomerId" resultMap="AppointmentResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointments
+        WHERE customer_id = #{customerId}
+        ORDER BY appointment_date DESC, appointment_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据客户ID和状态查询预约 -->
+    <select id="selectByCustomerIdAndStatus" resultMap="AppointmentResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointments
+        WHERE customer_id = #{customerId} AND status = #{status}
+        ORDER BY appointment_date DESC, appointment_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据客户ID查询预约历史 -->
+    <select id="selectCustomerAppointmentHistory" resultMap="AppointmentResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointments
+        WHERE customer_id = #{customerId}
+        ORDER BY appointment_date DESC, appointment_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 统计客户预约数量 -->
+    <select id="countByCustomerId" resultType="long">
+        SELECT COUNT(*)
+        FROM appointments
+        WHERE customer_id = #{customerId}
+    </select>
+
+    <!-- 统计客户已完成预约数量 -->
+    <select id="countByCustomerIdAndStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM appointments
+        WHERE customer_id = #{customerId} AND status = #{status}
+    </select>
+
+    <!-- 统计租户预约数量 -->
+    <select id="countByTenantId" resultType="long">
+        SELECT COUNT(*)
+        FROM appointments
+        WHERE tenant_id = #{tenantId}
+    </select>
+
+    <!-- 统计租户待服务预约数量 -->
+    <select id="countPendingAppointments" resultType="long">
+        SELECT COUNT(*)
+        FROM appointments
+        WHERE tenant_id = #{tenantId} AND status = 'CONFIRMED'
+    </select>
+
+    <!-- 获取客户平均评分 -->
+    <select id="getCustomerAverageRating" resultType="Double">
+        SELECT AVG(rating)
+        FROM appointments
+        WHERE customer_id = #{customerId} AND rating IS NOT NULL
+    </select>
+
+    <!-- 插入预约 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Appointment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointments (
+            tenant_id, customer_id, staff_id, appointment_date, appointment_time,
+            duration, total_amount, status, notes, rating, review, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{customerId}, #{staffId}, #{appointmentDate}, #{appointmentTime},
+            #{duration}, #{totalAmount}, #{status}, #{notes}, #{rating}, #{review}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新预约 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.Appointment">
+        UPDATE appointments SET
+            tenant_id = #{tenantId},
+            customer_id = #{customerId},
+            staff_id = #{staffId},
+            appointment_date = #{appointmentDate},
+            appointment_time = #{appointmentTime},
+            duration = #{duration},
+            total_amount = #{totalAmount},
+            status = #{status},
+            notes = #{notes},
+            rating = #{rating},
+            review = #{review},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除预约 -->
+    <delete id="deleteById">
+        DELETE FROM appointments WHERE id = #{id}
+    </delete>
+
+</mapper>

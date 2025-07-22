@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CustomerMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="CustomerResultMap" type="com.merchant.server.businessservice.entity.Customer">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="firstName" column="first_name"/>
+        <result property="lastName" column="last_name"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="address" column="address"/>
+        <result property="dateOfBirth" column="date_of_birth"/>
+        <result property="gender" column="gender"/>
+        <result property="membershipLevel" column="membership_level"/>
+        <result property="points" column="points"/>
+        <result property="totalSpent" column="total_spent"/>
+        <result property="status" column="status"/>
+        <result property="notes" column="notes"/>
+        <result property="allergies" column="allergies"/>
+        <result property="communicationPreference" column="communication_preference"/>
+        <result property="lastVisitDate" column="last_visit_date"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, first_name, last_name, phone, email, address, date_of_birth,
+        gender, membership_level, points, total_spent, status, notes, allergies,
+        communication_preference, last_visit_date, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <!-- 搜索条件 -->
+    <sql id="Search_Where_Clause">
+        <if test="keyword != null and keyword != ''">
+            AND (
+                LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+                OR phone LIKE CONCAT('%', #{keyword}, '%')
+                OR LOWER(email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+            )
+        </if>
+    </sql>
+
+    <!-- 排序条件 -->
+    <sql id="Order_By_Clause">
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'firstName'">first_name</when>
+            <when test="sortBy == 'lastName'">last_name</when>
+            <when test="sortBy == 'phone'">phone</when>
+            <when test="sortBy == 'email'">email</when>
+            <when test="sortBy == 'membershipLevel'">membership_level</when>
+            <when test="sortBy == 'points'">points</when>
+            <when test="sortBy == 'totalSpent'">total_spent</when>
+            <when test="sortBy == 'status'">status</when>
+            <when test="sortBy == 'lastVisitDate'">last_visit_date</when>
+            <when test="sortBy == 'createdAt'">created_at</when>
+            <otherwise>updated_at</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDir == 'ASC'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+    </sql>
+
+    <!-- 根据ID查询客户 -->
+    <select id="selectById" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据租户ID分页查询客户 -->
+    <select id="selectByTenantId" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId}
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据租户ID和状态分页查询客户 -->
+    <select id="selectByTenantIdAndStatus" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status}
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据租户ID和会员等级分页查询客户 -->
+    <select id="selectByTenantIdAndMembershipLevel" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据租户ID、状态和会员等级分页查询客户 -->
+    <select id="selectByTenantIdAndStatusAndMembershipLevel" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据租户ID和电话号码查询客户 -->
+    <select id="selectByTenantIdAndPhone" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND phone = #{phone}
+    </select>
+
+    <!-- 根据租户ID和邮箱查询客户 -->
+    <select id="selectByTenantIdAndEmail" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND email = #{email}
+    </select>
+
+    <!-- 搜索客户 -->
+    <select id="searchCustomers" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId}
+        <include refid="Search_Where_Clause"/>
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 搜索客户（带状态过滤） -->
+    <select id="searchCustomersByStatus" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status}
+        <include refid="Search_Where_Clause"/>
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 搜索客户（带会员等级过滤） -->
+    <select id="searchCustomersByMembershipLevel" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        <include refid="Search_Where_Clause"/>
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 搜索客户（带状态和会员等级过滤） -->
+    <select id="searchCustomersByStatusAndMembershipLevel" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        <include refid="Search_Where_Clause"/>
+        <include refid="Order_By_Clause"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 统计租户客户总数 -->
+    <select id="countByTenantId" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId}
+    </select>
+
+    <!-- 统计租户客户总数（带搜索） -->
+    <select id="countSearchCustomers" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId}
+        <include refid="Search_Where_Clause"/>
+    </select>
+
+    <!-- 统计租户客户总数（带状态过滤） -->
+    <select id="countByTenantIdAndStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status}
+    </select>
+
+    <!-- 统计租户客户总数（带搜索和状态过滤） -->
+    <select id="countSearchCustomersByStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status}
+        <include refid="Search_Where_Clause"/>
+    </select>
+
+    <!-- 统计租户客户总数（带会员等级过滤） -->
+    <select id="countByTenantIdAndMembershipLevel" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+    </select>
+
+    <!-- 统计租户客户总数（带搜索和会员等级过滤） -->
+    <select id="countSearchCustomersByMembershipLevel" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        <include refid="Search_Where_Clause"/>
+    </select>
+
+    <!-- 统计租户客户总数（带状态和会员等级过滤） -->
+    <select id="countByTenantIdAndStatusAndMembershipLevel" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+    </select>
+
+    <!-- 统计租户客户总数（带搜索、状态和会员等级过滤） -->
+    <select id="countSearchCustomersByStatusAndMembershipLevel" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        <include refid="Search_Where_Clause"/>
+    </select>
+
+    <!-- 统计VIP客户数量 -->
+    <select id="countVipCustomers" resultType="long">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND membership_level IN ('GOLD', 'PLATINUM')
+    </select>
+
+    <!-- 获取客户消费排行 -->
+    <select id="selectTopSpendingCustomers" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId}
+        ORDER BY total_spent DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 插入客户 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Customer" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customers (
+            tenant_id, first_name, last_name, phone, email, address, date_of_birth,
+            gender, membership_level, points, total_spent, status, notes, allergies,
+            communication_preference, last_visit_date, created_at, updated_at, created_by, updated_by
+        ) VALUES (
+            #{tenantId}, #{firstName}, #{lastName}, #{phone}, #{email}, #{address}, #{dateOfBirth},
+            #{gender}, #{membershipLevel}, #{points}, #{totalSpent}, #{status}, #{notes}, #{allergies},
+            #{communicationPreference}, #{lastVisitDate}, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <!-- 更新客户 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.Customer">
+        UPDATE customers SET
+            tenant_id = #{tenantId},
+            first_name = #{firstName},
+            last_name = #{lastName},
+            phone = #{phone},
+            email = #{email},
+            address = #{address},
+            date_of_birth = #{dateOfBirth},
+            gender = #{gender},
+            membership_level = #{membershipLevel},
+            points = #{points},
+            total_spent = #{totalSpent},
+            status = #{status},
+            notes = #{notes},
+            allergies = #{allergies},
+            communication_preference = #{communicationPreference},
+            last_visit_date = #{lastVisitDate},
+            updated_at = #{updatedAt},
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除客户 -->
+    <delete id="deleteById">
+        DELETE FROM customers WHERE id = #{id}
+    </delete>
+
+    <!-- 检查电话号码是否存在 -->
+    <select id="existsByTenantIdAndPhone" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND phone = #{phone}
+    </select>
+
+    <!-- 检查邮箱是否存在 -->
+    <select id="existsByTenantIdAndEmail" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM customers
+        WHERE tenant_id = #{tenantId} AND email = #{email}
+    </select>
+
+    <select id="findByCondition" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM customers
+        WHERE tenant_id = #{tenantId}
+        <if test="keyword != null and keyword != ''">
+            AND (
+                LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+                OR phone LIKE CONCAT('%', #{keyword}, '%')
+                OR LOWER(email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+            )
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="level != null">
+            AND membership_level = #{level}
+        </if>
+    </select>
+
+</mapper>

@@ -30,7 +30,7 @@ import {
   Favorite as PreferencesIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Customer } from '../Customers';
+import { Customer } from '../../../services/api';
 
 interface CustomerDialogProps {
   open: boolean;

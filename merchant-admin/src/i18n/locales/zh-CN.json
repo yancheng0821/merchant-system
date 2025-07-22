@@ -128,7 +128,8 @@
       "lastVisit": "最后访问",
       "status": "状态",
       "actions": "操作"
-    }
+    },
+    "noCustomers": "暂无客户数据"
   },
   "appointments": {
     "title": "预约管理",

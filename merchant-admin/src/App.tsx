@@ -50,7 +50,7 @@ import {
 } from './modules';
 
 // API基础配置
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
 const drawerWidth = 260;
 

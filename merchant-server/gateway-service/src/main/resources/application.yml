@@ -9,11 +9,28 @@ spring:
       discovery:
         locator:
           enabled: true
+      globalcors:
+        corsConfigurations:
+          '[/**]': # 匹配所有路径
+            allowedOrigins:
+              - "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - Authorization
+              - Content-Type
+              - Accept
+              - Origin
+            allowCredentials: true
       routes:
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/api/auth/**
+            - Path=/api/auth/**, /api/users/**
         - id: merchant-service
           uri: lb://merchant-service
           predicates:
@@ -21,7 +38,7 @@ spring:
         - id: business-service
           uri: lb://business-service
           predicates:
-            - Path=/api/business/**
+            - Path=/api/business/**, /api/customers/**
         - id: ai-service
           uri: lb://ai-service
           predicates:
@@ -43,4 +60,4 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true 
+    prefer-ip-address: true

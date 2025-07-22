@@ -128,7 +128,8 @@
       "lastVisit": "Last Visit",
       "status": "Status",
       "actions": "Actions"
-    }
+    },
+    "noCustomers": "No customer data available"
   },
   "appointments": {
     "title": "Appointment Management",

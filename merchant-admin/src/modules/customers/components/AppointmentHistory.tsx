@@ -35,14 +35,7 @@ import {
   Star as StarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Customer } from '../Customers';
-
-interface AppointmentHistoryProps {
-  open: boolean;
-  onClose: () => void;
-  customer: Customer | null;
-}
-
+import { Customer } from '../../../services/api';
 // 预约记录接口
 export interface Appointment {
   id: string;
@@ -140,7 +133,11 @@ const mockAppointments: Appointment[] = [
   }
 ];
 
-const AppointmentHistory: React.FC<AppointmentHistoryProps> = ({
+const AppointmentHistory: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  customer: Customer | null;
+}> = ({
   open,
   onClose,
   customer,

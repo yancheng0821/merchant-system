@@ -2,13 +2,19 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <!-- 使用apple-touch-icon作为favicon -->
+    <link rel="icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#667eea" />
     <meta
       name="description"
-      content="商户管理后台系统"
+      content="Merchant System - 专业的商户管理平台"
     />
+    
+    <!-- App Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -21,7 +27,13 @@
     />
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <title>商户管理后台</title>
+    <!-- 添加Google API加载检查 -->
+    <script>
+      window.onGoogleLibraryLoad = function() {
+        console.log('Google Identity Services library loaded');
+      };
+    </script>
+    <title>Merchant System - 商户管理平台</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

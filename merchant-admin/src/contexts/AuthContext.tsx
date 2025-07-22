@@ -115,23 +115,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       const response = await authApi.login({ username, password });
+      console.log('Login response:', response);
 
       if (response.success && response.data) {
         const userData = mapApiUserToUser(response.data);
+        console.log('Mapped user data:', userData);
 
         // 保存令牌和用户信息
         tokenManager.setToken(response.data.token);
         tokenManager.setRefreshToken(response.data.refreshToken);
+        console.log('Token saved:', response.data.token.substring(0, 20) + '...');
 
         // 登录成功后，立即获取完整用户资料
         try {
+          console.log('Fetching complete user profile...');
           const profileResp = await userApi.getProfile();
+          console.log('Profile response:', profileResp);
+
           if (profileResp.success && profileResp.data) {
+            console.log('Raw profile data:', profileResp.data);
             const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
+            console.log('Complete user with ID:', completeUser);
             setUser(completeUser);
             localStorage.setItem('user', JSON.stringify(completeUser));
           } else {
             // 如果获取完整资料失败，使用登录返回的基本信息
+            console.warn('Failed to get complete profile, using basic user data');
             setUser(userData);
             localStorage.setItem('user', JSON.stringify(userData));
           }
@@ -199,18 +208,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginWithGoogle = async (idToken: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log('Google login with token:', idToken.substring(0, 20) + '...');
       const response = await authApi.googleLogin(idToken);
-      
+
       if (response.success && response.data) {
         const userData = mapApiUserToUser(response.data);
-        
+
         // 保存令牌和用户信息
         tokenManager.setToken(response.data.token);
         tokenManager.setRefreshToken(response.data.refreshToken);
-        
+
         // 获取完整用户资料
         try {
           console.log('Google login success, fetching complete profile...');
@@ -230,7 +239,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
         }
-        
+
         return true;
       } else {
         console.error('Google login failed:', response.message);

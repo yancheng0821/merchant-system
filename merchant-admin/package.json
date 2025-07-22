@@ -1,6 +1,7 @@
 {
-  "name": "merchant-admin",
-  "version": "0.1.0",
+  "name": "merchant-system",
+  "version": "1.0.0",
+  "description": "Merchant System - 专业的商户管理平台",
   "private": true,
   "scripts": {
     "start": "react-scripts start",
@@ -27,11 +28,11 @@
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.8.0",
-    "typescript": "^4.9.5",
     "web-vitals": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.5.2"
+    "@types/jest": "^27.5.2",
+    "typescript": "^5.8.3"
   },
   "eslintConfig": {
     "extends": [

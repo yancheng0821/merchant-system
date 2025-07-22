@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Typography,
   Table,
@@ -28,6 +28,9 @@ import {
   DialogActions,
   alpha,
   InputAdornment,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,119 +47,217 @@ import {
   AccountBalanceWallet as WalletIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { customerApi, Customer, CustomerStats, handleApiError } from '../../services/api';
 import CustomerDialog from './components/CustomerDialog';
 import AppointmentHistory from './components/AppointmentHistory';
 
-// 客户数据接口
-export interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  address: string;
-  dateOfBirth?: string;
-  gender: 'male' | 'female' | 'other' | 'prefer-not-to-say';
-  membershipLevel: 'regular' | 'silver' | 'gold' | 'platinum';
-  points: number;
-  totalSpent: number;
-  lastVisit?: string;
-  createdAt: string;
-  notes?: string;
-  preferredServices: string[];
-  allergies?: string;
-  communicationPreference: 'phone' | 'email' | 'sms';
-  status: 'active' | 'inactive';
-  avatar?: string;
-}
+// 使用API中定义的Customer接口
 
 const CustomerManagement: React.FC = () => {
   const { t } = useTranslation();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  
+  // 加载状态
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // 对话框状态
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [appointmentHistoryOpen, setAppointmentHistoryOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  
+  // 通知状态
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  // 生成模拟数据
-  React.useEffect(() => {
-    const mockCustomers: Customer[] = [
-      {
-        id: '1',
-        firstName: 'San',
-        lastName: 'Zhang',
-        phone: '138-0000-0001',
-        email: 'zhangsan@example.com',
-        address: '123 Chaoyang District, Beijing',
-        dateOfBirth: '1990-05-15',
-        gender: 'male',
-        membershipLevel: 'gold',
-        points: 1250,
-        totalSpent: 2850,
-        lastVisit: '2024-01-15T14:30:00',
-        createdAt: '2023-06-01T10:00:00',
-        preferredServices: ['haircut', 'styling'],
-        communicationPreference: 'phone',
-        status: 'active',
-      },
-      {
-        id: '2',
-        firstName: 'Si',
-        lastName: 'Li',
-        phone: '139-0000-0002',
-        email: 'lisi@example.com',
-        address: '456 Pudong New Area, Shanghai',
-        dateOfBirth: '1988-11-22',
-        gender: 'female',
-        membershipLevel: 'platinum',
-        points: 2100,
-        totalSpent: 4200,
-        lastVisit: '2024-01-18T11:15:00',
-        createdAt: '2023-03-15T16:30:00',
-        preferredServices: ['color', 'treatment'],
-        communicationPreference: 'email',
-        status: 'active',
-      },
-      {
-        id: '3',
-        firstName: 'Wu',
-        lastName: 'Wang',
-        phone: '137-0000-0003',
-        email: 'wangwu@example.com',
-        address: '789 Tianhe District, Guangzhou',
-        gender: 'male',
-        membershipLevel: 'silver',
-        points: 680,
-        totalSpent: 1450,
-        lastVisit: '2024-01-12T09:45:00',
-        createdAt: '2023-09-10T14:20:00',
-        preferredServices: ['haircut'],
-        communicationPreference: 'sms',
-        status: 'active',
-      },
-    ];
-    setCustomers(mockCustomers);
-    setFilteredCustomers(mockCustomers);
+  // 获取租户ID（从localStorage或context中获取）
+  const tenantId = useMemo(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return String(user.tenantId || 1); // 默认租户ID为1
   }, []);
 
-  const getMembershipChip = (level: string) => {
+  // 构建查询参数
+  const buildQueryParams = useCallback((pageNum = page) => ({
+    tenantId,
+    keyword: searchTerm || undefined,
+    status: statusFilter !== 'all' ? (statusFilter === 'active' ? 'ACTIVE' : statusFilter === 'inactive' ? 'INACTIVE' : undefined) as 'ACTIVE' | 'INACTIVE' | undefined : undefined,
+    membershipLevel: membershipFilter !== 'all' ? (membershipFilter.toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM') : undefined,
+    page: pageNum,
+    size: rowsPerPage,
+    sortBy: 'updatedAt',
+    sortDir: 'desc' as const,
+  }), [tenantId, searchTerm, statusFilter, membershipFilter, page, rowsPerPage]);
+
+  // 请求去重机制
+  const requestIdRef = useRef(0);
+
+  // 加载客户数据的核心函数
+  const fetchCustomers = useCallback(async (params: any) => {
+    const currentRequestId = ++requestIdRef.current;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await customerApi.getCustomers(params);
+      
+      // 只有当前请求是最新的才更新状态
+      if (currentRequestId === requestIdRef.current) {
+        setCustomers(response.customers);
+        setTotalItems(response.totalItems);
+      }
+    } catch (err) {
+      // 只有当前请求是最新的才处理错误
+      if (currentRequestId === requestIdRef.current) {
+        const errorMessage = handleApiError(err);
+        setError(errorMessage);
+        setSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: 'error',
+        });
+      }
+    } finally {
+      // 只有当前请求是最新的才设置loading为false
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  // 加载客户统计数据
+  const loadCustomerStats = useCallback(async () => {
+    try {
+      const stats = await customerApi.getCustomerStats(tenantId);
+      setCustomerStats(stats);
+    } catch (err) {
+      console.error('Failed to load customer stats:', err);
+    }
+  }, [tenantId]);
+
+  // 统一的数据加载逻辑
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCustomers(buildQueryParams());
+    }, searchTerm ? 500 : 0); // 只有在搜索时才防抖
+
+    return () => clearTimeout(timeoutId);
+  }, [fetchCustomers, buildQueryParams]); // 使用稳定的函数引用
+
+  // 初始加载统计数据
+  useEffect(() => {
+    loadCustomerStats();
+  }, [loadCustomerStats]);
+
+  // 删除客户
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer?.id) return;
+    
+    try {
+      setLoading(true);
+      await customerApi.deleteCustomer(selectedCustomer.id);
+      
+      setSnackbar({
+        open: true,
+        message: t('customers.deleteSuccess') || '客户删除成功',
+        severity: 'success',
+      });
+      
+      setDeleteDialogOpen(false);
+      setSelectedCustomer(null);
+      // 重新加载数据
+      fetchCustomers(buildQueryParams());
+      loadCustomerStats(); // 重新加载统计数据
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 保存客户（创建或更新）
+  const handleSaveCustomer = async (customerData: Partial<Customer>) => {
+    try {
+      setLoading(true);
+      
+      if (selectedCustomer?.id) {
+        // 更新客户
+        await customerApi.updateCustomer(selectedCustomer.id, customerData as Customer);
+        setSnackbar({
+          open: true,
+          message: t('customers.updateSuccess') || '客户信息更新成功',
+          severity: 'success',
+        });
+      } else {
+        // 创建客户
+        customerData.tenantId = tenantId;
+        // 保证 id 一定有值
+        if (!customerData.id) customerData.id = `${Date.now()}`;
+        await customerApi.createCustomer(customerData as Customer);
+        setSnackbar({
+          open: true,
+          message: t('customers.createSuccess') || '客户创建成功',
+          severity: 'success',
+        });
+      }
+      
+      setCustomerDialogOpen(false);
+      setSelectedCustomer(null);
+      // 重新加载数据
+      const params = {
+        tenantId,
+        keyword: searchTerm || undefined,
+        status: statusFilter !== 'all' ? (statusFilter === 'active' ? 'ACTIVE' : statusFilter === 'inactive' ? 'INACTIVE' : undefined) as 'ACTIVE' | 'INACTIVE' | undefined : undefined,
+        membershipLevel: membershipFilter !== 'all' ? (membershipFilter.toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM') : undefined,
+        page,
+        size: rowsPerPage,
+        sortBy: 'updatedAt',
+        sortDir: 'desc' as const,
+      };
+      fetchCustomers(params);
+      loadCustomerStats(); // 重新加载统计数据
+    } catch (err) {
+      const errorMessage = handleApiError(err);
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMembershipChip = (level?: string) => {
     const membershipConfig = {
-          regular: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: t('customers.membershipLevels.regular') },
-    silver: { color: '#9CA3AF', bg: alpha('#9CA3AF', 0.1), label: t('customers.membershipLevels.silver') },
-    gold: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('customers.membershipLevels.gold') },
-    platinum: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('customers.membershipLevels.platinum') },
+      REGULAR: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: t('customers.membershipLevels.regular') },
+      SILVER: { color: '#9CA3AF', bg: alpha('#9CA3AF', 0.1), label: t('customers.membershipLevels.silver') },
+      GOLD: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('customers.membershipLevels.gold') },
+      PLATINUM: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('customers.membershipLevels.platinum') },
     };
     
-    const config = membershipConfig[level as keyof typeof membershipConfig] || membershipConfig.regular;
+    const config = membershipConfig[level as keyof typeof membershipConfig] || membershipConfig.REGULAR;
     
     return (
       <Chip
@@ -175,10 +276,10 @@ const CustomerManagement: React.FC = () => {
     );
   };
 
-  const getStatusChip = (status: string) => {
-    const config = status === 'active' 
-          ? { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('customers.customerStatuses.active') }
-    : { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('customers.customerStatuses.inactive') };
+  const getStatusChip = (status?: string) => {
+    const config = status === 'ACTIVE' 
+      ? { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('customers.customerStatuses.active') }
+      : { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('customers.customerStatuses.inactive') };
     
     return (
       <Chip
@@ -256,7 +357,7 @@ const CustomerManagement: React.FC = () => {
                   <GroupsIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1' }}>
-                  {customers.length}
+                  {customerStats?.totalCustomers || 0}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -297,7 +398,7 @@ const CustomerManagement: React.FC = () => {
                   <TrendingUpIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  {customers.filter(c => c.status === 'active').length}
+                  {customerStats?.activeCustomers || 0}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -338,7 +439,7 @@ const CustomerManagement: React.FC = () => {
                   <StarIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  {customers.filter(c => c.membershipLevel === 'gold' || c.membershipLevel === 'platinum').length}
+                  {customerStats?.vipCustomers || 0}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -379,7 +480,7 @@ const CustomerManagement: React.FC = () => {
                   <WalletIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  ¥{Math.round(customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length) || 0}
+                  ¥{Math.round(customerStats?.averageSpending || 0)}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -405,7 +506,13 @@ const CustomerManagement: React.FC = () => {
                 fullWidth
                 placeholder={t('customers.searchPlaceholder')}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  const newSearchTerm = e.target.value;
+                  setSearchTerm(newSearchTerm);
+                  if (page !== 0) {
+                    setPage(0); // 只有当前不在第一页时才重置
+                  }
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -433,7 +540,12 @@ const CustomerManagement: React.FC = () => {
                 <Select
                   value={membershipFilter}
                   label={t('customers.membershipFilter')}
-                  onChange={(e) => setMembershipFilter(e.target.value)}
+                  onChange={(e) => {
+                    setMembershipFilter(e.target.value);
+                    if (page !== 0) {
+                      setPage(0); // 只有当前不在第一页时才重置
+                    }
+                  }}
                   sx={{
                     borderRadius: 2,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -459,7 +571,12 @@ const CustomerManagement: React.FC = () => {
                 <Select
                   value={statusFilter}
                   label={t('customers.statusFilter')}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    if (page !== 0) {
+                      setPage(0); // 只有当前不在第一页时才重置
+                    }
+                  }}
                   sx={{
                     borderRadius: 2,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -526,9 +643,22 @@ const CustomerManagement: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredCustomers
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((customer) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : customers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">
+                      {t('customers.noCustomers') || '暂无客户数据'}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                customers.map((customer) => (
                   <TableRow 
                     key={customer.id}
                     sx={{
@@ -541,7 +671,6 @@ const CustomerManagement: React.FC = () => {
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={2}>
                         <Avatar
-                          src={customer.avatar}
                           sx={{
                             width: 40,
                             height: 40,
@@ -550,11 +679,11 @@ const CustomerManagement: React.FC = () => {
                             fontWeight: 600,
                           }}
                         >
-                          {customer.firstName.charAt(0) + customer.lastName.charAt(0)}
+                          {customer.firstName?.charAt(0)}{customer.lastName?.charAt(0)}
                         </Avatar>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {customer.firstName}{customer.lastName}
+                            {customer.fullName || `${customer.firstName} ${customer.lastName}`}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             ID: {customer.id}
@@ -585,13 +714,13 @@ const CustomerManagement: React.FC = () => {
                       <Box display="flex" alignItems="center" gap={1}>
                         <StarIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
                         <Typography variant="body2" sx={{ fontWeight: 600, color: '#F59E0B' }}>
-                          {customer.points}
+                          {customer.points || 0}
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ¥{customer.totalSpent.toFixed(2)}
+                        ¥{(customer.totalSpent || 0).toFixed(2)}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -606,7 +735,7 @@ const CustomerManagement: React.FC = () => {
                         </Box>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          从未访问
+                          {t('customers.neverVisited') || '从未访问'}
                         </Typography>
                       )}
                     </TableCell>
@@ -630,14 +759,15 @@ const CustomerManagement: React.FC = () => {
                       </IconButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         
         <TablePagination
           component="div"
-          count={filteredCustomers.length}
+          count={totalItems}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
@@ -702,12 +832,12 @@ const CustomerManagement: React.FC = () => {
       {/* 对话框组件 */}
       <CustomerDialog 
         open={customerDialogOpen} 
-        onClose={() => setCustomerDialogOpen(false)}
-        customer={selectedCustomer}
-        onSave={(customer) => {
-          // 处理保存逻辑
+        onClose={() => {
           setCustomerDialogOpen(false);
+          setSelectedCustomer(null);
         }}
+        customer={selectedCustomer}
+        onSave={handleSaveCustomer}
       />
 
       <AppointmentHistory 
@@ -734,25 +864,29 @@ const CustomerManagement: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            确定要删除客户 {selectedCustomer?.firstName}{selectedCustomer?.lastName} 吗？此操作无法撤销。
+            {t('customers.deleteConfirmMessage', { 
+              name: selectedCustomer?.fullName || `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}` 
+            }) || `确定要删除客户 ${selectedCustomer?.firstName}${selectedCustomer?.lastName} 吗？此操作无法撤销。`}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button 
-            onClick={() => setDeleteDialogOpen(false)}
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              setSelectedCustomer(null);
+            }}
             sx={{ 
               borderRadius: 2,
               px: 3,
             }}
+            disabled={loading}
           >
-            取消
+            {t('common.cancel') || '取消'}
           </Button>
           <Button 
-            onClick={() => {
-              // 处理删除逻辑
-              setDeleteDialogOpen(false);
-            }}
+            onClick={handleDeleteCustomer}
             variant="contained"
+            disabled={loading}
             sx={{
               borderRadius: 2,
               px: 3,
@@ -762,10 +896,33 @@ const CustomerManagement: React.FC = () => {
               },
             }}
           >
-            删除
+            {loading ? <CircularProgress size={20} color="inherit" /> : (t('common.delete') || '删除')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 通知组件 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* 错误提示 */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
     </Box>
   );
 };

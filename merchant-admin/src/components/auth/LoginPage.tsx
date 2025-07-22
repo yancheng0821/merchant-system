@@ -88,17 +88,17 @@ const LoginPage: React.FC = () => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 清除之前的错误和成功信息
     clearError();
     setSuccess('');
-    
+
     // 表单验证
     if (!loginData.username.trim()) {
       setError(t('auth.usernameRequired') || '用户名不能为空');
       return;
     }
-    
+
     if (!loginData.password.trim()) {
       setError(t('auth.passwordRequired') || '密码不能为空');
       return;
@@ -112,42 +112,42 @@ const LoginPage: React.FC = () => {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 清除之前的错误和成功信息
     clearError();
     setSuccess('');
-    
+
     // 表单验证
     if (!registerData.username.trim()) {
       setError(t('auth.usernameRequired') || '用户名不能为空');
       return;
     }
-    
+
     if (!registerData.email.trim()) {
       setError(t('auth.emailRequired') || '邮箱不能为空');
       return;
     }
-    
+
     if (!validateEmail(registerData.email)) {
       setError(t('auth.emailInvalid') || '邮箱格式不正确');
       return;
     }
-    
+
     if (!registerData.realName.trim()) {
       setError(t('auth.realNameRequired') || '真实姓名不能为空');
       return;
     }
-    
+
     if (!registerData.password) {
       setError(t('auth.passwordRequired') || '密码不能为空');
       return;
     }
-    
+
     if (registerData.password.length < 6) {
       setError(t('auth.passwordTooShort') || '密码长度至少6位');
       return;
     }
-    
+
     if (registerData.password !== registerData.confirmPassword) {
       setError(t('auth.passwordMismatch') || '两次输入的密码不一致');
       return;
@@ -247,11 +247,17 @@ const LoginPage: React.FC = () => {
               </Box>
 
               {/* Google登录按钮 */}
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{
+                mb: 3,
+                minHeight: '48px', // 固定最小高度，防止布局变化
+                display: 'flex',
+                alignItems: 'center'
+              }}>
                 <GoogleLoginButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
                   disabled={loading}
+                  variant="themed" // 使用主题化样式
                 />
               </Box>
 
@@ -320,7 +326,7 @@ const LoginPage: React.FC = () => {
                       },
                     }}
                   />
-                  
+
                   {error && (
                     <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
                       {error}
@@ -504,7 +510,7 @@ const LoginPage: React.FC = () => {
                       },
                     }}
                   />
-                  
+
                   {error && (
                     <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
                       {error}

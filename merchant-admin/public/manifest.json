@@ -1,0 +1,17 @@
+{
+  "short_name": "Merchant System",
+  "name": "Merchant System - 商户管理平台",
+  "description": "专业的商户管理平台，提供客户管理、预约管理等功能",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary"
+}

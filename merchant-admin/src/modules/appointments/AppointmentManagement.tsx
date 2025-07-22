@@ -47,8 +47,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import AddAppointmentDialog from './components/AddAppointmentDialog';
-import { Customer } from '../customers/Customers';
-
+import { Customer } from '../../services/api';
 // 预约记录接口
 export interface Appointment {
   id: string;

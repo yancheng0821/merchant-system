@@ -41,8 +41,8 @@ import {
   EventNote as AppointmentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Customer } from '../../customers/Customers';
 import { Appointment } from '../AppointmentManagement';
+import { Customer } from '../../../services/api';
 
 interface AddAppointmentDialogProps {
   open: boolean;
@@ -110,7 +110,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   const filteredCustomers = customers.filter(customer =>
     `${customer.firstName} ${customer.lastName}`.toLowerCase().includes(customerSearch.toLowerCase()) ||
     customer.phone.includes(customerSearch) ||
-    customer.email.toLowerCase().includes(customerSearch.toLowerCase())
+    customer.email?.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
   const handleNext = () => {
