@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -91,6 +91,12 @@ const NotificationTemplateManagement: React.FC = () => {
   // 紫色主题色
   const themeColor = '#A855F7';
 
+  // 获取租户ID
+  const tenantId = useMemo(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return Number(user.tenantId || 1);
+  }, []);
+
   const [formData, setFormData] = useState({
     templateCode: '',
     templateName: '',
@@ -109,13 +115,11 @@ const NotificationTemplateManagement: React.FC = () => {
 
   useEffect(() => {
     fetchTemplates();
-  }, []);
+  }, [tenantId]);
 
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      // 使用租户4的测试数据
-      const tenantId = 4;
       const templates = await notificationApi.getTemplates(tenantId);
       setTemplates(templates);
       setError(null);
@@ -159,7 +163,6 @@ const NotificationTemplateManagement: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      const tenantId = 4; // 使用租户4的测试数据
       const templateData = { ...formData, tenantId };
       
       if (editingTemplate) {
@@ -201,7 +204,6 @@ const NotificationTemplateManagement: React.FC = () => {
 
   const handleConfirmInit = async () => {
     try {
-      const tenantId = 4; // 使用租户4的测试数据
       await notificationApi.initDefaultTemplates(tenantId);
       await fetchTemplates();
       setOpenInitDialog(false);

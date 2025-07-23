@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -76,6 +76,12 @@ const NotificationLogManagement: React.FC = () => {
   // 紫色主题色
   const themeColor = '#A855F7';
 
+  // 获取租户ID
+  const tenantId = useMemo(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return Number(user.tenantId || 1);
+  }, []);
+
   const templateCodes = [
     { value: 'APPOINTMENT_CONFIRMED', label: t('notifications.templateCodes.appointmentConfirmed') },
     { value: 'APPOINTMENT_CANCELLED', label: t('notifications.templateCodes.appointmentCancelled') },
@@ -85,12 +91,11 @@ const NotificationLogManagement: React.FC = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, filters]);
+  }, [page, filters, tenantId]);
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const tenantId = 4; // 使用租户4的测试数据
       const params = {
         tenantId,
         page: page - 1,
