@@ -12,7 +12,13 @@ public interface AppointmentMapper {
     /**
      * 根据ID查询预约
      */
-    Appointment selectById(Long id);
+    Appointment findById(Long id);
+    
+    /**
+     * 根据客户ID和租户ID查询预约
+     */
+    List<Appointment> findByCustomerIdAndTenantId(@Param("customerId") Long customerId, 
+                                                  @Param("tenantId") Long tenantId);
     
     /**
      * 根据客户ID查询预约

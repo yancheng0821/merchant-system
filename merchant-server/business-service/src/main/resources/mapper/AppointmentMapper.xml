@@ -27,10 +27,18 @@
     </sql>
 
     <!-- 根据ID查询预约 -->
-    <select id="selectById" resultMap="AppointmentResultMap">
+    <select id="findById" resultMap="AppointmentResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM appointments
         WHERE id = #{id}
+    </select>
+
+    <!-- 根据客户ID和租户ID查询预约 -->
+    <select id="findByCustomerIdAndTenantId" resultMap="AppointmentResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointments
+        WHERE customer_id = #{customerId} AND tenant_id = #{tenantId}
+        ORDER BY appointment_date DESC, appointment_time DESC
     </select>
 
     <!-- 根据客户ID查询预约 -->

@@ -146,6 +146,18 @@
     "noCustomers": "No customer data available",
     "neverVisited": "Never visited",
     "viewAppointments": "View Appointments",
+    "appointmentStatus": {
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No Show"
+    },
+    "appointmentService": "Appointment Service",
+    "noServiceDetails": "No service details",
+    "minutesUnit": "minutes",
+    "unassigned": "Unassigned",
+    "noAppointmentRecords": "No appointment records",
+    "customerHasNoAppointments": "This customer has no appointment records yet",
     "deleteSuccess": "Customer deleted successfully",
     "updateSuccess": "Customer information updated successfully",
     "createSuccess": "Customer created successfully",

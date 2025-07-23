@@ -430,6 +430,87 @@ export const serviceApi = {
   },
 };
 
+// 预约相关接口定义
+export interface Appointment {
+  id: number;
+  tenantId: number;
+  customerId: number;
+  staffId?: number;
+  appointmentDate: string;
+  appointmentTime: string;
+  duration: number;
+  totalAmount: number;
+  status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  notes?: string;
+  rating?: number;
+  review?: string;
+  createdAt: string;
+  updatedAt: string;
+  // 关联对象
+  customer?: Customer;
+  staff?: {
+    id: number;
+    name: string;
+  };
+  appointmentServices?: {
+    id: number;
+    serviceName: string;
+    price: number;
+    duration: number;
+  }[];
+}
+
+export interface AppointmentStats {
+  totalAppointments: number;
+  completedAppointments: number;
+  totalSpent: number;
+  avgRating: number;
+}
+
+// 预约管理API
+export const appointmentApi = {
+  // 根据客户ID获取预约记录
+  getAppointmentsByCustomerId: async (customerId: number, tenantId: number): Promise<Appointment[]> => {
+    const response = await createRequest(`/api/appointments/customer/${customerId}?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取预约统计信息
+  getAppointmentStats: async (customerId: number, tenantId: number): Promise<AppointmentStats> => {
+    const response = await createRequest(`/api/appointments/customer/${customerId}/stats?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 创建预约
+  createAppointment: async (appointment: Partial<Appointment>): Promise<Appointment> => {
+    const response = await createRequest('/api/appointments', {
+      method: 'POST',
+      body: JSON.stringify(appointment),
+    });
+    return response;
+  },
+
+  // 更新预约
+  updateAppointment: async (id: number, appointment: Partial<Appointment>): Promise<Appointment> => {
+    const response = await createRequest(`/api/appointments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(appointment),
+    });
+    return response;
+  },
+
+  // 删除预约
+  deleteAppointment: async (id: number): Promise<void> => {
+    await createRequest(`/api/appointments/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // 令牌管理工具
 export const tokenManager = {
   setToken: (token: string) => {

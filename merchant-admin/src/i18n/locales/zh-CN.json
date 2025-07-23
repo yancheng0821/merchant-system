@@ -146,6 +146,18 @@
     "noCustomers": "暂无客户数据",
     "neverVisited": "从未访问",
     "viewAppointments": "查看预约",
+    "appointmentStatus": {
+      "confirmed": "已确认",
+      "completed": "已完成",
+      "cancelled": "已取消",
+      "no_show": "未到场"
+    },
+    "appointmentService": "预约服务",
+    "noServiceDetails": "暂无服务详情",
+    "minutesUnit": "分钟",
+    "unassigned": "未分配",
+    "noAppointmentRecords": "暂无预约记录",
+    "customerHasNoAppointments": "该客户还没有任何预约记录",
     "deleteSuccess": "客户删除成功",
     "updateSuccess": "客户信息更新成功",
     "createSuccess": "客户创建成功",
