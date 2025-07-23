@@ -28,6 +28,7 @@ import {
   CalendarToday as AppointmentsIcon,
   BarChart as AnalyticsIcon,
   Settings as SettingsIcon,
+  Notifications as NotificationsIcon,
   Menu as MenuIcon,
   Language as LanguageIcon,
   Person as PersonIcon,
@@ -48,6 +49,7 @@ import {
   Analytics, 
   Settings 
 } from './modules';
+import NotificationManagement from './modules/notifications/NotificationManagement';
 
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
@@ -64,11 +66,12 @@ interface MenuItemType {
 
 const menuItems: MenuItemType[] = [
   { textKey: 'nav.dashboard', icon: <DashboardIcon />, id: 'dashboard', color: '#6366F1' },
-  { textKey: 'nav.products', icon: <StoreIcon />, id: 'products', color: '#EC4899' },
+  { textKey: 'nav.products', icon: <StoreIcon />, id: 'products', color: '#06B6D4' },
   { textKey: 'nav.orders', icon: <OrdersIcon />, id: 'orders', color: '#10B981' },
   { textKey: 'nav.customers', icon: <CustomersIcon />, id: 'customers', color: '#F59E0B' },
   { textKey: 'nav.appointments', icon: <AppointmentsIcon />, id: 'appointments', color: '#8B5CF6' },
-  { textKey: 'nav.analytics', icon: <AnalyticsIcon />, id: 'analytics', color: '#EF4444' },
+  { textKey: 'nav.notifications', icon: <NotificationsIcon />, id: 'notifications', color: '#A855F7' },
+  { textKey: 'nav.analytics', icon: <AnalyticsIcon />, id: 'analytics', color: '#F97316' },
   { textKey: 'nav.settings', icon: <SettingsIcon />, id: 'settings', color: '#6366F1' },
 ];
 
@@ -503,6 +506,7 @@ const MainApp: React.FC = () => {
               {selectedItem === 'orders' && <OrderManagement />}
               {selectedItem === 'customers' && <CustomerManagement />}
               {selectedItem === 'appointments' && <AppointmentManagement />}
+              {selectedItem === 'notifications' && <NotificationManagement />}
               {selectedItem === 'analytics' && <Analytics />}
               {selectedItem === 'settings' && <Settings />}
               {selectedItem === 'profile' && <UserProfile />}

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.notificationservice.mapper.NotificationLogMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="NotificationLogResultMap" type="com.merchant.server.notificationservice.entity.NotificationLog">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="templateCode" column="template_code"/>
+        <result property="type" column="type"/>
+        <result property="recipient" column="recipient"/>
+        <result property="subject" column="subject"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="retryCount" column="retry_count"/>
+        <result property="businessId" column="business_id"/>
+        <result property="businessType" column="business_type"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="sentAt" column="sent_at"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, template_code, type, recipient, subject, content, status, 
+        error_message, retry_count, business_id, business_type, created_at, sent_at
+    </sql>
+
+    <!-- 根据租户ID查询通知日志 -->
+    <select id="findByTenantId" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据业务ID查询通知日志 -->
+    <select id="findByBusinessId" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE business_id = #{businessId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据租户ID查询通知日志（带分页） -->
+    <select id="findByTenantIdWithPaging" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 查询待发送的通知 -->
+    <select id="findPendingNotifications" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE status = 'PENDING'
+          AND retry_count &lt; 3
+        ORDER BY created_at ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询失败的通知 -->
+    <select id="findFailedNotifications" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE status = 'FAILED'
+          AND retry_count &lt; 3
+        ORDER BY created_at ASC
+    </select>
+
+    <!-- 插入通知日志 -->
+    <insert id="insert" parameterType="com.merchant.server.notificationservice.entity.NotificationLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification_logs (
+            tenant_id, template_code, type, recipient, subject, content, status, 
+            error_message, retry_count, business_id, business_type, created_at, sent_at
+        ) VALUES (
+            #{tenantId}, #{templateCode}, #{type}, #{recipient}, #{subject}, #{content}, #{status},
+            #{errorMessage}, #{retryCount}, #{businessId}, #{businessType}, #{createdAt}, #{sentAt}
+        )
+    </insert>
+
+    <!-- 更新通知日志 -->
+    <update id="update" parameterType="com.merchant.server.notificationservice.entity.NotificationLog">
+        UPDATE notification_logs SET
+            status = #{status},
+            error_message = #{errorMessage},
+            retry_count = #{retryCount},
+            sent_at = #{sentAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 统计通知数量 -->
+    <select id="countByTenantId" resultType="long">
+        SELECT COUNT(*)
+        FROM notification_logs
+        WHERE tenant_id = #{tenantId}
+    </select>
+
+    <!-- 根据租户ID和筛选条件查询通知日志 -->
+    <select id="findByTenantIdWithFilters" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE tenant_id = #{tenantId}
+        <if test="templateCode != null and templateCode != ''">
+            AND template_code = #{templateCode}
+        </if>
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="recipient != null and recipient != ''">
+            AND recipient LIKE CONCAT('%', #{recipient}, '%')
+        </if>
+        <if test="businessId != null and businessId != ''">
+            AND business_id = #{businessId}
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+</mapper>

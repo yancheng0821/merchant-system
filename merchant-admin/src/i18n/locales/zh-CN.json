@@ -7,7 +7,8 @@
     "create": "创建",
     "update": "更新",
     "delete": "删除",
-    "confirm": "确定"
+    "confirm": "确定",
+    "loading": "加载中..."
   },
   "nav": {
     "title": "商户后台",
@@ -18,6 +19,7 @@
     "customers": "客户管理",
     "appointments": "预约管理",
     "appointmentRecords": "预约记录",
+    "notifications": "通知管理",
     "analytics": "数据统计",
     "settings": "系统设置",
     "userProfile": "用户资料",
@@ -47,14 +49,81 @@
     "male": "男性",
     "female": "女性",
     "other": "其他",
+    "preferNotToSay": "不愿透露"
+  },
+  "notifications": {
+    "title": "通知管理",
+    "templateManagement": "模板管理",
+    "notificationLogs": "通知日志",
+    "addTemplate": "新增模板",
+    "editTemplate": "编辑模板",
+    "deleteTemplate": "删除模板",
+    "initDefaultTemplates": "初始化默认模板",
+    "templateCode": "模板代码",
+    "templateName": "模板名称",
+    "type": "类型",
+    "subject": "邮件主题",
+    "content": "模板内容",
+    "status": "状态",
+    "actions": "操作",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "smsTemplate": "短信模板",
+    "emailTemplate": "邮件模板",
+    "active": "启用",
+    "inactive": "禁用",
+    "sms": "短信",
+    "email": "邮件",
+    "save": "保存",
+    "cancel": "取消",
+    "close": "关闭",
+    "confirm": "确定",
+    "loading": "加载中...",
+    "refresh": "刷新",
+    "search": "搜索",
+    "retryFailedNotifications": "重试失败通知",
+    "filterConditions": "筛选条件",
+    "templateType": "模板类型",
+    "notificationType": "通知类型",
+    "recipient": "接收者",
+    "businessId": "业务ID",
+    "all": "全部",
+    "sent": "已发送",
+    "failed": "发送失败",
+    "pending": "待发送",
+    "retryCount": "重试次数",
+    "sentAt": "发送时间",
+    "viewDetails": "查看详情",
+    "notificationDetails": "通知详情",
+    "errorMessage": "错误信息",
+    "notSent": "未发送",
+    "templateCodes": {
+      "appointmentConfirmed": "预约确认",
+      "appointmentCancelled": "预约取消",
+      "appointmentCompleted": "预约完成",
+      "appointmentReminder": "预约提醒"
+    },
+    "placeholders": {
+      "templateContent": "支持变量：${customerName}, ${appointmentDate}, ${appointmentTime}, ${serviceName}, ${staffName}, ${businessName}, ${businessPhone} 等",
+      "emailSubject": "支持变量：${customerName}, ${businessName} 等"
+    },
+    "confirmDelete": "确认删除",
+    "deleteConfirmMessage": "确定要删除这个模板吗？此操作无法撤销。",
+    "confirmInit": "确认初始化",
+    "initConfirmMessage": "确定要初始化默认模板吗？这将创建系统预设的通知模板。",
+    "initDefaultTemplatesDescription": "初始化默认模板功能会为您创建系统预设的通知模板，包括预约确认、取消、完成和提醒等常用模板，方便您快速开始使用通知功能。",
+    "fetchTemplatesFailed": "获取模板列表失败",
+    "saveTemplateFailed": "保存模板失败",
+    "deleteTemplateFailed": "删除模板失败",
+    "initDefaultTemplatesFailed": "初始化默认模板失败",
+    "noTemplates": "暂无模板数据",
+    "noLogs": "暂无通知日志",
     "preferNotToSay": "不愿透露",
     "membershipLevel": "会员等级",
     "regular": "普通会员",
-    "silver": "银牌会员", 
+    "silver": "银牌会员",
     "gold": "金牌会员",
     "platinum": "白金会员",
-    "active": "活跃",
-    "inactive": "不活跃",
     "allMemberships": "全部会员",
     "basicInfo": "基本信息",
     "membershipInfo": "会员信息",
@@ -63,18 +132,14 @@
     "selectServices": "选择服务项目",
     "allergies": "过敏信息",
     "communicationPreference": "联系偏好",
-    "sms": "短信",
     "notes": "备注",
     "notesPlaceholder": "添加客户备注信息...",
     "optional": "可选",
     "editCustomerInfo": "编辑客户信息",
     "createNewCustomerProfile": "创建新的客户档案",
     "allergiesPlaceholder": "请描述任何已知的过敏或健康注意事项...",
-    "cancel": "取消",
     "createCustomer": "创建客户",
     "updateCustomer": "更新客户",
-    "confirmDelete": "确认删除",
-    "deleteConfirmMessage": "确定要删除客户 {{name}} 吗？此操作无法撤销。",
     "delete": "删除",
     "appointmentHistory": "预约历史",
     "totalAppointments": "总预约数",
@@ -93,7 +158,6 @@
     "rating": "评分",
     "minutes": "分钟",
     "noAppointments": "暂无预约记录",
-    "close": "关闭",
     "validation": {
       "firstNameRequired": "名字是必填项",
       "lastNameRequired": "姓氏是必填项",
@@ -269,8 +333,7 @@
     "markNoShow": "标记为未到",
     "markNoShowSuccess": "预约已标记为未到",
     "markCompletedFromNoShow": "标记为完成（从未到）",
-    "cancelFromNoShow": "取消（从未到）",
-    "addAppointment": "新建预约"
+    "cancelFromNoShow": "取消（从未到）"
   },
   "orders": {
     "title": "订单管理",
@@ -304,7 +367,7 @@
     "failed": "支付失败",
     "cash": "现金",
     "credit_card": "信用卡",
-    "debit_card": "借记卡", 
+    "debit_card": "借记卡",
     "mobile_pay": "移动支付",
     "gift_card": "礼品卡",
     "paymentMethods": {
@@ -475,7 +538,6 @@
     "selectCategoryToEdit": "选择一个分类进行编辑，或添加新分类",
     "saveChanges": "保存更改"
   },
-
   "settings": {
     "title": "系统设置",
     "subtitle": "配置系统参数和业务设置",
@@ -536,7 +598,7 @@
     "settingsSaved": "设置已保存",
     "tabs": {
       "basic": "基础设置",
-      "staff": "员工管理", 
+      "staff": "员工管理",
       "tax": "税务设置",
       "notifications": "通知设置",
       "system": "系统设置"
@@ -582,7 +644,6 @@
     "debugMode": "启用调试模式",
     "usageStatistics": "发送使用统计"
   },
-
   "products": {
     "title": "服务管理",
     "subtitle": "管理服务项目和分类",
@@ -791,7 +852,7 @@
   },
   "status": {
     "pending": "待处理",
-    "paid": "已支付", 
+    "paid": "已支付",
     "refunded": "已退款",
     "failed": "失败",
     "draft": "草稿",
@@ -913,13 +974,13 @@
     "dateLabel": "日期",
     "serviceCategories": {
       "hairCare": "美发护理",
-      "spaTreatments": "SPA护理", 
+      "spaTreatments": "SPA护理",
       "facialCare": "面部护理",
       "nailCare": "美甲护理"
     },
     "timePeriods": {
       "7days": "近7天",
-      "30days": "近30天", 
+      "30days": "近30天",
       "6months": "近6个月",
       "1year": "近1年"
     },
@@ -982,4 +1043,4 @@
     "additionalServices": " +{{count}}项",
     "neverVisited": "从未访问"
   }
-} 
+}

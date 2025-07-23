@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.notificationservice.mapper.NotificationTemplateMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="NotificationTemplateResultMap" type="com.merchant.server.notificationservice.entity.NotificationTemplate">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="templateCode" column="template_code"/>
+        <result property="templateName" column="template_name"/>
+        <result property="type" column="type"/>
+        <result property="subject" column="subject"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, template_code, template_name, type, subject, content, status, created_at, updated_at
+    </sql>
+
+    <!-- 根据租户ID查询所有模板 -->
+    <select id="findByTenantId" resultMap="NotificationTemplateResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_templates
+        WHERE tenant_id = #{tenantId}
+        ORDER BY template_code, type
+    </select>
+
+    <!-- 根据租户ID和模板代码查询模板 -->
+    <select id="findByTenantIdAndCode" resultMap="NotificationTemplateResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_templates
+        WHERE tenant_id = #{tenantId} 
+          AND template_code = #{templateCode}
+          AND type = #{type}
+          AND status = 'ACTIVE'
+    </select>
+
+    <!-- 根据模板代码和租户ID查询所有类型的模板 -->
+    <select id="findByCodeAndTenantId" resultMap="NotificationTemplateResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_templates
+        WHERE template_code = #{templateCode}
+          AND tenant_id = #{tenantId}
+          AND status = 'ACTIVE'
+        ORDER BY type
+    </select>
+
+    <!-- 根据ID查询模板 -->
+    <select id="findById" resultMap="NotificationTemplateResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_templates
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入模板 -->
+    <insert id="insert" parameterType="com.merchant.server.notificationservice.entity.NotificationTemplate" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification_templates (
+            tenant_id, template_code, template_name, type, subject, content, status, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{templateCode}, #{templateName}, #{type}, #{subject}, #{content}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新模板 -->
+    <update id="update" parameterType="com.merchant.server.notificationservice.entity.NotificationTemplate">
+        UPDATE notification_templates SET
+            tenant_id = #{tenantId},
+            template_code = #{templateCode},
+            template_name = #{templateName},
+            type = #{type},
+            subject = #{subject},
+            content = #{content},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除模板 -->
+    <delete id="deleteById">
+        DELETE FROM notification_templates WHERE id = #{id}
+    </delete>
+
+</mapper>

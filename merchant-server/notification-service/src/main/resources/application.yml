@@ -1,44 +1,69 @@
 server:
-  port: 8086
+  port: 8084
 
 spring:
   application:
     name: notification-service
   datasource:
-    url: jdbc:mysql://localhost:3306/merchant_notification?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/merchant_notification?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: password
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-  redis:
-    host: localhost
-    port: 6379
   rabbitmq:
     host: localhost
     port: 5672
     username: guest
     password: guest
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: your-email@gmail.com
-    password: your-app-password
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.notificationservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true 
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+# 通知服务配置
+notification:
+  sms:
+    provider: aws # aws, mock
+    enabled: true
+  email:
+    provider: aws # aws, smtp, mock
+    from: noreply@yourcompany.com
+    fromName: 美容院预约系统
+    enabled: true
+    # SMTP配置（备用）
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-app-password
+    starttlsEnable: true
+    auth: true
+  aws:
+    region: us-east-1
+    useLocalCredentials: true # 本地测试时使用AWS CLI配置的凭证
+    # 如果不使用本地凭证，请配置以下内容：
+    # accessKeyId: your-access-key-id
+    # secretAccessKey: your-secret-access-key
+    ses:
+      fromEmail: noreply@yourcompany.com
+      fromName: 美容院预约系统
+      # configurationSetName: your-configuration-set # 可选
+    sns:
+      defaultSenderId: YourApp # 可选，短信发送者ID
+      defaultMessageType: Transactional # Promotional 或 Transactional
+
+# 日志配置
+logging:
+  level:
+    com.merchant.server.notificationservice: DEBUG
+    software.amazon.awssdk: INFO 

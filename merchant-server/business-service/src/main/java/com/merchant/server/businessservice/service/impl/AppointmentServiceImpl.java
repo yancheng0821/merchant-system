@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.service.impl;
 import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
+import com.merchant.server.businessservice.service.AppointmentNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentMapper appointmentMapper;
+    private final AppointmentNotificationService notificationService;
 
     @Override
     public List<Appointment> getAllAppointmentsByTenantId(Long tenantId) {
@@ -94,6 +96,14 @@ public class AppointmentServiceImpl implements AppointmentService {
         try {
             appointmentMapper.insert(appointment);
             log.info("Appointment created successfully with ID: {}", appointment.getId());
+            
+            // 发送预约确认通知
+            try {
+                notificationService.sendConfirmationNotification(appointment);
+            } catch (Exception e) {
+                log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
+            }
+            
             return appointment;
         } catch (Exception e) {
             log.error("Error creating appointment: ", e);
@@ -106,9 +116,22 @@ public class AppointmentServiceImpl implements AppointmentService {
         log.info("Updating appointment status: {} to {}", id, status);
         Appointment appointment = appointmentMapper.findById(id);
         if (appointment != null) {
+            Appointment.AppointmentStatus oldStatus = appointment.getStatus();
             appointment.setStatus(Appointment.AppointmentStatus.valueOf(status));
             appointment.setUpdatedAt(LocalDateTime.now());
             appointmentMapper.update(appointment);
+            
+            // 根据状态变化发送通知
+            try {
+                Appointment.AppointmentStatus newStatus = Appointment.AppointmentStatus.valueOf(status);
+                if (newStatus == Appointment.AppointmentStatus.CANCELLED && oldStatus != Appointment.AppointmentStatus.CANCELLED) {
+                    notificationService.sendCancellationNotification(appointment);
+                } else if (newStatus == Appointment.AppointmentStatus.COMPLETED && oldStatus != Appointment.AppointmentStatus.COMPLETED) {
+                    notificationService.sendCompletionNotification(appointment);
+                }
+            } catch (Exception e) {
+                log.error("Failed to send status change notification for appointment: {}", id, e);
+            }
         }
         return appointment;
     }

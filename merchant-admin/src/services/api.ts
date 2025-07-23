@@ -626,4 +626,114 @@ export const tokenManager = {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   },
+};
+
+// 通知模板相关接口定义
+export interface NotificationTemplate {
+  id: number;
+  tenantId: number;
+  templateCode: string;
+  templateName: string;
+  type: 'SMS' | 'EMAIL';
+  subject?: string;
+  content: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationLog {
+  id: number;
+  tenantId: number;
+  templateCode: string;
+  type: 'SMS' | 'EMAIL';
+  recipient: string;
+  subject?: string;
+  content: string;
+  status: 'SENT' | 'FAILED' | 'PENDING';
+  businessId: string;
+  businessType: string;
+  errorMessage?: string;
+  retryCount: number;
+  createdAt: string;
+  sentAt?: string;
+}
+
+// 通知模板管理API
+export const notificationApi = {
+  // 获取通知模板列表
+  getTemplates: async (tenantId?: number): Promise<NotificationTemplate[]> => {
+    const queryParams = new URLSearchParams();
+    if (tenantId) {
+      queryParams.append('tenantId', tenantId.toString());
+    }
+    const response = await createRequest(`/api/notification/templates?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据ID获取通知模板
+  getTemplateById: async (id: number): Promise<NotificationTemplate> => {
+    const response = await createRequest(`/api/notification/templates/${id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 创建通知模板
+  createTemplate: async (template: Partial<NotificationTemplate>): Promise<NotificationTemplate> => {
+    const response = await createRequest('/api/notification/templates', {
+      method: 'POST',
+      body: JSON.stringify(template),
+    });
+    return response;
+  },
+
+  // 更新通知模板
+  updateTemplate: async (id: number, template: Partial<NotificationTemplate>): Promise<NotificationTemplate> => {
+    const response = await createRequest(`/api/notification/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(template),
+    });
+    return response;
+  },
+
+  // 删除通知模板
+  deleteTemplate: async (id: number): Promise<void> => {
+    await createRequest(`/api/notification/templates/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 获取通知日志列表
+  getLogs: async (params?: any): Promise<NotificationLog[]> => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const response = await createRequest(`/api/notification/logs?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 重试失败的通知
+  retryFailedNotifications: async (): Promise<void> => {
+    await createRequest('/api/notification/retry', {
+      method: 'POST',
+    });
+  },
+
+  // 初始化默认模板
+  initDefaultTemplates: async (tenantId: number): Promise<void> => {
+    await createRequest(`/api/notification/templates/init-default?tenantId=${tenantId}`, {
+      method: 'POST',
+    });
+  },
 }; 
