@@ -38,7 +38,7 @@ spring:
         - id: business-service
           uri: lb://business-service
           predicates:
-            - Path=/api/business/**, /api/customers/**, /api/services/**, /api/appointments/**
+            - Path=/api/business/**, /api/customers/**, /api/services/**, /api/appointments/**, /api/staff/**
         - id: ai-service
           uri: lb://ai-service
           predicates:

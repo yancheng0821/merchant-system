@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.StaffMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="StaffResultMap" type="com.merchant.server.businessservice.entity.Staff">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="name" column="name"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="position" column="position"/>
+        <result property="skills" column="skills"/>
+        <result property="status" column="status"/>
+        <result property="startDate" column="start_date"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, name, phone, email, position, skills, status, start_date, created_at, updated_at
+    </sql>
+
+    <!-- 根据租户ID查询所有员工 -->
+    <select id="findByTenantId" resultMap="StaffResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM staff
+        WHERE tenant_id = #{tenantId}
+        ORDER BY name
+    </select>
+
+    <!-- 根据租户ID查询活跃员工 -->
+    <select id="findActiveByTenantId" resultMap="StaffResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM staff
+        WHERE tenant_id = #{tenantId} AND status = 'ACTIVE'
+        ORDER BY name
+    </select>
+
+    <!-- 根据ID查询员工 -->
+    <select id="findById" resultMap="StaffResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM staff
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入员工 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Staff" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO staff (
+            tenant_id, name, phone, email, position, skills, status, start_date, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{name}, #{phone}, #{email}, #{position}, #{skills}, #{status}, #{startDate}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新员工 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.Staff">
+        UPDATE staff SET
+            tenant_id = #{tenantId},
+            name = #{name},
+            phone = #{phone},
+            email = #{email},
+            position = #{position},
+            skills = #{skills},
+            status = #{status},
+            start_date = #{startDate},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除员工 -->
+    <delete id="deleteById">
+        DELETE FROM staff WHERE id = #{id}
+    </delete>
+
+</mapper>

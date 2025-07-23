@@ -164,7 +164,9 @@
     "activateCustomer": "Activate Customer",
     "deactivateCustomer": "Deactivate Customer",
     "activateSuccess": "Customer activated successfully",
-    "deactivateSuccess": "Customer deactivated successfully"
+    "deactivateSuccess": "Customer deactivated successfully",
+    "phoneAlreadyExists": "A customer with this phone number already exists",
+    "emailAlreadyExists": "A customer with this email address already exists"
   },
   "appointments": {
     "title": "Appointment Management",
@@ -209,6 +211,8 @@
     "back": "Back",
     "next": "Next",
     "confirmAndBook": "Confirm & Book",
+    "creating": "Creating...",
+    "createError": "Failed to create appointment",
     "notificationsSent": "SMS and email notifications sent",
     "cancelAppointment": "Cancel Appointment",
     "confirmCancel": "Confirm Cancel",
@@ -248,39 +252,30 @@
       "amount": "Amount",
       "status": "Status",
       "rating": "Rating",
-      "actions": "Actions",
-      "revenue": "Revenue",
-      "orders": "Orders",
-      "efficiency": "Efficiency",
-      "mainServices": "Main Services"
+      "actions": "Actions"
     },
-    "activeStaff": "Active Staff",
-    "avgRating": "Average Rating",
-    "tabs": {
-      "revenueTrend": "Revenue Trend",
-      "serviceAnalysis": "Service Analysis",
-      "staffPerformance": "Staff Performance",
-      "businessInsights": "Business Insights"
-    },
-    "charts": {
-      "revenueOrderTrend": "Revenue & Order Trend",
-      "serviceRevenueDistribution": "Service Revenue Distribution",
-      "serviceRevenueRanking": "Service Revenue Ranking",
-      "staffPerformanceRanking": "Staff Performance Ranking",
-      "keyBusinessMetrics": "Key Business Metrics"
-    },
-    "metrics": {
-      "customerSatisfaction": "Customer Satisfaction",
-      "serviceCompletionRate": "Service Completion Rate",
-      "appointmentCancellationRate": "Appointment Cancellation Rate",
-      "repeatCustomerRate": "Repeat Customer Rate",
-      "vsLastMonth": "vs Last Month"
-    },
-    "chartLabels": {
-      "revenue": "Revenue",
-      "orders": "Orders",
-      "income": "Income"
-    }
+    "noAppointments": "No appointments found",
+    "unknownCustomer": "Unknown Customer",
+    "appointmentService": "Appointment Service",
+    "noServiceDetails": "No service details",
+    "minutesUnit": "minutes",
+    "unassigned": "Unassigned",
+    "noRating": "No rating",
+    "markCompleted": "Mark Completed",
+    "confirmCancelTitle": "Confirm Cancellation",
+    "confirmCancelMessage": "Are you sure you want to cancel {{customerName}}'s appointment? This action cannot be undone.",
+    "createSuccess": "Appointment created successfully",
+    "markCompletedSuccess": "Appointment marked as completed successfully",
+    "markNoShow": "Mark as No Show",
+    "markNoShowSuccess": "Appointment marked as no show successfully",
+    "markCompletedFromNoShow": "Mark as Completed (from No Show)",
+    "cancelFromNoShow": "Cancel (from No Show)",
+    "cancelSuccess": "Appointment cancelled successfully",
+    "addAppointment": "New Appointment",
+    "appointmentDetails": "Appointment Details",
+    "customerInfo": "Customer Information",
+    "appointmentInfo": "Appointment Information",
+    "total": "Total"
   },
   "orders": {
     "title": "Order Management",
@@ -774,6 +769,10 @@
     "selectServiceStep": "Select Service",
     "scheduleTimeStep": "Schedule Time",
     "confirmAppointmentStep": "Confirm Appointment",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
     "customerName": "Customer Name",
     "phoneNumber": "Phone Number",
     "phoneRequired": "Phone number is required",
@@ -930,6 +929,7 @@
     "completionRate": "Completion Rate",
     "avgResponseTime": "Avg Response Time",
     "dateLabel": "Date",
+    "mainServices": "Main Services",
     "serviceCategories": {
       "hairCare": "Hair Care",
       "spaTreatments": "Spa Treatments",

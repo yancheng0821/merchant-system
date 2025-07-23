@@ -21,6 +21,20 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentMapper appointmentMapper;
 
     @Override
+    public List<Appointment> getAllAppointmentsByTenantId(Long tenantId) {
+        log.info("Getting all appointments for tenant: {}", tenantId);
+        List<Appointment> appointments = appointmentMapper.findByTenantId(tenantId);
+        
+        // 为每个预约获取服务详情
+        for (Appointment appointment : appointments) {
+            List<com.merchant.server.businessservice.entity.AppointmentService> services = appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
+            appointment.setAppointmentServices(services);
+        }
+        
+        return appointments;
+    }
+
+    @Override
     public List<Appointment> getAppointmentsByCustomerId(Long customerId, Long tenantId) {
         log.info("Getting appointments for customer: {} in tenant: {}", customerId, tenantId);
         return appointmentMapper.findByCustomerIdAndTenantId(customerId, tenantId);
@@ -64,9 +78,38 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public Appointment createAppointment(Appointment appointment) {
         log.info("Creating appointment for customer: {}", appointment.getCustomerId());
-        appointment.setCreatedAt(LocalDateTime.now());
-        appointment.setUpdatedAt(LocalDateTime.now());
-        appointmentMapper.insert(appointment);
+        log.info("Appointment details: {}", appointment);
+        
+        // 设置默认值
+        if (appointment.getCreatedAt() == null) {
+            appointment.setCreatedAt(LocalDateTime.now());
+        }
+        if (appointment.getUpdatedAt() == null) {
+            appointment.setUpdatedAt(LocalDateTime.now());
+        }
+        if (appointment.getTotalAmount() == null) {
+            appointment.setTotalAmount(BigDecimal.ZERO);
+        }
+        
+        try {
+            appointmentMapper.insert(appointment);
+            log.info("Appointment created successfully with ID: {}", appointment.getId());
+            return appointment;
+        } catch (Exception e) {
+            log.error("Error creating appointment: ", e);
+            throw e;
+        }
+    }
+
+    @Override
+    public Appointment updateAppointmentStatus(Long id, String status) {
+        log.info("Updating appointment status: {} to {}", id, status);
+        Appointment appointment = appointmentMapper.findById(id);
+        if (appointment != null) {
+            appointment.setStatus(Appointment.AppointmentStatus.valueOf(status));
+            appointment.setUpdatedAt(LocalDateTime.now());
+            appointmentMapper.update(appointment);
+        }
         return appointment;
     }
 

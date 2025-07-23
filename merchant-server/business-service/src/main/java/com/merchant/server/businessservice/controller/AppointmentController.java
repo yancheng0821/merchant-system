@@ -17,6 +17,15 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
 
     /**
+     * 获取租户的所有预约记录
+     */
+    @GetMapping
+    public ResponseEntity<List<Appointment>> getAllAppointments(@RequestParam Long tenantId) {
+        List<Appointment> appointments = appointmentService.getAllAppointmentsByTenantId(tenantId);
+        return ResponseEntity.ok(appointments);
+    }
+
+    /**
      * 根据客户ID获取预约记录
      */
     @GetMapping("/customer/{customerId}")
@@ -45,6 +54,18 @@ public class AppointmentController {
     public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
         Appointment created = appointmentService.createAppointment(appointment);
         return ResponseEntity.ok(created);
+    }
+
+    /**
+     * 更新预约状态
+     */
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Appointment> updateAppointmentStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> statusUpdate) {
+        String status = statusUpdate.get("status");
+        Appointment updated = appointmentService.updateAppointmentStatus(id, status);
+        return ResponseEntity.ok(updated);
     }
 
     /**

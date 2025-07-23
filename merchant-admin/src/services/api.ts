@@ -469,6 +469,14 @@ export interface AppointmentStats {
 
 // 预约管理API
 export const appointmentApi = {
+  // 获取所有预约记录
+  getAllAppointments: async (tenantId: number): Promise<Appointment[]> => {
+    const response = await createRequest(`/api/appointments?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
   // 根据客户ID获取预约记录
   getAppointmentsByCustomerId: async (customerId: number, tenantId: number): Promise<Appointment[]> => {
     const response = await createRequest(`/api/appointments/customer/${customerId}?tenantId=${tenantId}`, {
@@ -494,6 +502,15 @@ export const appointmentApi = {
     return response;
   },
 
+  // 更新预约状态
+  updateAppointmentStatus: async (id: number, status: string): Promise<Appointment> => {
+    const response = await createRequest(`/api/appointments/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+    return response;
+  },
+
   // 更新预约
   updateAppointment: async (id: number, appointment: Partial<Appointment>): Promise<Appointment> => {
     const response = await createRequest(`/api/appointments/${id}`, {
@@ -506,6 +523,73 @@ export const appointmentApi = {
   // 删除预约
   deleteAppointment: async (id: number): Promise<void> => {
     await createRequest(`/api/appointments/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// 员工相关接口定义
+export interface Staff {
+  id: number;
+  tenantId: number;
+  name: string;
+  phone?: string;
+  email?: string;
+  position?: string;
+  skills?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'VACATION';
+  startDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 员工管理API
+export const staffApi = {
+  // 获取所有员工
+  getAllStaff: async (tenantId: number): Promise<Staff[]> => {
+    const response = await createRequest(`/api/staff?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取活跃员工
+  getActiveStaff: async (tenantId: number): Promise<Staff[]> => {
+    const response = await createRequest(`/api/staff/active?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据ID获取员工
+  getStaffById: async (id: number): Promise<Staff> => {
+    const response = await createRequest(`/api/staff/${id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 创建员工
+  createStaff: async (staff: Partial<Staff>): Promise<Staff> => {
+    const response = await createRequest('/api/staff', {
+      method: 'POST',
+      body: JSON.stringify(staff),
+    });
+    return response;
+  },
+
+  // 更新员工
+  updateStaff: async (id: number, staff: Partial<Staff>): Promise<Staff> => {
+    const response = await createRequest(`/api/staff/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(staff),
+    });
+    return response;
+  },
+
+  // 删除员工
+  deleteStaff: async (id: number): Promise<void> => {
+    await createRequest(`/api/staff/${id}`, {
       method: 'DELETE',
     });
   },

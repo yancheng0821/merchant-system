@@ -1,6 +1,7 @@
 package com.merchant.server.businessservice.mapper;
 
 import com.merchant.server.businessservice.entity.Appointment;
+import com.merchant.server.businessservice.entity.AppointmentService;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -13,6 +14,16 @@ public interface AppointmentMapper {
      * 根据ID查询预约
      */
     Appointment findById(Long id);
+    
+    /**
+     * 根据租户ID查询所有预约
+     */
+    List<Appointment> findByTenantId(@Param("tenantId") Long tenantId);
+    
+    /**
+     * 根据预约ID查询预约服务
+     */
+    List<AppointmentService> findAppointmentServicesByAppointmentId(@Param("appointmentId") Long appointmentId);
     
     /**
      * 根据客户ID和租户ID查询预约
@@ -80,4 +91,22 @@ public interface AppointmentMapper {
      * 删除预约
      */
     int deleteById(Long id);
+    
+    /**
+     * 查询所有CONFIRMED状态的预约
+     */
+    List<Appointment> findConfirmedAppointments();
+    
+    /**
+     * 根据日期范围查询预约
+     */
+    List<Appointment> findAppointmentsByDateRange(@Param("startDate") java.time.LocalDate startDate, 
+                                                  @Param("endDate") java.time.LocalDate endDate);
+    
+    /**
+     * 根据时间范围查询预约
+     */
+    List<Appointment> findAppointmentsByTimeRange(@Param("date") java.time.LocalDate date,
+                                                  @Param("startTime") java.time.LocalTime startTime,
+                                                  @Param("endTime") java.time.LocalTime endTime);
 }

@@ -20,6 +20,35 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <!-- 带详细信息的结果映射 -->
+    <resultMap id="AppointmentWithDetailsResultMap" type="com.merchant.server.businessservice.entity.Appointment">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="staffId" column="staff_id"/>
+        <result property="appointmentDate" column="appointment_date"/>
+        <result property="appointmentTime" column="appointment_time"/>
+        <result property="duration" column="duration"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="status" column="status"/>
+        <result property="notes" column="notes"/>
+        <result property="rating" column="rating"/>
+        <result property="review" column="review"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <association property="customer" javaType="com.merchant.server.businessservice.entity.Customer">
+            <id property="id" column="customer_id"/>
+            <result property="firstName" column="customer_first_name"/>
+            <result property="lastName" column="customer_last_name"/>
+            <result property="phone" column="customer_phone"/>
+            <result property="email" column="customer_email"/>
+        </association>
+        <association property="staff" javaType="com.merchant.server.businessservice.entity.Staff">
+            <id property="id" column="staff_id"/>
+            <result property="name" column="staff_name"/>
+        </association>
+    </resultMap>
+
     <!-- 基础查询SQL -->
     <sql id="Base_Column_List">
         id, tenant_id, customer_id, staff_id, appointment_date, appointment_time,
@@ -31,6 +60,20 @@
         SELECT <include refid="Base_Column_List"/>
         FROM appointments
         WHERE id = #{id}
+    </select>
+
+    <!-- 根据租户ID查询所有预约 -->
+    <select id="findByTenantId" resultMap="AppointmentWithDetailsResultMap">
+        SELECT 
+            a.id, a.tenant_id, a.customer_id, a.staff_id, a.appointment_date, a.appointment_time,
+            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
+            s.name as staff_name
+        FROM appointments a
+        LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN staff s ON a.staff_id = s.id
+        WHERE a.tenant_id = #{tenantId}
+        ORDER BY a.created_at DESC, a.appointment_date DESC, a.appointment_time DESC
     </select>
 
     <!-- 根据客户ID和租户ID查询预约 -->
@@ -136,5 +179,53 @@
     <delete id="deleteById">
         DELETE FROM appointments WHERE id = #{id}
     </delete>
+
+    <!-- 根据预约ID查询预约服务 -->
+    <select id="findAppointmentServicesByAppointmentId" resultType="com.merchant.server.businessservice.entity.AppointmentService">
+        SELECT 
+            id, appointment_id as appointmentId, service_id as serviceId, 
+            service_name as serviceName, price, duration
+        FROM appointment_services
+        WHERE appointment_id = #{appointmentId}
+    </select>
+
+    <!-- 查询所有CONFIRMED状态的预约 -->
+    <select id="findConfirmedAppointments" resultMap="AppointmentResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointments
+        WHERE status = 'CONFIRMED'
+        ORDER BY appointment_date, appointment_time
+    </select>
+
+    <!-- 根据日期范围查询预约 -->
+    <select id="findAppointmentsByDateRange" resultMap="AppointmentWithDetailsResultMap">
+        SELECT 
+            a.id, a.tenant_id, a.customer_id, a.staff_id, a.appointment_date, a.appointment_time,
+            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
+            s.name as staff_name
+        FROM appointments a
+        LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN staff s ON a.staff_id = s.id
+        WHERE a.appointment_date BETWEEN #{startDate} AND #{endDate}
+          AND a.status = 'CONFIRMED'
+        ORDER BY a.appointment_date, a.appointment_time
+    </select>
+
+    <!-- 根据时间范围查询预约 -->
+    <select id="findAppointmentsByTimeRange" resultMap="AppointmentWithDetailsResultMap">
+        SELECT 
+            a.id, a.tenant_id, a.customer_id, a.staff_id, a.appointment_date, a.appointment_time,
+            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
+            s.name as staff_name
+        FROM appointments a
+        LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN staff s ON a.staff_id = s.id
+        WHERE a.appointment_date = #{date}
+          AND a.appointment_time BETWEEN #{startTime} AND #{endTime}
+          AND a.status = 'CONFIRMED'
+        ORDER BY a.appointment_time
+    </select>
 
 </mapper>

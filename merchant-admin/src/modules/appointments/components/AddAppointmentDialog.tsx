@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -29,6 +29,7 @@ import {
   Card,
   CardContent,
   InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -41,8 +42,8 @@ import {
   EventNote as AppointmentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Appointment } from '../AppointmentManagement';
-import { Customer } from '../../../services/api';
+import i18n from '../../../i18n/config';
+import { Appointment, Customer, Staff, customerApi, staffApi } from '../../../services/api';
 
 interface AddAppointmentDialogProps {
   open: boolean;
@@ -58,13 +59,7 @@ const serviceOptions = [
   { category: 'Spa Package', items: ['Full Body Massage', 'Aromatherapy', 'Hot Stone Massage', 'Reflexology'] },
 ];
 
-const staffOptions = [
-  'Sarah Johnson',
-  'Jennifer Wong', 
-  'Maria Lopez',
-  'Alex Chen',
-  'Emily Davis',
-];
+// 移除硬编码的员工数据，改为从API获取
 
 const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   open,
@@ -75,28 +70,79 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   const { t } = useTranslation();
   const steps = [t('dialogs.selectCustomerStep'), t('dialogs.selectServiceStep'), t('dialogs.scheduleTimeStep'), t('dialogs.confirmAppointmentStep')];
   const [activeStep, setActiveStep] = useState(0);
-  
+
+  // 获取当前语言设置
+  const currentLocale = i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
+
+  // 格式化货币
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(currentLocale, {
+      style: 'currency',
+      currency: currentLocale === 'zh-CN' ? 'CNY' : 'USD'
+    }).format(amount);
+  };
+
+  // 格式化日期，避免时区转换问题
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month是0-based
+    return date.toLocaleDateString(currentLocale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+  };
+
   // 表单数据
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [newCustomerData, setNewCustomerData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     phone: '',
     email: ''
   });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('');
-  const [selectedStaff, setSelectedStaff] = useState('');
+  const [selectedStaff, setSelectedStaff] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [staffOptions, setStaffOptions] = useState<Staff[]>([]);
+
+
+
+  // 获取租户ID
+  const tenantId = useMemo(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return Number(user.tenantId || 1);
+  }, []);
+
+  // 加载员工数据
+  useEffect(() => {
+    const loadStaff = async () => {
+      try {
+        const staff = await staffApi.getActiveStaff(tenantId);
+        setStaffOptions(staff);
+      } catch (error) {
+        console.error('Failed to load staff:', error);
+      }
+    };
+
+    if (open) {
+      loadStaff();
+    }
+  }, [open, tenantId]);
 
   useEffect(() => {
     if (!open) {
       // Reset form when dialog closes
       setActiveStep(0);
       setSelectedCustomer(null);
-      setNewCustomerData({ name: '', phone: '', email: '' });
+      setNewCustomerData({ firstName: '', lastName: '', phone: '', email: '' });
       setSelectedServices([]);
       setAppointmentDate('');
       setAppointmentTime('');
@@ -104,6 +150,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       setNotes('');
       setCustomerSearch('');
       setErrors({});
+      setIsSubmitting(false);
     }
   }, [open]);
 
@@ -125,13 +172,26 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
   const validateStep = (step: number) => {
     const newErrors: { [key: string]: string } = {};
-    
+
     switch (step) {
       case 0: // 客户选择
-        if (!selectedCustomer && !newCustomerData.name.trim()) {
+        // 必须选择一个已存在的客户或者填写新客户信息
+        const hasSelectedCustomer = selectedCustomer !== null;
+        const hasNewCustomerInfo = newCustomerData.firstName.trim() || newCustomerData.lastName.trim() ||
+          newCustomerData.phone.trim() || newCustomerData.email.trim();
+
+        if (!hasSelectedCustomer && !hasNewCustomerInfo) {
           newErrors.customer = t('appointments.validation.customerRequired');
         }
-        if (newCustomerData.name && (!newCustomerData.phone.trim() || !newCustomerData.email.trim())) {
+
+        // 如果开始填写新客户信息，则必须填写完整
+        if (hasNewCustomerInfo && !hasSelectedCustomer) {
+          if (!newCustomerData.firstName.trim()) {
+            newErrors.firstName = t('dialogs.firstNameRequired');
+          }
+          if (!newCustomerData.lastName.trim()) {
+            newErrors.lastName = t('dialogs.lastNameRequired');
+          }
           if (!newCustomerData.phone.trim()) {
             newErrors.phone = t('dialogs.phoneRequired');
           }
@@ -146,44 +206,121 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         }
         break;
       case 2: // 时间安排
-        if (!appointmentDate.trim() || !appointmentTime.trim() || !selectedStaff.trim()) {
+        if (!appointmentDate.trim() || !appointmentTime.trim() || !selectedStaff) {
           newErrors.schedule = t('appointments.validation.scheduleRequired');
         }
         break;
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validateStep(activeStep)) {
-      const customer = selectedCustomer || {
-        id: `new_${Date.now()}`,
-        firstName: newCustomerData.name.split(' ')[0] || '',
-        lastName: newCustomerData.name.split(' ').slice(1).join(' ') || '',
-        phone: newCustomerData.phone,
-        email: newCustomerData.email
+  const handleSubmit = async () => {
+    if (!validateStep(activeStep)) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      // 获取租户ID
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const tenantId = Number(user.tenantId || 1);
+
+      let customerId: number;
+      let createdCustomer: Customer | null = null;
+
+      // 如果是新客户，先创建客户
+      if (!selectedCustomer) {
+        const newCustomer = {
+          tenantId: tenantId.toString(),
+          firstName: newCustomerData.firstName,
+          lastName: newCustomerData.lastName,
+          phone: newCustomerData.phone,
+          email: newCustomerData.email,
+          membershipLevel: 'REGULAR' as const,
+          status: 'ACTIVE' as const,
+        };
+
+        console.log('Creating new customer:', newCustomer);
+        createdCustomer = await customerApi.createCustomer(newCustomer);
+        customerId = Number(createdCustomer.id);
+        console.log('Customer created with ID:', customerId);
+      } else {
+        customerId = Number(selectedCustomer.id);
+      }
+
+      // 计算总时长和总价格（这里应该根据实际选择的服务计算）
+      const totalDuration = selectedServices.length * 60; // 临时计算，应该根据实际服务
+      const totalAmount = selectedServices.length * 80;   // 临时计算，应该根据实际服务价格
+
+      const appointment: any = {
+        tenantId,
+        customerId,
+        appointmentDate, // 格式: "2024-01-15"
+        appointmentTime: appointmentTime + ':00', // 格式: "14:30:00"
+        duration: totalDuration,
+        totalAmount: totalAmount, // 后端会自动转换为BigDecimal
+        status: 'CONFIRMED',
+        notes: notes.trim() || null,
+        staffId: selectedStaff || null,
+        rating: null, // 明确设置为null
+        review: null, // 明确设置为null
       };
 
-      const appointment: Partial<Appointment> = {
-        customerId: String(customer.id),
-        customerName: selectedCustomer ? `${customer.firstName} ${customer.lastName}` : newCustomerData.name,
-        customerPhone: customer.phone,
-        serviceType: selectedServices.join(', '),
-        serviceItems: selectedServices,
-        appointmentDate,
-        appointmentTime,
-        duration: selectedServices.length * 60, // 假设每个服务60分钟
-        staff: selectedStaff,
-        status: 'confirmed',
-        price: selectedServices.length * 80, // 假设每个服务80元
-        notes,
-        createdAt: new Date().toISOString()
-      };
+      // 验证必需字段
+      if (!customerId || !appointmentDate || !appointmentTime) {
+        throw new Error('Missing required fields: customerId, appointmentDate, or appointmentTime');
+      }
 
-      onSave(appointment);
-      onClose();
+      console.log('Submitting appointment:', appointment);
+      console.log('Appointment data types:', {
+        tenantId: typeof appointment.tenantId,
+        customerId: typeof appointment.customerId,
+        appointmentDate: typeof appointment.appointmentDate,
+        appointmentTime: typeof appointment.appointmentTime,
+        duration: typeof appointment.duration,
+        totalAmount: typeof appointment.totalAmount,
+        status: typeof appointment.status,
+        staffId: typeof appointment.staffId,
+      });
+
+      try {
+        await onSave(appointment);
+        onClose();
+      } catch (appointmentError) {
+        console.error('Appointment creation failed:', appointmentError);
+        console.error('Failed appointment data:', appointment);
+
+        // 如果预约创建失败且我们刚创建了新客户，考虑是否需要删除客户
+        // 这里可以根据业务需求决定是否删除刚创建的客户
+        if (createdCustomer) {
+          console.warn('New customer was created but appointment failed. Customer ID:', createdCustomer.id);
+        }
+
+        throw appointmentError;
+      }
+    } catch (error: any) {
+      console.error('Error in handleSubmit:', error);
+
+      // 设置用户友好的错误消息
+      let errorMessage = t('appointments.createError');
+
+      if (error?.message) {
+        if (error.message.includes('phone number already exists')) {
+          errorMessage = t('customers.phoneAlreadyExists');
+        } else if (error.message.includes('email already exists')) {
+          errorMessage = t('customers.emailAlreadyExists');
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      setErrors({ submit: errorMessage });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -195,7 +332,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 3 }}>
               {t('appointments.selectCustomer')}
             </Typography>
-            
+
             <TextField
               fullWidth
               placeholder={t('appointments.searchCustomerPlaceholder')}
@@ -302,12 +439,35 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     {t('appointments.orAddNewCustomer')}
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label={t('dialogs.customerName')}
-                        value={newCustomerData.name}
-                        onChange={(e) => setNewCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                        label={t('dialogs.firstName')}
+                        value={newCustomerData.firstName}
+                        onChange={(e) => setNewCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
+                        error={!!errors.firstName}
+                        helperText={errors.firstName}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#8B5CF6',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#8B5CF6',
+                            },
+                          },
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label={t('dialogs.lastName')}
+                        value={newCustomerData.lastName}
+                        onChange={(e) => setNewCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
+                        error={!!errors.lastName}
+                        helperText={errors.lastName}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -419,8 +579,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           color: selectedServices.includes(service) ? 'white' : '#8B5CF6',
                           backgroundColor: selectedServices.includes(service) ? '#8B5CF6' : 'transparent',
                           '&:hover': {
-                            backgroundColor: selectedServices.includes(service) 
-                              ? '#7C3AED' 
+                            backgroundColor: selectedServices.includes(service)
+                              ? '#7C3AED'
                               : alpha('#8B5CF6', 0.1),
                           },
                         }}
@@ -466,7 +626,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       {t('appointments.estimatedDuration')}:
                     </Typography>
                     <Typography variant="h6" sx={{ color: '#10B981' }}>
-                      {selectedServices.length * 60} 分钟
+                      {selectedServices.length * 60} {t('dialogs.minutes')}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
@@ -474,7 +634,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       {t('appointments.estimatedPrice')}:
                     </Typography>
                     <Typography variant="h6" sx={{ color: '#10B981' }}>
-                      ¥{selectedServices.length * 80}
+                      {formatCurrency(selectedServices.length * 80)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -527,7 +687,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   }}
                 />
               </Grid>
-              
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -565,7 +725,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   <Select
                     value={selectedStaff}
                     label={t('appointments.selectStaff')}
-                    onChange={(e) => setSelectedStaff(e.target.value)}
+                    onChange={(e) => setSelectedStaff(e.target.value as number)}
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -577,12 +737,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     }}
                   >
                     {staffOptions.map((staff) => (
-                      <MenuItem key={staff} value={staff}>
+                      <MenuItem key={staff.id} value={staff.id}>
                         <Box display="flex" alignItems="center" gap={1}>
                           <Avatar sx={{ width: 24, height: 24, bgcolor: '#8B5CF6', fontSize: '0.75rem' }}>
-                            {staff.charAt(0)}
+                            {staff.name.charAt(0)}
                           </Avatar>
-                          {staff}
+                          {staff.name}
                         </Box>
                       </MenuItem>
                     ))}
@@ -617,9 +777,9 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         );
 
       case 3:
-        const customerName = selectedCustomer ? 
-          `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : 
-          newCustomerData.name;
+        const customerName = selectedCustomer ?
+          `${selectedCustomer.firstName} ${selectedCustomer.lastName}` :
+          `${newCustomerData.firstName} ${newCustomerData.lastName}`;
         const customerPhone = selectedCustomer?.phone || newCustomerData.phone;
         const customerEmail = selectedCustomer?.email || newCustomerData.email;
 
@@ -628,6 +788,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 3 }}>
               {t('appointments.confirmAppointment')}
             </Typography>
+
+            {errors.submit && (
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                {errors.submit}
+              </Alert>
+            )}
 
             <Card
               elevation={0}
@@ -644,18 +810,18 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
                       {t('dialogs.customerInfoSection')}
                     </Typography>
-                                         <Box display="flex" alignItems="center" gap={1} mb={1}>
-                       <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                       <Typography variant="body2">{customerName}</Typography>
-                     </Box>
-                     <Box display="flex" alignItems="center" gap={1} mb={1}>
-                       <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                       <Typography variant="body2">{customerPhone}</Typography>
-                     </Box>
-                     <Box display="flex" alignItems="center" gap={1}>
-                       <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                       <Typography variant="body2">{customerEmail}</Typography>
-                     </Box>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      <Typography variant="body2">{customerName}</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      <Typography variant="body2">{customerPhone}</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      <Typography variant="body2">{customerEmail}</Typography>
+                    </Box>
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
@@ -664,7 +830,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     </Typography>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
                       <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="body2">{appointmentDate}</Typography>
+                      <Typography variant="body2">{formatDate(appointmentDate)}</Typography>
                     </Box>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
                       <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -672,7 +838,9 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     </Box>
                     <Box display="flex" alignItems="center" gap={1}>
                       <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="body2">{selectedStaff}</Typography>
+                      <Typography variant="body2">
+                        {selectedStaff ? staffOptions.find(staff => staff.id === selectedStaff)?.name || t('appointments.unassigned') : t('appointments.unassigned')}
+                      </Typography>
                     </Box>
                   </Grid>
 
@@ -699,7 +867,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           {t('appointments.duration')}
                         </Typography>
                         <Typography variant="h6" sx={{ color: '#8B5CF6' }}>
-                          {selectedServices.length * 60} 分钟
+                          {selectedServices.length * 60} {t('dialogs.minutes')}
                         </Typography>
                       </Grid>
                       <Grid item xs={4}>
@@ -707,7 +875,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           {t('dialogs.estimatedPrice')}
                         </Typography>
                         <Typography variant="h6" sx={{ color: '#10B981' }}>
-                          ¥{selectedServices.length * 80}
+                          {formatCurrency(selectedServices.length * 80)}
                         </Typography>
                       </Grid>
                     </Grid>
@@ -727,10 +895,10 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               </CardContent>
             </Card>
 
-            <Alert 
-              severity="info" 
-              sx={{ 
-                mt: 3, 
+            <Alert
+              severity="info"
+              sx={{
+                mt: 3,
                 borderRadius: 2,
                 backgroundColor: alpha('#3B82F6', 0.1),
                 borderColor: alpha('#3B82F6', 0.2),
@@ -747,10 +915,10 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="lg" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
       fullWidth
       PaperProps={{
         sx: {
@@ -788,9 +956,9 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               <AppointmentIcon sx={{ fontSize: 24 }} />
             </Box>
             <Box>
-              <Typography 
-                variant="h5" 
-                sx={{ 
+              <Typography
+                variant="h5"
+                sx={{
                   fontWeight: 700,
                   color: 'text.primary',
                   mb: 0.5,
@@ -803,7 +971,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               </Typography>
             </Box>
           </Box>
-          <IconButton 
+          <IconButton
             onClick={onClose}
             sx={{
               '&:hover': {
@@ -817,8 +985,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
         {/* 步骤器 */}
         <Box mt={3}>
-          <Stepper 
-            activeStep={activeStep} 
+          <Stepper
+            activeStep={activeStep}
             alternativeLabel
             sx={{
               '& .MuiStepLabel-root .Mui-completed': {
@@ -856,17 +1024,17 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         {getStepContent(activeStep)}
       </DialogContent>
 
-      <DialogActions 
-        sx={{ 
+      <DialogActions
+        sx={{
           p: 3,
           borderTop: '1px solid',
           borderColor: 'divider',
           background: alpha('#8B5CF6', 0.02),
         }}
       >
-        <Button 
+        <Button
           onClick={onClose}
-          sx={{ 
+          sx={{
             borderRadius: 2,
             px: 3,
             color: 'text.secondary',
@@ -874,11 +1042,11 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         >
           {t('common.cancel')}
         </Button>
-        
+
         {activeStep > 0 && (
-          <Button 
+          <Button
             onClick={handleBack}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               px: 3,
               color: '#8B5CF6',
@@ -891,9 +1059,10 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           </Button>
         )}
 
-        <Button 
+        <Button
           variant="contained"
           onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
+          disabled={isSubmitting}
           sx={{
             borderRadius: 2,
             px: 3,
@@ -903,9 +1072,20 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
               boxShadow: '0 6px 20px rgba(139, 92, 246, 0.4)',
             },
+            '&:disabled': {
+              background: 'linear-gradient(135deg, #9CA3AF, #6B7280)',
+              boxShadow: 'none',
+            },
           }}
         >
-          {activeStep === steps.length - 1 ? t('appointments.confirmAndBook') : t('appointments.next')}
+          {isSubmitting ? (
+            <Box display="flex" alignItems="center" gap={1}>
+              <CircularProgress size={16} sx={{ color: 'white' }} />
+              {activeStep === steps.length - 1 ? t('appointments.creating') : t('appointments.next')}
+            </Box>
+          ) : (
+            activeStep === steps.length - 1 ? t('appointments.confirmAndBook') : t('appointments.next')
+          )}
         </Button>
       </DialogActions>
     </Dialog>
