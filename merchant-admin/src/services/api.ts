@@ -16,10 +16,7 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
     'Accept-Language': i18n.language === 'zh-CN' ? 'zh' : 'en',
   };
   
-  // 调试信息
-  if (token) {
-    console.log('Using token in request:', token.substring(0, 20) + '...');
-  }
+
 
   const config: RequestInit = {
     ...options,
@@ -50,6 +47,7 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
 
     // 如果响应不成功，抛出错误
     if (!response.ok) {
+      console.error('API Error Response:', responseData);
       const error = new Error(responseData.message || `HTTP error! status: ${response.status}`);
       (error as any).response = response;
       (error as any).responseData = responseData;
@@ -213,6 +211,15 @@ export const userApi = {
 export const handleApiError = (error: any): string => {
   console.log('Handling API error:', error);
 
+  // 检查是否有详细的验证错误
+  if (error.responseData?.details) {
+    console.log('Validation errors:', error.responseData.details);
+    const details = Object.entries(error.responseData.details)
+      .map(([field, message]) => `${field}: ${message}`)
+      .join(', ');
+    return `验证失败: ${details}`;
+  }
+
   // 检查是否有响应数据
   if (error.responseData?.message) {
     return error.responseData.message;
@@ -232,30 +239,47 @@ export const handleApiError = (error: any): string => {
   return 'An unexpected error occurred';
 };
 
+// 服务相关类型定义
+export interface Service {
+  id: number;
+  tenantId: number;
+  categoryId: number;
+  name: string;
+  nameEn?: string;
+  description?: string;
+  descriptionEn?: string;
+  price: number;
+  duration: number;
+  skillLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+  status?: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // 客户管理相关类型定义
 export interface Customer {
-  id: string;
-  tenantId: string;
+  id?: string | number;
+  tenantId: string | number;
   firstName: string;
   lastName: string;
   phone: string;
   email?: string;
   address?: string;
   dateOfBirth?: string;
-  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
-  membershipLevel?: 'regular' | 'silver' | 'gold' | 'platinum';
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+  membershipLevel?: 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM';
   points?: number;
   totalSpent?: number;
-  status?: 'active' | 'inactive';
+  status?: 'ACTIVE' | 'INACTIVE';
   notes?: string;
   allergies?: string;
-  communicationPreference?: 'sms' | 'email' | 'phone';
+  communicationPreference?: 'SMS' | 'EMAIL' | 'PHONE';
   lastVisit?: string;
   avatar?: string;
   createdAt?: string;
   updatedAt?: string;
   fullName?: string;
-  preferredServices?: string[];
+  preferredServiceIds?: number[];
   totalAppointments?: number;
   completedAppointments?: number;
   averageRating?: number;
@@ -278,7 +302,7 @@ export interface CustomerListResponse {
 }
 
 export interface CustomerSearchParams {
-  tenantId: string;
+  tenantId: string | number;
   keyword?: string;
   status?: 'ACTIVE' | 'INACTIVE';
   membershipLevel?: 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM';
@@ -315,9 +339,33 @@ export const customerApi = {
 
   // 创建客户
   createCustomer: async (customer: Customer): Promise<Customer> => {
+    // 创建客户对象，包含所有字段
+    const customerToSend = {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+      email: customer.email,
+      tenantId: customer.tenantId,
+      // 可选字段 - 保持原值，包括空字符串
+      address: customer.address,
+      dateOfBirth: customer.dateOfBirth,
+      notes: customer.notes,
+      allergies: customer.allergies,
+      gender: customer.gender,
+      preferredServiceIds: customer.preferredServiceIds,
+      // 默认值
+      status: customer.status || 'ACTIVE',
+      membershipLevel: customer.membershipLevel || 'REGULAR',
+      communicationPreference: customer.communicationPreference || 'SMS',
+      points: customer.points || 0,
+      totalSpent: customer.totalSpent || 0,
+      lastVisit: customer.lastVisit,
+    };
+    
+    console.log('Creating customer with data:', customerToSend);
     const response = await createRequest('/api/customers', {
       method: 'POST',
-      body: JSON.stringify(customer),
+      body: JSON.stringify(customerToSend),
     });
     return response;
   },
@@ -357,6 +405,25 @@ export const customerApi = {
   // 获取消费排行榜
   getTopSpendingCustomers: async (tenantId: string, limit: number = 10): Promise<Customer[]> => {
     const response = await createRequest(`/api/customers/top-spending?tenantId=${tenantId}&limit=${limit}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};
+
+// 服务管理API
+export const serviceApi = {
+  // 获取所有服务
+  getServices: async (tenantId: string): Promise<Service[]> => {
+    const response = await createRequest(`/api/services?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取活跃服务
+  getActiveServices: async (tenantId: string): Promise<Service[]> => {
+    const response = await createRequest(`/api/services?tenantId=${tenantId}&status=ACTIVE`, {
       method: 'GET',
     });
     return response;

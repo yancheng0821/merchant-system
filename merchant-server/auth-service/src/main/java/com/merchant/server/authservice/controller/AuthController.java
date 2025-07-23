@@ -157,6 +157,15 @@ public class AuthController {
         return ApiResponse.success("Auth service is running");
     }
     
+    @GetMapping("/google/config")
+    public ApiResponse<Object> getGoogleConfig() {
+        logger.info("获取Google配置信息");
+        java.util.Map<String, Object> config = new java.util.HashMap<>();
+        config.put("clientId", System.getProperty("google.oauth2.client-id", "未配置"));
+        config.put("timestamp", java.time.LocalDateTime.now());
+        return ApiResponse.success(config);
+    }
+    
     /**
      * 获取客户端IP地址
      */

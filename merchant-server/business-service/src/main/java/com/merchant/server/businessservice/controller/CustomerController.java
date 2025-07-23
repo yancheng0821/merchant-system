@@ -27,15 +27,25 @@ public class CustomerController {
         CustomerDTO dto = new CustomerDTO();
         dto.setId(customer.getId());
         dto.setTenantId(customer.getTenantId());
-        dto.setPhone(customer.getPhone());
-        dto.setEmail(customer.getEmail());
-        dto.setStatus(customer.getStatus());
-        dto.setMembershipLevel(customer.getMembershipLevel());
-        dto.setTotalSpent(customer.getTotalSpent());
-        dto.setLastVisit(customer.getLastVisit());
         dto.setFirstName(customer.getFirstName());
         dto.setLastName(customer.getLastName());
-        // 如有更多字段请补充
+        dto.setPhone(customer.getPhone());
+        dto.setEmail(customer.getEmail());
+        dto.setAddress(customer.getAddress());
+        dto.setDateOfBirth(customer.getDateOfBirth());
+        dto.setGender(customer.getGender());
+        dto.setMembershipLevel(customer.getMembershipLevel());
+        dto.setPoints(customer.getPoints());
+        dto.setTotalSpent(customer.getTotalSpent());
+        dto.setStatus(customer.getStatus());
+        dto.setNotes(customer.getNotes());
+        dto.setAllergies(customer.getAllergies());
+        dto.setCommunicationPreference(customer.getCommunicationPreference());
+        dto.setLastVisit(customer.getLastVisit());
+        dto.setCreatedAt(customer.getCreatedAt());
+        dto.setUpdatedAt(customer.getUpdatedAt());
+        dto.setFullName(customer.getFullName());
+        dto.setPreferredServiceIds(customer.getPreferredServiceIds());
         return dto;
     }
     
@@ -84,8 +94,15 @@ public class CustomerController {
      */
     @PostMapping
     public ResponseEntity<CustomerDTO> createCustomer(@Valid @RequestBody CustomerDTO customerDTO) {
-        CustomerDTO createdCustomer = customerService.createCustomer(customerDTO);
-        return ResponseEntity.ok(createdCustomer);
+        try {
+            System.out.println("Received customer data: " + customerDTO);
+            CustomerDTO createdCustomer = customerService.createCustomer(customerDTO);
+            return ResponseEntity.ok(createdCustomer);
+        } catch (Exception e) {
+            System.err.println("Error creating customer: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
     
     /**
@@ -146,6 +163,23 @@ public class CustomerController {
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException e) {
         Map<String, String> error = new HashMap<>();
         error.put("error", e.getMessage());
+        error.put("type", e.getClass().getSimpleName());
+        return ResponseEntity.badRequest().body(error);
+    }
+    
+    /**
+     * 验证异常处理
+     */
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(
+            org.springframework.web.bind.MethodArgumentNotValidException e) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "Validation failed");
+        error.put("details", e.getBindingResult().getFieldErrors().stream()
+            .collect(java.util.stream.Collectors.toMap(
+                fieldError -> fieldError.getField(),
+                fieldError -> fieldError.getDefaultMessage()
+            )));
         return ResponseEntity.badRequest().body(error);
     }
 }

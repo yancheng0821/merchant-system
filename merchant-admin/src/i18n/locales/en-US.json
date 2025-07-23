@@ -30,7 +30,6 @@
     "addCustomer": "Add Customer",
     "editCustomer": "Edit Customer",
     "deleteCustomer": "Delete Customer",
-    "viewAppointments": "View Appointments",
     "customer": "Customer",
     "contact": "Contact",
     "membership": "Membership",
@@ -69,6 +68,10 @@
     "sms": "SMS",
     "notes": "Notes",
     "notesPlaceholder": "Add customer notes...",
+    "optional": "Optional",
+    "editCustomerInfo": "Edit customer information",
+    "createNewCustomerProfile": "Create new customer profile",
+    "allergiesPlaceholder": "Please describe any known allergies or health considerations...",
     "cancel": "Cancel",
     "createCustomer": "Create Customer",
     "updateCustomer": "Update Customer",
@@ -100,10 +103,11 @@
       "phoneInvalid": "Invalid phone number format",
       "emailRequired": "Email address is required",
       "emailInvalid": "Invalid email address format",
-      "addressRequired": "Address is required"
+      "addressRequired": "Address is required",
+      "requiredFields": "Please fill in required fields: First Name, Last Name, Phone, and Email"
     },
     "totalCustomers": "Total Customers",
-    "activeCustomers": "Active Customers", 
+    "activeCustomers": "Active Customers",
     "vipCustomers": "VIP Customers",
     "membershipLevels": {
       "regular": "Regular Member",
@@ -119,6 +123,16 @@
     "membershipFilter": "Membership Level",
     "allLevels": "All Levels",
     "statusFilter": "Customer Status",
+    "sortBy": "Sort By",
+    "sortOptions": {
+      "createdAt": "Created Date",
+      "updatedAt": "Updated Date",
+      "name": "Name",
+      "lastVisit": "Last Visit",
+      "totalSpent": "Total Spent",
+      "points": "Points",
+      "membershipLevel": "Membership Level"
+    },
     "tableHeaders": {
       "customer": "Customer",
       "contact": "Contact",
@@ -129,14 +143,23 @@
       "status": "Status",
       "actions": "Actions"
     },
-    "noCustomers": "No customer data available"
+    "noCustomers": "No customer data available",
+    "neverVisited": "Never visited",
+    "viewAppointments": "View Appointments",
+    "deleteSuccess": "Customer deleted successfully",
+    "updateSuccess": "Customer information updated successfully",
+    "createSuccess": "Customer created successfully",
+    "activateCustomer": "Activate Customer",
+    "deactivateCustomer": "Deactivate Customer",
+    "activateSuccess": "Customer activated successfully",
+    "deactivateSuccess": "Customer deactivated successfully"
   },
   "appointments": {
     "title": "Appointment Management",
     "subtitle": "Manage all appointment records and service schedules",
     "searchPlaceholder": "Search by customer name, staff, or service type...",
     "addAppointment": "Add Appointment",
-    "editAppointment": "Edit Appointment", 
+    "editAppointment": "Edit Appointment",
     "deleteAppointment": "Delete Appointment",
     "viewDetails": "View Details",
     "customer": "Customer",
@@ -191,7 +214,7 @@
     "totalRevenue": "Total Revenue",
     "appointmentStatuses": {
       "confirmed": "Confirmed",
-      "completed": "Completed", 
+      "completed": "Completed",
       "cancelled": "Cancelled",
       "no-show": "No Show"
     },
@@ -371,7 +394,7 @@
     "refundError": "Refund processing error",
     "processingRefund": "Processing refund...",
     "newOrder": "New Order",
-    "requestRefund": "Request Refund", 
+    "requestRefund": "Request Refund",
     "deleteOrder": "Delete Order"
   },
   "services": {
@@ -450,7 +473,6 @@
     "selectCategoryToEdit": "Select a category to edit or add a new category",
     "saveChanges": "Save Changes"
   },
-
   "settings": {
     "businessSettings": "Business Settings",
     "staffManagement": "Staff Management",
@@ -765,7 +787,7 @@
   },
   "status": {
     "pending": "Pending",
-    "paid": "Paid", 
+    "paid": "Paid",
     "refunded": "Refunded",
     "failed": "Failed",
     "draft": "Draft",
@@ -899,13 +921,13 @@
     "serviceCategories": {
       "hairCare": "Hair Care",
       "spaTreatments": "Spa Treatments",
-      "facialCare": "Facial Care", 
+      "facialCare": "Facial Care",
       "nailCare": "Nail Care"
     },
     "timePeriods": {
       "7days": "Last 7 Days",
       "30days": "Last 30 Days",
-      "6months": "Last 6 Months", 
+      "6months": "Last 6 Months",
       "1year": "Last 1 Year"
     },
     "repeatCustomerRate": "Repeat Customer Rate",
@@ -957,4 +979,4 @@
     "additionalServices": " +{{count}} more",
     "neverVisited": "Never Visited"
   }
-} 
+}

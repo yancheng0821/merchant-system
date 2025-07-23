@@ -45,6 +45,8 @@ import {
   Groups as GroupsIcon,
   TrendingUp as TrendingUpIcon,
   AccountBalanceWallet as WalletIcon,
+  Block as BlockIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { customerApi, Customer, CustomerStats, handleApiError } from '../../services/api';
@@ -60,21 +62,23 @@ const CustomerManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  
+
   // 加载状态
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 对话框状态
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [appointmentHistoryOpen, setAppointmentHistoryOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-  
+
   // 通知状态
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -100,9 +104,9 @@ const CustomerManagement: React.FC = () => {
     membershipLevel: membershipFilter !== 'all' ? (membershipFilter.toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM') : undefined,
     page: pageNum,
     size: rowsPerPage,
-    sortBy: 'updatedAt',
-    sortDir: 'desc' as const,
-  }), [tenantId, searchTerm, statusFilter, membershipFilter, page, rowsPerPage]);
+    sortBy: sortBy,
+    sortDir: sortDir,
+  }), [tenantId, searchTerm, statusFilter, membershipFilter, page, rowsPerPage, sortBy, sortDir]);
 
   // 请求去重机制
   const requestIdRef = useRef(0);
@@ -110,13 +114,13 @@ const CustomerManagement: React.FC = () => {
   // 加载客户数据的核心函数
   const fetchCustomers = useCallback(async (params: any) => {
     const currentRequestId = ++requestIdRef.current;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await customerApi.getCustomers(params);
-      
+
       // 只有当前请求是最新的才更新状态
       if (currentRequestId === requestIdRef.current) {
         setCustomers(response.customers);
@@ -168,17 +172,17 @@ const CustomerManagement: React.FC = () => {
   // 删除客户
   const handleDeleteCustomer = async () => {
     if (!selectedCustomer?.id) return;
-    
+
     try {
       setLoading(true);
-      await customerApi.deleteCustomer(selectedCustomer.id);
-      
+      await customerApi.deleteCustomer(String(selectedCustomer.id));
+
       setSnackbar({
         open: true,
-        message: t('customers.deleteSuccess') || '客户删除成功',
+        message: t('customers.deleteSuccess'),
         severity: 'success',
       });
-      
+
       setDeleteDialogOpen(false);
       setSelectedCustomer(null);
       // 重新加载数据
@@ -200,44 +204,94 @@ const CustomerManagement: React.FC = () => {
   const handleSaveCustomer = async (customerData: Partial<Customer>) => {
     try {
       setLoading(true);
-      
+
       if (selectedCustomer?.id) {
         // 更新客户
-        await customerApi.updateCustomer(selectedCustomer.id, customerData as Customer);
+        console.log('Updating customer with data:', customerData);
+        await customerApi.updateCustomer(String(selectedCustomer.id), customerData as Customer);
         setSnackbar({
           open: true,
-          message: t('customers.updateSuccess') || '客户信息更新成功',
+          message: t('customers.updateSuccess'),
           severity: 'success',
         });
       } else {
         // 创建客户
-        customerData.tenantId = tenantId;
-        // 保证 id 一定有值
-        if (!customerData.id) customerData.id = `${Date.now()}`;
+        customerData.tenantId = Number(tenantId);
+        // 不要设置ID，让后端自动生成
+        delete customerData.id;
+
+        // 确保必填字段存在
+        if (!customerData.firstName || !customerData.lastName || !customerData.phone) {
+          setSnackbar({
+            open: true,
+            message: t('customers.validation.requiredFields'),
+            severity: 'error',
+          });
+          setLoading(false);
+          return;
+        }
+
+        // 移除可能导致问题的字段，但保留用户填写的可选字段
+        delete customerData.createdAt;
+        delete customerData.updatedAt;
+
+        console.log('Creating customer with data:', JSON.stringify(customerData));
         await customerApi.createCustomer(customerData as Customer);
         setSnackbar({
           open: true,
-          message: t('customers.createSuccess') || '客户创建成功',
+          message: t('customers.createSuccess'),
           severity: 'success',
         });
       }
-      
+
       setCustomerDialogOpen(false);
       setSelectedCustomer(null);
       // 重新加载数据
-      const params = {
-        tenantId,
-        keyword: searchTerm || undefined,
-        status: statusFilter !== 'all' ? (statusFilter === 'active' ? 'ACTIVE' : statusFilter === 'inactive' ? 'INACTIVE' : undefined) as 'ACTIVE' | 'INACTIVE' | undefined : undefined,
-        membershipLevel: membershipFilter !== 'all' ? (membershipFilter.toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM') : undefined,
-        page,
-        size: rowsPerPage,
-        sortBy: 'updatedAt',
-        sortDir: 'desc' as const,
-      };
+      const params = buildQueryParams();
       fetchCustomers(params);
       loadCustomerStats(); // 重新加载统计数据
     } catch (err) {
+      console.error('Error saving customer:', err);
+      const errorMessage = handleApiError(err);
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 切换客户状态（激活/失效）
+  const handleToggleCustomerStatus = async () => {
+    if (!selectedCustomer) return;
+
+    try {
+      setLoading(true);
+
+      const newStatus = selectedCustomer.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      const updatedCustomer: Customer = {
+        ...selectedCustomer,
+        status: newStatus
+      } as Customer;
+
+      await customerApi.updateCustomer(String(selectedCustomer.id), updatedCustomer);
+
+      setSnackbar({
+        open: true,
+        message: newStatus === 'ACTIVE'
+          ? t('customers.activateSuccess')
+          : t('customers.deactivateSuccess'),
+        severity: 'success',
+      });
+
+      // 重新加载数据
+      const params = buildQueryParams();
+      fetchCustomers(params);
+      loadCustomerStats();
+    } catch (err) {
+      console.error('Error toggling customer status:', err);
       const errorMessage = handleApiError(err);
       setSnackbar({
         open: true,
@@ -256,9 +310,9 @@ const CustomerManagement: React.FC = () => {
       GOLD: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('customers.membershipLevels.gold') },
       PLATINUM: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('customers.membershipLevels.platinum') },
     };
-    
+
     const config = membershipConfig[level as keyof typeof membershipConfig] || membershipConfig.REGULAR;
-    
+
     return (
       <Chip
         label={config.label}
@@ -277,10 +331,10 @@ const CustomerManagement: React.FC = () => {
   };
 
   const getStatusChip = (status?: string) => {
-    const config = status === 'ACTIVE' 
+    const config = status === 'ACTIVE'
       ? { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('customers.customerStatuses.active') }
       : { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('customers.customerStatuses.inactive') };
-    
+
     return (
       <Chip
         label={config.label}
@@ -304,10 +358,10 @@ const CustomerManagement: React.FC = () => {
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              sx={{ 
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
                 fontWeight: 700,
                 background: 'linear-gradient(45deg, #D97706, #F59E0B)',
                 WebkitBackgroundClip: 'text',
@@ -501,7 +555,7 @@ const CustomerManagement: React.FC = () => {
       >
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 placeholder={t('customers.searchPlaceholder')}
@@ -533,8 +587,8 @@ const CustomerManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
+
+            <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
                 <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.membershipFilter')}</InputLabel>
                 <Select
@@ -564,8 +618,8 @@ const CustomerManagement: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
+
+            <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
                 <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.statusFilter')}</InputLabel>
                 <Select
@@ -593,7 +647,40 @@ const CustomerManagement: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.sortBy')}</InputLabel>
+                <Select
+                  value={sortBy}
+                  label={t('customers.sortBy')}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    if (page !== 0) {
+                      setPage(0);
+                    }
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#F59E0B',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#F59E0B',
+                    },
+                  }}
+                >
+                  <MenuItem value="createdAt">{t('customers.sortOptions.createdAt')}</MenuItem>
+                  <MenuItem value="updatedAt">{t('customers.sortOptions.updatedAt')}</MenuItem>
+                  <MenuItem value="firstName">{t('customers.sortOptions.name')}</MenuItem>
+                  <MenuItem value="lastVisitDate">{t('customers.sortOptions.lastVisit')}</MenuItem>
+                  <MenuItem value="totalSpent">{t('customers.sortOptions.totalSpent')}</MenuItem>
+                  <MenuItem value="points">{t('customers.sortOptions.points')}</MenuItem>
+                  <MenuItem value="membershipLevel">{t('customers.sortOptions.membershipLevel')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12} md={2}>
               <Button
                 fullWidth
@@ -653,13 +740,13 @@ const CustomerManagement: React.FC = () => {
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">
-                      {t('customers.noCustomers') || '暂无客户数据'}
+                      {t('customers.noCustomers')}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 customers.map((customer) => (
-                  <TableRow 
+                  <TableRow
                     key={customer.id}
                     sx={{
                       '&:hover': {
@@ -735,7 +822,7 @@ const CustomerManagement: React.FC = () => {
                         </Box>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          {t('customers.neverVisited') || '从未访问'}
+                          {t('customers.neverVisited')}
                         </Typography>
                       )}
                     </TableCell>
@@ -764,7 +851,7 @@ const CustomerManagement: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        
+
         <TablePagination
           component="div"
           count={totalItems}
@@ -805,7 +892,7 @@ const CustomerManagement: React.FC = () => {
           sx={{ '&:hover': { backgroundColor: alpha('#6366F1', 0.08) } }}
         >
           <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
-          查看预约
+          {t('customers.viewAppointments')}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -815,7 +902,32 @@ const CustomerManagement: React.FC = () => {
           sx={{ '&:hover': { backgroundColor: alpha('#F59E0B', 0.08) } }}
         >
           <EditIcon sx={{ mr: 1, fontSize: 18, color: '#F59E0B' }} />
-          编辑资料
+          {t('customers.editCustomer')}
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleToggleCustomerStatus();
+            setMenuAnchorEl(null);
+          }}
+          sx={{
+            '&:hover': {
+              backgroundColor: selectedCustomer?.status === 'ACTIVE'
+                ? alpha('#EF4444', 0.08)
+                : alpha('#10B981', 0.08)
+            }
+          }}
+        >
+          {selectedCustomer?.status === 'ACTIVE' ? (
+            <>
+              <BlockIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+              {t('customers.deactivateCustomer')}
+            </>
+          ) : (
+            <>
+              <CheckCircleIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
+              {t('customers.activateCustomer')}
+            </>
+          )}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -825,13 +937,13 @@ const CustomerManagement: React.FC = () => {
           sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
         >
           <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
-          删除客户
+          {t('customers.deleteCustomer')}
         </MenuItem>
       </Menu>
 
       {/* 对话框组件 */}
-      <CustomerDialog 
-        open={customerDialogOpen} 
+      <CustomerDialog
+        open={customerDialogOpen}
         onClose={() => {
           setCustomerDialogOpen(false);
           setSelectedCustomer(null);
@@ -840,15 +952,15 @@ const CustomerManagement: React.FC = () => {
         onSave={handleSaveCustomer}
       />
 
-      <AppointmentHistory 
-        open={appointmentHistoryOpen} 
+      <AppointmentHistory
+        open={appointmentHistoryOpen}
         onClose={() => setAppointmentHistoryOpen(false)}
         customer={selectedCustomer}
       />
 
       {/* 删除确认对话框 */}
-      <Dialog 
-        open={deleteDialogOpen} 
+      <Dialog
+        open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         PaperProps={{
           sx: {
@@ -859,31 +971,31 @@ const CustomerManagement: React.FC = () => {
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
-            确认删除客户
+            {t('customers.confirmDelete')}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Typography>
-            {t('customers.deleteConfirmMessage', { 
-              name: selectedCustomer?.fullName || `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}` 
+            {t('customers.deleteConfirmMessage', {
+              name: selectedCustomer?.fullName || `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}`
             }) || `确定要删除客户 ${selectedCustomer?.firstName}${selectedCustomer?.lastName} 吗？此操作无法撤销。`}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button 
+          <Button
             onClick={() => {
               setDeleteDialogOpen(false);
               setSelectedCustomer(null);
             }}
-            sx={{ 
+            sx={{
               borderRadius: 2,
               px: 3,
             }}
             disabled={loading}
           >
-            {t('common.cancel') || '取消'}
+            {t('common.cancel')}
           </Button>
-          <Button 
+          <Button
             onClick={handleDeleteCustomer}
             variant="contained"
             disabled={loading}
@@ -896,7 +1008,7 @@ const CustomerManagement: React.FC = () => {
               },
             }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : (t('common.delete') || '删除')}
+            {loading ? <CircularProgress size={20} color="inherit" /> : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

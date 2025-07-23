@@ -13,17 +13,19 @@ public class CustomerDTO {
     
     private Long id;
     
-    @NotNull
+    @NotNull(message = "Tenant ID is required")
     private Long tenantId;
     
+    @NotBlank(message = "First name is required")
     private String firstName;
     
+    @NotBlank(message = "Last name is required")
     private String lastName;
     
-    @NotBlank
+    @NotBlank(message = "Phone number is required")
     private String phone;
     
-    @Email
+    @Email(message = "Invalid email format")
     private String email;
     
     private String address;
@@ -47,8 +49,7 @@ public class CustomerDTO {
     
     private Customer.CommunicationPreference communicationPreference;
     
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime lastVisitDate;
+
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
@@ -194,14 +195,6 @@ public class CustomerDTO {
     
     public void setCommunicationPreference(Customer.CommunicationPreference communicationPreference) {
         this.communicationPreference = communicationPreference;
-    }
-    
-    public LocalDateTime getLastVisitDate() {
-        return lastVisitDate;
-    }
-    
-    public void setLastVisitDate(LocalDateTime lastVisitDate) {
-        this.lastVisitDate = lastVisitDate;
     }
     
     public LocalDateTime getCreatedAt() {

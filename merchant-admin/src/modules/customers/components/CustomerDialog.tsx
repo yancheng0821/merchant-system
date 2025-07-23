@@ -30,7 +30,7 @@ import {
   Favorite as PreferencesIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Customer } from '../../../services/api';
+import { Customer, Service, serviceApi } from '../../../services/api';
 
 interface CustomerDialogProps {
   open: boolean;
@@ -39,20 +39,7 @@ interface CustomerDialogProps {
   onSave: (customer: Partial<Customer>) => void;
 }
 
-const serviceOptions = [
-  'Hair Cut',
-  'Hair Color',
-  'Hair Styling',
-  'Beard Trim',
-  'Manicure',
-  'Pedicure',
-  'Facial',
-  'Massage',
-  'Eyebrow Threading',
-  'Lash Extensions',
-  'Waxing',
-  'Nail Art'
-];
+
 
 const CustomerDialog: React.FC<CustomerDialogProps> = ({
   open,
@@ -70,13 +57,35 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
     dateOfBirth: '',
     gender: 'prefer-not-to-say' as 'male' | 'female' | 'other' | 'prefer-not-to-say',
     membershipLevel: 'regular' as 'regular' | 'silver' | 'gold' | 'platinum',
-    preferredServices: [] as string[],
+    status: 'active' as 'active' | 'inactive',
+    preferredServiceIds: [] as number[],
     allergies: '',
     communicationPreference: 'email' as 'phone' | 'email' | 'sms',
     notes: ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [services, setServices] = useState<Service[]>([]);
+
+  // 加载服务列表
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const tenantId = user.tenantId || 1;
+        console.log('Loading services for tenantId:', tenantId);
+        const serviceList = await serviceApi.getActiveServices(tenantId.toString());
+        console.log('Loaded services:', serviceList);
+        setServices(serviceList);
+      } catch (error) {
+        console.error('Failed to load services:', error);
+      }
+    };
+
+    if (open) {
+      loadServices();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (customer) {
@@ -86,12 +95,14 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         phone: customer.phone || '',
         email: customer.email || '',
         address: customer.address || '',
-        dateOfBirth: customer.dateOfBirth || '',
-        gender: customer.gender || 'prefer-not-to-say',
-        membershipLevel: customer.membershipLevel || 'regular',
-        preferredServices: customer.preferredServices || [],
+        dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.split('T')[0] : '',
+        // 转换后端大写枚举为前端小写
+        gender: customer.gender ? customer.gender.toLowerCase().replace('_', '-') as 'male' | 'female' | 'other' | 'prefer-not-to-say' : 'prefer-not-to-say',
+        membershipLevel: customer.membershipLevel ? customer.membershipLevel.toLowerCase() as 'regular' | 'silver' | 'gold' | 'platinum' : 'regular',
+        status: customer.status ? customer.status.toLowerCase() as 'active' | 'inactive' : 'active',
+        preferredServiceIds: customer.preferredServiceIds || [],
         allergies: customer.allergies || '',
-        communicationPreference: customer.communicationPreference || 'email',
+        communicationPreference: customer.communicationPreference ? (customer.communicationPreference === 'SMS' ? 'sms' : customer.communicationPreference.toLowerCase()) as 'phone' | 'email' | 'sms' : 'email',
         notes: customer.notes || ''
       });
     } else {
@@ -104,7 +115,8 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         dateOfBirth: '',
         gender: 'prefer-not-to-say' as 'male' | 'female' | 'other' | 'prefer-not-to-say',
         membershipLevel: 'regular',
-        preferredServices: [],
+        status: 'active' as 'active' | 'inactive',
+        preferredServiceIds: [],
         allergies: '',
         communicationPreference: 'email',
         notes: ''
@@ -130,6 +142,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
+    // 必填字段：firstName, lastName, email, phone
     if (!formData.firstName.trim()) {
       newErrors.firstName = t('customers.validation.firstNameRequired');
     }
@@ -150,9 +163,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       newErrors.email = t('customers.validation.emailInvalid');
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = t('customers.validation.addressRequired');
-    }
+    // 其他字段都是可选的，不需要验证
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -160,16 +171,66 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
   const handleSubmit = () => {
     if (validateForm()) {
+      // 获取用户信息和租户ID
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const tenantId = user.tenantId || 1;
+
+      // 处理日期格式
+      let dateOfBirth = undefined;
+      if (formData.dateOfBirth) {
+        try {
+          // 确保日期格式正确
+          dateOfBirth = formData.dateOfBirth;
+        } catch (e) {
+          console.error('Invalid date format:', e);
+        }
+      }
+
       const customerData: Partial<Customer> = {
-        ...formData,
-        id: customer?.id || `cust_${Date.now()}`,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+        dateOfBirth: dateOfBirth,
+        // 只有编辑时才传ID
+        id: customer?.id,
+        tenantId: customer?.tenantId || tenantId,
         points: customer?.points || 0,
         totalSpent: customer?.totalSpent || 0,
-        lastVisit: customer?.lastVisit,
-        status: customer?.status || 'active',
-        createdAt: customer?.createdAt || new Date().toISOString(),
+        // 转换状态为大写
+        status: (formData.status === 'active' ? 'ACTIVE' : 'INACTIVE') as 'ACTIVE' | 'INACTIVE',
+        // 转换会员等级为大写
+        membershipLevel: (formData.membershipLevel || 'regular').toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM',
+        // 转换性别为正确的枚举值
+        gender: formData.gender ? (
+          formData.gender === 'prefer-not-to-say' ? 'PREFER_NOT_TO_SAY' :
+            formData.gender.toUpperCase() as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'
+        ) : undefined,
+        // 转换通信偏好为大写
+        communicationPreference: (formData.communicationPreference === 'sms' ? 'SMS' : formData.communicationPreference.toUpperCase()) as 'SMS' | 'EMAIL' | 'PHONE',
+        notes: formData.notes,
+        allergies: formData.allergies,
+        preferredServiceIds: formData.preferredServiceIds,
       };
 
+      // 设置 lastVisit：编辑时保留原值，新创建时设置为当前时间
+      if (customer?.id) {
+        // 编辑现有客户，保留原有的 lastVisit
+        customerData.lastVisit = customer.lastVisit;
+      } else {
+        // 新创建客户，设置 lastVisit 为当前时间
+        customerData.lastVisit = new Date().toISOString();
+      }
+
+      // 只移除 undefined 值，保留用户填写的空字符串
+      Object.keys(customerData).forEach(key => {
+        if (customerData[key as keyof Customer] === undefined) {
+          delete customerData[key as keyof Customer];
+        }
+      });
+
+      console.log('Submitting customer data:', customerData);
       onSave(customerData);
       onClose();
     }
@@ -178,10 +239,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
@@ -218,9 +279,9 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               <PersonIcon sx={{ fontSize: 24 }} />
             </Box>
             <Box>
-              <Typography 
-                variant="h5" 
-                sx={{ 
+              <Typography
+                variant="h5"
+                sx={{
                   fontWeight: 700,
                   color: 'text.primary',
                   mb: 0.5,
@@ -229,11 +290,11 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 {customer ? t('customers.editCustomer') : t('customers.addCustomer')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {customer ? '编辑客户信息' : '创建新的客户档案'}
+                {customer ? t('customers.editCustomerInfo') : t('customers.createNewCustomerProfile')}
               </Typography>
             </Box>
           </Box>
-          <IconButton 
+          <IconButton
             onClick={onClose}
             sx={{
               '&:hover': {
@@ -369,11 +430,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label={t('customers.address')}
+                  label={`${t('customers.address')} (${t('customers.optional')})`}
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
-                  error={!!errors.address}
-                  helperText={errors.address}
+
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -390,7 +450,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label={t('customers.dateOfBirth')}
+                  label={`${t('customers.dateOfBirth')} (${t('customers.optional')})`}
                   type="date"
                   value={formData.dateOfBirth}
                   onChange={(e) => handleChange('dateOfBirth', e.target.value)}
@@ -413,7 +473,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <FormLabel sx={{ color: '#F59E0B', fontWeight: 600, mb: 1 }}>
-                    {t('customers.gender')}
+                    {t('customers.gender')} ({t('customers.optional')})
                   </FormLabel>
                   <RadioGroup
                     row
@@ -436,7 +496,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                       label={t('customers.other')}
                     />
                     <FormControlLabel
-                      value="prefer_not_to_say"
+                      value="prefer-not-to-say"
                       control={<Radio sx={{ color: '#F59E0B', '&.Mui-checked': { color: '#F59E0B' } }} />}
                       label={t('customers.preferNotToSay')}
                     />
@@ -479,7 +539,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <FormControl fullWidth>
                   <InputLabel>{t('customers.membershipLevel')}</InputLabel>
                   <Select
@@ -497,10 +557,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     }}
                   >
                     <MenuItem value="regular">
-                      <Chip 
-                        label={t('customers.regular')} 
+                      <Chip
+                        label={t('customers.regular')}
                         size="small"
-                        sx={{ 
+                        sx={{
                           backgroundColor: alpha('#6B7280', 0.1),
                           color: '#6B7280',
                           fontWeight: 600,
@@ -508,10 +568,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                       />
                     </MenuItem>
                     <MenuItem value="silver">
-                      <Chip 
-                        label={t('customers.silver')} 
+                      <Chip
+                        label={t('customers.silver')}
                         size="small"
-                        sx={{ 
+                        sx={{
                           backgroundColor: alpha('#9CA3AF', 0.1),
                           color: '#9CA3AF',
                           fontWeight: 600,
@@ -519,10 +579,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                       />
                     </MenuItem>
                     <MenuItem value="gold">
-                      <Chip 
-                        label={t('customers.gold')} 
+                      <Chip
+                        label={t('customers.gold')}
                         size="small"
-                        sx={{ 
+                        sx={{
                           backgroundColor: alpha('#F59E0B', 0.1),
                           color: '#F59E0B',
                           fontWeight: 600,
@@ -530,10 +590,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                       />
                     </MenuItem>
                     <MenuItem value="platinum">
-                      <Chip 
-                        label={t('customers.platinum')} 
+                      <Chip
+                        label={t('customers.platinum')}
                         size="small"
-                        sx={{ 
+                        sx={{
                           backgroundColor: alpha('#8B5CF6', 0.1),
                           color: '#8B5CF6',
                           fontWeight: 600,
@@ -543,9 +603,51 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <FormControl fullWidth>
-                  <InputLabel>{t('customers.communicationPreference')}</InputLabel>
+                  <InputLabel>{t('customers.status')}</InputLabel>
+                  <Select
+                    value={formData.status}
+                    label={t('customers.status')}
+                    onChange={(e) => handleChange('status', e.target.value)}
+                    sx={{
+                      borderRadius: 2,
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#F59E0B',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#F59E0B',
+                      },
+                    }}
+                  >
+                    <MenuItem value="active">
+                      <Chip
+                        label={t('customers.customerStatuses.active')}
+                        size="small"
+                        sx={{
+                          backgroundColor: alpha('#10B981', 0.1),
+                          color: '#10B981',
+                          fontWeight: 600,
+                        }}
+                      />
+                    </MenuItem>
+                    <MenuItem value="inactive">
+                      <Chip
+                        label={t('customers.customerStatuses.inactive')}
+                        size="small"
+                        sx={{
+                          backgroundColor: alpha('#EF4444', 0.1),
+                          color: '#EF4444',
+                          fontWeight: 600,
+                        }}
+                      />
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <FormControl fullWidth>
+                  <InputLabel>{t('customers.communicationPreference')} </InputLabel>
                   <Select
                     value={formData.communicationPreference}
                     label={t('customers.communicationPreference')}
@@ -562,6 +664,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   >
                     <MenuItem value="email">{t('customers.email')}</MenuItem>
                     <MenuItem value="sms">{t('customers.sms')}</MenuItem>
+                    <MenuItem value="phone">{t('customers.phone')}</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -596,7 +699,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 <PreferencesIcon sx={{ fontSize: 18 }} />
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
-                {t('customers.preferences')}
+                {t('customers.preferences')}({t('customers.optional')})
               </Typography>
             </Box>
 
@@ -604,15 +707,16 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               <Grid item xs={12}>
                 <Autocomplete
                   multiple
-                  options={serviceOptions}
-                  value={formData.preferredServices}
-                  onChange={(_, newValue) => handleChange('preferredServices', newValue)}
+                  options={services}
+                  getOptionLabel={(option) => option.name}
+                  value={services.filter(service => formData.preferredServiceIds.includes(service.id))}
+                  onChange={(_, newValue) => handleChange('preferredServiceIds', newValue.map(service => service.id))}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (
                       <Chip
                         {...getTagProps({ index })}
-                        key={option}
-                        label={option}
+                        key={option.id}
+                        label={option.name}
                         sx={{
                           backgroundColor: alpha('#F59E0B', 0.1),
                           color: '#F59E0B',
@@ -649,7 +753,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   label={t('customers.allergies')}
                   value={formData.allergies}
                   onChange={(e) => handleChange('allergies', e.target.value)}
-                  placeholder="请描述任何已知的过敏或健康注意事项..."
+                  placeholder={t('customers.allergiesPlaceholder')}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -690,17 +794,17 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions 
-        sx={{ 
+      <DialogActions
+        sx={{
           p: 3,
           borderTop: '1px solid',
           borderColor: 'divider',
           background: alpha('#F59E0B', 0.02),
         }}
       >
-        <Button 
+        <Button
           onClick={onClose}
-          sx={{ 
+          sx={{
             borderRadius: 2,
             px: 3,
             color: 'text.secondary',
@@ -708,7 +812,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         >
           {t('customers.cancel')}
         </Button>
-        <Button 
+        <Button
           variant="contained"
           onClick={handleSubmit}
           sx={{

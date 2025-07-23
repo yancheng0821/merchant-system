@@ -28,6 +28,7 @@ import GoogleLoginButton from './GoogleLoginButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
+
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const { login, register, loginWithGoogle, loading, error, clearError, setError } = useAuth();
@@ -246,28 +247,32 @@ const LoginPage: React.FC = () => {
                 </Typography>
               </Box>
 
-              {/* Google登录按钮 */}
-              <Box sx={{
-                mb: 3,
-                minHeight: '48px', // 固定最小高度，防止布局变化
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <GoogleLoginButton
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  disabled={loading}
-                  variant="themed" // 使用主题化样式
-                />
-              </Box>
+              {/* Google登录按钮 - 已隐藏 */}
+              {false && (
+                <>
+                  <Box sx={{
+                    mb: 3,
+                    minHeight: '48px', // 固定最小高度，防止布局变化
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <GoogleLoginButton
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      disabled={loading}
+                      variant="themed" // 使用主题化样式
+                    />
+                  </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <Divider sx={{ flex: 1 }} />
-                <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
-                  {t('auth.orDivider')}
-                </Typography>
-                <Divider sx={{ flex: 1 }} />
-              </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Divider sx={{ flex: 1 }} />
+                    <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
+                      {t('auth.orDivider')}
+                    </Typography>
+                    <Divider sx={{ flex: 1 }} />
+                  </Box>
+                </>
+              )}
 
               {isLogin ? (
                 /* 登录表单 */
@@ -567,6 +572,8 @@ const LoginPage: React.FC = () => {
                   </Button>
                 </Typography>
               </Box>
+
+
             </Paper>
           </Slide>
         </Box>

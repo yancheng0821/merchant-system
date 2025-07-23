@@ -192,5 +192,25 @@ public interface CustomerMapper {
      */
     boolean existsByTenantIdAndEmail(@Param("tenantId") Long tenantId, @Param("email") String email);
 
-    List<Customer> findByCondition(Long tenantId, String keyword, Customer.CustomerStatus status, Customer.MembershipLevel level);
+    List<Customer> findByCondition(@Param("tenantId") Long tenantId, 
+                                  @Param("keyword") String keyword, 
+                                  @Param("status") Customer.CustomerStatus status, 
+                                  @Param("level") Customer.MembershipLevel level,
+                                  @Param("sortBy") String sortBy,
+                                  @Param("sortDir") String sortDir);
+    
+    /**
+     * 查询客户偏好服务ID列表
+     */
+    List<Long> selectPreferredServiceIds(Long customerId);
+    
+    /**
+     * 插入客户偏好服务
+     */
+    int insertPreferredServices(@Param("customerId") Long customerId, @Param("serviceIds") List<Long> serviceIds);
+    
+    /**
+     * 删除客户偏好服务
+     */
+    int deletePreferredServices(@Param("customerId") Long customerId);
 }

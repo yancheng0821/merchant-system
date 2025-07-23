@@ -25,6 +25,9 @@
         <result property="updatedAt" column="updated_at"/>
         <result property="createdBy" column="created_by"/>
         <result property="updatedBy" column="updated_by"/>
+        <!-- 偏好服务ID集合映射 -->
+        <collection property="preferredServiceIds" ofType="java.lang.Long" 
+                   select="selectPreferredServiceIds" column="id"/>
     </resultMap>
 
     <!-- 基础查询SQL -->
@@ -313,6 +316,30 @@
         <if test="level != null">
             AND membership_level = #{level}
         </if>
+        <include refid="Order_By_Clause"/>
     </select>
+
+    <!-- 查询客户偏好服务ID列表 -->
+    <select id="selectPreferredServiceIds" resultType="java.lang.Long">
+        SELECT service_id
+        FROM customer_preferred_services
+        WHERE customer_id = #{id}
+        ORDER BY created_at
+    </select>
+
+    <!-- 插入客户偏好服务 -->
+    <insert id="insertPreferredServices">
+        INSERT INTO customer_preferred_services (customer_id, service_id)
+        VALUES
+        <foreach collection="serviceIds" item="serviceId" separator=",">
+            (#{customerId}, #{serviceId})
+        </foreach>
+    </insert>
+
+    <!-- 删除客户偏好服务 -->
+    <delete id="deletePreferredServices">
+        DELETE FROM customer_preferred_services
+        WHERE customer_id = #{customerId}
+    </delete>
 
 </mapper>

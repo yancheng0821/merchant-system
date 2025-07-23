@@ -29,7 +29,6 @@
     "searchPlaceholder": "搜索客户姓名、电话或邮箱...",
     "editCustomer": "编辑客户",
     "deleteCustomer": "删除客户",
-    "viewAppointments": "查看预约",
     "customer": "客户",
     "contact": "联系方式",
     "membership": "会员等级",
@@ -67,6 +66,10 @@
     "sms": "短信",
     "notes": "备注",
     "notesPlaceholder": "添加客户备注信息...",
+    "optional": "可选",
+    "editCustomerInfo": "编辑客户信息",
+    "createNewCustomerProfile": "创建新的客户档案",
+    "allergiesPlaceholder": "请描述任何已知的过敏或健康注意事项...",
     "cancel": "取消",
     "createCustomer": "创建客户",
     "updateCustomer": "更新客户",
@@ -98,7 +101,8 @@
       "phoneInvalid": "电话号码格式不正确",
       "emailRequired": "邮箱地址是必填项",
       "emailInvalid": "邮箱地址格式不正确",
-      "addressRequired": "地址是必填项"
+      "addressRequired": "地址是必填项",
+      "requiredFields": "请填写必填字段：姓、名、电话和邮箱"
     },
     "totalCustomers": "总客户数",
     "activeCustomers": "活跃客户",
@@ -118,6 +122,16 @@
     "allLevels": "全部等级",
     "statusFilter": "客户状态",
     "allStatuses": "全部状态",
+    "sortBy": "排序方式",
+    "sortOptions": {
+      "createdAt": "创建时间",
+      "updatedAt": "更新时间",
+      "name": "姓名",
+      "lastVisit": "最后访问",
+      "totalSpent": "总消费",
+      "points": "积分",
+      "membershipLevel": "会员等级"
+    },
     "addCustomer": "新增客户",
     "tableHeaders": {
       "customer": "客户",
@@ -129,7 +143,16 @@
       "status": "状态",
       "actions": "操作"
     },
-    "noCustomers": "暂无客户数据"
+    "noCustomers": "暂无客户数据",
+    "neverVisited": "从未访问",
+    "viewAppointments": "查看预约",
+    "deleteSuccess": "客户删除成功",
+    "updateSuccess": "客户信息更新成功",
+    "createSuccess": "客户创建成功",
+    "activateCustomer": "激活客户",
+    "deactivateCustomer": "停用客户",
+    "activateSuccess": "客户已激活",
+    "deactivateSuccess": "客户已停用"
   },
   "appointments": {
     "title": "预约管理",

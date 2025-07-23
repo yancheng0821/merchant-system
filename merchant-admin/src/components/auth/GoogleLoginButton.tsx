@@ -23,6 +23,16 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 使用useRef存储回调函数，避免依赖变化
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+
+  // 更新ref中的回调函数
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
+
   // 初始化Google API（只初始化一次）
   useEffect(() => {
     let checkInterval: NodeJS.Timeout;
@@ -32,63 +42,48 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id && !isInitialized) {
         try {
           const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-          console.log('Initializing Google API with client ID:', clientId);
-          console.log('Current origin:', window.location.origin);
-          console.log('Current hostname:', window.location.hostname);
-          console.log('Current port:', window.location.port);
-          console.log('Current protocol:', window.location.protocol);
+
 
           if (!clientId || clientId === 'your-google-client-id' || clientId === 'your-google-client-id-here') {
-            console.error('Google Client ID not configured properly. Please set REACT_APP_GOOGLE_CLIENT_ID in .env file.');
-            onError('Google Client ID not configured properly');
+            onErrorRef.current('Google Client ID not configured properly');
             return;
           }
 
-          // 检查是否在localhost环境
-          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          if (isLocalhost) {
-            console.warn('Running on localhost. Make sure your Google OAuth client is configured for:', window.location.origin);
-          }
-
+          // 使用GSI配置
           window.google.accounts.id.initialize({
             client_id: clientId,
             callback: (response: any) => {
-              console.log('Google callback received:', response);
               setIsLoading(false);
               if (response.credential) {
-                onSuccess(response.credential);
+                onSuccessRef.current(response.credential);
               } else {
-                onError('Google login failed');
+                onErrorRef.current('Google login failed');
               }
             },
-            cancel_on_tap_outside: false,
             auto_select: false,
-            use_fedcm_for_prompt: false, // 禁用FedCM以避免冲突
-            // 添加更多配置选项
-            ux_mode: 'popup', // 使用弹窗模式
-            context: 'signin', // 登录上下文
+            cancel_on_tap_outside: true,
+            itp_support: true,
+            // 优化用户体验
+            context: 'signin',
+            ux_mode: 'popup',
           });
           setIsInitialized(true);
-          console.log('Google API initialized successfully');
+
         } catch (error) {
           console.error('Google API initialization error:', error);
-          onError('Google API initialization failed');
+          onErrorRef.current('Google API initialization failed');
         }
       }
     };
 
     // 检查Google API是否完全加载
     const checkGoogleLoaded = () => {
-      console.log('Checking Google API availability...');
       if (typeof window.google !== 'undefined' &&
         window.google.accounts &&
         window.google.accounts.id) {
-        console.log('Google API is available');
         clearInterval(checkInterval);
         clearTimeout(timeoutId);
         initializeGoogle();
-      } else {
-        console.log('Google API not yet available');
       }
     };
 
@@ -102,9 +97,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       // 15秒后停止检查
       timeoutId = setTimeout(() => {
         clearInterval(checkInterval);
-        if (!isInitialized) {
-          console.error('Google API failed to load within 15 seconds');
-        }
+
       }, 15000);
     }
 
@@ -112,28 +105,21 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       if (checkInterval) clearInterval(checkInterval);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [onSuccess, onError, isInitialized]);
+  }, [isInitialized]); // 移除onSuccess和onError依赖，避免无限循环
 
   const handleGoogleLogin = async () => {
-    console.log('Google login button clicked');
-    console.log('disabled:', disabled, 'isLoading:', isLoading, 'isInitialized:', isInitialized);
-    console.log('window.google available:', typeof window.google !== 'undefined');
-
     // 防止重复点击和加载状态
     if (disabled || isLoading) {
-      console.log('Button disabled or loading, returning');
       return;
     }
 
     // 检查Google API是否已加载和初始化
     if (typeof window.google === 'undefined' || !isInitialized) {
-      console.log('Google API not ready');
-      onError('Google API not ready');
+      onErrorRef.current('Google API not ready');
       return;
     }
 
     try {
-      console.log('Starting Google login process');
       setIsLoading(true);
 
       // 取消之前的AbortController
@@ -148,7 +134,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       try {
         window.google.accounts.id.cancel();
       } catch (e) {
-        console.log('Error canceling previous Google request:', e);
+        // 忽略取消错误
       }
 
       // 等待一小段时间确保之前的请求已经清理
@@ -156,44 +142,54 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
 
       // 检查是否已被取消
       if (abortControllerRef.current.signal.aborted) {
-        console.log('Request was aborted');
         return;
       }
 
-      console.log('Calling Google prompt');
-      // 显示登录弹窗
       try {
-        window.google.accounts.id.prompt((notification: any) => {
-          console.log('Google prompt notification:', notification);
-          if (notification.isNotDisplayed()) {
-            const reason = notification.getNotDisplayedReason();
-            console.error('Google One Tap not displayed. Reason:', reason);
-            
-            // 如果是unregistered_origin错误，提供更详细的错误信息
-            if (reason === 'unregistered_origin') {
-              setIsLoading(false);
-              onError('Google OAuth配置错误：当前域名未在Google控制台中注册。请联系管理员配置OAuth授权域名。');
-            } else {
-              setIsLoading(false);
-              onError(`Google login not displayed: ${reason}`);
-            }
-          } else if (notification.isSkippedMoment()) {
-            console.log('Google One Tap skipped. Reason:', notification.getSkippedReason());
-            setIsLoading(false);
-          } else {
-            console.log('Google prompt displayed successfully');
-          }
+        // 创建一个临时的隐藏容器来渲染Google按钮
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.top = '-1000px';
+        tempContainer.style.left = '-1000px';
+        tempContainer.style.visibility = 'hidden';
+        document.body.appendChild(tempContainer);
+
+        // 使用renderButton创建Google登录按钮并自动点击
+        window.google.accounts.id.renderButton(tempContainer, {
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width: 250
         });
+
+        // 等待按钮渲染完成后自动点击
+        setTimeout(() => {
+          const googleButton = tempContainer.querySelector('div[role="button"]') as HTMLElement;
+          if (googleButton) {
+            googleButton.click();
+          } else {
+            setIsLoading(false);
+            onErrorRef.current('无法创建Google登录按钮');
+          }
+          
+          // 清理临时容器
+          setTimeout(() => {
+            if (document.body.contains(tempContainer)) {
+              document.body.removeChild(tempContainer);
+            }
+          }, 1000);
+        }, 100);
+
       } catch (error) {
-        console.error('Error calling Google prompt:', error);
         setIsLoading(false);
-        onError('Failed to display Google login');
+        onErrorRef.current('Google登录失败');
       }
 
     } catch (error) {
-      console.error('Google login error:', error);
       setIsLoading(false);
-      onError('Google login failed');
+      onErrorRef.current('Google login failed');
     }
   };
 

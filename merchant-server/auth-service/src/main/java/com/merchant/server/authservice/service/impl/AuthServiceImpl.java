@@ -221,6 +221,7 @@ public class AuthServiceImpl implements AuthService {
             user.setEmail(googleUserInfo.getEmail());
             user.setRealName(googleUserInfo.getName() != null ? googleUserInfo.getName() : googleUserInfo.getGivenName());
             user.setPasswordHash(""); // Google用户不需要密码
+            user.setSalt(""); // Google用户不需要salt，但数据库字段不能为null
             user.setTenantId(tenant.getId());
             user.setStatus(User.UserStatus.ACTIVE);
             user.setAvatarUrl(googleUserInfo.getPicture());

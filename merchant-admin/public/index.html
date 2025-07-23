@@ -1,42 +1,44 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <!-- 使用apple-touch-icon作为favicon -->
-    <link rel="icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#667eea" />
-    <meta
-      name="description"
-      content="Merchant System - 专业的商户管理平台"
-    />
-    
-    <!-- App Icons -->
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
-    />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-    />
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- 添加Google API加载检查 -->
-    <script>
-      window.onGoogleLibraryLoad = function() {
-        console.log('Google Identity Services library loaded');
-      };
-    </script>
-    <title>Merchant System - 商户管理平台</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
-</html> 
+
+<head>
+  <meta charset="utf-8" />
+  <!-- 使用apple-touch-icon作为favicon -->
+  <link rel="icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#667eea" />
+  <meta name="description" content="Merchant System - 专业的商户管理平台" />
+  <!-- Google Sign-In Client ID Meta Tag -->
+  <meta name="google-signin-client_id"
+    content="567578445873-v336ul1tb9i08kvvm2vg3mkmoe5cvtfj.apps.googleusercontent.com" />
+
+  <!-- FedCM支持 -->
+  <meta name="google-signin-scope" content="profile email">
+  <meta name="google-signin-cookiepolicy" content="single_host_origin">
+
+  <!-- App Icons -->
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- 添加Google API加载检查 -->
+  <script>
+    window.onGoogleLibraryLoad = function () {
+      console.log('Google Identity Services library loaded');
+    };
+  </script>
+  <title>Merchant System - 商户管理平台</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.ServiceMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="ServiceResultMap" type="com.merchant.server.businessservice.entity.Service">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="name" column="name"/>
+        <result property="nameEn" column="name_en"/>
+        <result property="description" column="description"/>
+        <result property="descriptionEn" column="description_en"/>
+        <result property="price" column="price"/>
+        <result property="duration" column="duration"/>
+        <result property="skillLevel" column="skill_level"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, category_id, name, name_en, description, description_en,
+        price, duration, skill_level, status, created_at, updated_at
+    </sql>
+
+    <!-- 根据租户ID查询所有服务 -->
+    <select id="selectByTenantId" resultMap="ServiceResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM services
+        WHERE tenant_id = #{tenantId}
+        ORDER BY name
+    </select>
+
+    <!-- 根据租户ID和状态查询服务 -->
+    <select id="selectByTenantIdAndStatus" resultMap="ServiceResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM services
+        WHERE tenant_id = #{tenantId} AND status = #{status}
+        ORDER BY name
+    </select>
+
+    <!-- 根据ID查询服务 -->
+    <select id="selectById" resultMap="ServiceResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM services
+        WHERE id = #{id}
+    </select>
+
+</mapper>

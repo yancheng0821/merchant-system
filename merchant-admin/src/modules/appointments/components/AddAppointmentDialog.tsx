@@ -167,7 +167,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       };
 
       const appointment: Partial<Appointment> = {
-        customerId: customer.id,
+        customerId: String(customer.id),
         customerName: selectedCustomer ? `${customer.firstName} ${customer.lastName}` : newCustomerData.name,
         customerPhone: customer.phone,
         serviceType: selectedServices.join(', '),
