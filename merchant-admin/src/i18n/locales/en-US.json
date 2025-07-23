@@ -479,6 +479,7 @@
     "categoryDescriptionRequired": "Category description is required",
     "categoryNameExists": "Category name already exists",
     "selectCategoryToEdit": "Select a category to edit or add a new category",
+    "selectCategoryToEditDescription": "Click the edit button on the left category to start editing, or click 'Add Category' to create a new category",
     "saveChanges": "Save Changes"
   },
   "settings": {

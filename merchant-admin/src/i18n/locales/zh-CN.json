@@ -536,6 +536,7 @@
     "categoryDescriptionRequired": "分类描述不能为空",
     "categoryNameExists": "分类名称已存在",
     "selectCategoryToEdit": "选择一个分类进行编辑，或添加新分类",
+    "selectCategoryToEditDescription": "点击左侧分类的编辑按钮开始编辑，或点击'添加分类'创建新分类",
     "saveChanges": "保存更改"
   },
   "settings": {

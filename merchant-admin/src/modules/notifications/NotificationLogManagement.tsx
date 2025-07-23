@@ -73,8 +73,8 @@ const NotificationLogManagement: React.FC = () => {
     businessId: ''
   });
 
-  // 紫色主题色
-  const themeColor = '#A855F7';
+  // 更深的粉色主题色，确保文字清晰
+  const themeColor = '#E91E63';
 
   // 获取租户ID
   const tenantId = useMemo(() => {
@@ -401,10 +401,10 @@ const NotificationLogManagement: React.FC = () => {
                 sx={{
                   borderRadius: 2,
                   py: 1.5,
-                  background: `linear-gradient(135deg, ${themeColor}, #7C3AED)`,
+                  background: `linear-gradient(135deg, ${themeColor}, #F06292)`,
                   boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                    background: 'linear-gradient(135deg, #E91E63, #EC407A)',
                     transform: 'translateY(-1px)',
                     boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
                   },

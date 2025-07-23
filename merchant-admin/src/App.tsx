@@ -70,7 +70,7 @@ const menuItems: MenuItemType[] = [
   { textKey: 'nav.orders', icon: <OrdersIcon />, id: 'orders', color: '#10B981' },
   { textKey: 'nav.customers', icon: <CustomersIcon />, id: 'customers', color: '#F59E0B' },
   { textKey: 'nav.appointments', icon: <AppointmentsIcon />, id: 'appointments', color: '#8B5CF6' },
-  { textKey: 'nav.notifications', icon: <NotificationsIcon />, id: 'notifications', color: '#A855F7' },
+  { textKey: 'nav.notifications', icon: <NotificationsIcon />, id: 'notifications', color: '#E91E63' },
   { textKey: 'nav.analytics', icon: <AnalyticsIcon />, id: 'analytics', color: '#F97316' },
   { textKey: 'nav.settings', icon: <SettingsIcon />, id: 'settings', color: '#6366F1' },
 ];

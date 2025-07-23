@@ -34,6 +34,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Service, ServiceCategory } from '../ServiceManagement';
 
+// 主题颜色 - 使用青色主题
+const THEME_COLOR = '#06B6D4';
+const THEME_COLOR_DARK = '#0891B2';
+const THEME_COLOR_DARKER = '#0E7490';
+
 interface ServiceDialogProps {
   open: boolean;
   onClose: () => void;
@@ -217,7 +222,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
       {/* 现代化对话框标题 */}
       <DialogTitle
         sx={{
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.08))',
+          background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.08)}, ${alpha(THEME_COLOR_DARK, 0.08)})`,
           borderBottom: '1px solid',
           borderColor: 'divider',
           pb: 3,
@@ -231,7 +236,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                 width: 48,
                 height: 48,
                 borderRadius: 2,
-                background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -260,7 +265,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
             onClick={onClose}
             sx={{
               '&:hover': {
-                backgroundColor: alpha('#EC4899', 0.1),
+                backgroundColor: alpha(THEME_COLOR, 0.1),
               },
             }}
           >
@@ -271,16 +276,16 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
 
       <DialogContent sx={{ p: 0 }}>
         <Box sx={{ p: 3 }}>
-                          {/* {t('dialogs.basicInfo')} */}
+          {/* 基本信息 */}
           <Paper
             elevation={0}
             sx={{
               p: 3,
               mb: 3,
               border: '1px solid',
-              borderColor: alpha('#EC4899', 0.2),
+              borderColor: alpha(THEME_COLOR, 0.2),
               borderRadius: 2,
-              background: alpha('#EC4899', 0.02),
+              background: alpha(THEME_COLOR, 0.02),
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -289,7 +294,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -298,7 +303,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               >
                 <ServiceIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
                 {t('services.basicInfo')}
               </Typography>
             </Box>
@@ -316,10 +321,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -339,10 +344,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -359,17 +364,17 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     }}
                   >
                     {categories.filter(c => c.isActive).map((category) => (
                       <MenuItem key={category.id} value={category.id}>
                         <Box display="flex" alignItems="center" gap={1}>
-                          <CategoryIcon sx={{ fontSize: 16, color: '#EC4899' }} />
+                          <CategoryIcon sx={{ fontSize: 16, color: THEME_COLOR }} />
                           {category.name}
                         </Box>
                       </MenuItem>
@@ -387,7 +392,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                 <Box display="flex" alignItems="center" justifyContent="space-between" p={2} 
                      sx={{ 
                        border: '1px solid', 
-                       borderColor: alpha('#EC4899', 0.2),
+                       borderColor: alpha(THEME_COLOR, 0.2),
                        borderRadius: 2,
                        height: '56px',
                      }}
@@ -402,10 +407,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                         onChange={handleChange('isActive')}
                         sx={{
                           '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: '#EC4899',
+                            color: THEME_COLOR,
                           },
                           '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                            backgroundColor: '#EC4899',
+                            backgroundColor: THEME_COLOR,
                           },
                         }}
                       />
@@ -426,16 +431,16 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
             </Grid>
           </Paper>
 
-                          {/* {t('dialogs.serviceDetails')} */}
+          {/* 服务详情 */}
           <Paper
             elevation={0}
             sx={{
               p: 3,
               mb: 3,
               border: '1px solid',
-              borderColor: alpha('#EC4899', 0.2),
+              borderColor: alpha(THEME_COLOR, 0.2),
               borderRadius: 2,
-              background: alpha('#EC4899', 0.02),
+              background: alpha(THEME_COLOR, 0.02),
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -444,7 +449,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -453,7 +458,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               >
                 <PriceIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
                 {t('services.serviceDetails')}
               </Typography>
             </Box>
@@ -471,7 +476,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PriceIcon sx={{ color: '#EC4899' }} />
+                        <PriceIcon sx={{ color: THEME_COLOR }} />
                       </InputAdornment>
                     ),
                   }}
@@ -480,10 +485,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -502,7 +507,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <TimeIcon sx={{ color: '#EC4899' }} />
+                        <TimeIcon sx={{ color: THEME_COLOR }} />
                       </InputAdornment>
                     ),
                   }}
@@ -511,10 +516,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -531,10 +536,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     }}
                   >
@@ -572,10 +577,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -595,10 +600,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -607,15 +612,15 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
             </Grid>
           </Paper>
 
-                          {/* {t('dialogs.staffConfiguration')} */}
+          {/* 员工配置 */}
           <Paper
             elevation={0}
             sx={{
               p: 3,
               border: '1px solid',
-              borderColor: alpha('#EC4899', 0.2),
+              borderColor: alpha(THEME_COLOR, 0.2),
               borderRadius: 2,
-              background: alpha('#EC4899', 0.02),
+              background: alpha(THEME_COLOR, 0.02),
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -624,7 +629,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -633,7 +638,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               >
                 <PersonIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
                 {t('services.staffConfiguration')}
               </Typography>
             </Box>
@@ -650,11 +655,11 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     {...getTagProps({ index })}
                     key={option}
                     sx={{
-                      backgroundColor: alpha('#EC4899', 0.1),
-                      color: '#EC4899',
+                      backgroundColor: alpha(THEME_COLOR, 0.1),
+                      color: THEME_COLOR,
                       fontWeight: 600,
                       '& .MuiChip-deleteIcon': {
-                        color: '#EC4899',
+                        color: THEME_COLOR,
                       },
                     }}
                   />
@@ -671,10 +676,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
+                        borderColor: THEME_COLOR,
                       },
                     },
                   }}
@@ -704,7 +709,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
           p: 3,
           borderTop: '1px solid',
           borderColor: 'divider',
-          background: alpha('#EC4899', 0.02),
+          background: alpha(THEME_COLOR, 0.02),
         }}
       >
         <Button 
@@ -723,11 +728,11 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
           sx={{
             borderRadius: 2,
             px: 3,
-            background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-            boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
+            background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
+            boxShadow: `0 4px 15px ${alpha(THEME_COLOR, 0.3)}`,
             '&:hover': {
-              background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-              boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
+              background: `linear-gradient(135deg, ${THEME_COLOR_DARK}, ${THEME_COLOR_DARKER})`,
+              boxShadow: `0 6px 20px ${alpha(THEME_COLOR, 0.4)}`,
             },
           }}
         >
@@ -738,4 +743,4 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
   );
 };
 
-export default ServiceDialog; 
+export default ServiceDialog;

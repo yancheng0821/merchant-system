@@ -195,7 +195,7 @@ const Analytics: React.FC = () => {
               component="h1" 
               sx={{ 
                 fontWeight: 700,
-                background: 'linear-gradient(45deg, #DC2626, #EF4444)',
+                background: 'linear-gradient(45deg, #F59E0B, #D97706)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 1,
@@ -215,10 +215,10 @@ const Analytics: React.FC = () => {
               sx={{
                 borderRadius: 2,
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#EF4444', 0.2),
+                  borderColor: alpha('#F59E0B', 0.2),
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#EF4444',
+                  borderColor: '#F59E0B',
                 },
               }}
             >
@@ -380,11 +380,11 @@ const Analytics: React.FC = () => {
               borderRadius: 3,
               boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
               border: '1px solid',
-              borderColor: alpha('#EC4899', 0.1),
+              borderColor: alpha('#8B5CF6', 0.1),
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(236, 72, 153, 0.15)',
+                boxShadow: '0 8px 30px rgba(139, 92, 246, 0.15)',
               },
             }}
           >
@@ -395,7 +395,7 @@ const Analytics: React.FC = () => {
                     width: 48,
                     height: 48,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -404,7 +404,7 @@ const Analytics: React.FC = () => {
                 >
                   <PeopleIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
                   {staffPerformanceData.length}
                 </Typography>
               </Box>
@@ -451,19 +451,19 @@ const Analytics: React.FC = () => {
                 borderRadius: 2,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  backgroundColor: alpha('#EF4444', 0.08),
+                  backgroundColor: alpha('#F59E0B', 0.08),
                   transform: 'translateY(-1px)',
                 },
                 '&.Mui-selected': {
                   fontWeight: 600,
-                  backgroundColor: alpha('#EF4444', 0.1),
-                  color: '#EF4444',
+                  backgroundColor: alpha('#F59E0B', 0.1),
+                  color: '#F59E0B',
                 },
               },
               '& .MuiTabs-indicator': {
                 height: 3,
                 borderRadius: 2,
-                background: 'linear-gradient(90deg, #EF4444, #DC2626)',
+                background: 'linear-gradient(90deg, #F59E0B, #D97706)',
               },
             }}
           >
@@ -549,7 +549,7 @@ const Analytics: React.FC = () => {
                   sx={{
                     width: 6,
                     height: 24,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
                     borderRadius: 1,
                     mr: 2,
                   }}
@@ -746,7 +746,7 @@ const Analytics: React.FC = () => {
             {[
               { title: t('analytics.metrics.customerSatisfaction'), value: '4.8', unit: '/5.0', color: '#F59E0B', trend: '+0.2' },
               { title: t('analytics.metrics.serviceCompletionRate'), value: '94.2', unit: '%', color: '#10B981', trend: '+2.1%' },
-              { title: t('analytics.metrics.appointmentCancellationRate'), value: '8.5', unit: '%', color: '#EF4444', trend: '-1.3%' },
+              { title: t('analytics.metrics.appointmentCancellationRate'), value: '8.5', unit: '%', color: '#F59E0B', trend: '-1.3%' },
               { title: t('analytics.metrics.repeatCustomerRate'), value: '67.3', unit: '%', color: '#8B5CF6', trend: '+5.7%' },
             ].map((metric, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}>

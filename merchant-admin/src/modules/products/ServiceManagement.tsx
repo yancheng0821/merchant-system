@@ -281,7 +281,7 @@ const ServiceManagement: React.FC = () => {
               component="h1" 
               sx={{ 
                 fontWeight: 700,
-                background: 'linear-gradient(45deg, #DB2777, #EC4899)',
+                background: 'linear-gradient(45deg, #0891B2, #67E8F9)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 1,
@@ -307,7 +307,7 @@ const ServiceManagement: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#EC4899' }} />
+                  <SearchIcon sx={{ color: '#06B6D4' }} />
                 </InputAdornment>
               ),
             }}
@@ -318,12 +318,12 @@ const ServiceManagement: React.FC = () => {
                 border: '2px solid transparent',
                 '&:hover': {
                   backgroundColor: '#f1f5f9',
-                  borderColor: alpha('#EC4899', 0.3),
+                  borderColor: alpha('#06B6D4', 0.3),
                 },
                 '&.Mui-focused': {
                   backgroundColor: 'white',
-                  borderColor: '#EC4899',
-                  boxShadow: `0 0 0 3px ${alpha('#EC4899', 0.1)}`,
+                  borderColor: '#06B6D4',
+                  boxShadow: `0 0 0 3px ${alpha('#06B6D4', 0.1)}`,
                 },
               },
             }}
@@ -340,10 +340,10 @@ const ServiceManagement: React.FC = () => {
                 borderRadius: 3,
                 '& .MuiOutlinedInput-root': {
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: alpha('#EC4899', 0.5),
+                    borderColor: alpha('#06B6D4', 0.5),
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#EC4899',
+                    borderColor: '#06B6D4',
                   },
                 },
               }}
@@ -368,10 +368,10 @@ const ServiceManagement: React.FC = () => {
                 borderRadius: 3,
                 '& .MuiOutlinedInput-root': {
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: alpha('#EC4899', 0.5),
+                    borderColor: alpha('#06B6D4', 0.5),
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#EC4899',
+                    borderColor: '#06B6D4',
                   },
                 },
               }}
@@ -393,12 +393,12 @@ const ServiceManagement: React.FC = () => {
               }}
               sx={{
                 borderRadius: 3,
-                background: 'linear-gradient(45deg, #EC4899, #F472B6)',
-                boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
+                background: 'linear-gradient(45deg, #0891B2, #67E8F9)',
+                boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #DB2777, #EC4899)',
+                  background: 'linear-gradient(45deg, #0E7490, #0891B2)',
                   transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
+                  boxShadow: '0 6px 20px rgba(6, 182, 212, 0.4)',
                 },
                 transition: 'all 0.3s ease',
                 flex: 1,
@@ -417,11 +417,11 @@ const ServiceManagement: React.FC = () => {
           onClick={() => setCategoryDialogOpen(true)}
           sx={{
             borderRadius: 3,
-            borderColor: '#EC4899',
-            color: '#EC4899',
+            borderColor: '#06B6D4',
+            color: '#06B6D4',
             '&:hover': {
-              borderColor: '#DB2777',
-              backgroundColor: alpha('#EC4899', 0.05),
+              borderColor: '#0891B2',
+              backgroundColor: alpha('#06B6D4', 0.05),
             },
           }}
         >
@@ -460,7 +460,7 @@ const ServiceManagement: React.FC = () => {
                     key={service.id}
                     sx={{
                       '&:hover': {
-                        backgroundColor: alpha('#EC4899', 0.04),
+                        backgroundColor: alpha('#06B6D4', 0.04),
                       },
                       transition: 'background-color 0.2s ease',
                     }}
@@ -482,7 +482,7 @@ const ServiceManagement: React.FC = () => {
                             width: 32,
                             height: 32,
                             borderRadius: 2,
-                            background: `linear-gradient(135deg, ${getCategoryColor(service.categoryId)}, ${getCategoryColor(service.categoryId)}dd)`,
+                            background: `linear-gradient(135deg, ${getCategoryColor(service.categoryId)}, ${getCategoryColor(service.categoryId)}80)`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -543,7 +543,7 @@ const ServiceManagement: React.FC = () => {
                         }}
                         sx={{
                           '&:hover': {
-                            backgroundColor: alpha('#EC4899', 0.1),
+                            backgroundColor: alpha('#06B6D4', 0.1),
                           },
                         }}
                       >
@@ -593,9 +593,9 @@ const ServiceManagement: React.FC = () => {
             setServiceDialogOpen(true);
             setMenuAnchorEl(null);
           }}
-          sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
+          sx={{ '&:hover': { backgroundColor: alpha('#06B6D4', 0.08) } }}
         >
-          <EditIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
+          <EditIcon sx={{ mr: 1, fontSize: 18, color: '#06B6D4' }} />
           {t('products.editService')}
         </MenuItem>
         <MenuItem

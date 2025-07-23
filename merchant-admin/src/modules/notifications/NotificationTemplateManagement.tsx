@@ -11,7 +11,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   Dialog,
@@ -26,7 +25,6 @@ import {
   Alert,
   Tabs,
   Tab,
-  Grid,
   alpha,
   CircularProgress,
   Menu
@@ -88,8 +86,8 @@ const NotificationTemplateManagement: React.FC = () => {
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<NotificationTemplate | null>(null);
 
-  // 紫色主题色
-  const themeColor = '#A855F7';
+  // 加深的粉色主题色，提高可读性
+  const themeColor = '#E91E63';
 
   // 获取租户ID
   const tenantId = useMemo(() => {
@@ -354,6 +352,7 @@ const NotificationTemplateManagement: React.FC = () => {
                   borderRadius: 2,
                   borderColor: themeColor,
                   color: themeColor,
+                  fontWeight: 600,
                   '&:hover': {
                     borderColor: themeColor,
                     backgroundColor: alpha(themeColor, 0.08),
@@ -370,10 +369,11 @@ const NotificationTemplateManagement: React.FC = () => {
                 onClick={() => handleOpenDialog()}
                 sx={{
                   borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #7C3AED)`,
+                  background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
                   boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+                  fontWeight: 600,
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                    background: `linear-gradient(135deg, #C2185B, #AD1457)`,
                     transform: 'translateY(-1px)',
                     boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
                   },

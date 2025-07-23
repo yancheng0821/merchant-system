@@ -35,8 +35,8 @@ const NotificationManagement: React.FC = () => {
   const { t } = useTranslation();
   const [tabValue, setTabValue] = useState(0);
 
-  // 紫色主题色
-  const themeColor = '#A855F7';
+  // 调整粉色主题色，更深一些确保文字清晰
+  const themeColor = '#E91E63';
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -53,7 +53,7 @@ const NotificationManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 700,
-                background: 'linear-gradient(45deg, #A855F7, #8B5CF6)',
+                background: 'linear-gradient(45deg, #E91E63, #F06292)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 1,
