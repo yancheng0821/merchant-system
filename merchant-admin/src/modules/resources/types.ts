@@ -10,6 +10,7 @@ export interface StaffResource extends Omit<Resource, 'type' | 'status' | 'capac
     position?: string;
     skills?: string;
     startDate?: string;
+    avatar?: string; // 员工头像
     // 前端扩展字段
     skillsArray?: string[];
 }
@@ -18,6 +19,7 @@ export interface StaffResource extends Omit<Resource, 'type' | 'status' | 'capac
 export interface RoomResource extends Omit<Resource, 'type'> {
     type: 'ROOM';
     capacity: number;
+    icon?: string; // 房间图标
     // 前端扩展字段
     equipmentArray?: string[];
 }
@@ -35,14 +37,16 @@ export const convertToStaffResource = (resource: Resource): StaffResource => {
         phone: resource.phone,
         email: resource.email,
         position: resource.position,
-        startDate: resource.startDate
+        startDate: resource.startDate,
+        avatar: resource.avatar
     };
 };
 
 export const convertToRoomResource = (resource: Resource): RoomResource => ({
     ...resource,
     type: 'ROOM' as const,
-    capacity: resource.capacity || 1
+    capacity: resource.capacity || 1,
+    icon: resource.icon
 });
 
 // 转换为API Resource类型的工具函数
@@ -58,6 +62,7 @@ export const convertStaffToResource = (staff: Partial<StaffResource>): Partial<R
         email: staff.email,
         position: staff.position,
         startDate: staff.startDate,
+        avatar: staff.avatar,
         // 确保status符合API期望的类型
         status: staff.status as Resource['status']
     };
@@ -67,6 +72,7 @@ export const convertRoomToResource = (room: Partial<RoomResource>): Partial<Reso
     const { equipmentArray, ...resourceData } = room;
     return {
         ...resourceData,
-        type: 'ROOM' as const
+        type: 'ROOM' as const,
+        icon: room.icon
     };
 };

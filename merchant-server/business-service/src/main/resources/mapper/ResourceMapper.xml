@@ -19,6 +19,8 @@
         <result column="email" property="email"/>
         <result column="position" property="position"/>
         <result column="start_date" property="startDate"/>
+        <result column="avatar" property="avatar"/>
+        <result column="icon" property="icon"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -91,10 +93,10 @@
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO resource (
             tenant_id, name, type, description, capacity, location, 
-            equipment, specialties, hourly_rate, status, phone, email, position, start_date, created_at, updated_at
+            equipment, specialties, hourly_rate, status, phone, email, position, start_date, avatar, icon, created_at, updated_at
         ) VALUES (
             #{tenantId}, #{name}, #{type}, #{description}, #{capacity}, #{location},
-            #{equipment}, #{specialties}, #{hourlyRate}, #{status}, #{phone}, #{email}, #{position}, #{startDate}, #{createdAt}, #{updatedAt}
+            #{equipment}, #{specialties}, #{hourlyRate}, #{status}, #{phone}, #{email}, #{position}, #{startDate}, #{avatar}, #{icon}, #{createdAt}, #{updatedAt}
         )
     </insert>
 
@@ -114,6 +116,8 @@
             email = #{email},
             position = #{position},
             start_date = #{startDate},
+            avatar = #{avatar},
+            icon = #{icon},
             updated_at = #{updatedAt}
         WHERE id = #{id}
     </update>

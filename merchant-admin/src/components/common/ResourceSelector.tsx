@@ -23,6 +23,7 @@ import {
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { getFullImageUrl } from '../../services/api';
 import { Resource, resourceApi } from '../../services/api';
 
 interface ResourceSelectorProps {
@@ -143,8 +144,52 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
   };
 
   // 获取资源图标
-  const getResourceIcon = (type: 'STAFF' | 'ROOM') => {
-    return type === 'STAFF' ? <PersonIcon /> : <RoomIcon />;
+  const getResourceIcon = (resource: any) => {
+    if (resource.type === 'STAFF') {
+      if (resource.avatar) {
+        return (
+          <img 
+            src={resource.avatar} 
+            alt={resource.name}
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover',
+              borderRadius: '50%'
+            }} 
+          />
+        );
+      }
+      return resource.name ? resource.name.charAt(0).toUpperCase() : <PersonIcon />;
+    } else {
+      if (resource.icon) {
+        const isImageUrl = resource.icon.startsWith('http') || resource.icon.startsWith('/api/') || resource.icon.startsWith('data:') || resource.icon.startsWith('blob:');
+        if (isImageUrl) {
+          return (
+            <img 
+              src={getFullImageUrl(resource.icon)}
+              alt={resource.name}
+              style={{ 
+                width: '16px', 
+                height: '16px', 
+                objectFit: 'cover',
+                borderRadius: '2px'
+              }} 
+            />
+          );
+        }
+        
+        // 如果是emoji图标，直接显示
+        if (!resource.icon.includes('/') && resource.icon.length <= 10) {
+          return (
+            <Typography sx={{ fontSize: 16, lineHeight: 1 }}>
+              {resource.icon}
+            </Typography>
+          );
+        }
+      }
+      return <RoomIcon />;
+    }
   };
 
   // 获取资源状态颜色
@@ -221,7 +266,7 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
                 <CardContent>
                   <Box display="flex" alignItems="center" mb={1}>
                     <Avatar sx={{ bgcolor: getStatusColor(resource), mr: 1, width: 32, height: 32 }}>
-                      {getResourceIcon(resource.type)}
+                      {getResourceIcon(resource)}
                     </Avatar>
                     <Box flex={1}>
                       <Typography variant="subtitle2" fontWeight={600}>
@@ -315,7 +360,7 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
                 height: 24,
                 fontSize: '0.75rem'
               }}>
-                {getResourceIcon(resource.type)}
+                {getResourceIcon(resource)}
               </Avatar>
               <Box flex={1}>
                 <Typography variant="body2">{resource.name}</Typography>

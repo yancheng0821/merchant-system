@@ -27,9 +27,12 @@ import {
     Phone as PhoneIcon,
     Email as EmailIcon,
     Badge as BadgeIcon,
+    PhotoCamera as PhotoIcon,
 } from '@mui/icons-material';
+import ImageUploader from '../../../components/common/ImageUploader';
 import { useTranslation } from 'react-i18next';
 import { StaffResource } from '../types';
+import { getFullImageUrl } from '../../../services/api';
 
 // Resources模块主题色 - 红色
 const THEME_COLOR = '#DC2626';
@@ -59,6 +62,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
         skills: '',
         status: 'ACTIVE',
         startDate: '',
+        avatar: '', // 添加头像字段
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -81,6 +85,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 skills: staff.skills || '',
                 status: staff.status || 'ACTIVE',
                 startDate: staff.startDate || '',
+                avatar: staff.avatar || '',
             });
         } else {
             setFormData({
@@ -92,16 +97,22 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 skills: '',
                 status: 'ACTIVE',
                 startDate: new Date().toISOString().split('T')[0],
+                avatar: '',
             });
         }
         setError(null);
     }, [staff, open]);
 
     const handleInputChange = (field: keyof StaffResource, value: any) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value,
-        }));
+        console.log(`Updating ${field}:`, value); // 调试日志
+        setFormData(prev => {
+            const newData = {
+                ...prev,
+                [field]: value,
+            };
+            console.log('New formData:', newData); // 调试日志
+            return newData;
+        });
     };
 
     const handleSubmit = async () => {
@@ -282,7 +293,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                         </Box>
 
                         <Grid container spacing={2}>
-
+                            {/* 姓名字段 */}
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
@@ -309,6 +320,26 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                         },
                                     }}
                                 />
+                            </Grid>
+
+                            {/* 头像上传 */}
+                            <Grid item xs={12} sm={6}>
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                                        {t('staff.avatar')}
+                                    </Typography>
+                                    <ImageUploader
+                                        value={getFullImageUrl(formData.avatar)}
+                                        onChange={(imageUrl) => {
+                                            console.log('Avatar uploaded:', imageUrl); // 调试日志
+                                            handleInputChange('avatar', imageUrl || '');
+                                        }}
+                                        variant="avatar"
+                                        size={80}
+                                        placeholder={t('staff.avatarPlaceholder')}
+                                        uploadType="avatar"
+                                    />
+                                </Box>
                             </Grid>
 
                             <Grid item xs={12}>

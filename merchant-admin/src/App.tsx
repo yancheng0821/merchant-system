@@ -44,6 +44,7 @@ import {
 } from './modules';
 import NotificationManagement from './modules/notifications/NotificationManagement';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
+import { initializeConfigPreloader } from './utils/configPreloader';
 
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
@@ -69,10 +70,13 @@ const MainApp: React.FC = () => {
   const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
 
-  // 获取商户配置
+  // 获取商户配置和初始化预加载器
   useEffect(() => {
     const fetchMerchantConfig = async () => {
       try {
+        // 初始化配置预加载器
+        initializeConfigPreloader();
+        
         // 模拟API调用 - 实际应该从后端获取
         const mockConfig: MerchantConfig = {
           merchantId: user?.tenantId || 1,

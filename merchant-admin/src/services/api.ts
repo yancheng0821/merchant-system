@@ -3,6 +3,79 @@ import i18n from '../i18n/config';
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
+// 工具函数：获取完整的文件URL
+export const getFullImageUrl = (imageUrl?: string): string | undefined => {
+  if (!imageUrl) return undefined;
+  if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+    return imageUrl;
+  }
+  // 通过gateway访问文件
+  return `${API_BASE_URL}${imageUrl}`;
+};
+
+// 文件上传API
+export const fileUploadApi = {
+    // 上传头像
+    uploadAvatar: async (file: File, tenantId: number): Promise<string> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('tenantId', tenantId.toString());
+        
+        const response = await fetch(`${API_BASE_URL}/api/files/upload/avatar`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+        
+        if (!response.ok) {
+            throw new Error('Upload failed');
+        }
+        
+        const result = await response.json();
+        return result.url; // 返回文件访问URL
+    },
+    
+    // 上传房间图标
+    uploadRoomIcon: async (file: File, tenantId: number): Promise<string> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('tenantId', tenantId.toString());
+        
+        const response = await fetch(`${API_BASE_URL}/api/files/upload/room-icon`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+        
+        if (!response.ok) {
+            throw new Error('Upload failed');
+        }
+        
+        const result = await response.json();
+        return result.url; // 返回文件访问URL
+    },
+    
+    // 删除文件
+    deleteFile: async (fileUrl: string): Promise<void> => {
+        const response = await fetch(`${API_BASE_URL}/api/files/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({ fileUrl }),
+        });
+        
+        if (!response.ok) {
+            throw new Error('Delete failed');
+        }
+    },
+};
+
 // 商户配置相关API
 export const merchantConfigApi = {
   // 获取商户完整配置
@@ -617,6 +690,8 @@ export interface Resource {
   email?: string;
   position?: string;
   startDate?: string;
+  avatar?: string; // 员工头像
+  icon?: string; // 房间图标
   createdAt: string;
   updatedAt: string;
   availabilities?: ResourceAvailability[];

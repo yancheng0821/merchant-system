@@ -43,6 +43,10 @@ public class Resource {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private java.time.LocalDate startDate; // 入职日期（员工专用）
     
+    private String avatar; // 员工头像URL（员工专用）
+    
+    private String icon; // 房间图标URL或图标名称（房间专用）
+    
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     

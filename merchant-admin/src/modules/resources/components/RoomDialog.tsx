@@ -26,7 +26,9 @@ import {
     People as PeopleIcon,
     LocationOn as LocationIcon,
     Build as BuildIcon,
+    Image as ImageIcon,
 } from '@mui/icons-material';
+import RoomIconSelector from '../../../components/common/RoomIconSelector';
 import { useTranslation } from 'react-i18next';
 import { RoomResource } from '../types';
 
@@ -56,6 +58,7 @@ const RoomDialog: React.FC<RoomDialogProps> = ({
         location: '',
         equipment: '',
         status: 'ACTIVE',
+        icon: '', // 添加图标字段
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -76,6 +79,7 @@ const RoomDialog: React.FC<RoomDialogProps> = ({
                 location: room.location || '',
                 equipment: room.equipment || '',
                 status: room.status || 'ACTIVE',
+                icon: room.icon || '',
             });
         } else {
             setFormData({
@@ -85,6 +89,7 @@ const RoomDialog: React.FC<RoomDialogProps> = ({
                 location: '',
                 equipment: '',
                 status: 'ACTIVE',
+                icon: '',
             });
         }
         setError(null);
@@ -437,6 +442,43 @@ const RoomDialog: React.FC<RoomDialogProps> = ({
                                 />
                             </Grid>
                         </Grid>
+                    </Paper>
+
+                    {/* 图标选择 */}
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            border: '1px solid',
+                            borderColor: alpha(THEME_COLOR, 0.2),
+                            borderRadius: 2,
+                            background: alpha(THEME_COLOR, 0.02),
+                        }}
+                    >
+                        <Box display="flex" alignItems="center" gap={2} mb={3}>
+                            <Box
+                                sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                }}
+                            >
+                                <ImageIcon sx={{ fontSize: 18 }} />
+                            </Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
+                                {t('resources.roomIcon')}
+                            </Typography>
+                        </Box>
+
+                        <RoomIconSelector
+                            value={formData.icon}
+                            onChange={(iconName) => handleInputChange('icon', iconName || '')}
+                        />
                     </Paper>
                 </Box>
             </DialogContent>

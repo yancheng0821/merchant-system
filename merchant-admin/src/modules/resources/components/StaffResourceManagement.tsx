@@ -48,6 +48,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import StaffDialog from './StaffDialog';
 import { StaffResource, convertToStaffResource, convertStaffToResource } from '../types';
+import { getFullImageUrl } from '../../../services/api';
 
 const StaffResourceManagement: React.FC = () => {
     const { t } = useTranslation();
@@ -489,13 +490,14 @@ const StaffResourceManagement: React.FC = () => {
                                             <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
                                                     <Avatar
+                                                        src={getFullImageUrl(staffMember.avatar)}
                                                         sx={{
-                                                            bgcolor: getAvatarColor(staffMember.name),
+                                                            bgcolor: staffMember.avatar ? 'transparent' : getAvatarColor(staffMember.name),
                                                             width: 40,
                                                             height: 40,
                                                         }}
                                                     >
-                                                        {staffMember.name.charAt(0)}
+                                                        {!staffMember.avatar && staffMember.name.charAt(0)}
                                                     </Avatar>
                                                     <Box>
                                                         <Typography variant="body2" sx={{ fontWeight: 600 }}>

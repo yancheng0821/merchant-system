@@ -30,6 +30,7 @@ public class SecurityConfig {
             .cors(cors -> cors.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/api/files/**").permitAll() // 文件访问 - 放在最前面
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/google", "/api/auth/health").permitAll()
                 .requestMatchers("/api/users/avatar/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll()

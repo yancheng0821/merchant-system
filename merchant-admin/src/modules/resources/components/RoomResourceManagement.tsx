@@ -46,6 +46,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import RoomDialog from './RoomDialog';
 import { RoomResource, convertToRoomResource, convertRoomToResource } from '../types';
+import { getFullImageUrl } from '../../../services/api';
 
 const RoomResourceManagement: React.FC = () => {
     const { t } = useTranslation();
@@ -145,7 +146,34 @@ const RoomResourceManagement: React.FC = () => {
         );
     };
 
-    const getRoomIcon = (name: string) => {
+    const getRoomIcon = (room: any) => {
+        // 如果有上传的图标，优先使用
+        if (room.icon) {
+            const isImageUrl = room.icon.startsWith('http') || room.icon.startsWith('/api/') || room.icon.startsWith('data:') || room.icon.startsWith('blob:');
+            if (isImageUrl) {
+                return (
+                    <img 
+                        src={getFullImageUrl(room.icon)}
+                        alt={room.name}
+                        style={{ 
+                            width: '24px', 
+                            height: '24px', 
+                            objectFit: 'cover',
+                            borderRadius: '4px'
+                        }} 
+                    />
+                );
+            }
+            
+            // 如果是emoji图标，直接返回
+            // 检查是否是emoji（不是URL且长度较短）
+            if (!room.icon.includes('/') && room.icon.length <= 10) {
+                return room.icon;
+            }
+        }
+        
+        // 否则根据房间名称使用默认的emoji图标
+        const name = room.name || '';
         if (name.includes('VIP') || name.includes('包间')) return '🎤';
         if (name.includes('美容') || name.includes('护理')) return '💆';
         if (name.includes('SPA') || name.includes('按摩')) return '🧘';
@@ -535,7 +563,7 @@ const RoomResourceManagement: React.FC = () => {
                                                             fontSize: '20px',
                                                         }}
                                                     >
-                                                        {getRoomIcon(room.name)}
+                                                        {getRoomIcon(room)}
                                                     </Box>
                                                     <Box>
                                                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
