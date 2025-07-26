@@ -18,7 +18,11 @@ public class Appointment {
     
     private Long customerId;
     
-    private Long staffId;
+
+    
+    private Long resourceId;
+    
+    private ResourceType resourceType;
     
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate appointmentDate;
@@ -49,12 +53,18 @@ public class Appointment {
     
     private Staff staff;
     
+    private Resource resource;
+    
     // 预约服务明细
     private List<AppointmentService> appointmentServices;
     
     // 枚举定义
     public enum AppointmentStatus {
         CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
+    }
+    
+    public enum ResourceType {
+        STAFF, ROOM
     }
     
 

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.ResourceMapper">
+
+    <!-- 资源结果映射 -->
+    <resultMap id="ResourceResultMap" type="com.merchant.server.businessservice.entity.Resource">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="name" property="name"/>
+        <result column="type" property="type"/>
+        <result column="description" property="description"/>
+        <result column="capacity" property="capacity"/>
+        <result column="location" property="location"/>
+        <result column="equipment" property="equipment"/>
+        <result column="specialties" property="specialties"/>
+        <result column="hourly_rate" property="hourlyRate"/>
+        <result column="status" property="status"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="position" property="position"/>
+        <result column="start_date" property="startDate"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 资源可用性结果映射 -->
+    <resultMap id="ResourceAvailabilityResultMap" type="com.merchant.server.businessservice.entity.ResourceAvailability">
+        <id column="id" property="id"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="day_of_week" property="dayOfWeek"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="is_available" property="isAvailable"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 根据租户ID查询资源 -->
+    <select id="findByTenantId" resultMap="ResourceResultMap">
+        SELECT * FROM resource 
+        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
+        ORDER BY type, name
+    </select>
+
+    <!-- 根据租户ID和类型查询资源 -->
+    <select id="findByTenantIdAndType" resultMap="ResourceResultMap">
+        SELECT * FROM resource 
+        WHERE tenant_id = #{tenantId} AND type = #{type} AND status != 'DELETED'
+        ORDER BY name
+    </select>
+
+    <!-- 根据ID查询资源 -->
+    <select id="findById" resultMap="ResourceResultMap">
+        SELECT * FROM resource WHERE id = #{id}
+    </select>
+
+    <!-- 根据ID查询有效资源（排除已删除的） -->
+    <select id="findActiveById" resultMap="ResourceResultMap">
+        SELECT * FROM resource WHERE id = #{id} AND status != 'DELETED'
+    </select>
+
+    <!-- 根据服务查询可用资源 -->
+    <select id="findAvailableResourcesByService" resultMap="ResourceResultMap">
+        SELECT r.* FROM resource r
+        JOIN service s ON s.tenant_id = r.tenant_id
+        WHERE s.id = #{serviceId} 
+        AND r.tenant_id = #{tenantId}
+        AND r.status = 'ACTIVE'
+        AND (
+            (s.resource_type = 'STAFF' AND r.type = 'STAFF') OR
+            (s.resource_type = 'ROOM' AND r.type = 'ROOM') OR
+            (s.resource_type = 'BOTH' AND r.type IN ('STAFF', 'ROOM'))
+        )
+        ORDER BY r.type, r.name
+    </select>
+
+    <!-- 检查资源可用性 -->
+    <select id="isResourceAvailable" resultType="boolean">
+        SELECT COUNT(*) = 0 FROM appointments a
+        WHERE a.resource_id = #{resourceId}
+        AND a.appointment_date = #{date}
+        AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
+        AND (
+            (#{startTime} >= a.appointment_time AND #{startTime} &lt; ADDTIME(a.appointment_time, SEC_TO_TIME(a.duration * 60))) OR
+            (#{endTime} > a.appointment_time AND #{endTime} &lt;= ADDTIME(a.appointment_time, SEC_TO_TIME(a.duration * 60))) OR
+            (#{startTime} &lt;= a.appointment_time AND #{endTime} >= ADDTIME(a.appointment_time, SEC_TO_TIME(a.duration * 60)))
+        )
+    </select>
+
+    <!-- 插入资源 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource (
+            tenant_id, name, type, description, capacity, location, 
+            equipment, specialties, hourly_rate, status, phone, email, position, start_date, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{name}, #{type}, #{description}, #{capacity}, #{location},
+            #{equipment}, #{specialties}, #{hourlyRate}, #{status}, #{phone}, #{email}, #{position}, #{startDate}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新资源 -->
+    <update id="update">
+        UPDATE resource SET
+            name = #{name},
+            type = #{type},
+            description = #{description},
+            capacity = #{capacity},
+            location = #{location},
+            equipment = #{equipment},
+            specialties = #{specialties},
+            hourly_rate = #{hourlyRate},
+            status = #{status},
+            phone = #{phone},
+            email = #{email},
+            position = #{position},
+            start_date = #{startDate},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除资源 -->
+    <delete id="deleteById">
+        DELETE FROM resource WHERE id = #{id}
+    </delete>
+
+    <!-- 查询资源可用性 -->
+    <select id="findAvailabilitiesByResourceId" resultMap="ResourceAvailabilityResultMap">
+        SELECT * FROM resource_availability 
+        WHERE resource_id = #{resourceId}
+        ORDER BY day_of_week, start_time
+    </select>
+
+    <!-- 插入资源可用性 -->
+    <insert id="insertAvailability" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource_availability (
+            resource_id, day_of_week, start_time, end_time, is_available, created_at, updated_at
+        ) VALUES (
+            #{resourceId}, #{dayOfWeek}, #{startTime}, #{endTime}, #{isAvailable}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新资源可用性 -->
+    <update id="updateAvailability">
+        UPDATE resource_availability SET
+            day_of_week = #{dayOfWeek},
+            start_time = #{startTime},
+            end_time = #{endTime},
+            is_available = #{isAvailable},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除资源可用性 -->
+    <delete id="deleteAvailability">
+        DELETE FROM resource_availability WHERE id = #{id}
+    </delete>
+
+    <!-- 删除资源的所有可用性记录 -->
+    <delete id="deleteAvailabilitiesByResourceId">
+        DELETE FROM resource_availability WHERE resource_id = #{resourceId}
+    </delete>
+
+</mapper>

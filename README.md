@@ -194,6 +194,78 @@ merchant-server/
 - 员工排班优化
 - 客户流失预警
 
+## 📅 统一资源预约系统
+
+### 系统概述
+
+实现了员工和场地的统一预约逻辑，支持不同商户预约不同类型的资源：
+- 美容店预约"员工"
+- KTV商户预约"包间"  
+- 健身工作室预约"员工 + 场地"
+
+### 核心特性
+
+#### 数据库设计
+- **统一资源表** (`resource`) - 支持员工和场地的统一管理
+- **资源可用性表** (`resource_availability`) - 灵活的时间段管理
+- **服务表扩展** - 添加 `resource_type` 字段支持不同资源需求
+- **预约表扩展** - 添加资源关联字段
+
+#### 后端实现
+- **实体类** - `Resource`, `ResourceAvailability` 等完整的数据模型
+- **服务层** - `ResourceService` 提供完整的资源管理功能
+- **控制器** - `ResourceController` 提供RESTful API接口
+- **MyBatis映射** - 完整的数据库操作支持
+
+#### 前端组件
+- **ResourceSelector组件** - 统一的资源选择器
+  - 支持下拉框和卡片两种显示模式
+  - 根据服务类型动态显示员工或房间
+  - 实时可用性检查
+  - 多语言支持
+
+### API接口示例
+
+#### 创建预约记录
+```http
+POST /api/appointments
+Content-Type: application/json
+
+{
+  "tenantId": 1,
+  "customerId": 123,
+  "resourceId": 456,
+  "resourceType": "STAFF",
+  "appointmentDate": "2024-01-15",
+  "appointmentTime": "14:30:00",
+  "duration": 90,
+  "totalAmount": 150.00,
+  "status": "CONFIRMED"
+}
+```
+
+#### 查询服务可用资源
+```http
+GET /api/resources/service/123/tenant/1
+```
+
+#### 检查资源可用性
+```http
+GET /api/resources/456/availability/check?date=2024-01-15&startTime=14:30&endTime=16:00
+```
+
+### 业务场景支持
+
+- **美容店** - 预约员工服务
+- **KTV** - 预约包间
+- **健身工作室** - 预约教练+场地
+
+### 部署说明
+
+1. 执行数据库迁移脚本：`merchant-server/sql/resource_tables.sql`
+2. 重启后端服务以加载新的实体类和API
+3. 前端组件已集成到预约对话框中，无需额外配置
+
 ## 🌍 国际化支持
 
 系统支持中英文双语切换：

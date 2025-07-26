@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   CssBaseline,
@@ -21,14 +21,6 @@ import {
   alpha,
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
-  Store as StoreIcon,
-  ShoppingCart as OrdersIcon,
-  People as CustomersIcon,
-  CalendarToday as AppointmentsIcon,
-  BarChart as AnalyticsIcon,
-  Settings as SettingsIcon,
-  Notifications as NotificationsIcon,
   Menu as MenuIcon,
   Language as LanguageIcon,
   Person as PersonIcon,
@@ -47,33 +39,16 @@ import {
   CustomerManagement,
   AppointmentManagement, 
   Analytics, 
-  Settings 
+  Settings,
+  ResourceManagement
 } from './modules';
 import NotificationManagement from './modules/notifications/NotificationManagement';
+import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
 const drawerWidth = 260;
-
-interface MenuItemType {
-  textKey: string;
-  icon: React.ReactElement;
-  id: string;
-  children?: MenuItemType[];
-  color?: string;
-}
-
-const menuItems: MenuItemType[] = [
-  { textKey: 'nav.dashboard', icon: <DashboardIcon />, id: 'dashboard', color: '#6366F1' },
-  { textKey: 'nav.products', icon: <StoreIcon />, id: 'products', color: '#06B6D4' },
-  { textKey: 'nav.orders', icon: <OrdersIcon />, id: 'orders', color: '#10B981' },
-  { textKey: 'nav.customers', icon: <CustomersIcon />, id: 'customers', color: '#F59E0B' },
-  { textKey: 'nav.appointments', icon: <AppointmentsIcon />, id: 'appointments', color: '#8B5CF6' },
-  { textKey: 'nav.notifications', icon: <NotificationsIcon />, id: 'notifications', color: '#E91E63' },
-  { textKey: 'nav.analytics', icon: <AnalyticsIcon />, id: 'analytics', color: '#F97316' },
-  { textKey: 'nav.settings', icon: <SettingsIcon />, id: 'settings', color: '#6366F1' },
-];
 
 const MainApp: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -85,11 +60,41 @@ const MainApp: React.FC = () => {
     if (avatarPath.startsWith('http')) return avatarPath;
     return `${API_BASE_URL}${avatarPath}`;
   };
+  
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState('dashboard');
   const [languageAnchor, setLanguageAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
+  const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+
+  // 获取商户配置
+  useEffect(() => {
+    const fetchMerchantConfig = async () => {
+      try {
+        // 模拟API调用 - 实际应该从后端获取
+        const mockConfig: MerchantConfig = {
+          merchantId: user?.tenantId || 1,
+          resourceTypes: ['STAFF', 'ROOM'] // 这里应该从后端获取
+        };
+        setMerchantConfig(mockConfig);
+        
+        // 根据商户配置生成导航菜单
+        const dynamicMenuItems = generateNavigationConfig(mockConfig);
+        setMenuItems(dynamicMenuItems);
+      } catch (error) {
+        console.error('Failed to fetch merchant config:', error);
+        // 使用默认配置
+        const defaultMenuItems = generateNavigationConfig();
+        setMenuItems(defaultMenuItems);
+      }
+    };
+
+    if (user) {
+      fetchMerchantConfig();
+    }
+  }, [user]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -506,6 +511,7 @@ const MainApp: React.FC = () => {
               {selectedItem === 'orders' && <OrderManagement />}
               {selectedItem === 'customers' && <CustomerManagement />}
               {selectedItem === 'appointments' && <AppointmentManagement />}
+              {selectedItem === 'resources' && <ResourceManagement />}
               {selectedItem === 'notifications' && <NotificationManagement />}
               {selectedItem === 'analytics' && <Analytics />}
               {selectedItem === 'settings' && <Settings />}

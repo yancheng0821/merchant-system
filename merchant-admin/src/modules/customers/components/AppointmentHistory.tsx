@@ -537,7 +537,7 @@ const AppointmentHistory: React.FC<{
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {appointment.staff?.name || t('customers.unassigned')}
+                          {appointment.resource?.name || t('customers.unassigned')}
                         </Typography>
                       </TableCell>
                       <TableCell>

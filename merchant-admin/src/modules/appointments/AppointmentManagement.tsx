@@ -174,7 +174,7 @@ const AppointmentManagement: React.FC = () => {
     if (dateFilter !== 'all') {
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
-      
+
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = tomorrow.toISOString().split('T')[0];
@@ -190,12 +190,12 @@ const AppointmentManagement: React.FC = () => {
           const weekStart = new Date(today);
           weekStart.setDate(today.getDate() - today.getDay());
           const weekStartStr = weekStart.toISOString().split('T')[0];
-          
+
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
           const weekEndStr = weekEnd.toISOString().split('T')[0];
-          
-          filtered = filtered.filter(apt => 
+
+          filtered = filtered.filter(apt =>
             apt.appointmentDate >= weekStartStr && apt.appointmentDate <= weekEndStr
           );
           break;
@@ -686,7 +686,7 @@ const AppointmentManagement: React.FC = () => {
                         <Box display="flex" alignItems="center" gap={1}>
                           <PersonIcon sx={{ fontSize: 16, color: '#6366F1' }} />
                           <Typography variant="body2">
-                            {appointment.staff?.name || t('appointments.unassigned')}
+                            {appointment.resource?.name || t('appointments.unassigned')}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -787,9 +787,9 @@ const AppointmentManagement: React.FC = () => {
           <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
           {t('appointments.viewDetails')}
         </MenuItem>
-        
 
-        
+
+
         {/* CONFIRMED和NO_SHOW状态的预约都可以标记为完成 */}
         {(selectedAppointment?.status === 'CONFIRMED' || selectedAppointment?.status === 'NO_SHOW') && (
           <MenuItem
@@ -815,12 +815,12 @@ const AppointmentManagement: React.FC = () => {
             sx={{ '&:hover': { backgroundColor: alpha('#10B981', 0.08) } }}
           >
             <CheckIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
-            {selectedAppointment?.status === 'NO_SHOW' 
-              ? t('appointments.markCompletedFromNoShow') 
+            {selectedAppointment?.status === 'NO_SHOW'
+              ? t('appointments.markCompletedFromNoShow')
               : t('appointments.markCompleted')}
           </MenuItem>
         )}
-        
+
         {/* CONFIRMED和NO_SHOW状态的预约都可以取消 */}
         {(selectedAppointment?.status === 'CONFIRMED' || selectedAppointment?.status === 'NO_SHOW') && (
           <MenuItem
@@ -831,12 +831,12 @@ const AppointmentManagement: React.FC = () => {
             sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
           >
             <CancelIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
-            {selectedAppointment?.status === 'NO_SHOW' 
-              ? t('appointments.cancelFromNoShow') 
+            {selectedAppointment?.status === 'NO_SHOW'
+              ? t('appointments.cancelFromNoShow')
               : t('appointments.cancelAppointment')}
           </MenuItem>
         )}
-        
+
         {/* 只有CONFIRMED状态的预约才能标记为NO_SHOW */}
         {selectedAppointment?.status === 'CONFIRMED' && (
           <MenuItem
@@ -958,7 +958,7 @@ const AppointmentManagement: React.FC = () => {
                 </Box>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
                   <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">{selectedAppointment.staff?.name || t('appointments.unassigned')}</Typography>
+                  <Typography variant="body2">{selectedAppointment.resource?.name || t('appointments.unassigned')}</Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>

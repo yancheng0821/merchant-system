@@ -94,7 +94,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         variables.put("appointmentDate", appointment.getAppointmentDate().format(DATE_FORMATTER));
         variables.put("appointmentTime", appointment.getAppointmentTime().format(TIME_FORMATTER));
         variables.put("serviceName", appointment.getServiceName() != null ? appointment.getServiceName() : "");
-        variables.put("staffName", appointment.getStaffName() != null ? appointment.getStaffName() : "");
+        variables.put("staffName", appointment.getResourceName() != null ? appointment.getResourceName() : "");
         variables.put("duration", appointment.getDuration() != null ? appointment.getDuration() + "分钟" : "");
         variables.put("totalAmount", appointment.getTotalAmount() != null ? "¥" + appointment.getTotalAmount() : "");
         variables.put("businessName", appointment.getBusinessName() != null ? appointment.getBusinessName() : "");

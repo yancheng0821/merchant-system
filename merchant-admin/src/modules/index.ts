@@ -17,4 +17,7 @@ export { AppointmentManagement } from './appointments';
 export { Analytics } from './analytics';
 
 // Settings Module
-export { Settings } from './settings'; 
+export { Settings } from './settings';
+
+// Resource Management Module
+export { ResourceManagement } from './resources'; 

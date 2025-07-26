@@ -29,7 +29,9 @@ public class AppointmentNotificationDTO {
     private String status;
     private String notes;
     
-    private String staffName;
+    private Long resourceId;
+    private String resourceType; // STAFF, ROOM
+    private String resourceName; // 资源名称（员工姓名或房间名称）
     private String serviceName;
     private String businessName;
     private String businessAddress;

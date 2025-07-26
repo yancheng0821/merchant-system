@@ -32,6 +32,8 @@ public class Service {
     
     private ServiceStatus status = ServiceStatus.ACTIVE;
     
+    private ResourceType resourceType = ResourceType.STAFF;
+    
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     
@@ -50,6 +52,10 @@ public class Service {
     
     public enum ServiceStatus {
         ACTIVE, INACTIVE
+    }
+    
+    public enum ResourceType {
+        STAFF, ROOM, BOTH
     }
 
 }

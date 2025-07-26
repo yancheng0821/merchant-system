@@ -43,7 +43,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
-import { Appointment, Customer, Staff, customerApi, staffApi } from '../../../services/api';
+import { Appointment, Customer, Resource, customerApi, resourceApi } from '../../../services/api';
+import ResourceSelector from '../../../components/common/ResourceSelector';
 
 interface AddAppointmentDialogProps {
   open: boolean;
@@ -106,12 +107,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('');
-  const [selectedStaff, setSelectedStaff] = useState<number | ''>('');
+  const [selectedResource, setSelectedResource] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [staffOptions, setStaffOptions] = useState<Staff[]>([]);
+  const [resourceOptions, setResourceOptions] = useState<Resource[]>([]);
 
 
 
@@ -121,19 +122,19 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
     return Number(user.tenantId || 1);
   }, []);
 
-  // 加载员工数据
+  // 加载资源数据
   useEffect(() => {
-    const loadStaff = async () => {
+    const loadResources = async () => {
       try {
-        const staff = await staffApi.getActiveStaff(tenantId);
-        setStaffOptions(staff);
+        const resources = await resourceApi.getAllResources(tenantId);
+        setResourceOptions(resources);
       } catch (error) {
-        console.error('Failed to load staff:', error);
+        console.error('Failed to load resources:', error);
       }
     };
 
     if (open) {
-      loadStaff();
+      loadResources();
     }
   }, [open, tenantId]);
 
@@ -146,7 +147,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       setSelectedServices([]);
       setAppointmentDate('');
       setAppointmentTime('');
-      setSelectedStaff('');
+      setSelectedResource('');
       setNotes('');
       setCustomerSearch('');
       setErrors({});
@@ -206,7 +207,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         }
         break;
       case 2: // 时间安排
-        if (!appointmentDate.trim() || !appointmentTime.trim() || !selectedStaff) {
+        if (!appointmentDate.trim() || !appointmentTime.trim() || !selectedResource) {
           newErrors.schedule = t('appointments.validation.scheduleRequired');
         }
         break;
@@ -265,7 +266,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         totalAmount: totalAmount, // 后端会自动转换为BigDecimal
         status: 'CONFIRMED',
         notes: notes.trim() || null,
-        staffId: selectedStaff || null,
+        resourceId: selectedResource || null,
+        resourceType: selectedResource ? 'STAFF' : null, // 默认为员工类型，可以根据实际选择的资源类型调整
         rating: null, // 明确设置为null
         review: null, // 明确设置为null
       };
@@ -284,7 +286,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         duration: typeof appointment.duration,
         totalAmount: typeof appointment.totalAmount,
         status: typeof appointment.status,
-        staffId: typeof appointment.staffId,
+        resourceId: typeof appointment.resourceId,
+        resourceType: typeof appointment.resourceType,
       });
 
       try {
@@ -720,34 +723,17 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               </Grid>
 
               <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('appointments.selectStaff')}</InputLabel>
-                  <Select
-                    value={selectedStaff}
-                    label={t('appointments.selectStaff')}
-                    onChange={(e) => setSelectedStaff(e.target.value as number)}
-                    sx={{
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
-                      },
-                    }}
-                  >
-                    {staffOptions.map((staff) => (
-                      <MenuItem key={staff.id} value={staff.id}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Avatar sx={{ width: 24, height: 24, bgcolor: '#8B5CF6', fontSize: '0.75rem' }}>
-                            {staff.name.charAt(0)}
-                          </Avatar>
-                          {staff.name}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <ResourceSelector
+                  tenantId={tenantId}
+                  resourceType="STAFF"
+                  selectedResourceId={selectedResource || undefined}
+                  onResourceSelect={(resource) => setSelectedResource(resource?.id || '')}
+                  appointmentDate={appointmentDate}
+                  appointmentTime={appointmentTime}
+                  duration={selectedServices.length * 60}
+                  showAvailability={true}
+                  variant="dropdown"
+                />
               </Grid>
 
               <Grid item xs={12}>
@@ -839,7 +825,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     <Box display="flex" alignItems="center" gap={1}>
                       <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                       <Typography variant="body2">
-                        {selectedStaff ? staffOptions.find(staff => staff.id === selectedStaff)?.name || t('appointments.unassigned') : t('appointments.unassigned')}
+                        {selectedResource ? resourceOptions.find(resource => resource.id === selectedResource)?.name || t('appointments.unassigned') : t('appointments.unassigned')}
                       </Typography>
                     </Box>
                   </Grid>

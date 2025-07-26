@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.merchantservice.mapper.MerchantConfigMapper">
+
+    <resultMap id="MerchantConfigResultMap" type="com.merchant.server.merchantservice.entity.MerchantConfig">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="configKey" property="configKey"/>
+        <result column="configValue" property="configValue"/>
+        <result column="description" property="description"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findByTenantId" resultMap="MerchantConfigResultMap" parameterType="long">
+        SELECT ms.id, m.tenant_id, ms.setting_key as configKey, ms.setting_value as configValue,
+               ms.description, ms.created_at, ms.updated_at
+        FROM merchant_settings ms
+        JOIN merchants m ON ms.merchant_id = m.id
+        WHERE m.tenant_id = #{tenantId}
+    </select>
+
+    <select id="findByTenantIdAndKey" resultMap="MerchantConfigResultMap" parameterType="map">
+        SELECT ms.id, m.tenant_id, ms.setting_key as configKey, ms.setting_value as configValue,
+               ms.description, ms.created_at, ms.updated_at
+        FROM merchant_settings ms
+        JOIN merchants m ON ms.merchant_id = m.id
+        WHERE m.tenant_id = #{tenantId} AND ms.setting_key = #{configKey}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO merchant_settings (merchant_id, setting_key, setting_value, setting_type, description)
+        SELECT m.id, #{configKey}, #{configValue}, 'JSON', #{description}
+        FROM merchants m WHERE m.tenant_id = #{tenantId}
+    </insert>
+
+    <update id="updateByTenantIdAndKey">
+        UPDATE merchant_settings ms
+        JOIN merchants m ON ms.merchant_id = m.id
+        SET ms.setting_value = #{configValue}, ms.description = #{description},
+            ms.updated_at = CURRENT_TIMESTAMP
+        WHERE m.tenant_id = #{tenantId} AND ms.setting_key = #{configKey}
+    </update>
+
+    <delete id="deleteByTenantIdAndKey">
+        DELETE ms FROM merchant_settings ms
+        JOIN merchants m ON ms.merchant_id = m.id
+        WHERE m.tenant_id = #{tenantId} AND ms.setting_key = #{configKey}
+    </delete>
+
+    <select id="getResourceTypes" resultType="string" parameterType="long">
+        SELECT ms.setting_value
+        FROM merchant_settings ms
+        JOIN merchants m ON ms.merchant_id = m.id
+        WHERE m.tenant_id = #{tenantId} AND ms.setting_key = 'resource_types'
+    </select>
+
+</mapper>

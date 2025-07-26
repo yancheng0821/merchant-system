@@ -27,14 +27,23 @@ import {
   Tab,
   alpha,
   CircularProgress,
-  Menu
+  Menu,
+  Paper,
+  Grid,
+  InputAdornment,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreVertIcon
+  MoreVert as MoreVertIcon,
+  Close as CloseIcon,
+  Email as EmailIcon,
+  Sms as SmsIcon,
+  Code as CodeIcon,
+  Subject as SubjectIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { notificationApi } from '../../services/api';
 
@@ -454,93 +463,308 @@ const NotificationTemplateManagement: React.FC = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(168, 85, 247, 0.12)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            bgcolor: 'background.paper',
           }
         }}
       >
-        <DialogTitle sx={{ 
-          borderBottom: `1px solid ${themeColor}20`,
-          color: themeColor,
-          fontWeight: 600
-        }}>
-          {editingTemplate ? t('notifications.editTemplate') : t('notifications.addTemplate')}
+        {/* 现代化对话框标题 */}
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#C2185B', 0.08)})`,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            pb: 3,
+            pt: 3,
+          }}
+        >
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                }}
+              >
+                <EmailIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'text.primary',
+                    mb: 0.5,
+                  }}
+                >
+                  {editingTemplate ? t('notifications.editTemplate') : t('notifications.addTemplate')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {editingTemplate ? t('dialogs.editTemplateInfo') : t('dialogs.createNewTemplate')}
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton 
+              onClick={handleCloseDialog}
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(themeColor, 0.1),
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>{t('notifications.templateCode')}</InputLabel>
-              <Select
-                value={formData.templateCode}
-                onChange={(e) => setFormData({ ...formData, templateCode: e.target.value })}
-                label={t('notifications.templateCode')}
-              >
-                {templateCodes.map((code) => (
-                  <MenuItem key={code.value} value={code.value}>
-                    {code.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
 
-            <TextField
-              fullWidth
-              margin="normal"
-              label={t('notifications.templateName')}
-              value={formData.templateName}
-              onChange={(e) => setFormData({ ...formData, templateName: e.target.value })}
-            />
+        <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ p: 3 }}>
+            {/* 基本信息 */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                mb: 3,
+                border: '1px solid',
+                borderColor: alpha(themeColor, 0.2),
+                borderRadius: 2,
+                background: alpha(themeColor, 0.02),
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 2,
+                    background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                  }}
+                >
+                  <CodeIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                  {t('notifications.basicInfo')}
+                </Typography>
+              </Box>
 
-            <FormControl fullWidth margin="normal">
-              <InputLabel>{t('notifications.type')}</InputLabel>
-              <Select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'SMS' | 'EMAIL' })}
-                label={t('notifications.type')}
-              >
-                <MenuItem value="SMS">{t('notifications.sms')}</MenuItem>
-                <MenuItem value="EMAIL">{t('notifications.email')}</MenuItem>
-              </Select>
-            </FormControl>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('notifications.templateCode')}</InputLabel>
+                    <Select
+                      value={formData.templateCode}
+                      onChange={(e) => setFormData({ ...formData, templateCode: e.target.value })}
+                      label={t('notifications.templateCode')}
+                      sx={{
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                      }}
+                    >
+                      {templateCodes.map((code) => (
+                        <MenuItem key={code.value} value={code.value}>
+                          {code.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-            {formData.type === 'EMAIL' && (
-              <TextField
-                fullWidth
-                margin="normal"
-                label={t('notifications.subject')}
-                value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                placeholder={t('notifications.placeholders.emailSubject')}
-              />
-            )}
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label={t('notifications.templateName')}
+                    value={formData.templateName}
+                    onChange={(e) => setFormData({ ...formData, templateName: e.target.value })}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
 
-            <TextField
-              fullWidth
-              margin="normal"
-              label={t('notifications.content')}
-              multiline
-              rows={8}
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              placeholder={t('notifications.placeholders.templateContent')}
-            />
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('notifications.type')}</InputLabel>
+                    <Select
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as 'SMS' | 'EMAIL' })}
+                      label={t('notifications.type')}
+                      sx={{
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                      }}
+                    >
+                      <MenuItem value="SMS">
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <SmsIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
+                          {t('notifications.sms')}
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="EMAIL">
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <EmailIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                          {t('notifications.email')}
+                        </Box>
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-            <FormControl fullWidth margin="normal">
-              <InputLabel>{t('notifications.status')}</InputLabel>
-              <Select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ACTIVE' | 'INACTIVE' })}
-                label={t('notifications.status')}
-              >
-                <MenuItem value="ACTIVE">{t('notifications.active')}</MenuItem>
-                <MenuItem value="INACTIVE">{t('notifications.inactive')}</MenuItem>
-              </Select>
-            </FormControl>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('notifications.status')}</InputLabel>
+                    <Select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ACTIVE' | 'INACTIVE' })}
+                      label={t('notifications.status')}
+                      sx={{
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                      }}
+                    >
+                      <MenuItem value="ACTIVE">{t('notifications.active')}</MenuItem>
+                      <MenuItem value="INACTIVE">{t('notifications.inactive')}</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* 内容配置 */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                border: '1px solid',
+                borderColor: alpha(themeColor, 0.2),
+                borderRadius: 2,
+                background: alpha(themeColor, 0.02),
+              }}
+            >
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 2,
+                    background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                  }}
+                >
+                  <DescriptionIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                  {t('notifications.contentConfiguration')}
+                </Typography>
+              </Box>
+
+              <Grid container spacing={2}>
+                {formData.type === 'EMAIL' && (
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label={t('notifications.subject')}
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      placeholder={t('notifications.placeholders.emailSubject')}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SubjectIcon sx={{ color: themeColor }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: themeColor,
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: themeColor,
+                          },
+                        },
+                      }}
+                    />
+                  </Grid>
+                )}
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label={t('notifications.content')}
+                    multiline
+                    rows={8}
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    placeholder={t('notifications.placeholders.templateContent')}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: themeColor,
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, borderTop: `1px solid ${themeColor}20` }}>
+        <DialogActions 
+          sx={{ 
+            p: 3,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            background: alpha(themeColor, 0.02),
+          }}
+        >
           <Button 
             onClick={handleCloseDialog}
-            sx={{ color: 'text.secondary' }}
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              color: 'text.secondary',
+            }}
           >
             {t('notifications.cancel')}
           </Button>
@@ -548,10 +772,14 @@ const NotificationTemplateManagement: React.FC = () => {
             onClick={handleSave} 
             variant="contained"
             sx={{
-              backgroundColor: themeColor,
+              borderRadius: 2,
+              px: 3,
+              background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+              boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
               '&:hover': {
-                backgroundColor: `${themeColor}dd`,
-              }
+                background: `linear-gradient(135deg, #C2185B, #AD1457)`,
+                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+              },
             }}
           >
             {t('notifications.save')}

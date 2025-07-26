@@ -3,6 +3,59 @@ import i18n from '../i18n/config';
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
+// 商户配置相关API
+export const merchantConfigApi = {
+  // 获取商户完整配置
+  getMerchantConfig: async (tenantId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant-config/${tenantId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch merchant config');
+    }
+    
+    return response.json();
+  },
+
+  // 获取商户资源类型配置
+  getResourceTypes: async (tenantId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant-config/${tenantId}/resource-types`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch resource types');
+    }
+    
+    return response.json();
+  },
+
+  // 更新商户配置
+  updateMerchantConfig: async (tenantId: number, config: any) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant-config/${tenantId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(config),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update merchant config');
+    }
+  },
+};
+
 // 请求拦截器
 const createRequest = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('token');
@@ -199,6 +252,7 @@ export const userApi = {
     });
   },
 
+  // 修改密码
   changePassword: async (data: { oldPassword: string; newPassword: string; confirmPassword: string }): Promise<ApiResponse<void>> => {
     return createRequest('/api/users/password', {
       method: 'PUT',
@@ -435,7 +489,8 @@ export interface Appointment {
   id: number;
   tenantId: number;
   customerId: number;
-  staffId?: number;
+  resourceId?: number;
+  resourceType?: 'STAFF' | 'ROOM';
   appointmentDate: string;
   appointmentTime: string;
   duration: number;
@@ -448,9 +503,10 @@ export interface Appointment {
   updatedAt: string;
   // 关联对象
   customer?: Customer;
-  staff?: {
+  resource?: {
     id: number;
     name: string;
+    type: 'STAFF' | 'ROOM';
   };
   appointmentServices?: {
     id: number;
@@ -543,7 +599,132 @@ export interface Staff {
   updatedAt: string;
 }
 
-// 员工管理API
+// 资源相关接口定义
+export interface Resource {
+  id: number;
+  tenantId: number;
+  name: string;
+  type: 'STAFF' | 'ROOM';
+  description?: string;
+  capacity?: number;
+  location?: string;
+  equipment?: string;
+  specialties?: string;
+  hourlyRate?: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' | 'VACATION' | 'DELETED';
+  // 员工特有字段
+  phone?: string;
+  email?: string;
+  position?: string;
+  startDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  availabilities?: ResourceAvailability[];
+}
+
+export interface ResourceAvailability {
+  id?: number;
+  resourceId: number;
+  dayOfWeek: number; // 1-7, 1为周一
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// 资源管理API
+export const resourceApi = {
+  // 获取租户下所有资源
+  getAllResources: async (tenantId: number): Promise<Resource[]> => {
+    const response = await createRequest(`/api/resources/tenant/${tenantId}`, {
+      method: 'GET',
+    });
+    return response.data || response;
+  },
+
+  // 根据类型获取资源
+  getResourcesByType: async (tenantId: number, type: string): Promise<Resource[]> => {
+    const response = await createRequest(`/api/resources/tenant/${tenantId}/type/${type}`, {
+      method: 'GET',
+    });
+    return response.data || response;
+  },
+
+  // 根据服务获取可用资源
+  getAvailableResourcesByService: async (serviceId: number, tenantId: number): Promise<Resource[]> => {
+    const response = await createRequest(`/api/resources/service/${serviceId}/tenant/${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 检查资源可用性
+  checkResourceAvailability: async (resourceId: number, date: string, startTime: string, endTime: string): Promise<boolean> => {
+    const response = await createRequest(`/api/resources/${resourceId}/availability/check`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    const queryParams = new URLSearchParams({ date, startTime, endTime });
+    const fullResponse = await createRequest(`/api/resources/${resourceId}/availability/check?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return fullResponse;
+  },
+
+  // 创建资源
+  createResource: async (resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>): Promise<Resource> => {
+    const response = await createRequest('/api/resources', {
+      method: 'POST',
+      body: JSON.stringify(resource),
+    });
+    return response.data || response;
+  },
+
+  // 更新资源
+  updateResource: async (id: number, resource: Partial<Resource>): Promise<Resource> => {
+    const response = await createRequest(`/api/resources/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(resource),
+    });
+    return response.data || response;
+  },
+
+  // 删除资源
+  deleteResource: async (id: number): Promise<void> => {
+    await createRequest(`/api/resources/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 获取资源详情
+  getResourceById: async (id: number): Promise<Resource> => {
+    const response = await createRequest(`/api/resources/${id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 设置资源可用性
+  setResourceAvailability: async (resourceId: number, availabilities: ResourceAvailability[]): Promise<void> => {
+    await createRequest(`/api/resources/${resourceId}/availability`, {
+      method: 'POST',
+      body: JSON.stringify(availabilities),
+    });
+  },
+
+  // 获取资源可用性
+  getResourceAvailability: async (resourceId: number): Promise<ResourceAvailability[]> => {
+    const response = await createRequest(`/api/resources/${resourceId}/availability`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};
+
+// 员工管理API (保持向后兼容)
 export const staffApi = {
   // 获取所有员工
   getAllStaff: async (tenantId: number): Promise<Staff[]> => {

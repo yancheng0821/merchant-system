@@ -34,11 +34,11 @@ spring:
         - id: merchant-service
           uri: lb://merchant-service
           predicates:
-            - Path=/api/merchant/**
+            - Path=/api/merchant/**, /api/merchant-config/**
         - id: business-service
           uri: lb://business-service
           predicates:
-            - Path=/api/business/**, /api/customers/**, /api/services/**, /api/appointments/**, /api/staff/**
+            - Path=/api/business/**, /api/customers/**, /api/services/**, /api/appointments/**, /api/staff/**, /api/resources/**
         - id: ai-service
           uri: lb://ai-service
           predicates:

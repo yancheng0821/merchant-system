@@ -4,9 +4,9 @@ import com.merchant.server.businessservice.client.NotificationClient;
 import com.merchant.server.businessservice.dto.AppointmentNotificationDTO;
 import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.entity.Customer;
-import com.merchant.server.businessservice.entity.Staff;
+import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.mapper.CustomerMapper;
-import com.merchant.server.businessservice.mapper.StaffMapper;
+import com.merchant.server.businessservice.mapper.ResourceMapper;
 import com.merchant.server.businessservice.service.AppointmentNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
     private final NotificationClient notificationClient;
     private final CustomerMapper customerMapper;
-    private final StaffMapper staffMapper;
+    private final ResourceMapper resourceMapper;
     
     @Value("${business.name:美容院}")
     private String businessName;
@@ -74,16 +74,16 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     private AppointmentNotificationDTO buildNotificationDTO(Appointment appointment) {
         try {
             // 获取客户信息
-            Customer customer = customerMapper.findById(appointment.getCustomerId());
+            Customer customer = customerMapper.selectById(appointment.getCustomerId());
             if (customer == null) {
                 log.warn("Customer not found for appointment: {}", appointment.getId());
                 return null;
             }
 
-            // 获取员工信息
-            Staff staff = null;
-            if (appointment.getStaffId() != null) {
-                staff = staffMapper.findById(appointment.getStaffId());
+            // 获取资源信息
+            Resource resource = null;
+            if (appointment.getResourceId() != null) {
+                resource = resourceMapper.findById(appointment.getResourceId());
             }
 
             // 构建通知DTO
@@ -103,8 +103,10 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
             notification.setStatus(appointment.getStatus().name());
             notification.setNotes(appointment.getNotes());
             
-            if (staff != null) {
-                notification.setStaffName(staff.getFirstName() + " " + staff.getLastName());
+            if (resource != null) {
+                notification.setResourceId(resource.getId());
+                notification.setResourceType(resource.getType().name());
+                notification.setResourceName(resource.getName());
             }
             
             // 获取服务名称（简化处理，实际可能需要查询服务详情）

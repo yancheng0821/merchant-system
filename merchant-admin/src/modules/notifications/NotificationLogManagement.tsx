@@ -34,7 +34,12 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
   Email as EmailIcon,
-  Sms as SmsIcon
+  Sms as SmsIcon,
+  Close as CloseIcon,
+  Person as PersonIcon,
+  Schedule as ScheduleIcon,
+  Info as InfoIcon,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../../services/api';
@@ -605,82 +610,341 @@ const NotificationLogManagement: React.FC = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(168, 85, 247, 0.12)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            bgcolor: 'background.paper',
           }
         }}
       >
-        <DialogTitle sx={{ 
-          borderBottom: `1px solid ${themeColor}20`,
-          color: themeColor,
-          fontWeight: 600
-        }}>
-          {t('notifications.notificationDetails')}
-        </DialogTitle>
-        <DialogContent>
-          {selectedLog && (
-            <Box sx={{ pt: 1 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">{t('notifications.templateType')}:</Typography>
-                  <Typography>{getTemplateLabel(selectedLog.templateCode)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">{t('notifications.notificationType')}:</Typography>
-                  <Typography>{getTypeLabel(selectedLog.type)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">{t('notifications.recipient')}:</Typography>
-                  <Typography>{selectedLog.recipient}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">{t('notifications.status')}:</Typography>
-                  <Chip
-                    label={getStatusLabel(selectedLog.status)}
-                    color={getStatusColor(selectedLog.status) as any}
-                    size="small"
-                  />
-                </Grid>
-                {selectedLog.subject && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2">{t('notifications.subject')}:</Typography>
-                    <Typography>{selectedLog.subject}</Typography>
-                  </Grid>
-                )}
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">{t('notifications.content')}:</Typography>
-                  <Paper sx={{ p: 2, mt: 1, backgroundColor: '#f5f5f5', borderRadius: 2 }}>
-                    <Typography
-                      component="pre"
-                      sx={{ whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}
-                    >
-                      {selectedLog.content}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                {selectedLog.errorMessage && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="error">{t('notifications.errorMessage')}:</Typography>
-                    <Typography color="error">{selectedLog.errorMessage}</Typography>
-                  </Grid>
-                )}
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">{t('notifications.createdAt')}:</Typography>
-                  <Typography>{new Date(selectedLog.createdAt).toLocaleString()}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">{t('notifications.sentAt')}:</Typography>
-                  <Typography>
-                    {selectedLog.sentAt ? new Date(selectedLog.sentAt).toLocaleString() : t('notifications.notSent')}
-                  </Typography>
-                </Grid>
-              </Grid>
+        {/* 现代化对话框标题 */}
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#C2185B', 0.08)})`,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            pb: 3,
+            pt: 3,
+          }}
+        >
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                }}
+              >
+                <ViewIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'text.primary',
+                    mb: 0.5,
+                  }}
+                >
+                  {t('notifications.notificationDetails')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedLog ? `${getTypeLabel(selectedLog.type)} - ${getTemplateLabel(selectedLog.templateCode)}` : ''}
+                </Typography>
+              </Box>
             </Box>
-          )}
+            <IconButton 
+              onClick={handleCloseDialog}
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(themeColor, 0.1),
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ p: 3 }}>
+            {selectedLog && (
+              <>
+                {/* 基本信息 */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mb: 3,
+                    border: '1px solid',
+                    borderColor: alpha(themeColor, 0.2),
+                    borderRadius: 2,
+                    background: alpha(themeColor, 0.02),
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={3}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                      }}
+                    >
+                      <InfoIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                      {t('notifications.basicInfo')}
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.templateType')}
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {getTemplateLabel(selectedLog.templateCode)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.notificationType')}
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          {selectedLog.type === 'SMS' ? (
+                            <SmsIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
+                          ) : (
+                            <EmailIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                          )}
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {getTypeLabel(selectedLog.type)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.recipient')}
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <PersonIcon sx={{ fontSize: 16, color: themeColor }} />
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedLog.recipient}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.status')}
+                        </Typography>
+                        <Chip
+                          label={getStatusLabel(selectedLog.status)}
+                          sx={{
+                            backgroundColor: getStatusColor(selectedLog.status) === 'success' 
+                              ? alpha('#10B981', 0.1) 
+                              : getStatusColor(selectedLog.status) === 'error'
+                              ? alpha('#EF4444', 0.1)
+                              : alpha('#F59E0B', 0.1),
+                            color: getStatusColor(selectedLog.status) === 'success' 
+                              ? '#10B981' 
+                              : getStatusColor(selectedLog.status) === 'error'
+                              ? '#EF4444'
+                              : '#F59E0B',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                          }}
+                        />
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* 内容信息 */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mb: 3,
+                    border: '1px solid',
+                    borderColor: alpha(themeColor, 0.2),
+                    borderRadius: 2,
+                    background: alpha(themeColor, 0.02),
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={3}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                      }}
+                    >
+                      {selectedLog.type === 'SMS' ? <SmsIcon sx={{ fontSize: 18 }} /> : <EmailIcon sx={{ fontSize: 18 }} />}
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                      {t('notifications.contentInfo')}
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={3}>
+                    {selectedLog.subject && (
+                      <Grid item xs={12}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                            {t('notifications.subject')}
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {selectedLog.subject}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                    <Grid item xs={12}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.content')}
+                        </Typography>
+                        <Paper 
+                          sx={{ 
+                            p: 2, 
+                            mt: 1, 
+                            backgroundColor: alpha('#f8fafc', 0.8), 
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: alpha(themeColor, 0.1),
+                          }}
+                        >
+                          <Typography
+                            component="pre"
+                            sx={{ 
+                              whiteSpace: 'pre-wrap', 
+                              fontSize: '0.875rem',
+                              fontFamily: 'monospace',
+                              color: 'text.primary',
+                            }}
+                          >
+                            {selectedLog.content}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* 时间和错误信息 */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: alpha(themeColor, 0.2),
+                    borderRadius: 2,
+                    background: alpha(themeColor, 0.02),
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={2} mb={3}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                      }}
+                    >
+                      <ScheduleIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                      {t('notifications.timeInfo')}
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.createdAt')}
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {new Date(selectedLog.createdAt).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+                          {t('notifications.sentAt')}
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {selectedLog.sentAt ? new Date(selectedLog.sentAt).toLocaleString() : t('notifications.notSent')}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    {selectedLog.errorMessage && (
+                      <Grid item xs={12}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#EF4444' }}>
+                            {t('notifications.errorMessage')}
+                          </Typography>
+                          <Box display="flex" alignItems="start" gap={1}>
+                            <ErrorIcon sx={{ fontSize: 16, color: '#EF4444', mt: 0.5 }} />
+                            <Typography variant="body1" sx={{ fontWeight: 500, color: '#EF4444' }}>
+                              {selectedLog.errorMessage}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Paper>
+              </>
+            )}
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, borderTop: `1px solid ${themeColor}20` }}>
+        <DialogActions 
+          sx={{ 
+            p: 3,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            background: alpha(themeColor, 0.02),
+          }}
+        >
           <Button 
             onClick={handleCloseDialog}
-            sx={{ color: 'text.secondary' }}
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+              boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+              '&:hover': {
+                background: `linear-gradient(135deg, #C2185B, #AD1457)`,
+                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+              },
+            }}
           >
             {t('notifications.close')}
           </Button>
