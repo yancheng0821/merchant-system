@@ -8,7 +8,8 @@
     "update": "Update",
     "delete": "Delete",
     "confirm": "Confirm",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "close": "Close"
   },
   "nav": {
     "title": "Merchant Admin",
@@ -428,8 +429,10 @@
     "serviceName": "Service Name",
     "price": "Price",
     "duration": "Duration",
-    "skillLevel": "Skill Level",
+
     "staff": "Staff",
+    "room":"Room",
+    "both":"Staff + Room",
     "actions": "Actions",
     "staffCount": "staff",
     "edit": "Edit",
@@ -441,7 +444,7 @@
     "cancel": "Cancel",
     "editService": "Edit Service",
     "basicInfo": "Basic Information",
-    "serviceNameEn": "English Name",
+
     "isActive": "Active Status",
     "serviceDetails": "Service Details",
     "minutes": "minutes",
@@ -450,14 +453,12 @@
     "advanced": "Advanced",
     "expert": "Expert",
     "description": "Service Description",
-    "descriptionEn": "English Description",
     "staffConfiguration": "Staff Configuration",
     "availableStaff": "Available Staff",
     "selectStaff": "Select Staff",
     "create": "Create",
     "update": "Update",
     "nameRequired": "Service name is required",
-    "nameEnRequired": "English name is required",
     "categoryRequired": "Please select a category",
     "priceRequired": "Price must be greater than 0",
     "durationRequired": "Duration must be greater than 0",
@@ -469,7 +470,7 @@
     "addNewCategory": "Add New Category",
     "editCategory": "Edit Category",
     "categoryName": "Category Name",
-    "categoryNameEn": "English Name",
+
     "categoryDescription": "Category Description",
     "categoryIcon": "Category Icon",
     "categoryColor": "Category Color",
@@ -479,7 +480,6 @@
     "iconNail": "Nail",
     "iconStar": "Special",
     "categoryNameRequired": "Category name is required",
-    "categoryNameEnRequired": "English name is required",
     "categoryDescriptionRequired": "Category description is required",
     "categoryNameExists": "Category name already exists",
     "selectCategoryToEdit": "Select a category to edit or add a new category",
@@ -843,6 +843,7 @@
   },
   "products": {
     "title": "Service Management",
+    "resourceType": "Resource Type",
     "subtitle": "Manage service items and categories",
     "searchPlaceholder": "Search service name or category...",
     "addService": "Add Service",
@@ -855,7 +856,7 @@
     "category": "Category",
     "price": "Price",
     "duration": "Duration",
-    "skillLevel": "Skill Level",
+
     "availableStaff": "Available Staff",
     "status": "Status",
     "actions": "Actions",
@@ -865,12 +866,15 @@
     "deleteService": "Delete Service",
     "confirmDeleteService": "Confirm Delete Service",
     "confirmDeleteServiceMessage": "Are you sure you want to delete service \"{{serviceName}}\"? This action cannot be undone.",
-    "skillLevels": {
-      "beginner": "Beginner",
-      "intermediate": "Intermediate",
-      "advanced": "Advanced",
-      "expert": "Expert"
-    },
+    "serviceCreatedSuccess": "Service created successfully",
+    "serviceUpdatedSuccess": "Service updated successfully",
+    "serviceDeletedSuccess": "Service deleted successfully",
+    "serviceCreateFailed": "Failed to create service",
+    "serviceUpdateFailed": "Failed to update service",
+    "serviceDeleteFailed": "Failed to delete service",
+    "serviceName": "Service Name",
+    "description":"Description",
+
     "categories": {
       "hairCare": "Hair Care",
       "spaTreatments": "Spa Treatments",
@@ -882,7 +886,16 @@
       "deepTreatmentSpa": "Deep Treatment Spa",
       "rejuvenatingFacial": "Rejuvenating Facial",
       "frenchManicure": "French Manicure"
-    }
+    },
+    "clearFilters": "Clear Filters",
+    "searchResults": "Found {{total}} results{{term}}{{category}}{{status}}",
+    "searchResultsWithTerm": " - Search: \"{{term}}\"",
+    "searchResultsWithCategory": " - Category: {{category}}",
+    "searchResultsWithStatus": " - Status: {{status}}",
+    "noSearchResults": "No matching services found",
+    "noServices": "No services available",
+    "tryDifferentSearch": "Try adjusting your search terms or filters",
+    "addFirstService": "Create your first service item"
   },
   "general": {
     "inDevelopment": "This feature is under development..."
@@ -1041,6 +1054,7 @@
     "close": "Close",
     "confirm": "Confirm",
     "loading": "Loading...",
+    "noDescription": "No description available",
     "refresh": "Refresh",
     "search": "Search",
     "retryFailedNotifications": "Retry Failed Notifications",
@@ -1162,7 +1176,7 @@
     "category": "Category",
     "price": "Price",
     "duration": "Duration",
-    "skillLevel": "Skill Level",
+
     "availableStaff": "Available Staff",
     "status": "Status",
     "actions": "Actions",

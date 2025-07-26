@@ -32,7 +32,7 @@ import {
   Category as CategoryIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Service, ServiceCategory } from '../ServiceManagement';
+import { ServiceManagement as ServiceManagementType, ServiceCategory } from '../../../services/api';
 
 // 主题颜色 - 使用青色主题
 const THEME_COLOR = '#06B6D4';
@@ -42,8 +42,8 @@ const THEME_COLOR_DARKER = '#0E7490';
 interface ServiceDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (service: Partial<Service>) => void;
-  service: Service | null;
+  onSave: (service: Partial<ServiceManagementType>) => void;
+  service: ServiceManagementType | null;
   categories: ServiceCategory[];
   mode: 'add' | 'edit';
 }
@@ -66,17 +66,14 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
   mode,
 }) => {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState<Partial<Service>>({
+  const [formData, setFormData] = useState<Partial<ServiceManagementType>>({
     name: '',
-    nameEn: '',
-    categoryId: '',
+    categoryId: 0,
     price: 0,
     duration: 60,
     description: '',
-    descriptionEn: '',
-    isActive: true,
-    skillLevel: 'intermediate',
-    availableStaff: [],
+    status: 'ACTIVE',
+    resourceType: 'STAFF',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -85,36 +82,38 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
       if (mode === 'edit' && service) {
         setFormData({
           name: service.name,
-          nameEn: service.nameEn,
           categoryId: service.categoryId,
           price: service.price,
           duration: service.duration,
           description: service.description,
-          descriptionEn: service.descriptionEn,
-          isActive: service.isActive,
-          skillLevel: service.skillLevel,
-          availableStaff: service.availableStaff,
+          status: service.status,
+          resourceType: service.resourceType,
         });
       } else {
         setFormData({
           name: '',
-          nameEn: '',
-          categoryId: '',
+          categoryId: 0,
           price: 0,
           duration: 60,
           description: '',
-          descriptionEn: '',
-          isActive: true,
-          skillLevel: 'intermediate',
-          availableStaff: [],
+          status: 'ACTIVE',
+          resourceType: 'STAFF',
         });
       }
       setErrors({});
     }
   }, [open, mode, service]);
 
-  const handleChange = (field: keyof Service) => (event: any) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+  const handleChange = (field: keyof ServiceManagementType) => (event: any) => {
+    let value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+
+    // 对数值字段进行类型转换
+    if (field === 'price' || field === 'duration') {
+      value = value === '' ? 0 : parseFloat(value) || 0;
+    } else if (field === 'categoryId') {
+      value = value === '' ? 0 : parseInt(value) || 0;
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -125,26 +124,11 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
     }
   };
 
-  const handleStaffChange = (event: any, newValue: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      availableStaff: newValue
-    }));
-    // 清除员工选择的错误
-    if (errors.availableStaff) {
-      setErrors(prev => ({ ...prev, availableStaff: '' }));
-    }
-  };
-
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name?.trim()) {
       newErrors.name = t('services.nameRequired');
-    }
-
-    if (!formData.nameEn?.trim()) {
-      newErrors.nameEn = t('services.nameEnRequired');
     }
 
     if (!formData.categoryId) {
@@ -163,8 +147,8 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
       newErrors.description = t('services.descriptionRequired');
     }
 
-    if (!formData.availableStaff || formData.availableStaff.length === 0) {
-      newErrors.availableStaff = t('services.staffRequired');
+    if (!formData.resourceType) {
+      newErrors.resourceType = t('services.resourceTypeRequired');
     }
 
     setErrors(newErrors);
@@ -174,36 +158,23 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
   const handleSave = () => {
     if (!validateForm()) return;
 
-    const category = categories.find(c => c.id === formData.categoryId);
-    const serviceData: Partial<Service> = {
+    const serviceData: Partial<ServiceManagementType> = {
       ...formData,
-      category: category?.name || '',
     };
 
     onSave(serviceData);
-    onClose();
   };
 
-  const formatCurrency = (value: number) => {
-    return `¥${value.toFixed(2)}`;
+  const formatCurrency = (value: number | string | undefined) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : (value || 0);
+    return `¥${numValue.toFixed(2)}`;
   };
 
-  const skillLevels = [
-    { value: 'beginner', label: t('services.beginner') },
-    { value: 'intermediate', label: t('services.intermediate') },
-    { value: 'advanced', label: t('services.advanced') },
-    { value: 'expert', label: t('services.expert') },
+  const resourceTypes = [
+    { value: 'STAFF', label: t('services.staff') },
+    { value: 'ROOM', label: t('services.room') },
+    { value: 'BOTH', label: t('services.both') },
   ];
-
-  const getSkillLevelColor = (level: string) => {
-    const colors = {
-      beginner: '#10B981',
-      intermediate: '#F59E0B', 
-      advanced: '#EF4444',
-      expert: '#8B5CF6'
-    };
-    return colors[level as keyof typeof colors] || colors.intermediate;
-  };
 
   return (
     <Dialog
@@ -246,9 +217,9 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               <ServiceIcon sx={{ fontSize: 24 }} />
             </Box>
             <Box>
-              <Typography 
-                variant="h5" 
-                sx={{ 
+              <Typography
+                variant="h5"
+                sx={{
                   fontWeight: 700,
                   color: 'text.primary',
                   mb: 0.5,
@@ -261,7 +232,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               </Typography>
             </Box>
           </Box>
-          <IconButton 
+          <IconButton
             onClick={onClose}
             sx={{
               '&:hover': {
@@ -332,33 +303,10 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('services.serviceNameEn')}
-                  value={formData.nameEn || ''}
-                  onChange={handleChange('nameEn')}
-                  error={!!errors.nameEn}
-                  helperText={errors.nameEn}
-                  placeholder="Service Name (English)"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: THEME_COLOR,
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: THEME_COLOR,
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth error={!!errors.categoryId}>
                   <InputLabel>{t('services.category')}</InputLabel>
                   <Select
-                    value={formData.categoryId || ''}
+                    value={formData.categoryId || 0}
                     onChange={handleChange('categoryId')}
                     label={t('services.category')}
                     sx={{
@@ -371,7 +319,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                       },
                     }}
                   >
-                    {categories.filter(c => c.isActive).map((category) => (
+                    {categories.filter(c => c.status === 'ACTIVE').map((category) => (
                       <MenuItem key={category.id} value={category.id}>
                         <Box display="flex" alignItems="center" gap={1}>
                           <CategoryIcon sx={{ fontSize: 16, color: THEME_COLOR }} />
@@ -389,13 +337,13 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" p={2} 
-                     sx={{ 
-                       border: '1px solid', 
-                       borderColor: alpha(THEME_COLOR, 0.2),
-                       borderRadius: 2,
-                       height: '56px',
-                     }}
+                <Box display="flex" alignItems="center" justifyContent="space-between" p={2}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: alpha(THEME_COLOR, 0.2),
+                    borderRadius: 2,
+                    height: '56px',
+                  }}
                 >
                   <Typography variant="body1" sx={{ fontWeight: 500 }}>
                     {t('dialogs.serviceStatus')}
@@ -403,8 +351,13 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={formData.isActive || false}
-                        onChange={handleChange('isActive')}
+                        checked={formData.status === 'ACTIVE'}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            status: e.target.checked ? 'ACTIVE' : 'INACTIVE'
+                          }));
+                        }}
                         sx={{
                           '& .MuiSwitch-switchBase.Mui-checked': {
                             color: THEME_COLOR,
@@ -415,13 +368,13 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                         }}
                       />
                     }
-                    label={formData.isActive ? t('dialogs.enabled') : t('dialogs.disabled')}
+                    label={formData.status === 'ACTIVE' ? t('dialogs.enabled') : t('dialogs.disabled')}
                     labelPlacement="start"
-                    sx={{ 
+                    sx={{
                       margin: 0,
                       '& .MuiFormControlLabel-label': {
                         fontSize: '0.875rem',
-                        color: formData.isActive ? '#10B981' : 'text.secondary',
+                        color: formData.status === 'ACTIVE' ? '#10B981' : 'text.secondary',
                         fontWeight: 500,
                       },
                     }}
@@ -526,13 +479,13 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                 />
               </Grid>
 
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('services.skillLevel')}</InputLabel>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth error={!!errors.resourceType}>
+                  <InputLabel>{t('services.resourceType')}</InputLabel>
                   <Select
-                    value={formData.skillLevel || 'intermediate'}
-                    onChange={handleChange('skillLevel')}
-                    label={t('services.skillLevel')}
+                    value={formData.resourceType || 'STAFF'}
+                    onChange={handleChange('resourceType')}
+                    label={t('services.resourceType')}
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -543,22 +496,17 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                       },
                     }}
                   >
-                    {skillLevels.map((level) => (
-                      <MenuItem key={level.value} value={level.value}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              backgroundColor: getSkillLevelColor(level.value),
-                            }}
-                          />
-                          {level.label}
-                        </Box>
+                    {resourceTypes.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
                       </MenuItem>
                     ))}
                   </Select>
+                  {errors.resourceType && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                      {errors.resourceType}
+                    </Typography>
+                  )}
                 </FormControl>
               </Grid>
 
@@ -587,134 +535,25 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                 />
               </Grid>
 
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={t('services.descriptionEn')}
-                  multiline
-                  rows={2}
-                  value={formData.descriptionEn || ''}
-                  onChange={handleChange('descriptionEn')}
-                  placeholder="Service description in English (optional)..."
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: THEME_COLOR,
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: THEME_COLOR,
-                      },
-                    },
-                  }}
-                />
-              </Grid>
+
             </Grid>
           </Paper>
 
-          {/* 员工配置 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
-              borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                {t('services.staffConfiguration')}
-              </Typography>
-            </Box>
 
-            <Autocomplete
-              multiple
-              options={mockStaff}
-              value={formData.availableStaff || []}
-              onChange={handleStaffChange}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    label={option}
-                    {...getTagProps({ index })}
-                    key={option}
-                    sx={{
-                      backgroundColor: alpha(THEME_COLOR, 0.1),
-                      color: THEME_COLOR,
-                      fontWeight: 600,
-                      '& .MuiChip-deleteIcon': {
-                        color: THEME_COLOR,
-                      },
-                    }}
-                  />
-                ))
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label={t('services.availableStaff')}
-                  placeholder={t('services.selectStaff')}
-                  error={!!errors.availableStaff}
-                  helperText={errors.availableStaff}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: THEME_COLOR,
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: THEME_COLOR,
-                      },
-                    },
-                  }}
-                />
-              )}
-            />
-
-            {formData.availableStaff && formData.availableStaff.length > 0 && (
-              <Alert 
-                severity="info" 
-                sx={{ 
-                  mt: 2,
-                  borderRadius: 2,
-                  backgroundColor: alpha('#3B82F6', 0.1),
-                  borderColor: alpha('#3B82F6', 0.2),
-                }}
-              >
-                {t('dialogs.selectedStaffCount', { count: formData.availableStaff.length })}
-              </Alert>
-            )}
-          </Paper>
         </Box>
       </DialogContent>
 
-      <DialogActions 
-        sx={{ 
+      <DialogActions
+        sx={{
           p: 3,
           borderTop: '1px solid',
           borderColor: 'divider',
           background: alpha(THEME_COLOR, 0.02),
         }}
       >
-        <Button 
+        <Button
           onClick={onClose}
-          sx={{ 
+          sx={{
             borderRadius: 2,
             px: 3,
             color: 'text.secondary',

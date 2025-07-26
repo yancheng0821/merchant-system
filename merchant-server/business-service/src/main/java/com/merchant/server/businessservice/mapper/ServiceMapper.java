@@ -20,7 +20,50 @@ public interface ServiceMapper {
     List<Service> selectByTenantIdAndStatus(@Param("tenantId") Long tenantId, @Param("status") String status);
     
     /**
+     * 根据租户ID和分类ID查询服务
+     */
+    List<Service> selectByTenantIdAndCategoryId(@Param("tenantId") Long tenantId, @Param("categoryId") Long categoryId);
+    
+    /**
      * 根据ID查询服务
      */
     Service selectById(Long id);
+    
+    /**
+     * 插入服务
+     */
+    int insert(Service service);
+    
+    /**
+     * 更新服务
+     */
+    int updateById(Service service);
+    
+    /**
+     * 删除服务
+     */
+    int deleteById(Long id);
+    
+    /**
+     * 检查服务名称是否存在
+     */
+    int countByTenantIdAndName(@Param("tenantId") Long tenantId, @Param("name") String name, @Param("excludeId") Long excludeId);
+    
+    /**
+     * 分页查询服务（带搜索和筛选）
+     */
+    List<Service> selectByConditions(@Param("tenantId") Long tenantId, 
+                                   @Param("categoryId") Long categoryId,
+                                   @Param("status") String status,
+                                   @Param("searchTerm") String searchTerm,
+                                   @Param("offset") Integer offset,
+                                   @Param("limit") Integer limit);
+    
+    /**
+     * 统计服务数量（带搜索和筛选）
+     */
+    int countByConditions(@Param("tenantId") Long tenantId, 
+                         @Param("categoryId") Long categoryId,
+                         @Param("status") String status,
+                         @Param("searchTerm") String searchTerm);
 }

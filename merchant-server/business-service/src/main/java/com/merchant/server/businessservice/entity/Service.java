@@ -18,17 +18,11 @@ public class Service {
     
     private String name;
     
-    private String nameEn;
-    
     private String description;
-    
-    private String descriptionEn;
     
     private BigDecimal price;
     
     private Integer duration; // 分钟
-    
-    private SkillLevel skillLevel = SkillLevel.BEGINNER;
     
     private ServiceStatus status = ServiceStatus.ACTIVE;
     
@@ -46,10 +40,6 @@ public class Service {
     private List<Staff> staff;
     
     // 枚举定义
-    public enum SkillLevel {
-        BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
-    }
-    
     public enum ServiceStatus {
         ACTIVE, INACTIVE
     }

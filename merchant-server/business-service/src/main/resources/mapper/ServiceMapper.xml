@@ -8,21 +8,37 @@
         <result property="tenantId" column="tenant_id"/>
         <result property="categoryId" column="category_id"/>
         <result property="name" column="name"/>
-        <result property="nameEn" column="name_en"/>
         <result property="description" column="description"/>
-        <result property="descriptionEn" column="description_en"/>
         <result property="price" column="price"/>
         <result property="duration" column="duration"/>
-        <result property="skillLevel" column="skill_level"/>
+
         <result property="status" column="status"/>
+        <result property="resourceType" column="resource_type"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <!-- 基础查询SQL -->
     <sql id="Base_Column_List">
-        id, tenant_id, category_id, name, name_en, description, description_en,
-        price, duration, skill_level, status, created_at, updated_at
+        id, tenant_id, category_id, name, description,
+        price, duration, status, resource_type, created_at, updated_at
+    </sql>
+
+    <!-- 查询条件SQL -->
+    <sql id="Where_Conditions">
+        <where>
+            tenant_id = #{tenantId}
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="searchTerm != null and searchTerm != ''">
+                AND (name LIKE CONCAT('%', #{searchTerm}, '%') 
+                     OR description LIKE CONCAT('%', #{searchTerm}, '%'))
+            </if>
+        </where>
     </sql>
 
     <!-- 根据租户ID查询所有服务 -->
@@ -41,11 +57,77 @@
         ORDER BY name
     </select>
 
+    <!-- 根据租户ID和分类ID查询服务 -->
+    <select id="selectByTenantIdAndCategoryId" resultMap="ServiceResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM services
+        WHERE tenant_id = #{tenantId} AND category_id = #{categoryId}
+        ORDER BY name
+    </select>
+
     <!-- 根据ID查询服务 -->
     <select id="selectById" resultMap="ServiceResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM services
         WHERE id = #{id}
+    </select>
+
+    <!-- 插入服务 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Service" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO services (
+            tenant_id, category_id, name, description,
+            price, duration, status, resource_type
+        ) VALUES (
+            #{tenantId}, #{categoryId}, #{name}, #{description},
+            #{price}, #{duration}, #{status}, #{resourceType}
+        )
+    </insert>
+
+    <!-- 更新服务 -->
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.Service">
+        UPDATE services
+        SET category_id = #{categoryId},
+            name = #{name},
+            description = #{description},
+            price = #{price},
+            duration = #{duration},
+            status = #{status},
+            resource_type = #{resourceType},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除服务 -->
+    <delete id="deleteById">
+        DELETE FROM services WHERE id = #{id}
+    </delete>
+
+    <!-- 检查服务名称是否存在 -->
+    <select id="countByTenantIdAndName" resultType="int">
+        SELECT COUNT(*)
+        FROM services
+        WHERE tenant_id = #{tenantId} AND name = #{name}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 分页查询服务（带搜索和筛选） -->
+    <select id="selectByConditions" resultMap="ServiceResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM services
+        <include refid="Where_Conditions"/>
+        ORDER BY name
+        <if test="limit != null and offset != null">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计服务数量（带搜索和筛选） -->
+    <select id="countByConditions" resultType="int">
+        SELECT COUNT(*)
+        FROM services
+        <include refid="Where_Conditions"/>
     </select>
 
 </mapper>

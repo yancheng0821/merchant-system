@@ -372,12 +372,10 @@ export interface Service {
   tenantId: number;
   categoryId: number;
   name: string;
-  nameEn?: string;
   description?: string;
-  descriptionEn?: string;
   price: number;
   duration: number;
-  skillLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+
   status?: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;
   updatedAt?: string;
@@ -538,6 +536,57 @@ export const customerApi = {
   },
 };
 
+// 服务分类相关接口定义
+export interface ServiceCategory {
+  id: number;
+  tenantId: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  sortOrder: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+  serviceCount?: number;
+}
+
+// 服务相关接口定义（更新）
+export interface ServiceManagement {
+  id: number;
+  tenantId: number;
+  categoryId: number;
+  name: string;
+  description?: string;
+  price: number;
+  duration: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  resourceType: 'STAFF' | 'ROOM' | 'BOTH';
+  createdAt: string;
+  updatedAt: string;
+  // 关联信息
+  categoryName?: string;
+  categoryIcon?: string;
+  categoryColor?: string;
+}
+
+export interface ServiceQueryParams {
+  tenantId: number;
+  categoryId?: number;
+  status?: string;
+  searchTerm?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface ServiceListResponse {
+  data: ServiceManagement[];
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+}
+
 // 服务管理API
 export const serviceApi = {
   // 获取所有服务
@@ -551,6 +600,140 @@ export const serviceApi = {
   // 获取活跃服务
   getActiveServices: async (tenantId: string): Promise<Service[]> => {
     const response = await createRequest(`/api/services?tenantId=${tenantId}&status=ACTIVE`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};
+
+// 服务管理API（新增）
+export const serviceManagementApi = {
+  // 分页查询服务
+  getServices: async (params: ServiceQueryParams): Promise<ServiceListResponse> => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    const response = await createRequest(`/api/services?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据ID获取服务详情
+  getServiceById: async (id: number): Promise<ServiceManagement> => {
+    const response = await createRequest(`/api/services/${id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 创建服务
+  createService: async (service: Omit<ServiceManagement, 'id' | 'createdAt' | 'updatedAt' | 'categoryName' | 'categoryIcon' | 'categoryColor'>): Promise<ServiceManagement> => {
+    const response = await createRequest('/api/services', {
+      method: 'POST',
+      body: JSON.stringify(service),
+    });
+    return response;
+  },
+
+  // 更新服务
+  updateService: async (id: number, service: Partial<ServiceManagement>): Promise<ServiceManagement> => {
+    const response = await createRequest(`/api/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(service),
+    });
+    return response;
+  },
+
+  // 删除服务
+  deleteService: async (id: number): Promise<void> => {
+    await createRequest(`/api/services/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 根据租户ID获取所有服务
+  getServicesByTenantId: async (tenantId: number): Promise<ServiceManagement[]> => {
+    const response = await createRequest(`/api/services/tenant/${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据分类ID获取服务
+  getServicesByCategoryId: async (tenantId: number, categoryId: number): Promise<ServiceManagement[]> => {
+    const response = await createRequest(`/api/services/category/${categoryId}?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};
+
+// 服务分类管理API
+export const serviceCategoryApi = {
+  // 根据租户ID获取所有分类
+  getCategories: async (tenantId: number): Promise<ServiceCategory[]> => {
+    const response = await createRequest(`/api/service-categories?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据租户ID和状态获取分类
+  getCategoriesByStatus: async (tenantId: number, status: string): Promise<ServiceCategory[]> => {
+    const response = await createRequest(`/api/service-categories/status/${status}?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据ID获取分类详情
+  getCategoryById: async (id: number): Promise<ServiceCategory> => {
+    const response = await createRequest(`/api/service-categories/${id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 创建分类
+  createCategory: async (category: Omit<ServiceCategory, 'id' | 'createdAt' | 'updatedAt' | 'serviceCount'>): Promise<ServiceCategory> => {
+    const response = await createRequest('/api/service-categories', {
+      method: 'POST',
+      body: JSON.stringify(category),
+    });
+    return response;
+  },
+
+  // 更新分类
+  updateCategory: async (id: number, category: Partial<ServiceCategory>): Promise<ServiceCategory> => {
+    const response = await createRequest(`/api/service-categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(category),
+    });
+    return response;
+  },
+
+  // 删除分类
+  deleteCategory: async (id: number): Promise<void> => {
+    await createRequest(`/api/service-categories/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 检查分类名称是否存在
+  checkNameExists: async (tenantId: number, name: string, excludeId?: number): Promise<boolean> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('tenantId', tenantId.toString());
+    queryParams.append('name', name);
+    if (excludeId) {
+      queryParams.append('excludeId', excludeId.toString());
+    }
+
+    const response = await createRequest(`/api/service-categories/check-name?${queryParams.toString()}`, {
       method: 'GET',
     });
     return response;

@@ -9,15 +9,15 @@ INSERT INTO service_categories (tenant_id, name, name_en, description, icon, col
 (4, '美甲护理', 'Nail Care', '精致美甲护理服务', 'nail', '#96CEB4', 4);
 
 -- 插入服务项目测试数据
-INSERT INTO services (tenant_id, category_id, name, name_en, description, price, duration, skill_level) VALUES
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美发护理'), '精致理发', 'Premium Haircut', '专业理发师提供的精致理发服务', 88.00, 60, 'INTERMEDIATE'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美发护理'), '染发护理', 'Hair Coloring', '专业染发和护理服务', 288.00, 180, 'ADVANCED'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = 'SPA护理'), '深层护理SPA', 'Deep Treatment Spa', '全身深层护理和放松', 388.00, 120, 'EXPERT'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = 'SPA护理'), '香薰按摩', 'Aromatherapy Massage', '舒缓香薰按摩服务', 268.00, 90, 'INTERMEDIATE'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '面部护理'), '焕颜面部护理', 'Rejuvenating Facial', '深层清洁和焕颜护理', 188.00, 75, 'INTERMEDIATE'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '面部护理'), '抗衰老护理', 'Anti-aging Treatment', '专业抗衰老面部护理', 328.00, 90, 'ADVANCED'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美甲护理'), '法式美甲', 'French Manicure', '经典法式美甲服务', 128.00, 45, 'BEGINNER'),
-(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美甲护理'), '艺术美甲', 'Nail Art', '创意艺术美甲设计', 168.00, 60, 'INTERMEDIATE');
+INSERT INTO services (tenant_id, category_id, name, name_en, description, price, duration) VALUES
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美发护理'), '精致理发', 'Premium Haircut', '专业理发师提供的精致理发服务', 88.00, 60),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美发护理'), '染发护理', 'Hair Coloring', '专业染发和护理服务', 288.00, 180),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = 'SPA护理'), '深层护理SPA', 'Deep Treatment Spa', '全身深层护理和放松', 388.00, 120),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = 'SPA护理'), '香薰按摩', 'Aromatherapy Massage', '舒缓香薰按摩服务', 268.00, 90),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '面部护理'), '焕颜面部护理', 'Rejuvenating Facial', '深层清洁和焕颜护理', 188.00, 75),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '面部护理'), '抗衰老护理', 'Anti-aging Treatment', '专业抗衰老面部护理', 328.00, 90),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美甲护理'), '法式美甲', 'French Manicure', '经典法式美甲服务', 128.00, 45),
+(4, (SELECT id FROM service_categories WHERE tenant_id = 4 AND name = '美甲护理'), '艺术美甲', 'Nail Art', '创意艺术美甲设计', 168.00, 60);
 
 -- 插入员工测试数据
 INSERT INTO staff (tenant_id, name, phone, email, position, skills, start_date) VALUES

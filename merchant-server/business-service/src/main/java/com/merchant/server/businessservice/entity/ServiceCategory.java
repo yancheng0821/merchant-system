@@ -15,8 +15,6 @@ public class ServiceCategory {
     
     private String name;
     
-    private String nameEn;
-    
     private String description;
     
     private String icon;

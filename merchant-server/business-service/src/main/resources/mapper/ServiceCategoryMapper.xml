@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.ServiceCategoryMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="ServiceCategoryResultMap" type="com.merchant.server.businessservice.entity.ServiceCategory">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="icon" column="icon"/>
+        <result property="color" column="color"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 基础查询SQL -->
+    <sql id="Base_Column_List">
+        id, tenant_id, name, description, icon, color, sort_order, status, created_at, updated_at
+    </sql>
+
+    <!-- 根据租户ID查询所有服务分类 -->
+    <select id="selectByTenantId" resultMap="ServiceCategoryResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM service_categories
+        WHERE tenant_id = #{tenantId}
+        ORDER BY sort_order, name
+    </select>
+
+    <!-- 根据租户ID和状态查询服务分类 -->
+    <select id="selectByTenantIdAndStatus" resultMap="ServiceCategoryResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM service_categories
+        WHERE tenant_id = #{tenantId} AND status = #{status}
+        ORDER BY sort_order, name
+    </select>
+
+    <!-- 根据ID查询服务分类 -->
+    <select id="selectById" resultMap="ServiceCategoryResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM service_categories
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入服务分类 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.ServiceCategory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO service_categories (
+            tenant_id, name, description, icon, color, sort_order, status
+        ) VALUES (
+            #{tenantId}, #{name}, #{description}, #{icon}, #{color}, #{sortOrder}, #{status}
+        )
+    </insert>
+
+    <!-- 更新服务分类 -->
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.ServiceCategory">
+        UPDATE service_categories
+        SET name = #{name},
+            description = #{description},
+            icon = #{icon},
+            color = #{color},
+            sort_order = #{sortOrder},
+            status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除服务分类 -->
+    <delete id="deleteById">
+        DELETE FROM service_categories WHERE id = #{id}
+    </delete>
+
+    <!-- 检查分类名称是否存在 -->
+    <select id="countByTenantIdAndName" resultType="int">
+        SELECT COUNT(*)
+        FROM service_categories
+        WHERE tenant_id = #{tenantId} AND name = #{name}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper>
