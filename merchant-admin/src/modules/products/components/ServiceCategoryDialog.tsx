@@ -229,11 +229,13 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
         setLocalCategories(prev => [...prev, newCategory]);
       } else if (editingCategory) {
         const updatedCategoryData = {
+          tenantId: editingCategory.tenantId,
           name: formData.name,
           description: formData.description,
           icon: formData.icon,
           color: formData.color,
           sortOrder: formData.sortOrder,
+          status: editingCategory.status,
         };
         const updatedCategory = await serviceCategoryApi.updateCategory(editingCategory.id, updatedCategoryData);
         setLocalCategories(prev => prev.map(c =>
@@ -252,7 +254,15 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
   const handleToggleActive = async (category: ServiceCategory) => {
     try {
       const newStatus = category.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-      const updatedCategory = await serviceCategoryApi.updateCategory(category.id, { status: newStatus });
+      const updatedCategory = await serviceCategoryApi.updateCategory(category.id, { 
+        tenantId: category.tenantId,
+        name: category.name,
+        description: category.description,
+        icon: category.icon,
+        color: category.color,
+        sortOrder: category.sortOrder,
+        status: newStatus 
+      });
       setLocalCategories(prev => prev.map(c =>
         c.id === category.id ? updatedCategory : c
       ));
@@ -429,7 +439,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
     // 粉色系
     '#FF69B4', '#FF1493', '#C2185B', '#AD1457', '#880E4F', '#FCE4EC',
     // 橙色系
-    '#FF9800', '#FF5722', '#FF7043', '#FF8A65', '#FFAB91', '#FFCCBC',
+    '#FF9800', '#FF7043', '#FF8A65', '#FFAB91', '#FFCCBC',
     // 黄色系
     '#FFC107', '#FFD54F', '#FFEB3B', '#FFEE58', '#FFF176', '#FFF59D',
     // 绿色系
@@ -437,17 +447,17 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
     // 青色系
     '#00BCD4', '#26C6DA', '#4DD0E1', '#80DEEA', '#B2EBF2', '#E0F2F1',
     // 蓝色系
-    '#2196F3', '#03A9F4', '#00BCD4', '#0097A7', '#006064', '#E1F5FE',
+    '#2196F3', '#03A9F4', '#0097A7', '#006064', '#E1F5FE',
     // 深蓝色系
     '#3F51B5', '#303F9F', '#1A237E', '#536DFE', '#7986CB', '#9FA8DA',
     // 紫色系
-    '#9C27B0', '#673AB7', '#3F51B5', '#7B1FA2', '#4A148C', '#E1BEE7',
+    '#9C27B0', '#673AB7', '#7B1FA2', '#4A148C', '#E1BEE7',
     // 棕色系
     '#795548', '#8D6E63', '#A1887F', '#BCAAA4', '#D7CCC8', '#EFEBE9',
     // 灰色系
     '#607D8B', '#78909C', '#90A4AE', '#B0BEC5', '#CFD8DC', '#ECEFF1',
     // 特殊色彩
-    '#FF4081', '#E040FB', '#7C4DFF', '#536DFE', '#448AFF', '#40C4FF',
+    '#FF4081', '#E040FB', '#7C4DFF', '#448AFF', '#40C4FF',
     '#18FFFF', '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41', '#FFFF00',
     '#FFD740', '#FFAB40', '#FF6E40', '#FF5252', '#FF1744', '#F50057',
     // 渐变色风格
@@ -476,9 +486,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
         fontWeight: 600,
         background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
       }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {t('services.manageCategoriesTitle')}
-        </Typography>
+        {t('services.manageCategoriesTitle')}
       </DialogTitle>
 
       <DialogContent dividers sx={{ p: 3, backgroundColor: '#f8fafc' }}>
@@ -502,7 +510,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                 boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
               }}
             >
-              <Typography variant="h6" sx={{ color: themeColor, fontWeight: 600 }}>
+              <Typography variant="h5" sx={{ color: themeColor, fontWeight: 600 }}>
                 {t('services.existingCategories')}
               </Typography>
               <Button
@@ -658,7 +666,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                 }}
               >
                 <Typography 
-                  variant="h6" 
+                  variant="h5" 
                   gutterBottom 
                   sx={{ 
                     color: themeColor, 
@@ -913,7 +921,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                 >
                   <EditIcon sx={{ fontSize: 32, color: themeColor }} />
                 </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                   {t('services.selectCategoryToEdit')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">

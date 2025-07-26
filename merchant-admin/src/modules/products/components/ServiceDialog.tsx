@@ -306,7 +306,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                 <FormControl fullWidth error={!!errors.categoryId}>
                   <InputLabel>{t('services.category')}</InputLabel>
                   <Select
-                    value={formData.categoryId || 0}
+                    value={formData.categoryId && categories.filter(c => c.status === 'ACTIVE').some(c => c.id === formData.categoryId) ? formData.categoryId : ''}
                     onChange={handleChange('categoryId')}
                     label={t('services.category')}
                     sx={{

@@ -712,10 +712,8 @@ const ServiceManagement: React.FC = () => {
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
-            {t('products.confirmDeleteService')}
-          </Typography>
+        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
+          {t('products.confirmDeleteService')}
         </DialogTitle>
         <DialogContent>
           <Typography>
