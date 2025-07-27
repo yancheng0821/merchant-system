@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -120,11 +120,7 @@ const NotificationTemplateManagement: React.FC = () => {
     { value: 'APPOINTMENT_REMINDER', label: t('notifications.templateCodes.appointmentReminder') }
   ];
 
-  useEffect(() => {
-    fetchTemplates();
-  }, [tenantId]);
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
       const templates = await notificationApi.getTemplates(tenantId);
@@ -136,7 +132,11 @@ const NotificationTemplateManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantId]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
 
   const handleOpenDialog = (template?: NotificationTemplate) => {
     if (template) {

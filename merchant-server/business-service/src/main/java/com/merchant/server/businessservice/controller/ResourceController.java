@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/resources")
+@RequestMapping("/api/business/resources")
 @RequiredArgsConstructor
 @Slf4j
 public class ResourceController {

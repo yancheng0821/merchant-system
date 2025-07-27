@@ -20,7 +20,6 @@ import {
   Person as PersonIcon,
   Room as RoomIcon,
   Info as InfoIcon,
-  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { getFullImageUrl } from '../../services/api';
@@ -217,7 +216,7 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
     );
   }, [resources, availabilityStatus, showAvailability]);
 
-  const selectedResource = resources.find(r => r.id === selectedResourceId);
+  // const selectedResource = resources.find(r => r.id === selectedResourceId);
 
   if (loading) {
     return (

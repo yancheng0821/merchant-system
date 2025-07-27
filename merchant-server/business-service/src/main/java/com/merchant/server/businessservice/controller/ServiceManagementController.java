@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/services")
+@RequestMapping("/api/business/services")
 @RequiredArgsConstructor
 public class ServiceManagementController {
     

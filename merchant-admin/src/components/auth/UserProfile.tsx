@@ -30,15 +30,12 @@ import LockIcon from '@mui/icons-material/Lock';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { userApi } from '../../services/api';
+import { userApi, getFullImageUrl } from '../../services/api';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { useNavigate } from 'react-router-dom';
-
-// API基础配置
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
 const UserProfile: React.FC = () => {
   const { t } = useTranslation();
@@ -118,12 +115,6 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  // 处理头像URL，将相对路径转换为完整URL
-  const getAvatarUrl = (avatarPath?: string) => {
-    if (!avatarPath) return undefined;
-    if (avatarPath.startsWith('http')) return avatarPath;
-    return `${API_BASE_URL}${avatarPath}`;
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -354,7 +345,7 @@ const UserProfile: React.FC = () => {
             <Box display="flex" alignItems="center" gap={3}>
               <Box position="relative">
                 <Avatar
-                  src={getAvatarUrl(user.avatar)}
+                  src={getFullImageUrl(user.avatar)}
                   sx={{
                     width: 80,
                     height: 80,

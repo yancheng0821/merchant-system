@@ -9,8 +9,15 @@ export const getFullImageUrl = (imageUrl?: string): string | undefined => {
   if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return imageUrl;
   }
+  
+  // 处理旧的头像路径格式，将 /api/users/avatar 改为 /api/auth/users/avatar
+  let processedUrl = imageUrl;
+  if (imageUrl.includes('/api/users/avatar/')) {
+    processedUrl = imageUrl.replace('/api/users/avatar/', '/api/auth/users/avatar/');
+  }
+  
   // 通过gateway访问文件
-  return `${API_BASE_URL}${imageUrl}`;
+  return `${API_BASE_URL}${processedUrl}`;
 };
 
 // 文件上传API
@@ -21,7 +28,7 @@ export const fileUploadApi = {
         formData.append('file', file);
         formData.append('tenantId', tenantId.toString());
         
-        const response = await fetch(`${API_BASE_URL}/api/files/upload/avatar`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/files/upload/avatar`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -43,7 +50,7 @@ export const fileUploadApi = {
         formData.append('file', file);
         formData.append('tenantId', tenantId.toString());
         
-        const response = await fetch(`${API_BASE_URL}/api/files/upload/room-icon`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/files/upload/room-icon`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -61,7 +68,7 @@ export const fileUploadApi = {
     
     // 删除文件
     deleteFile: async (fileUrl: string): Promise<void> => {
-        const response = await fetch(`${API_BASE_URL}/api/files/delete`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/files/delete`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -80,7 +87,7 @@ export const fileUploadApi = {
 export const merchantConfigApi = {
   // 获取商户完整配置
   getMerchantConfig: async (tenantId: number) => {
-    const response = await fetch(`${API_BASE_URL}/api/merchant-config/${tenantId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -97,7 +104,7 @@ export const merchantConfigApi = {
 
   // 获取商户资源类型配置
   getResourceTypes: async (tenantId: number) => {
-    const response = await fetch(`${API_BASE_URL}/api/merchant-config/${tenantId}/resource-types`, {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}/resource-types`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -114,7 +121,7 @@ export const merchantConfigApi = {
 
   // 更新商户配置
   updateMerchantConfig: async (tenantId: number, config: any) => {
-    const response = await fetch(`${API_BASE_URL}/api/merchant-config/${tenantId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -300,14 +307,14 @@ export const authApi = {
 export const userApi = {
   // 获取用户信息
   getProfile: async (): Promise<ApiResponse<User>> => {
-    return createRequest('/api/users/profile', {
+    return createRequest('/api/auth/users/profile', {
       method: 'GET',
     });
   },
 
   // 更新用户信息
   updateProfile: async (data: Partial<User>): Promise<ApiResponse<User>> => {
-    return createRequest('/api/users/profile', {
+    return createRequest('/api/auth/users/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -318,7 +325,7 @@ export const userApi = {
     const formData = new FormData();
     formData.append('avatar', file);
 
-    return createRequest('/api/users/avatar', {
+    return createRequest('/api/auth/users/avatar', {
       method: 'POST',
       headers: {}, // 让浏览器自动设置Content-Type
       body: formData,
@@ -327,7 +334,7 @@ export const userApi = {
 
   // 修改密码
   changePassword: async (data: { oldPassword: string; newPassword: string; confirmPassword: string }): Promise<ApiResponse<void>> => {
-    return createRequest('/api/users/password', {
+    return createRequest('/api/auth/users/password', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -448,7 +455,7 @@ export const customerApi = {
       }
     });
 
-    const response = await createRequest(`/api/customers?${queryParams.toString()}`, {
+    const response = await createRequest(`/api/business/customers?${queryParams.toString()}`, {
       method: 'GET',
     });
     return response;
@@ -456,7 +463,7 @@ export const customerApi = {
 
   // 获取客户详情
   getCustomerById: async (id: string): Promise<Customer> => {
-    const response = await createRequest(`/api/customers/${id}`, {
+    const response = await createRequest(`/api/business/customers/${id}`, {
       method: 'GET',
     });
     return response;
@@ -488,7 +495,7 @@ export const customerApi = {
     };
     
     console.log('Creating customer with data:', customerToSend);
-    const response = await createRequest('/api/customers', {
+    const response = await createRequest('/api/business/customers', {
       method: 'POST',
       body: JSON.stringify(customerToSend),
     });
@@ -497,7 +504,7 @@ export const customerApi = {
 
   // 更新客户
   updateCustomer: async (id: string, customer: Customer): Promise<Customer> => {
-    const response = await createRequest(`/api/customers/${id}`, {
+    const response = await createRequest(`/api/business/customers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(customer),
     });
@@ -506,14 +513,14 @@ export const customerApi = {
 
   // 删除客户
   deleteCustomer: async (id: string): Promise<void> => {
-    await createRequest(`/api/customers/${id}`, {
+    await createRequest(`/api/business/customers/${id}`, {
       method: 'DELETE',
     });
   },
 
   // 根据电话号码查询客户
   getCustomerByPhone: async (tenantId: string, phone: string): Promise<Customer> => {
-    const response = await createRequest(`/api/customers/phone/${phone}?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/customers/phone/${phone}?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -521,7 +528,7 @@ export const customerApi = {
 
   // 获取客户统计信息
   getCustomerStats: async (tenantId: string): Promise<CustomerStats> => {
-    const response = await createRequest(`/api/customers/stats?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/customers/stats?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -529,7 +536,7 @@ export const customerApi = {
 
   // 获取消费排行榜
   getTopSpendingCustomers: async (tenantId: string, limit: number = 10): Promise<Customer[]> => {
-    const response = await createRequest(`/api/customers/top-spending?tenantId=${tenantId}&limit=${limit}`, {
+    const response = await createRequest(`/api/business/customers/top-spending?tenantId=${tenantId}&limit=${limit}`, {
       method: 'GET',
     });
     return response;
@@ -591,7 +598,7 @@ export interface ServiceListResponse {
 export const serviceApi = {
   // 获取所有服务
   getServices: async (tenantId: string): Promise<Service[]> => {
-    const response = await createRequest(`/api/services?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/services?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -599,7 +606,7 @@ export const serviceApi = {
 
   // 获取活跃服务
   getActiveServices: async (tenantId: string): Promise<Service[]> => {
-    const response = await createRequest(`/api/services?tenantId=${tenantId}&status=ACTIVE`, {
+    const response = await createRequest(`/api/business/services?tenantId=${tenantId}&status=ACTIVE`, {
       method: 'GET',
     });
     return response;
@@ -617,7 +624,7 @@ export const serviceManagementApi = {
       }
     });
 
-    const response = await createRequest(`/api/services?${queryParams.toString()}`, {
+    const response = await createRequest(`/api/business/services?${queryParams.toString()}`, {
       method: 'GET',
     });
     return response;
@@ -625,7 +632,7 @@ export const serviceManagementApi = {
 
   // 根据ID获取服务详情
   getServiceById: async (id: number): Promise<ServiceManagement> => {
-    const response = await createRequest(`/api/services/${id}`, {
+    const response = await createRequest(`/api/business/services/${id}`, {
       method: 'GET',
     });
     return response;
@@ -633,7 +640,7 @@ export const serviceManagementApi = {
 
   // 创建服务
   createService: async (service: Omit<ServiceManagement, 'id' | 'createdAt' | 'updatedAt' | 'categoryName' | 'categoryIcon' | 'categoryColor'>): Promise<ServiceManagement> => {
-    const response = await createRequest('/api/services', {
+    const response = await createRequest('/api/business/services', {
       method: 'POST',
       body: JSON.stringify(service),
     });
@@ -642,7 +649,7 @@ export const serviceManagementApi = {
 
   // 更新服务
   updateService: async (id: number, service: Partial<ServiceManagement>): Promise<ServiceManagement> => {
-    const response = await createRequest(`/api/services/${id}`, {
+    const response = await createRequest(`/api/business/services/${id}`, {
       method: 'PUT',
       body: JSON.stringify(service),
     });
@@ -651,14 +658,14 @@ export const serviceManagementApi = {
 
   // 删除服务
   deleteService: async (id: number): Promise<void> => {
-    await createRequest(`/api/services/${id}`, {
+    await createRequest(`/api/business/services/${id}`, {
       method: 'DELETE',
     });
   },
 
   // 根据租户ID获取所有服务
   getServicesByTenantId: async (tenantId: number): Promise<ServiceManagement[]> => {
-    const response = await createRequest(`/api/services/tenant/${tenantId}`, {
+    const response = await createRequest(`/api/business/services/tenant/${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -666,7 +673,7 @@ export const serviceManagementApi = {
 
   // 根据分类ID获取服务
   getServicesByCategoryId: async (tenantId: number, categoryId: number): Promise<ServiceManagement[]> => {
-    const response = await createRequest(`/api/services/category/${categoryId}?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/services/category/${categoryId}?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -677,7 +684,7 @@ export const serviceManagementApi = {
 export const serviceCategoryApi = {
   // 根据租户ID获取所有分类
   getCategories: async (tenantId: number): Promise<ServiceCategory[]> => {
-    const response = await createRequest(`/api/service-categories?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/service-categories?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -685,7 +692,7 @@ export const serviceCategoryApi = {
 
   // 根据租户ID和状态获取分类
   getCategoriesByStatus: async (tenantId: number, status: string): Promise<ServiceCategory[]> => {
-    const response = await createRequest(`/api/service-categories/status/${status}?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/service-categories/status/${status}?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -693,7 +700,7 @@ export const serviceCategoryApi = {
 
   // 根据ID获取分类详情
   getCategoryById: async (id: number): Promise<ServiceCategory> => {
-    const response = await createRequest(`/api/service-categories/${id}`, {
+    const response = await createRequest(`/api/business/service-categories/${id}`, {
       method: 'GET',
     });
     return response;
@@ -701,7 +708,7 @@ export const serviceCategoryApi = {
 
   // 创建分类
   createCategory: async (category: Omit<ServiceCategory, 'id' | 'createdAt' | 'updatedAt' | 'serviceCount'>): Promise<ServiceCategory> => {
-    const response = await createRequest('/api/service-categories', {
+    const response = await createRequest('/api/business/service-categories', {
       method: 'POST',
       body: JSON.stringify(category),
     });
@@ -710,7 +717,7 @@ export const serviceCategoryApi = {
 
   // 更新分类
   updateCategory: async (id: number, category: Partial<ServiceCategory>): Promise<ServiceCategory> => {
-    const response = await createRequest(`/api/service-categories/${id}`, {
+    const response = await createRequest(`/api/business/service-categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(category),
     });
@@ -719,7 +726,7 @@ export const serviceCategoryApi = {
 
   // 删除分类
   deleteCategory: async (id: number): Promise<void> => {
-    await createRequest(`/api/service-categories/${id}`, {
+    await createRequest(`/api/business/service-categories/${id}`, {
       method: 'DELETE',
     });
   },
@@ -733,7 +740,7 @@ export const serviceCategoryApi = {
       queryParams.append('excludeId', excludeId.toString());
     }
 
-    const response = await createRequest(`/api/service-categories/check-name?${queryParams.toString()}`, {
+    const response = await createRequest(`/api/business/service-categories/check-name?${queryParams.toString()}`, {
       method: 'GET',
     });
     return response;
@@ -783,7 +790,7 @@ export interface AppointmentStats {
 export const appointmentApi = {
   // 获取所有预约记录
   getAllAppointments: async (tenantId: number): Promise<Appointment[]> => {
-    const response = await createRequest(`/api/appointments?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/appointments?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -791,7 +798,7 @@ export const appointmentApi = {
 
   // 根据客户ID获取预约记录
   getAppointmentsByCustomerId: async (customerId: number, tenantId: number): Promise<Appointment[]> => {
-    const response = await createRequest(`/api/appointments/customer/${customerId}?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/appointments/customer/${customerId}?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -799,7 +806,7 @@ export const appointmentApi = {
 
   // 获取预约统计信息
   getAppointmentStats: async (customerId: number, tenantId: number): Promise<AppointmentStats> => {
-    const response = await createRequest(`/api/appointments/customer/${customerId}/stats?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/appointments/customer/${customerId}/stats?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -807,7 +814,7 @@ export const appointmentApi = {
 
   // 创建预约
   createAppointment: async (appointment: Partial<Appointment>): Promise<Appointment> => {
-    const response = await createRequest('/api/appointments', {
+    const response = await createRequest('/api/business/appointments', {
       method: 'POST',
       body: JSON.stringify(appointment),
     });
@@ -816,7 +823,7 @@ export const appointmentApi = {
 
   // 更新预约状态
   updateAppointmentStatus: async (id: number, status: string): Promise<Appointment> => {
-    const response = await createRequest(`/api/appointments/${id}/status`, {
+    const response = await createRequest(`/api/business/appointments/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
@@ -825,7 +832,7 @@ export const appointmentApi = {
 
   // 更新预约
   updateAppointment: async (id: number, appointment: Partial<Appointment>): Promise<Appointment> => {
-    const response = await createRequest(`/api/appointments/${id}`, {
+    const response = await createRequest(`/api/business/appointments/${id}`, {
       method: 'PUT',
       body: JSON.stringify(appointment),
     });
@@ -834,10 +841,92 @@ export const appointmentApi = {
 
   // 删除预约
   deleteAppointment: async (id: number): Promise<void> => {
-    await createRequest(`/api/appointments/${id}`, {
+    await createRequest(`/api/business/appointments/${id}`, {
       method: 'DELETE',
     });
   },
+
+  // 订单相关API
+  getOrders: async (params: {
+    tenantId: number;
+    page?: number;
+    size?: number;
+    searchTerm?: string;
+    paymentStatus?: string;
+    orderStatus?: string;
+    customerId?: number;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
+    return createRequest(`/api/business/orders?${queryParams.toString()}`);
+  },
+
+  getOrderById: (id: number) => createRequest(`/api/business/orders/${id}`),
+
+  createOrder: (data: any) => createRequest('/api/business/orders', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  updateOrder: (id: number, data: any) => createRequest(`/api/business/orders/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+
+  cancelOrder: (id: number) => createRequest(`/api/business/orders/${id}/cancel`, {
+    method: 'POST',
+  }),
+
+  getOrderStats: (tenantId: number) => createRequest(`/api/business/orders/stats?tenantId=${tenantId}`),
+
+  // 支付相关API
+  initiatePayment: (data: {
+    orderId: number;
+    paymentMethod: string;
+    amount: number;
+    tipAmount?: number;
+  }) => createRequest('/api/business/payments/initiate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  processCashPayment: (data: {
+    orderId: number;
+    paymentMethod: string;
+    amount: number;
+    tipAmount?: number;
+  }) => createRequest('/api/business/payments/cash', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  processCardPayment: (data: {
+    orderId: number;
+    paymentMethod: string;
+    amount: number;
+    tipAmount?: number;
+    posTerminalId?: string;
+  }) => createRequest('/api/business/payments/card', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  checkPaymentStatus: (orderId: number) => createRequest(`/api/business/payments/status/${orderId}`),
+
+  processRefund: (data: {
+    orderId: number;
+    amount: number;
+    reason: string;
+  }) => createRequest('/api/business/payments/refund', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 };
 
 // 员工相关接口定义
@@ -895,7 +984,7 @@ export interface ResourceAvailability {
 export const resourceApi = {
   // 获取租户下所有资源
   getAllResources: async (tenantId: number): Promise<Resource[]> => {
-    const response = await createRequest(`/api/resources/tenant/${tenantId}`, {
+    const response = await createRequest(`/api/business/resources/tenant/${tenantId}`, {
       method: 'GET',
     });
     return response.data || response;
@@ -903,7 +992,7 @@ export const resourceApi = {
 
   // 根据类型获取资源
   getResourcesByType: async (tenantId: number, type: string): Promise<Resource[]> => {
-    const response = await createRequest(`/api/resources/tenant/${tenantId}/type/${type}`, {
+    const response = await createRequest(`/api/business/resources/tenant/${tenantId}/type/${type}`, {
       method: 'GET',
     });
     return response.data || response;
@@ -911,7 +1000,7 @@ export const resourceApi = {
 
   // 根据服务获取可用资源
   getAvailableResourcesByService: async (serviceId: number, tenantId: number): Promise<Resource[]> => {
-    const response = await createRequest(`/api/resources/service/${serviceId}/tenant/${tenantId}`, {
+    const response = await createRequest(`/api/business/resources/service/${serviceId}/tenant/${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -919,22 +1008,16 @@ export const resourceApi = {
 
   // 检查资源可用性
   checkResourceAvailability: async (resourceId: number, date: string, startTime: string, endTime: string): Promise<boolean> => {
-    const response = await createRequest(`/api/resources/${resourceId}/availability/check`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
     const queryParams = new URLSearchParams({ date, startTime, endTime });
-    const fullResponse = await createRequest(`/api/resources/${resourceId}/availability/check?${queryParams.toString()}`, {
+    const response = await createRequest(`/api/business/resources/${resourceId}/availability/check?${queryParams.toString()}`, {
       method: 'GET',
     });
-    return fullResponse;
+    return response;
   },
 
   // 创建资源
   createResource: async (resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>): Promise<Resource> => {
-    const response = await createRequest('/api/resources', {
+    const response = await createRequest('/api/business/resources', {
       method: 'POST',
       body: JSON.stringify(resource),
     });
@@ -943,7 +1026,7 @@ export const resourceApi = {
 
   // 更新资源
   updateResource: async (id: number, resource: Partial<Resource>): Promise<Resource> => {
-    const response = await createRequest(`/api/resources/${id}`, {
+    const response = await createRequest(`/api/business/resources/${id}`, {
       method: 'PUT',
       body: JSON.stringify(resource),
     });
@@ -952,14 +1035,14 @@ export const resourceApi = {
 
   // 删除资源
   deleteResource: async (id: number): Promise<void> => {
-    await createRequest(`/api/resources/${id}`, {
+    await createRequest(`/api/business/resources/${id}`, {
       method: 'DELETE',
     });
   },
 
   // 获取资源详情
   getResourceById: async (id: number): Promise<Resource> => {
-    const response = await createRequest(`/api/resources/${id}`, {
+    const response = await createRequest(`/api/business/resources/${id}`, {
       method: 'GET',
     });
     return response;
@@ -967,7 +1050,7 @@ export const resourceApi = {
 
   // 设置资源可用性
   setResourceAvailability: async (resourceId: number, availabilities: ResourceAvailability[]): Promise<void> => {
-    await createRequest(`/api/resources/${resourceId}/availability`, {
+    await createRequest(`/api/business/resources/${resourceId}/availability`, {
       method: 'POST',
       body: JSON.stringify(availabilities),
     });
@@ -975,7 +1058,7 @@ export const resourceApi = {
 
   // 获取资源可用性
   getResourceAvailability: async (resourceId: number): Promise<ResourceAvailability[]> => {
-    const response = await createRequest(`/api/resources/${resourceId}/availability`, {
+    const response = await createRequest(`/api/business/resources/${resourceId}/availability`, {
       method: 'GET',
     });
     return response;
@@ -986,7 +1069,7 @@ export const resourceApi = {
 export const staffApi = {
   // 获取所有员工
   getAllStaff: async (tenantId: number): Promise<Staff[]> => {
-    const response = await createRequest(`/api/staff?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/staff?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -994,7 +1077,7 @@ export const staffApi = {
 
   // 获取活跃员工
   getActiveStaff: async (tenantId: number): Promise<Staff[]> => {
-    const response = await createRequest(`/api/staff/active?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/staff/active?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;
@@ -1002,7 +1085,7 @@ export const staffApi = {
 
   // 根据ID获取员工
   getStaffById: async (id: number): Promise<Staff> => {
-    const response = await createRequest(`/api/staff/${id}`, {
+    const response = await createRequest(`/api/business/staff/${id}`, {
       method: 'GET',
     });
     return response;
@@ -1010,7 +1093,7 @@ export const staffApi = {
 
   // 创建员工
   createStaff: async (staff: Partial<Staff>): Promise<Staff> => {
-    const response = await createRequest('/api/staff', {
+    const response = await createRequest('/api/business/staff', {
       method: 'POST',
       body: JSON.stringify(staff),
     });
@@ -1019,7 +1102,7 @@ export const staffApi = {
 
   // 更新员工
   updateStaff: async (id: number, staff: Partial<Staff>): Promise<Staff> => {
-    const response = await createRequest(`/api/staff/${id}`, {
+    const response = await createRequest(`/api/business/staff/${id}`, {
       method: 'PUT',
       body: JSON.stringify(staff),
     });
@@ -1028,7 +1111,7 @@ export const staffApi = {
 
   // 删除员工
   deleteStaff: async (id: number): Promise<void> => {
-    await createRequest(`/api/staff/${id}`, {
+    await createRequest(`/api/business/staff/${id}`, {
       method: 'DELETE',
     });
   },
@@ -1175,4 +1258,101 @@ export const notificationApi = {
       method: 'POST',
     });
   },
+};
+
+// Combined API export for convenience
+export const api = {
+  ...authApi,
+  ...customerApi,
+  ...serviceApi,
+  ...serviceManagementApi,
+  ...serviceCategoryApi,
+  ...appointmentApi,
+  ...merchantConfigApi,
+  ...fileUploadApi,
+  ...notificationApi,
+  ...resourceApi,
+  ...staffApi,
+  ...userApi,
+  // Add the order and payment methods directly
+  getOrders: async (params: {
+    tenantId: number;
+    page?: number;
+    size?: number;
+    searchTerm?: string;
+    paymentStatus?: string;
+    orderStatus?: string;
+    customerId?: number;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
+    return createRequest(`/api/business/orders?${queryParams.toString()}`);
+  },
+
+  getOrderById: (id: number) => createRequest(`/api/business/orders/${id}`),
+
+  createOrder: (data: any) => createRequest('/api/business/orders', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  updateOrder: (id: number, data: any) => createRequest(`/api/business/orders/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+
+  cancelOrder: (id: number) => createRequest(`/api/business/orders/${id}/cancel`, {
+    method: 'POST',
+  }),
+
+  getOrderStats: (tenantId: number) => createRequest(`/api/business/orders/stats?tenantId=${tenantId}`),
+
+  // 支付相关API
+  initiatePayment: (data: {
+    orderId: number;
+    paymentMethod: string;
+    amount: number;
+    tipAmount?: number;
+  }) => createRequest('/api/business/payments/initiate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  processCashPayment: (data: {
+    orderId: number;
+    paymentMethod: string;
+    amount: number;
+    tipAmount?: number;
+  }) => createRequest('/api/business/payments/cash', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  processCardPayment: (data: {
+    orderId: number;
+    paymentMethod: string;
+    amount: number;
+    tipAmount?: number;
+    posTerminalId?: string;
+  }) => createRequest('/api/business/payments/card', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  checkPaymentStatus: (orderId: number) => createRequest(`/api/business/payments/status/${orderId}`),
+
+  processRefund: (data: {
+    orderId: number;
+    amount: number;
+    reason: string;
+  }) => createRequest('/api/business/payments/refund', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 }; 

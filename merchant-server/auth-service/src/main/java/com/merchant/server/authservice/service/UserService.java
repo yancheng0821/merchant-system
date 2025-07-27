@@ -37,6 +37,14 @@ public interface UserService {
     AvatarUploadResponse uploadAvatar(String token, MultipartFile file);
     
     /**
+     * 更新用户头像URL
+     * @param token JWT令牌
+     * @param avatarUrl 头像URL
+     * @return 头像上传响应
+     */
+    AvatarUploadResponse updateUserAvatar(String token, String avatarUrl);
+    
+    /**
      * 修改密码
      * @param token JWT令牌
      * @param request 修改密码请求

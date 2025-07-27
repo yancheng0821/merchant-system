@@ -16,7 +16,7 @@
     "systemTitle": "Merchant Management System",
     "dashboard": "Dashboard",
     "products": "Service Management",
-    "orders": "Orders",
+    "payments": "Payment & Orders",
     "customers": "Customer Management",
     "appointments": "Appointment Management",
     "appointmentRecords": "Appointment Records",
@@ -283,9 +283,17 @@
     "appointmentInfo": "Appointment Information",
     "total": "Total"
   },
+  "payments": {
+    "title": "Payment & Orders",
+    "subtitle": "Manage payment processes and order history",
+    "paymentProcess": "Payment Process",
+    "orderHistory": "Order History",
+    "todayRevenue": "Today's Revenue",
+    "todayOrders": "Today's Orders",
+    "pendingPayments": "Pending Payments",
+    "avgOrderValue": "Avg Order Value"
+  },
   "orders": {
-    "title": "Order Management",
-    "subtitle": "Manage all order records and payment information",
     "searchPlaceholder": "Search by order number, customer name, or staff...",
     "addOrder": "Add Order",
     "orderNumber": "Order Number",
@@ -429,10 +437,9 @@
     "serviceName": "Service Name",
     "price": "Price",
     "duration": "Duration",
-
     "staff": "Staff",
-    "room":"Room",
-    "both":"Staff + Room",
+    "room": "Room",
+    "both": "Staff + Room",
     "actions": "Actions",
     "staffCount": "staff",
     "edit": "Edit",
@@ -444,7 +451,6 @@
     "cancel": "Cancel",
     "editService": "Edit Service",
     "basicInfo": "Basic Information",
-
     "isActive": "Active Status",
     "serviceDetails": "Service Details",
     "minutes": "minutes",
@@ -470,7 +476,6 @@
     "addNewCategory": "Add New Category",
     "editCategory": "Edit Category",
     "categoryName": "Category Name",
-
     "categoryDescription": "Category Description",
     "categoryIcon": "Category Icon",
     "categoryColor": "Category Color",
@@ -856,7 +861,6 @@
     "category": "Category",
     "price": "Price",
     "duration": "Duration",
-
     "availableStaff": "Available Staff",
     "status": "Status",
     "actions": "Actions",
@@ -873,8 +877,7 @@
     "serviceUpdateFailed": "Failed to update service",
     "serviceDeleteFailed": "Failed to delete service",
     "serviceName": "Service Name",
-    "description":"Description",
-
+    "description": "Description",
     "categories": {
       "hairCare": "Hair Care",
       "spaTreatments": "Spa Treatments",
@@ -1176,7 +1179,6 @@
     "category": "Category",
     "price": "Price",
     "duration": "Duration",
-
     "availableStaff": "Available Staff",
     "status": "Status",
     "actions": "Actions",

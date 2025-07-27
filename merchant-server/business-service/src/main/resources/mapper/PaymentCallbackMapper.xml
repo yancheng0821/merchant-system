@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.PaymentCallbackMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.PaymentCallback">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="order_id" property="orderId" />
+        <result column="transaction_id" property="transactionId" />
+        <result column="callback_type" property="callbackType" />
+        <result column="callback_data" property="callbackData" />
+        <result column="callback_status" property="callbackStatus" />
+        <result column="processing_result" property="processingResult" />
+        <result column="error_message" property="errorMessage" />
+        <result column="retry_count" property="retryCount" />
+        <result column="next_retry_time" property="nextRetryTime" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="selectPendingCallbacks" resultMap="BaseResultMap">
+        SELECT * FROM payment_callbacks WHERE callback_status = 'pending' 
+        AND retry_count &lt; 3 ORDER BY created_at ASC LIMIT 100
+    </select>
+
+    <select id="selectByOrderId" resultMap="BaseResultMap">
+        SELECT * FROM payment_callbacks WHERE order_id = #{orderId} 
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.PaymentCallback">
+        UPDATE payment_callbacks SET 
+        retry_count = #{retryCount},
+        next_retry_time = #{nextRetryTime},
+        updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.PaymentCallback" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO payment_callbacks (tenant_id, order_id, transaction_id, callback_type, callback_data,
+        callback_status, processing_result, error_message, retry_count, next_retry_time, created_at, updated_at)
+        VALUES (#{tenantId}, #{orderId}, #{transactionId}, #{callbackType}, #{callbackData},
+        #{callbackStatus}, #{processingResult}, #{errorMessage}, #{retryCount}, #{nextRetryTime}, #{createdAt}, #{updatedAt})
+    </insert>
+
+</mapper>

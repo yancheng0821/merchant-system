@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.POSTransactionMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.POSTransaction">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="order_id" property="orderId" />
+        <result column="transaction_id" property="transactionId" />
+        <result column="pos_terminal_id" property="posTerminalId" />
+        <result column="pos_provider" property="posProvider" />
+        <result column="amount" property="amount" />
+        <result column="payment_method" property="paymentMethod" />
+        <result column="transaction_status" property="transactionStatus" />
+        <result column="request_data" property="requestData" />
+        <result column="response_data" property="responseData" />
+        <result column="retry_count" property="retryCount" />
+        <result column="next_retry_time" property="nextRetryTime" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="selectByTransactionId" resultMap="BaseResultMap">
+        SELECT * FROM pos_transactions WHERE transaction_id = #{transactionId}
+    </select>
+
+    <select id="selectLastByOrderId" resultMap="BaseResultMap">
+        SELECT * FROM pos_transactions WHERE order_id = #{orderId} 
+        ORDER BY created_at DESC LIMIT 1
+    </select>
+
+    <select id="selectPendingRetry" resultMap="BaseResultMap">
+        SELECT * FROM pos_transactions WHERE transaction_status = 'pending' 
+        AND retry_count &lt; 3 AND next_retry_time &lt;= NOW()
+    </select>
+
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.POSTransaction">
+        UPDATE pos_transactions SET 
+        retry_count = #{retryCount},
+        next_retry_time = #{nextRetryTime},
+        updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.POSTransaction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pos_transactions (tenant_id, order_id, transaction_id, pos_terminal_id, pos_provider,
+        amount, payment_method, transaction_status, request_data, response_data, retry_count, next_retry_time,
+        created_at, updated_at)
+        VALUES (#{tenantId}, #{orderId}, #{transactionId}, #{posTerminalId}, #{posProvider},
+        #{amount}, #{paymentMethod}, #{transactionStatus}, #{requestData}, #{responseData}, #{retryCount}, #{nextRetryTime},
+        #{createdAt}, #{updatedAt})
+    </insert>
+
+</mapper>

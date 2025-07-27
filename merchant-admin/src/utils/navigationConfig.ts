@@ -35,7 +35,7 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
   const baseMenuItems: MenuItemType[] = [
     { textKey: 'nav.dashboard', icon: React.createElement(DashboardIcon), id: 'dashboard', color: '#6366F1' },
     { textKey: 'nav.products', icon: React.createElement(StoreIcon), id: 'products', color: '#06B6D4' },
-    { textKey: 'nav.orders', icon: React.createElement(OrdersIcon), id: 'orders', color: '#10B981' },
+    { textKey: 'nav.payments', icon: React.createElement(OrdersIcon), id: 'payments', color: '#10B981' },
     { textKey: 'nav.customers', icon: React.createElement(CustomersIcon), id: 'customers', color: '#F59E0B' },
     { textKey: 'nav.appointments', icon: React.createElement(AppointmentsIcon), id: 'appointments', color: '#8B5CF6' },
   ];
@@ -138,7 +138,7 @@ export const getAvailableResourceTypes = (merchantConfig?: MerchantConfig): Reso
 export const ROUTE_PATHS = {
   DASHBOARD: '/dashboard',
   PRODUCTS: '/products',
-  ORDERS: '/orders',
+  PAYMENTS: '/payments',
   CUSTOMERS: '/customers',
   APPOINTMENTS: '/appointments',
   RESOURCES: '/resources', // 统一的资源管理路径

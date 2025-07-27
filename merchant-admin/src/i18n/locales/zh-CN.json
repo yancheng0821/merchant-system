@@ -16,7 +16,7 @@
     "systemTitle": "商户管理后台系统",
     "dashboard": "仪表盘",
     "products": "服务管理",
-    "orders": "订单",
+    "payments": "支付 & 订单",
     "customers": "客户管理",
     "appointments": "预约管理",
     "appointmentRecords": "预约记录",
@@ -404,9 +404,17 @@
     "markCompletedFromNoShow": "标记为完成（从未到）",
     "cancelFromNoShow": "取消（从未到）"
   },
+  "payments": {
+    "title": "支付 & 订单",
+    "subtitle": "管理支付流程和订单历史记录",
+    "paymentProcess": "支付流程",
+    "orderHistory": "订单历史",
+    "todayRevenue": "今日收入",
+    "todayOrders": "今日订单",
+    "pendingPayments": "待付款",
+    "avgOrderValue": "平均订单金额"
+  },
   "orders": {
-    "title": "订单管理",
-    "subtitle": "管理所有订单记录和支付信息",
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",
     "addOrder": "新增订单",
     "orderNumber": "订单号",

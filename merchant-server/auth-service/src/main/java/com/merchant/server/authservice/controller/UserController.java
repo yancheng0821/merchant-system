@@ -10,17 +10,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.context.i18n.LocaleContextHolder;
 import java.util.Locale;
+import java.util.Map;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/auth/users")
 @Validated
 public class UserController {
     
@@ -28,6 +30,9 @@ public class UserController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private FileUploadController fileUploadController;
     
     @GetMapping("/profile")
     public ApiResponse<UserProfileResponse> getProfile(@RequestHeader("Authorization") String token) {
@@ -68,7 +73,23 @@ public class UserController {
                    file.getOriginalFilename(), file.getSize());
         
         try {
-            AvatarUploadResponse response = userService.uploadAvatar(token, file);
+            // 先从token获取用户信息
+            UserProfileResponse userProfile = userService.getUserProfile(token);
+            Long tenantId = userProfile.getTenantId();
+            
+            // 使用FileUploadController上传文件
+            ResponseEntity<Map<String, String>> uploadResponse = fileUploadController.uploadAvatar(file, tenantId);
+            
+            if (!uploadResponse.getStatusCode().is2xxSuccessful() || uploadResponse.getBody() == null) {
+                throw new RuntimeException("文件上传失败");
+            }
+            
+            Map<String, String> uploadResult = uploadResponse.getBody();
+            String avatarUrl = uploadResult.get("url");
+            
+            // 更新用户头像URL
+            AvatarUploadResponse response = userService.updateUserAvatar(token, avatarUrl);
+            
             logger.info("头像上传成功 - 用户ID: {}, 文件路径: {}", 
                        response.getUserId(), response.getAvatarUrl());
             return ApiResponse.success(response);

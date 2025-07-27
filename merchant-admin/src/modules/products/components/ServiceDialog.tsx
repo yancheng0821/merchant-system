@@ -11,22 +11,18 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
   Switch,
   FormControlLabel,
   Typography,
-  Autocomplete,
   InputAdornment,
   Box,
   alpha,
   Paper,
   IconButton,
-  Alert,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   LocalOffer as ServiceIcon,
-  Person as PersonIcon,
   AttachMoney as PriceIcon,
   AccessTime as TimeIcon,
   Category as CategoryIcon,
@@ -47,15 +43,6 @@ interface ServiceDialogProps {
   categories: ServiceCategory[];
   mode: 'add' | 'edit';
 }
-
-// 模拟员工数据
-const mockStaff = [
-  'Sarah Johnson',
-  'Jennifer Wong',
-  'Maria Lopez',
-  'Alex Chen',
-  'Emily Davis',
-];
 
 const ServiceDialog: React.FC<ServiceDialogProps> = ({
   open,

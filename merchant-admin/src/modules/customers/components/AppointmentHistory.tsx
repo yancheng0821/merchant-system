@@ -12,7 +12,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   Box,
   Avatar,
@@ -29,7 +28,6 @@ import {
 } from '@mui/material';
 import {
   Close as CloseIcon,
-  Person as PersonIcon,
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
   CheckCircle as CheckIcon,
@@ -98,7 +96,7 @@ const AppointmentHistory: React.FC<{
       if (open && customer) {
         loadAppointments();
       }
-    }, [open, customer, tenantId]);
+    }, [open, customer, tenantId, loadAppointments]);
 
     // 根据客户ID筛选预约记录
     const customerAppointments = useMemo(() => {

@@ -32,42 +32,33 @@ import { useTranslation } from 'react-i18next';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { LoginPage, UserProfile } from './components';
-import { 
-  Dashboard, 
-  ServiceManagement, 
-  OrderManagement, 
+import {
+  Dashboard,
+  ServiceManagement,
+  PaymentManagement,
   CustomerManagement,
-  AppointmentManagement, 
-  Analytics, 
+  AppointmentManagement,
+  Analytics,
   Settings,
   ResourceManagement
 } from './modules';
 import NotificationManagement from './modules/notifications/NotificationManagement';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
-
-// API基础配置
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+import { getFullImageUrl } from './services/api';
 
 const drawerWidth = 260;
 
 const MainApp: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  
-  // 处理头像URL，将相对路径转换为完整URL
-  const getAvatarUrl = (avatarPath?: string) => {
-    if (!avatarPath) return undefined;
-    if (avatarPath.startsWith('http')) return avatarPath;
-    return `${API_BASE_URL}${avatarPath}`;
-  };
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState('dashboard');
   const [languageAnchor, setLanguageAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
-  const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
+  // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
 
   // 获取商户配置和初始化预加载器
@@ -76,14 +67,14 @@ const MainApp: React.FC = () => {
       try {
         // 初始化配置预加载器
         initializeConfigPreloader();
-        
+
         // 模拟API调用 - 实际应该从后端获取
         const mockConfig: MerchantConfig = {
           merchantId: user?.tenantId || 1,
           resourceTypes: ['STAFF', 'ROOM'] // 这里应该从后端获取
         };
-        setMerchantConfig(mockConfig);
-        
+        // setMerchantConfig(mockConfig);
+
         // 根据商户配置生成导航菜单
         const dynamicMenuItems = generateNavigationConfig(mockConfig);
         setMenuItems(dynamicMenuItems);
@@ -154,8 +145,8 @@ const MainApp: React.FC = () => {
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* 现代化标题区域 */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           p: 3,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
@@ -173,10 +164,10 @@ const MainApp: React.FC = () => {
           }
         }}
       >
-        <Typography 
-          variant="h6" 
+        <Typography
+          variant="h6"
           component="div"
-          sx={{ 
+          sx={{
             fontWeight: 700,
             position: 'relative',
             zIndex: 1,
@@ -240,7 +231,7 @@ const MainApp: React.FC = () => {
               >
                 {item.icon}
               </ListItemIcon>
-              <ListItemText 
+              <ListItemText
                 primary={t(item.textKey)}
                 primaryTypographyProps={{
                   fontSize: '0.9rem',
@@ -249,14 +240,14 @@ const MainApp: React.FC = () => {
               />
               {item.children && (expandedMenus[item.id] ? <ExpandLess /> : <ExpandMore />)}
             </ListItemButton>
-            
+
             {item.children && (
               <Collapse in={expandedMenus[item.id]} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {item.children.map((child) => (
                     <ListItemButton
                       key={child.id}
-                      sx={{ 
+                      sx={{
                         pl: 4,
                         borderRadius: 2,
                         ml: 1,
@@ -289,7 +280,7 @@ const MainApp: React.FC = () => {
       {user ? (
         <Box sx={{ display: 'flex', bgcolor: '#f8fafc' }}>
           <CssBaseline />
-          
+
           {/* 现代化 AppBar */}
           <AppBar
             position="fixed"
@@ -337,9 +328,9 @@ const MainApp: React.FC = () => {
 
                 {/* 用户头像和菜单 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
+                  <Typography
+                    variant="body2"
+                    sx={{
                       color: 'text.primary',
                       fontWeight: 500,
                       display: { xs: 'none', md: 'block' }
@@ -347,7 +338,7 @@ const MainApp: React.FC = () => {
                   >
                     {t('auth.welcome')}, {user?.username}
                   </Typography>
-                  <IconButton 
+                  <IconButton
                     onClick={handleUserMenuClick}
                     sx={{
                       p: 0,
@@ -358,10 +349,10 @@ const MainApp: React.FC = () => {
                       transition: 'transform 0.2s ease',
                     }}
                   >
-                    <Avatar 
-                      src={getAvatarUrl(user?.avatar)} 
-                      sx={{ 
-                        width: 40, 
+                    <Avatar
+                      src={getFullImageUrl(user?.avatar)}
+                      sx={{
+                        width: 40,
                         height: 40,
                         boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
                       }}
@@ -388,7 +379,7 @@ const MainApp: React.FC = () => {
               }
             }}
           >
-            <MenuItem 
+            <MenuItem
               onClick={() => handleLanguageChange('zh-CN')}
               sx={{
                 minWidth: 120,
@@ -399,7 +390,7 @@ const MainApp: React.FC = () => {
             >
               {t('common.chinese')}
             </MenuItem>
-            <MenuItem 
+            <MenuItem
               onClick={() => handleLanguageChange('en-US')}
               sx={{
                 '&:hover': {
@@ -425,7 +416,7 @@ const MainApp: React.FC = () => {
               }
             }}
           >
-            <MenuItem 
+            <MenuItem
               onClick={navigateToProfile}
               sx={{
                 minWidth: 150,
@@ -440,7 +431,7 @@ const MainApp: React.FC = () => {
               {t('nav.userProfile')}
             </MenuItem>
             <Divider />
-            <MenuItem 
+            <MenuItem
               onClick={handleLogout}
               sx={{
                 '&:hover': {
@@ -512,7 +503,7 @@ const MainApp: React.FC = () => {
             <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
               {selectedItem === 'dashboard' && <Dashboard />}
               {selectedItem === 'products' && <ServiceManagement />}
-              {selectedItem === 'orders' && <OrderManagement />}
+              {selectedItem === 'payments' && <PaymentManagement />}
               {selectedItem === 'customers' && <CustomerManagement />}
               {selectedItem === 'appointments' && <AppointmentManagement />}
               {selectedItem === 'resources' && <ResourceManagement />}

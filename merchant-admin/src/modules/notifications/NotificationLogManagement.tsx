@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -94,11 +94,7 @@ const NotificationLogManagement: React.FC = () => {
     { value: 'APPOINTMENT_REMINDER', label: t('notifications.templateCodes.appointmentReminder') }
   ];
 
-  useEffect(() => {
-    fetchLogs();
-  }, [page, filters, tenantId]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -128,7 +124,11 @@ const NotificationLogManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, filters, tenantId]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const handleViewLog = (log: NotificationLog) => {
     setSelectedLog(log);

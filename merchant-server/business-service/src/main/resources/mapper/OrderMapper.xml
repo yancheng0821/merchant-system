@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.OrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.Order">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="order_number" property="orderNumber" />
+        <result column="customer_id" property="customerId" />
+        <result column="appointment_id" property="appointmentId" />
+        <result column="resource_id" property="resourceId" />
+        <result column="resource_type" property="resourceType" />
+        <result column="subtotal" property="subtotal" />
+        <result column="tax_rate" property="taxRate" />
+        <result column="tax_amount" property="taxAmount" />
+        <result column="tip_amount" property="tipAmount" />
+        <result column="tip_percentage" property="tipPercentage" />
+        <result column="total_amount" property="totalAmount" />
+        <result column="payment_method" property="paymentMethod" />
+        <result column="payment_status" property="paymentStatus" />
+        <result column="order_status" property="orderStatus" />
+        <result column="pos_terminal_id" property="posTerminalId" />
+        <result column="transaction_id" property="transactionId" />
+        <result column="card_last4" property="cardLast4" />
+        <result column="authorization_code" property="authorizationCode" />
+        <result column="notes" property="notes" />
+        <result column="refund_amount" property="refundAmount" />
+        <result column="refund_reason" property="refundReason" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+        <result column="completed_at" property="completedAt" />
+        <result column="created_by" property="createdBy" />
+        <result column="updated_by" property="updatedBy" />
+    </resultMap>
+
+    <select id="selectByConditions" resultMap="BaseResultMap">
+        SELECT o.* 
+        FROM orders o
+        LEFT JOIN customers c ON o.customer_id = c.id
+        WHERE o.tenant_id = #{tenantId}
+        <if test="searchTerm != null and searchTerm != ''">
+            AND (o.order_number LIKE CONCAT('%', #{searchTerm}, '%') 
+                 OR CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) LIKE CONCAT('%', #{searchTerm}, '%'))
+        </if>
+        <if test="paymentStatus != null and paymentStatus != ''">
+            AND o.payment_status = #{paymentStatus}
+        </if>
+        <if test="orderStatus != null and orderStatus != ''">
+            AND o.order_status = #{orderStatus}
+        </if>
+        <if test="customerId != null">
+            AND o.customer_id = #{customerId}
+        </if>
+        <if test="startDate != null and startDate != ''">
+            AND DATE(o.created_at) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(o.created_at) &lt;= #{endDate}
+        </if>
+        ORDER BY o.created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByConditions" resultType="int">
+        SELECT COUNT(*) FROM orders o
+        LEFT JOIN customers c ON o.customer_id = c.id
+        WHERE o.tenant_id = #{tenantId}
+        <if test="searchTerm != null and searchTerm != ''">
+            AND (o.order_number LIKE CONCAT('%', #{searchTerm}, '%') 
+                 OR CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) LIKE CONCAT('%', #{searchTerm}, '%'))
+        </if>
+        <if test="paymentStatus != null and paymentStatus != ''">
+            AND o.payment_status = #{paymentStatus}
+        </if>
+        <if test="orderStatus != null and orderStatus != ''">
+            AND o.order_status = #{orderStatus}
+        </if>
+        <if test="customerId != null">
+            AND o.customer_id = #{customerId}
+        </if>
+        <if test="startDate != null and startDate != ''">
+            AND DATE(o.created_at) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(o.created_at) &lt;= #{endDate}
+        </if>
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM orders WHERE id = #{id}
+    </select>
+
+    <select id="selectByOrderNumber" resultMap="BaseResultMap">
+        SELECT * FROM orders WHERE order_number = #{orderNumber}
+    </select>
+
+    <select id="selectPendingOrders" resultMap="BaseResultMap">
+        SELECT * FROM orders WHERE tenant_id = #{tenantId} AND payment_status = 'pending'
+    </select>
+
+    <select id="selectRetryableOrders" resultMap="BaseResultMap">
+        SELECT * FROM orders WHERE payment_status = 'failed' 
+        AND created_at &gt; DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    </select>
+
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Order" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (tenant_id, order_number, customer_id, appointment_id, resource_id, resource_type,
+        subtotal, tax_rate, tax_amount, tip_amount, tip_percentage, total_amount, payment_method, payment_status,
+        order_status, notes, created_at, updated_at)
+        VALUES (#{tenantId}, #{orderNumber}, #{customerId}, #{appointmentId}, #{resourceId}, #{resourceType},
+        #{subtotal}, #{taxRate}, #{taxAmount}, #{tipAmount}, #{tipPercentage}, #{totalAmount}, #{paymentMethod},
+        #{paymentStatus}, #{orderStatus}, #{notes}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.Order">
+        UPDATE orders SET 
+        tip_amount = #{tipAmount}, 
+        notes = #{notes}, 
+        total_amount = #{totalAmount},
+        updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectTodayOrders" resultMap="BaseResultMap">
+        SELECT * FROM orders 
+        WHERE tenant_id = #{tenantId} 
+        AND DATE(created_at) = CURDATE()
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectMonthOrders" resultMap="BaseResultMap">
+        SELECT * FROM orders 
+        WHERE tenant_id = #{tenantId} 
+        AND YEAR(created_at) = YEAR(CURDATE()) 
+        AND MONTH(created_at) = MONTH(CURDATE())
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

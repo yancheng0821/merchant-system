@@ -339,6 +339,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public AvatarUploadResponse updateUserAvatar(String token, String avatarUrl) {
+        logger.debug("更新用户头像URL - avatarUrl: {}", avatarUrl);
+        
+        // 从token中提取用户ID
+        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        User user = userOpt.get();
+        
+        // 更新用户头像信息
+        user.setAvatarUrl(avatarUrl);
+        user.setUpdatedAt(LocalDateTime.now());
+        save(user);
+        
+        // 构建响应
+        AvatarUploadResponse response = new AvatarUploadResponse();
+        response.setUserId(user.getId());
+        response.setAvatarUrl(avatarUrl);
+        
+        logger.info("头像URL更新成功 - userId: {}, avatarUrl: {}", user.getId(), avatarUrl);
+        return response;
+    }
+
+    @Override
     public void changePassword(String token, ChangePasswordRequest request) {
         // 打印当前线程的Locale
         logger.info("当前线程的Locale: {}", LocaleContextHolder.getLocale());

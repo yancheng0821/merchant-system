@@ -35,7 +35,6 @@ import {
 import {
   Add as AddIcon,
   Search as SearchIcon,
-  Edit as EditIcon,
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
   Person as PersonIcon,
@@ -77,7 +76,6 @@ const AppointmentManagement: React.FC = () => {
 
   // 加载状态
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 对话框状态
   const [addAppointmentOpen, setAddAppointmentOpen] = useState(false);
@@ -109,7 +107,7 @@ const AppointmentManagement: React.FC = () => {
   const loadAppointments = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
+
 
       // 并行获取客户数据和预约数据
       const [customerList, appointmentList] = await Promise.all([
@@ -136,7 +134,6 @@ const AppointmentManagement: React.FC = () => {
       setStats(appointmentStats);
     } catch (err) {
       const errorMessage = handleApiError(err);
-      setError(errorMessage);
       setSnackbar({
         open: true,
         message: errorMessage,

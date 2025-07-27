@@ -63,7 +63,6 @@ const CustomerManagement: React.FC = () => {
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('createdAt');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
@@ -105,8 +104,8 @@ const CustomerManagement: React.FC = () => {
     page: pageNum,
     size: rowsPerPage,
     sortBy: sortBy,
-    sortDir: sortDir,
-  }), [tenantId, searchTerm, statusFilter, membershipFilter, page, rowsPerPage, sortBy, sortDir]);
+    sortDir: 'desc',
+  }), [tenantId, searchTerm, statusFilter, membershipFilter, page, rowsPerPage, sortBy]);
 
   // 请求去重机制
   const requestIdRef = useRef(0);
@@ -162,7 +161,7 @@ const CustomerManagement: React.FC = () => {
     }, searchTerm ? 500 : 0); // 只有在搜索时才防抖
 
     return () => clearTimeout(timeoutId);
-  }, [fetchCustomers, buildQueryParams]); // 使用稳定的函数引用
+  }, [fetchCustomers, buildQueryParams, searchTerm]); // 使用稳定的函数引用
 
   // 初始加载统计数据
   useEffect(() => {

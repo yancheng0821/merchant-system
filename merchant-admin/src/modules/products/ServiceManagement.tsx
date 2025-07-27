@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Typography,
   Table,
@@ -34,15 +34,13 @@ import {
 import {
   Add as AddIcon,
   Search as SearchIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   Visibility as VisibilityIcon,
   MoreVert as MoreVertIcon,
   Close as CloseIcon,
   LocalOffer as ServiceIcon,
   AttachMoney as PriceIcon,
-  AccessTime as TimeIcon,
-  Category as CategoryIcon,
   // 美容护理类
   ContentCut as HairIcon,
   Spa as SpaIcon,
@@ -143,7 +141,7 @@ const ServiceManagement: React.FC = () => {
   const tenantId = Number(localStorage.getItem('tenantId') || '4');
 
   // 加载数据
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -168,12 +166,12 @@ const ServiceManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantId, categoryFilter, statusFilter, searchTerm, page, rowsPerPage]);
 
   // 初始加载
   useEffect(() => {
     loadData();
-  }, [tenantId, page, rowsPerPage, categoryFilter, statusFilter, searchTerm]);
+  }, [tenantId, page, rowsPerPage, categoryFilter, statusFilter, searchTerm, loadData]);
 
   const getCategoryIcon = (categoryId: number) => {
     const category = categories.find(cat => cat.id === categoryId);

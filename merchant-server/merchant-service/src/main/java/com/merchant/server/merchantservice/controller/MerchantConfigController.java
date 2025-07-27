@@ -12,7 +12,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/merchant-config")
+@RequestMapping("/api/merchant/config")
 @RequiredArgsConstructor
 public class MerchantConfigController {
     

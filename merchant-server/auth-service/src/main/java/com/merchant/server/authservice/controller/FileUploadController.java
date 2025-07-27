@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/files")
+@RequestMapping("/api/auth/files")
 public class FileUploadController {
 
     @Value("${file.upload.path:/opt/merchant-system}")
@@ -76,7 +76,7 @@ public class FileUploadController {
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // 生成访问URL
-            String fileUrl = String.format("/api/files/%s/%s/%s", subDir, tenantDir, filename);
+            String fileUrl = String.format("/api/auth/files/%s/%s/%s", subDir, tenantDir, filename);
 
             Map<String, String> response = new HashMap<>();
             response.put("url", fileUrl);
@@ -128,19 +128,19 @@ public class FileUploadController {
     public ResponseEntity<Map<String, String>> deleteFile(@RequestBody Map<String, String> request) {
         try {
             String fileUrl = request.get("fileUrl");
-            if (fileUrl == null || !fileUrl.startsWith("/api/files/")) {
+            if (fileUrl == null || !fileUrl.startsWith("/api/auth/files/")) {
                 return ResponseEntity.badRequest().body(createErrorResponse("无效的文件URL"));
             }
 
-            // 解析文件路径: /api/files/{subDir}/{tenantDir}/{filename}
+            // 解析文件路径: /api/auth/files/{subDir}/{tenantDir}/{filename}
             String[] pathParts = fileUrl.split("/");
-            if (pathParts.length < 6) {
+            if (pathParts.length < 7) {
                 return ResponseEntity.badRequest().body(createErrorResponse("无效的文件路径"));
             }
 
-            String subDir = pathParts[3];
-            String tenantDir = pathParts[4];
-            String filename = pathParts[5];
+            String subDir = pathParts[4];
+            String tenantDir = pathParts[5];
+            String filename = pathParts[6];
 
             Path filePath = Paths.get(uploadBasePath, subDir, tenantDir, filename);
             

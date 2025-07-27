@@ -30,15 +30,15 @@ spring:
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/api/auth/**, /api/users/**, /api/files/**
+            - Path=/api/auth/**
         - id: merchant-service
           uri: lb://merchant-service
           predicates:
-            - Path=/api/merchant/**, /api/merchant-config/**
+            - Path=/api/merchant/**
         - id: business-service
           uri: lb://business-service
           predicates:
-            - Path=/api/business/**, /api/customers/**, /api/services/**, /api/appointments/**, /api/staff/**, /api/resources/**, /api/service-categories/**, /api/services/**
+            - Path=/api/business/**
         - id: ai-service
           uri: lb://ai-service
           predicates:

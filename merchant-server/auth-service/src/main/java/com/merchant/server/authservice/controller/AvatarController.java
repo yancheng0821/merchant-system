@@ -18,26 +18,57 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @RestController
-@RequestMapping("/api/users/avatar")
+@RequestMapping("/api/auth/users/avatar")
 public class AvatarController {
     
     private static final Logger logger = LoggerFactory.getLogger(AvatarController.class);
     
-    @Value("${app.avatar.upload.path:/opt/merchant-system/avatars}")
-    private String avatarUploadPath;
+    @Value("${file.upload.path:/opt/merchant-system}")
+    private String uploadBasePath;
     
     @GetMapping("/{filename:.+}")
     public ResponseEntity<Resource> getAvatar(@PathVariable String filename) {
         logger.info("收到头像请求: {}", filename);
         
         try {
-            Path filePath = Paths.get(avatarUploadPath).resolve(filename).normalize();
+            // 首先尝试在根目录下的avatars文件夹查找（兼容旧路径）
+            Path filePath = Paths.get(uploadBasePath).resolve("avatars").resolve(filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
             
             if (resource.exists()) {
                 logger.info("头像文件存在: {}", filePath);
                 
                 // 确定文件的内容类型
+                String contentType = determineContentType(filename);
+                
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            } else {
+                logger.warn("头像文件不存在: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            logger.error("头像文件URL格式错误: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // 处理新格式的头像路径（包含租户信息）
+    @GetMapping("/tenant_{tenantId}/{filename:.+}")
+    public ResponseEntity<Resource> getAvatarWithTenant(
+            @PathVariable Long tenantId,
+            @PathVariable String filename) {
+        logger.info("收到头像请求（带租户信息）: tenant_{}/{}", tenantId, filename);
+        
+        try {
+            Path filePath = Paths.get(uploadBasePath).resolve("avatars").resolve("tenant_" + tenantId).resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            
+            if (resource.exists()) {
+                logger.info("头像文件存在: {}", filePath);
+                
                 String contentType = determineContentType(filename);
                 
                 return ResponseEntity.ok()

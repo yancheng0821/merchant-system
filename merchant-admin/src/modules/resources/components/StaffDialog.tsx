@@ -27,7 +27,6 @@ import {
     Phone as PhoneIcon,
     Email as EmailIcon,
     Badge as BadgeIcon,
-    PhotoCamera as PhotoIcon,
 } from '@mui/icons-material';
 import ImageUploader from '../../../components/common/ImageUploader';
 import { useTranslation } from 'react-i18next';
@@ -137,7 +136,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
 
             // 验证电话号码格式（支持国际手机号和座机）
             if (formData.phone && formData.phone.trim()) {
-                const phone = formData.phone.trim().replace(/[\s\-\(\)]/g, ''); // 去除空格、横线、括号
+                const phone = formData.phone.trim().replace(/[\s\-()]/g, ''); // 去除空格、横线、括号
                 
                 // 支持多种电话格式：
                 // 1. 中国手机号：13812345678
