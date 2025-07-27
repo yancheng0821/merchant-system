@@ -136,4 +136,21 @@
         ORDER BY created_at DESC
     </select>
 
+    <!-- Dashboard 相关查询 -->
+    <select id="selectOrdersByDate" resultType="map">
+        SELECT id, total_amount, payment_status, order_status, created_at
+        FROM orders 
+        WHERE tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = #{date}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectOrdersByDateRange" resultType="map">
+        SELECT id, total_amount, payment_status, order_status, created_at
+        FROM orders 
+        WHERE tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        ORDER BY created_at DESC
+    </select>
+
 </mapper>

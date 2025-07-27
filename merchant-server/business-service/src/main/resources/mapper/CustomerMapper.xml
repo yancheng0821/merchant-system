@@ -342,4 +342,11 @@
         WHERE customer_id = #{customerId}
     </delete>
 
+    <!-- Dashboard 相关查询 -->
+    <select id="countNewCustomersByDateRange" resultType="int">
+        SELECT COUNT(*) FROM customers 
+        WHERE tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
 </mapper>

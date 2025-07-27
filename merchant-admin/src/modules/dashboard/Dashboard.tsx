@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -12,6 +12,8 @@ import {
   Paper,
   useTheme,
   alpha,
+  CircularProgress,
+  Backdrop,
 } from '@mui/material';
 import {
   LineChart,
@@ -38,6 +40,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
+import { useAuth } from '../../contexts/AuthContext';
+import { dashboardApi } from '../../services/api';
 
 // 时间范围类型
 type TimeRange = '7days' | '30days' | '6months' | '1year';
@@ -85,69 +89,104 @@ const GRADIENTS = [
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
+  const [loading, setLoading] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [salesTrendData, setSalesTrendData] = useState<SalesData[]>([]);
+  const [categoryData, setCategoryData] = useState<ProductCategoryData[]>([]);
+  const [topServicesData, setTopServicesData] = useState<TopProductData[]>([]);
 
   const handleTimeRangeChange = (event: SelectChangeEvent<TimeRange>) => {
     setTimeRange(event.target.value as TimeRange);
   };
 
-  // 生成模拟数据
-  const generateMockData = useMemo(() => {
-    const days = timeRange === '7days' ? 7 : 
-                 timeRange === '30days' ? 30 : 
-                 timeRange === '6months' ? 180 : 365;
-    
-    const salesData: SalesData[] = [];
-    const now = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      
-      // 生成模拟数据，包含一些趋势和随机波动
-      const baseValue = 1000 + Math.sin((i * Math.PI) / (days / 4)) * 200;
-      const randomFactor = Math.random() * 0.3 + 0.85; // 0.85-1.15的随机因子
-      
-      salesData.push({
-        date: date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
-        sales: Math.round(baseValue * randomFactor),
-        orders: Math.round((baseValue / 50) * randomFactor),
-        visitors: Math.round((baseValue * 3) * randomFactor),
-      });
+  // 获取天数
+  const getDaysFromTimeRange = (range: TimeRange): number => {
+    switch (range) {
+      case '7days': return 7;
+      case '30days': return 30;
+      case '6months': return 180;
+      case '1year': return 365;
+      default: return 30;
     }
+  };
 
-    return salesData;
-  }, [timeRange]);
+  // 加载 Dashboard 数据
+  const loadDashboardData = async () => {
+    if (!user?.tenantId) return;
 
-  // 产品分类数据
-  const categoryData: ProductCategoryData[] = [
-    { name: t('dashboard.electronics'), value: 35, color: COLORS[0] },
-    { name: t('dashboard.clothing'), value: 25, color: COLORS[1] },
-    { name: t('dashboard.books'), value: 20, color: COLORS[2] },
-    { name: t('dashboard.home'), value: 12, color: COLORS[3] },
-    { name: t('dashboard.sports'), value: 8, color: COLORS[4] },
-  ];
+    try {
+      setLoading(true);
+      const days = getDaysFromTimeRange(timeRange);
 
-  // 热门产品数据
-  const topProductsData: TopProductData[] = [
-    { name: t('dashboard.smartphone'), sales: 1250, growth: 15.8 },
-    { name: t('dashboard.laptop'), sales: 980, growth: 8.2 },
-    { name: t('dashboard.headphones'), sales: 850, growth: 12.5 },
-    { name: t('dashboard.tablet'), sales: 720, growth: -2.1 },
-    { name: t('dashboard.watch'), sales: 650, growth: 25.3 },
-  ];
+      // 并行获取所有数据
+      const [stats, salesTrend, serviceCategories, topServices] = await Promise.all([
+        dashboardApi.getDashboardStats(user.tenantId, days),
+        dashboardApi.getSalesTrend(user.tenantId, days),
+        dashboardApi.getServiceCategoryStats(user.tenantId, days),
+        dashboardApi.getTopServices(user.tenantId, days, 5)
+      ]);
+
+      setDashboardStats(stats);
+      
+      // 处理销售趋势数据
+      if (salesTrend.success && salesTrend.data) {
+        setSalesTrendData(salesTrend.data);
+      }
+
+      // 处理服务分类数据
+      if (serviceCategories.success && serviceCategories.data) {
+        const formattedCategories = serviceCategories.data.map((item: any, index: number) => ({
+          name: item.name,
+          value: item.value,
+          color: COLORS[index % COLORS.length]
+        }));
+        setCategoryData(formattedCategories);
+      }
+
+      // 处理热门服务数据
+      if (topServices.success && topServices.data) {
+        setTopServicesData(topServices.data);
+      }
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      // 使用默认数据
+      setDashboardStats({
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalCustomers: 0,
+        totalAppointments: 0,
+        avgOrderValue: 0,
+        revenueGrowth: 0,
+        orderGrowth: 0,
+        customerGrowth: 0
+      });
+      setSalesTrendData([]);
+      setCategoryData([]);
+      setTopServicesData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 当组件挂载或时间范围改变时加载数据
+  useEffect(() => {
+    loadDashboardData();
+  }, [user?.tenantId, timeRange]);
 
   // 计算关键指标
-  const totalSales = generateMockData.reduce((sum, item) => sum + item.sales, 0);
-  const totalOrders = generateMockData.reduce((sum, item) => sum + item.orders, 0);
-  const totalVisitors = generateMockData.reduce((sum, item) => sum + item.visitors, 0);
-  const avgOrderValue = totalSales / totalOrders;
+  const totalSales = dashboardStats?.totalRevenue || 0;
+  const totalOrders = dashboardStats?.totalOrders || 0;
+  const totalVisitors = dashboardStats?.totalAppointments * 2 || 0; // 假设每个预约代表2个访客
+  const avgOrderValue = dashboardStats?.avgOrderValue || 0;
 
   const metricsData: MetricCardData[] = [
     {
       title: t('dashboard.totalSales'),
       value: CurrencyUtils.formatAmountWithCommas(totalSales),
-      change: 12.5,
+      change: dashboardStats?.revenueGrowth || 0,
       icon: <MoneyIcon sx={{ fontSize: 32 }} />,
       color: '#10B981',
       gradient: GRADIENTS[2],
@@ -155,7 +194,7 @@ const Dashboard: React.FC = () => {
     {
       title: t('dashboard.totalOrders'),
       value: totalOrders.toLocaleString(),
-      change: 8.3,
+      change: dashboardStats?.orderGrowth || 0,
       icon: <ShoppingCartIcon sx={{ fontSize: 32 }} />,
       color: '#6366F1',
       gradient: GRADIENTS[0],
@@ -163,7 +202,7 @@ const Dashboard: React.FC = () => {
     {
       title: t('dashboard.totalVisitors'),
       value: totalVisitors.toLocaleString(),
-      change: 15.2,
+      change: dashboardStats?.appointmentGrowth || 0,
       icon: <VisibilityIcon sx={{ fontSize: 32 }} />,
       color: '#F59E0B',
       gradient: GRADIENTS[3],
@@ -171,7 +210,7 @@ const Dashboard: React.FC = () => {
     {
       title: t('dashboard.avgOrderValue'),
       value: CurrencyUtils.formatAmountWithCommas(Math.round(avgOrderValue)),
-      change: 4.1,
+      change: dashboardStats?.customerGrowth || 0,
       icon: <TrendingUpIcon sx={{ fontSize: 32 }} />,
       color: '#EC4899',
       gradient: GRADIENTS[1],
@@ -209,6 +248,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <Box>
+      {/* 加载状态 */}
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={loading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
           <Typography 
@@ -371,7 +417,7 @@ const Dashboard: React.FC = () => {
                 </Typography>
               </Box>
               <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={generateMockData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <LineChart data={salesTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>
@@ -452,7 +498,7 @@ const Dashboard: React.FC = () => {
                     color: 'text.primary',
                   }}
                 >
-                  {t('dashboard.productCategories')}
+                  {t('dashboard.serviceCategories')}
                 </Typography>
               </Box>
               <ResponsiveContainer width="100%" height={350}>
@@ -530,7 +576,7 @@ const Dashboard: React.FC = () => {
                 </Typography>
               </Box>
               <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={generateMockData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <AreaChart data={salesTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="visitorGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
@@ -591,11 +637,11 @@ const Dashboard: React.FC = () => {
                     color: 'text.primary',
                   }}
                 >
-                  {t('dashboard.topProducts')}
+                  {t('dashboard.topServices')}
                 </Typography>
               </Box>
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topProductsData} layout="horizontal" margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
+                <BarChart data={topServicesData} layout="horizontal" margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
                   <defs>
                     <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>

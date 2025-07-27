@@ -844,7 +844,9 @@
     "laptop": "Laptop",
     "headphones": "Headphones",
     "tablet": "Tablet",
-    "watch": "Watch"
+    "watch": "Watch",
+    "serviceCategories": "Service Categories",
+    "topServices": "Top Services"
   },
   "products": {
     "title": "Service Management",

@@ -109,4 +109,10 @@ public interface AppointmentMapper {
     List<Appointment> findAppointmentsByTimeRange(@Param("date") java.time.LocalDate date,
                                                   @Param("startTime") java.time.LocalTime startTime,
                                                   @Param("endTime") java.time.LocalTime endTime);
+    
+    /**
+     * Dashboard 相关查询
+     */
+    int countAppointmentsByDate(@Param("tenantId") Long tenantId, @Param("date") String date);
+    int countAppointmentsByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 }

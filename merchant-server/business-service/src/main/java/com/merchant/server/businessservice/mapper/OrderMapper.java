@@ -74,4 +74,10 @@ public interface OrderMapper {
      * 查询本月订单
      */
     List<Order> selectMonthOrders(@Param("tenantId") Long tenantId);
+    
+    /**
+     * Dashboard 相关查询
+     */
+    List<java.util.Map<String, Object>> selectOrdersByDate(@Param("tenantId") Long tenantId, @Param("date") String date);
+    List<java.util.Map<String, Object>> selectOrdersByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 }

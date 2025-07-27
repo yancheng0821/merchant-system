@@ -130,4 +130,38 @@
         <include refid="Where_Conditions"/>
     </select>
 
+    <!-- Dashboard 相关查询 -->
+    <select id="getServiceCategoryStats" resultType="map">
+        SELECT 
+            sc.name as category_name,
+            COUNT(os.id) as order_count,
+            SUM(os.price * os.quantity) as total_revenue
+        FROM service_categories sc
+        LEFT JOIN services s ON sc.id = s.category_id
+        LEFT JOIN order_services os ON s.id = os.service_id
+        LEFT JOIN orders o ON os.order_id = o.id
+        WHERE sc.tenant_id = #{tenantId}
+        AND (o.created_at IS NULL OR DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate})
+        AND (o.payment_status IS NULL OR o.payment_status = 'paid')
+        GROUP BY sc.id, sc.name
+        ORDER BY order_count DESC
+    </select>
+
+    <select id="getTopServices" resultType="map">
+        SELECT 
+            s.name as service_name,
+            COUNT(os.id) as order_count,
+            SUM(os.price * os.quantity) as total_revenue
+        FROM services s
+        LEFT JOIN order_services os ON s.id = os.service_id
+        LEFT JOIN orders o ON os.order_id = o.id
+        WHERE s.tenant_id = #{tenantId}
+        AND o.created_at IS NOT NULL
+        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND o.payment_status = 'paid'
+        GROUP BY s.id, s.name
+        ORDER BY total_revenue DESC
+        LIMIT #{limit}
+    </select>
+
 </mapper>

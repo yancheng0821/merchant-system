@@ -232,4 +232,17 @@
         ORDER BY a.appointment_time
     </select>
 
+    <!-- Dashboard 相关查询 -->
+    <select id="countAppointmentsByDate" resultType="int">
+        SELECT COUNT(*) FROM appointments 
+        WHERE tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(appointment_date, '+00:00', 'America/Vancouver')) = #{date}
+    </select>
+
+    <select id="countAppointmentsByDateRange" resultType="int">
+        SELECT COUNT(*) FROM appointments 
+        WHERE tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(appointment_date, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
 </mapper>

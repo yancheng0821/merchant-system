@@ -213,4 +213,9 @@ public interface CustomerMapper {
      * 删除客户偏好服务
      */
     int deletePreferredServices(@Param("customerId") Long customerId);
+    
+    /**
+     * Dashboard 相关查询
+     */
+    int countNewCustomersByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
 }

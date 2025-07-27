@@ -1375,4 +1375,39 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-}; 
+};
+
+// Dashboard API
+export const dashboardApi = {
+  // 获取 Dashboard 统计数据
+  getDashboardStats: async (tenantId: number, days: number = 30): Promise<any> => {
+    const response = await createRequest(`/api/business/dashboard/stats?tenantId=${tenantId}&days=${days}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取销售趋势数据
+  getSalesTrend: async (tenantId: number, days: number = 30): Promise<any> => {
+    const response = await createRequest(`/api/business/dashboard/sales-trend?tenantId=${tenantId}&days=${days}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取服务分类统计
+  getServiceCategoryStats: async (tenantId: number, days: number = 30): Promise<any> => {
+    const response = await createRequest(`/api/business/dashboard/service-categories?tenantId=${tenantId}&days=${days}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取热门服务排行
+  getTopServices: async (tenantId: number, days: number = 30, limit: number = 5): Promise<any> => {
+    const response = await createRequest(`/api/business/dashboard/top-services?tenantId=${tenantId}&days=${days}&limit=${limit}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};

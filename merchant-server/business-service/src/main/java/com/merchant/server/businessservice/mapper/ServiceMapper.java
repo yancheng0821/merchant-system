@@ -66,4 +66,10 @@ public interface ServiceMapper {
                          @Param("categoryId") Long categoryId,
                          @Param("status") String status,
                          @Param("searchTerm") String searchTerm);
+    
+    /**
+     * Dashboard 相关查询
+     */
+    List<java.util.Map<String, Object>> getServiceCategoryStats(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+    List<java.util.Map<String, Object>> getTopServices(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate, @Param("limit") int limit);
 }

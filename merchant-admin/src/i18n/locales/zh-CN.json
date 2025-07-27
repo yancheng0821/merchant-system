@@ -1022,7 +1022,9 @@
     "laptop": "笔记本电脑",
     "headphones": "耳机",
     "tablet": "平板电脑",
-    "watch": "手表"
+    "watch": "手表",
+    "serviceCategories": "服务类别",
+    "topServices": "主要服务"
   },
   "general": {
     "inDevelopment": "该功能模块正在开发中..."
