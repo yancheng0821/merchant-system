@@ -17,6 +17,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.merchant.server.common.util.TimeZoneUtils;
+import com.merchant.server.common.util.CurrencyUtils;
 
 /**
  * 订单服务实现
@@ -93,8 +95,8 @@ public class OrderServiceImpl implements OrderService {
         order.setNotes(orderCreate.getNotes());
         order.setOrderStatus("draft");
         order.setPaymentStatus("pending");
-        order.setCreatedAt(LocalDateTime.now());
-        order.setUpdatedAt(LocalDateTime.now());
+        order.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
+        order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
         
         // 计算金额
         double subtotal = 0.0;
@@ -126,8 +128,8 @@ public class OrderServiceImpl implements OrderService {
                 orderService.setDuration(service.getDuration());
                 orderService.setAssignedResourceId(serviceCreate.getAssignedResourceId());
                 orderService.setAssignedResourceType(serviceCreate.getAssignedResourceType());
-                orderService.setCreatedAt(LocalDateTime.now());
-                orderService.setUpdatedAt(LocalDateTime.now());
+                orderService.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
+                orderService.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
                 
                 orderServiceMapper.insert(orderService);
             }
@@ -153,8 +155,8 @@ public class OrderServiceImpl implements OrderService {
         }
         
         // 重新计算总金额
-        order.setTotalAmount(order.getSubtotal() + order.getTaxAmount() + order.getTipAmount());
-        order.setUpdatedAt(LocalDateTime.now());
+        order.setTotalAmount(CurrencyUtils.calculateTotal(order.getSubtotal(), order.getTaxAmount(), order.getTipAmount()));
+        order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
         
         orderMapper.updateById(order);
         
@@ -175,7 +177,7 @@ public class OrderServiceImpl implements OrderService {
         }
         
         order.setOrderStatus("cancelled");
-        order.setUpdatedAt(LocalDateTime.now());
+        order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
         orderMapper.updateById(order);
         
         return true;

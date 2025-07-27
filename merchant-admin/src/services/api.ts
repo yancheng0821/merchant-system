@@ -601,7 +601,17 @@ export const serviceApi = {
     const response = await createRequest(`/api/business/services?tenantId=${tenantId}`, {
       method: 'GET',
     });
-    return response;
+    // 确保返回数组，处理不同的响应格式
+    if (Array.isArray(response)) {
+      return response;
+    } else if (response && Array.isArray(response.data)) {
+      return response.data;
+    } else if (response && Array.isArray(response.content)) {
+      return response.content;
+    } else {
+      console.warn('getServices returned unexpected format:', response);
+      return [];
+    }
   },
 
   // 获取活跃服务
@@ -609,7 +619,17 @@ export const serviceApi = {
     const response = await createRequest(`/api/business/services?tenantId=${tenantId}&status=ACTIVE`, {
       method: 'GET',
     });
-    return response;
+    // 确保返回数组，处理不同的响应格式
+    if (Array.isArray(response)) {
+      return response;
+    } else if (response && Array.isArray(response.data)) {
+      return response.data;
+    } else if (response && Array.isArray(response.content)) {
+      return response.content;
+    } else {
+      console.warn('getActiveServices returned unexpected format:', response);
+      return [];
+    }
   },
 };
 

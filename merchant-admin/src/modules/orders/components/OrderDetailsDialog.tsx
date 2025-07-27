@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Order } from '../OrderManagement';
+import { CurrencyUtils } from '../../../config/constants';
 
 interface OrderDetailsDialogProps {
   open: boolean;
@@ -45,10 +46,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
   if (!order) return null;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD'
-    }).format(amount);
+    return CurrencyUtils.formatAmount(amount);
   };
 
   const formatDateTime = (dateString: string) => {

@@ -46,6 +46,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { CurrencyUtils } from '../../config/constants';
 
 // 颜色主题 - 使用现代化配色
 const COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
@@ -264,7 +265,7 @@ const Analytics: React.FC = () => {
                   <MoneyIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  ¥{Math.round(totalRevenue).toLocaleString()}
+                  {CurrencyUtils.formatAmountWithCommas(Math.round(totalRevenue))}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -358,7 +359,7 @@ const Analytics: React.FC = () => {
                   <AssessmentIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  ¥{Math.round(avgOrderValue)}
+                  {CurrencyUtils.formatAmountWithCommas(Math.round(avgOrderValue))}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -611,7 +612,7 @@ const Analytics: React.FC = () => {
                     tick={{ fontSize: 12, fill: '#6B7280' }}
                   />
                   <Tooltip 
-                    formatter={(value: number) => [`¥${value.toLocaleString()}`, t('analytics.chartLabels.income')]}
+                    formatter={(value: number) => [CurrencyUtils.formatAmountWithCommas(value), t('analytics.chartLabels.income')]}
                   />
                   <Bar dataKey="revenue" fill="#F59E0B" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -664,7 +665,7 @@ const Analytics: React.FC = () => {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
-                        ¥{staff.revenue.toLocaleString()}
+                        {CurrencyUtils.formatAmountWithCommas(staff.revenue)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">

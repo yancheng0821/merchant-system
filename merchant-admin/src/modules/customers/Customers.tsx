@@ -50,6 +50,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { customerApi, Customer, CustomerStats, handleApiError } from '../../services/api';
+import { CurrencyUtils } from '../../config/constants';
 import CustomerDialog from './components/CustomerDialog';
 import AppointmentHistory from './components/AppointmentHistory';
 
@@ -533,7 +534,7 @@ const CustomerManagement: React.FC = () => {
                   <WalletIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  ¥{Math.round(customerStats?.averageSpending || 0)}
+                  {CurrencyUtils.formatAmountWithCommas(Math.round(customerStats?.averageSpending || 0))}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -806,7 +807,7 @@ const CustomerManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ¥{(customer.totalSpent || 0).toFixed(2)}
+                        {CurrencyUtils.formatAmount(customer.totalSpent || 0)}
                       </Typography>
                     </TableCell>
                     <TableCell>

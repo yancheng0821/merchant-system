@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -42,6 +42,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
 import { Customer, Appointment, AppointmentStats, appointmentApi, handleApiError } from '../../../services/api';
+import { CurrencyUtils } from '../../../config/constants';
 
 
 const AppointmentHistory: React.FC<{
@@ -69,7 +70,7 @@ const AppointmentHistory: React.FC<{
     }, []);
 
     // 加载预约数据
-    const loadAppointments = async () => {
+    const loadAppointments = useCallback(async () => {
       if (!customer?.id) return;
 
       try {
@@ -89,14 +90,14 @@ const AppointmentHistory: React.FC<{
       } finally {
         setLoading(false);
       }
-    };
+    }, [customer?.id, tenantId]);
 
     // 当对话框打开且有客户信息时加载数据
     useEffect(() => {
       if (open && customer) {
         loadAppointments();
       }
-    }, [open, customer, tenantId, loadAppointments]);
+    }, [open, customer, loadAppointments]);
 
     // 根据客户ID筛选预约记录
     const customerAppointments = useMemo(() => {
@@ -165,10 +166,7 @@ const AppointmentHistory: React.FC<{
     const currentLocale = i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
 
     const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat(currentLocale, {
-        style: 'currency',
-        currency: currentLocale === 'zh-CN' ? 'CNY' : 'USD'
-      }).format(amount);
+      return CurrencyUtils.formatAmount(amount);
     };
 
     const formatDate = (dateString: string) => {

@@ -107,6 +107,7 @@ import {
   Watch as WatchIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { CurrencyUtils } from '../../config/constants';
 import ServiceDialog from './components/ServiceDialog';
 import ServiceCategoryDialog from './components/ServiceCategoryDialog';
 import { serviceManagementApi, serviceCategoryApi, ServiceManagement as ServiceManagementType, ServiceCategory, handleApiError } from '../../services/api';
@@ -565,7 +566,7 @@ const ServiceManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          ¥{service.price.toFixed(2)}
+                          {CurrencyUtils.formatAmount(service.price)}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -928,7 +929,7 @@ const ServiceManagement: React.FC = () => {
                         {t('products.price')}
                       </Typography>
                       <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
-                        ¥{selectedService.price.toFixed(2)}
+                        {CurrencyUtils.formatAmount(selectedService.price)}
                       </Typography>
                     </Box>
                   </Grid>

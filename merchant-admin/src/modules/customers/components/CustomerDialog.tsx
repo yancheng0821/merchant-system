@@ -76,9 +76,12 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         console.log('Loading services for tenantId:', tenantId);
         const serviceList = await serviceApi.getActiveServices(tenantId.toString());
         console.log('Loaded services:', serviceList);
-        setServices(serviceList);
+        // 确保 serviceList 是数组
+        setServices(Array.isArray(serviceList) ? serviceList : []);
       } catch (error) {
         console.error('Failed to load services:', error);
+        // 出错时设置为空数组
+        setServices([]);
       }
     };
 
@@ -709,7 +712,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   multiple
                   options={services}
                   getOptionLabel={(option) => option.name}
-                  value={services.filter(service => formData.preferredServiceIds.includes(service.id))}
+                  value={Array.isArray(services) ? services.filter(service => formData.preferredServiceIds.includes(service.id)) : []}
                   onChange={(_, newValue) => handleChange('preferredServiceIds', newValue.map(service => service.id))}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (

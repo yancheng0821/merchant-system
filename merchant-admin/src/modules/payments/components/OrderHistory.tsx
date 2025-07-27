@@ -47,6 +47,7 @@ import {
 
 import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../services/api';
+import { TimeZoneUtils, CurrencyUtils } from '../../../config/constants';
 
 interface Order {
   id: number;
@@ -80,9 +81,12 @@ const OrderHistory: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [detailsDialog, setDetailsDialog] = useState(false);
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0],
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
+    const today = TimeZoneUtils.getTodayVancouverDateString();
+    return {
+      start: today,
+      end: today,
+    };
   });
 
   const fetchOrders = useCallback(async () => {
@@ -192,11 +196,7 @@ const OrderHistory: React.FC = () => {
   };
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
+    return TimeZoneUtils.formatVancouverDateTime(dateString);
   };
 
   return (
@@ -352,7 +352,7 @@ const OrderHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ¥{order.totalAmount.toFixed(2)}
+                        {CurrencyUtils.formatAmount(order.totalAmount)}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -474,10 +474,10 @@ const OrderHistory: React.FC = () => {
                   <ListItem key={index} sx={{ px: 0 }}>
                     <ListItemText
                       primary={service.serviceName}
-                      secondary={`${service.quantity} x ¥${service.price}`}
+                      secondary={`${service.quantity} x ${CurrencyUtils.formatAmount(service.price)}`}
                     />
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      ¥{(service.quantity * service.price).toFixed(2)}
+                      {CurrencyUtils.formatAmount(service.quantity * service.price)}
                     </Typography>
                   </ListItem>
                 ))}
@@ -488,21 +488,21 @@ const OrderHistory: React.FC = () => {
               <Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
                   <Typography variant="body2">Subtotal</Typography>
-                  <Typography variant="body2">¥{selectedOrder.subtotal.toFixed(2)}</Typography>
+                  <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.subtotal)}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
                   <Typography variant="body2">Tax</Typography>
-                  <Typography variant="body2">¥{selectedOrder.taxAmount.toFixed(2)}</Typography>
+                  <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.taxAmount)}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
                   <Typography variant="body2">Tip</Typography>
-                  <Typography variant="body2">¥{selectedOrder.tipAmount.toFixed(2)}</Typography>
+                  <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.tipAmount)}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    ¥{selectedOrder.totalAmount.toFixed(2)}
+                    {CurrencyUtils.formatAmount(selectedOrder.totalAmount)}
                   </Typography>
                 </Box>
               </Box>

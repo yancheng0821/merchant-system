@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { CurrencyUtils } from '../../config/constants';
 import PaymentProcess from './components/PaymentProcess';
 import OrderHistory from './components/OrderHistory';
 
@@ -144,7 +145,7 @@ const PaymentManagement: React.FC = () => {
                   <MoneyIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  ¥{stats.todayRevenue.toLocaleString()}
+                  {CurrencyUtils.formatAmountWithCommas(stats.todayRevenue)}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -267,7 +268,7 @@ const PaymentManagement: React.FC = () => {
                   <TrendingUpIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  ¥{Math.round(stats.avgOrderValue)}
+                  {CurrencyUtils.formatAmountWithCommas(Math.round(stats.avgOrderValue))}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>

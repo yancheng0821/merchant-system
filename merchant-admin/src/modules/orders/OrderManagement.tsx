@@ -47,6 +47,7 @@ import AddOrderDialog from './components/AddOrderDialog';
 import OrderDetailsDialog from './components/OrderDetailsDialog';
 import PaymentDialog from './components/PaymentDialog';
 import RefundDialog from './components/RefundDialog';
+import { CurrencyUtils } from '../../config/constants';
 
 // 订单接口
 export interface Order {
@@ -364,7 +365,7 @@ const OrderManagement: React.FC = () => {
                   <MoneyIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  ¥{orders.reduce((sum, order) => sum + order.totalAmount, 0).toLocaleString()}
+                  {CurrencyUtils.formatAmountWithCommas(orders.reduce((sum, order) => sum + order.totalAmount, 0))}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -487,7 +488,7 @@ const OrderManagement: React.FC = () => {
                   <MoneyIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  ¥{orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length) : 0}
+                  {CurrencyUtils.formatAmountWithCommas(orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length) : 0)}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -688,7 +689,7 @@ const OrderManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ¥{order.totalAmount.toFixed(2)}
+                        {CurrencyUtils.formatAmount(order.totalAmount)}
                       </Typography>
                     </TableCell>
                     <TableCell>

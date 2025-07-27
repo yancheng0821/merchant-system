@@ -52,10 +52,10 @@
             AND o.customer_id = #{customerId}
         </if>
         <if test="startDate != null and startDate != ''">
-            AND DATE(o.created_at) &gt;= #{startDate}
+            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &gt;= #{startDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND DATE(o.created_at) &lt;= #{endDate}
+            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &lt;= #{endDate}
         </if>
         ORDER BY o.created_at DESC
         LIMIT #{limit} OFFSET #{offset}
@@ -79,10 +79,10 @@
             AND o.customer_id = #{customerId}
         </if>
         <if test="startDate != null and startDate != ''">
-            AND DATE(o.created_at) &gt;= #{startDate}
+            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &gt;= #{startDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND DATE(o.created_at) &lt;= #{endDate}
+            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &lt;= #{endDate}
         </if>
     </select>
 
@@ -124,15 +124,15 @@
     <select id="selectTodayOrders" resultMap="BaseResultMap">
         SELECT * FROM orders 
         WHERE tenant_id = #{tenantId} 
-        AND DATE(created_at) = CURDATE()
+        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = DATE(CONVERT_TZ(NOW(), '+00:00', 'America/Vancouver'))
         ORDER BY created_at DESC
     </select>
 
     <select id="selectMonthOrders" resultMap="BaseResultMap">
         SELECT * FROM orders 
         WHERE tenant_id = #{tenantId} 
-        AND YEAR(created_at) = YEAR(CURDATE()) 
-        AND MONTH(created_at) = MONTH(CURDATE())
+        AND YEAR(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = YEAR(CONVERT_TZ(NOW(), '+00:00', 'America/Vancouver'))
+        AND MONTH(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = MONTH(CONVERT_TZ(NOW(), '+00:00', 'America/Vancouver'))
         ORDER BY created_at DESC
     </select>
 

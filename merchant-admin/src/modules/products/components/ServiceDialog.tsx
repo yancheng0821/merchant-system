@@ -28,6 +28,7 @@ import {
   Category as CategoryIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { CurrencyUtils } from '../../../config/constants';
 import { ServiceManagement as ServiceManagementType, ServiceCategory } from '../../../services/api';
 
 // 主题颜色 - 使用青色主题
@@ -154,7 +155,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
 
   const formatCurrency = (value: number | string | undefined) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : (value || 0);
-    return `¥${numValue.toFixed(2)}`;
+    return CurrencyUtils.formatAmount(numValue);
   };
 
   const resourceTypes = [

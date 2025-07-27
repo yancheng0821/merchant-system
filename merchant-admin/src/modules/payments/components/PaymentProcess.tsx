@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { serviceApi, customerApi, api, Customer as ApiCustomer } from '../../../services/api';
+import { CurrencyUtils } from '../../../config/constants';
 
 interface Service {
   id: number;
@@ -272,7 +273,7 @@ const PaymentProcess: React.FC = () => {
                         </Typography>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
                           <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
-                            ¥{service.price}
+                            {CurrencyUtils.formatAmount(service.price)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {service.duration} min
@@ -324,7 +325,7 @@ const PaymentProcess: React.FC = () => {
                   <ListItem key={item.serviceId} sx={{ px: 0 }}>
                     <ListItemText
                       primary={item.serviceName}
-                      secondary={`¥${item.price} x ${item.quantity}`}
+                      secondary={`${CurrencyUtils.formatAmount(item.price)} x ${item.quantity}`}
                     />
                     <ListItemSecondaryAction>
                       <IconButton
@@ -364,11 +365,11 @@ const PaymentProcess: React.FC = () => {
               <Box sx={{ mb: 2 }}>
                 <Box display="flex" justifyContent="space-between" mb={1}>
                   <Typography variant="body2">Subtotal</Typography>
-                  <Typography variant="body2">¥{calculateSubtotal().toFixed(2)}</Typography>
+                  <Typography variant="body2">{CurrencyUtils.formatAmount(calculateSubtotal())}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
                   <Typography variant="body2">Tax ({(taxRate * 100).toFixed(0)}%)</Typography>
-                  <Typography variant="body2">¥{calculateTax().toFixed(2)}</Typography>
+                  <Typography variant="body2">{CurrencyUtils.formatAmount(calculateTax())}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                   <Box display="flex" alignItems="center" gap={1}>
@@ -384,13 +385,13 @@ const PaymentProcess: React.FC = () => {
                       }}
                     />
                   </Box>
-                  <Typography variant="body2">¥{calculateTip().toFixed(2)}</Typography>
+                  <Typography variant="body2">{CurrencyUtils.formatAmount(calculateTip())}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    ¥{calculateTotal().toFixed(2)}
+                    {CurrencyUtils.formatAmount(calculateTotal())}
                   </Typography>
                 </Box>
               </Box>
@@ -479,7 +480,7 @@ const PaymentProcess: React.FC = () => {
                 Customer: {selectedCustomer?.firstName} {selectedCustomer?.lastName}
               </Typography>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Total Amount: ¥{calculateTotal().toFixed(2)}
+                Total Amount: {CurrencyUtils.formatAmount(calculateTotal())}
               </Typography>
               <Typography variant="body2">
                 Payment Method: {paymentMethod.replace('_', ' ').toUpperCase()}

@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Order } from '../OrderManagement';
+import { CurrencyUtils } from '../../../config/constants';
 
 interface RefundDialogProps {
   open: boolean;
@@ -55,10 +56,7 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
   if (!order || order.paymentStatus !== 'paid') return null;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency',
-      currency: 'CAD'
-    }).format(amount);
+    return CurrencyUtils.formatAmount(amount);
   };
 
   const simulateRefundProcessing = async (): Promise<{ success: boolean; refundId?: string }> => {
@@ -236,7 +234,7 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
                 step: 0.01
               }}
               InputProps={{
-                startAdornment: '$'
+                startAdornment: CurrencyUtils.getSymbol()
               }}
               helperText={t('orders.maxRefundAmount', { amount: formatCurrency(maxRefundAmount) })}
             />

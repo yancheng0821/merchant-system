@@ -37,6 +37,7 @@ import {
   Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { CurrencyUtils } from '../../config/constants';
 
 // 时间范围类型
 type TimeRange = '7days' | '30days' | '6months' | '1year';
@@ -145,7 +146,7 @@ const Dashboard: React.FC = () => {
   const metricsData: MetricCardData[] = [
     {
       title: t('dashboard.totalSales'),
-      value: `¥${totalSales.toLocaleString()}`,
+      value: CurrencyUtils.formatAmountWithCommas(totalSales),
       change: 12.5,
       icon: <MoneyIcon sx={{ fontSize: 32 }} />,
       color: '#10B981',
@@ -169,7 +170,7 @@ const Dashboard: React.FC = () => {
     },
     {
       title: t('dashboard.avgOrderValue'),
-      value: `¥${avgOrderValue.toFixed(0)}`,
+      value: CurrencyUtils.formatAmountWithCommas(Math.round(avgOrderValue)),
       change: 4.1,
       icon: <TrendingUpIcon sx={{ fontSize: 32 }} />,
       color: '#EC4899',

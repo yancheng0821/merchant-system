@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
+import { CurrencyUtils } from '../../../config/constants';
 import { Appointment, Customer, Resource, customerApi, resourceApi } from '../../../services/api';
 import ResourceSelector from '../../../components/common/ResourceSelector';
 
@@ -74,10 +75,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
   // 格式化货币
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(currentLocale, {
-      style: 'currency',
-      currency: currentLocale === 'zh-CN' ? 'CNY' : 'USD'
-    }).format(amount);
+    return CurrencyUtils.formatAmount(amount);
   };
 
   // 格式化日期，避免时区转换问题

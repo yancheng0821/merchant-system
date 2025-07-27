@@ -35,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Order, OrderService } from '../OrderManagement';
+import { CurrencyUtils } from '../../../config/constants';
 
 interface AddOrderDialogProps {
   open: boolean;
@@ -203,7 +204,7 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, onSave }
   };
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+    return CurrencyUtils.formatAmount(amount);
   };
 
   const subtotal = selectedServices.reduce((sum, service) => sum + service.price * service.quantity, 0);

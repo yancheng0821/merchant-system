@@ -52,6 +52,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n/config';
+import { TimeZoneUtils, CurrencyUtils } from '../../config/constants';
 import AddAppointmentDialog from './components/AddAppointmentDialog';
 import { Customer, Appointment, appointmentApi, customerApi, handleApiError } from '../../services/api';
 // 预约统计接口
@@ -169,12 +170,10 @@ const AppointmentManagement: React.FC = () => {
 
     // 日期筛选
     if (dateFilter !== 'all') {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD格式
-
-      const tomorrow = new Date(today);
+      const todayStr = TimeZoneUtils.getTodayVancouverDateString();
+      const tomorrow = new Date(TimeZoneUtils.getCurrentVancouverTime());
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const tomorrowStr = TimeZoneUtils.formatVancouverDate(tomorrow);
 
       switch (dateFilter) {
         case 'today':
@@ -184,13 +183,14 @@ const AppointmentManagement: React.FC = () => {
           filtered = filtered.filter(apt => apt.appointmentDate === tomorrowStr);
           break;
         case 'this-week':
+          const today = TimeZoneUtils.getCurrentVancouverTime();
           const weekStart = new Date(today);
           weekStart.setDate(today.getDate() - today.getDay());
-          const weekStartStr = weekStart.toISOString().split('T')[0];
+          const weekStartStr = TimeZoneUtils.formatVancouverDate(weekStart);
 
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
-          const weekEndStr = weekEnd.toISOString().split('T')[0];
+          const weekEndStr = TimeZoneUtils.formatVancouverDate(weekEnd);
 
           filtered = filtered.filter(apt =>
             apt.appointmentDate >= weekStartStr && apt.appointmentDate <= weekEndStr
@@ -242,10 +242,7 @@ const AppointmentManagement: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(currentLocale, {
-      style: 'currency',
-      currency: currentLocale === 'zh-CN' ? 'CNY' : 'USD'
-    }).format(amount);
+    return CurrencyUtils.formatAmount(amount);
   };
 
   const formatTime = (time: string) => {
