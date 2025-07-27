@@ -18,7 +18,7 @@ public class NotificationClient {
     private final String notificationServiceUrl;
 
     public NotificationClient(RestTemplate restTemplate, 
-                            @Value("${notification.service.url:http://localhost:8084}") String notificationServiceUrl) {
+                            @Value("${notification.service.url:http://notification-service}") String notificationServiceUrl) {
         this.restTemplate = restTemplate;
         this.notificationServiceUrl = notificationServiceUrl;
     }
@@ -39,7 +39,10 @@ public class NotificationClient {
             
             log.info("Appointment confirmation notification sent successfully: {}", response.getStatusCode());
         } catch (Exception e) {
-            log.error("Failed to send appointment confirmation notification", e);
+            log.error("Failed to send appointment confirmation notification for appointment: {}, error: {}", 
+                notification.getAppointmentId(), e.getMessage());
+            // 降级处理：记录到数据库或消息队列，稍后重试
+            handleNotificationFailure("confirmation", notification, e);
         }
     }
 
@@ -59,7 +62,9 @@ public class NotificationClient {
             
             log.info("Appointment cancellation notification sent successfully: {}", response.getStatusCode());
         } catch (Exception e) {
-            log.error("Failed to send appointment cancellation notification", e);
+            log.error("Failed to send appointment cancellation notification for appointment: {}, error: {}", 
+                notification.getAppointmentId(), e.getMessage());
+            handleNotificationFailure("cancellation", notification, e);
         }
     }
 
@@ -79,7 +84,9 @@ public class NotificationClient {
             
             log.info("Appointment completion notification sent successfully: {}", response.getStatusCode());
         } catch (Exception e) {
-            log.error("Failed to send appointment completion notification", e);
+            log.error("Failed to send appointment completion notification for appointment: {}, error: {}", 
+                notification.getAppointmentId(), e.getMessage());
+            handleNotificationFailure("completion", notification, e);
         }
     }
 
@@ -99,7 +106,37 @@ public class NotificationClient {
             
             log.info("Appointment reminder notification sent successfully: {}", response.getStatusCode());
         } catch (Exception e) {
-            log.error("Failed to send appointment reminder notification", e);
+            log.error("Failed to send appointment reminder notification for appointment: {}, error: {}", 
+                notification.getAppointmentId(), e.getMessage());
+            handleNotificationFailure("reminder", notification, e);
         }
+    }
+    
+    /**
+     * 处理通知发送失败的情况
+     * 只记录错误日志，不影响预约创建流程
+     */
+    private void handleNotificationFailure(String notificationType, AppointmentNotificationDTO notification, Exception e) {
+        log.error("❌ 通知服务不可用，通知发送失败。预约创建不受影响。" +
+                "通知类型: {}, 预约ID: {}, 客户: {}, 错误: {}", 
+                notificationType, 
+                notification.getAppointmentId(), 
+                notification.getCustomerName(),
+                e.getMessage());
+        
+        // 记录详细的通知信息用于后续处理
+        log.info("📋 失败的通知详情 - 预约ID: {}, 客户: {}, 手机: {}, 邮箱: {}, 偏好: {}", 
+                notification.getAppointmentId(),
+                notification.getCustomerName(),
+                notification.getCustomerPhone(),
+                notification.getCustomerEmail(),
+                notification.getCommunicationPreference());
+        
+        // 可以在这里实现其他处理策略：
+        // 1. 保存到数据库待稍后重试
+        // 2. 发送到消息队列
+        // 3. 发送告警给运维人员
+        
+        // 但不进行本地降级处理，确保预约创建流程不受影响
     }
 }

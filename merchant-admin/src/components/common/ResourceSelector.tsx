@@ -204,7 +204,7 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
     if (showAvailability && availabilityStatus.hasOwnProperty(resource.id)) {
       return availabilityStatus[resource.id] ? t('resources.available') : t('resources.unavailable');
     }
-    return t(`resources.status.${resource.status.toLowerCase()}`);
+    return t(`resources.statusOptions.${resource.status.toLowerCase()}`);
   };
 
   // 过滤可用资源
@@ -363,11 +363,25 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
               </Avatar>
               <Box flex={1}>
                 <Typography variant="body2">{resource.name}</Typography>
-                {resource.description && (
-                  <Typography variant="caption" color="text.secondary">
-                    {resource.description}
-                  </Typography>
-                )}
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  {resource.description && (
+                    <Typography variant="caption" color="text.secondary">
+                      {resource.description}
+                    </Typography>
+                  )}
+                  {resource.location && (
+                    <>
+                      {resource.description && (
+                        <Typography variant="caption" color="text.secondary">
+                          •
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        📍 {resource.location}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
               </Box>
               {showAvailability && (
                 <Chip
@@ -380,13 +394,6 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
                     ml: 1,
                   }}
                 />
-              )}
-              {resource.location && (
-                <Tooltip title={resource.location}>
-                  <IconButton size="small" sx={{ ml: 1 }}>
-                    <InfoIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
               )}
             </Box>
           </MenuItem>

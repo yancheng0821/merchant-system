@@ -26,6 +26,16 @@ public interface AppointmentMapper {
     List<AppointmentService> findAppointmentServicesByAppointmentId(@Param("appointmentId") Long appointmentId);
     
     /**
+     * 插入预约服务
+     */
+    int insertAppointmentService(AppointmentService appointmentService);
+    
+    /**
+     * 批量插入预约服务
+     */
+    int insertAppointmentServices(@Param("appointmentServices") List<AppointmentService> appointmentServices);
+    
+    /**
      * 根据客户ID和租户ID查询预约
      */
     List<Appointment> findByCustomerIdAndTenantId(@Param("customerId") Long customerId, 

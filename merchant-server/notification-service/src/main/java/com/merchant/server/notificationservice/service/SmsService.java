@@ -63,6 +63,11 @@ public class SmsService {
             return true;
         }
         
+        // 如果启用了Mock模式，直接使用Mock发送
+        if (notificationConfig.getMock().isEnabled()) {
+            return sendSmsViaMock(phoneNumber, content);
+        }
+        
         String provider = notificationConfig.getSms().getProvider();
         
         switch (provider.toLowerCase()) {
@@ -118,8 +123,29 @@ public class SmsService {
     }
     
     private boolean sendSmsViaMock(String phoneNumber, String content) {
-        log.info("Mock短信发送 - 手机号：{}，内容：{}", phoneNumber, content);
-        return true;
+        NotificationConfig.Mock.MockSms mockConfig = notificationConfig.getMock().getSms();
+        
+        // 模拟发送延迟
+        if (mockConfig.isSimulateDelay()) {
+            try {
+                Thread.sleep(mockConfig.getDelayMs());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Mock短信发送延迟被中断");
+            }
+        }
+        
+        // 模拟成功率
+        double random = Math.random();
+        boolean success = random < mockConfig.getSuccessRate();
+        
+        if (success) {
+            log.info("📱 Mock短信发送成功 - 手机号：{}，内容：{}", phoneNumber, content);
+        } else {
+            log.error("❌ Mock短信发送失败 - 手机号：{}，内容：{}（模拟失败）", phoneNumber, content);
+        }
+        
+        return success;
     }
     
     /**

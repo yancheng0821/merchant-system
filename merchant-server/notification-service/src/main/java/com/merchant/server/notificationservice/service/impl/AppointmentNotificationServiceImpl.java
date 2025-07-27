@@ -71,8 +71,65 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         // 构建通知变量
         Map<String, Object> variables = buildNotificationVariables(appointment);
         
+        String communicationPreference = appointment.getCommunicationPreference();
+        
+        // 如果是"BOTH"，同时发送邮件和短信
+        if ("BOTH".equalsIgnoreCase(communicationPreference)) {
+            return sendBothNotifications(appointment, templateCode, variables);
+        } else {
+            // 单一通知方式
+            return sendSingleNotification(appointment, templateCode, variables, communicationPreference);
+        }
+    }
+    
+    private NotificationLog sendBothNotifications(AppointmentNotificationDTO appointment, String templateCode, Map<String, Object> variables) {
+        log.info("Sending both email and SMS notifications for appointment {}", appointment.getAppointmentId());
+        
+        NotificationLog emailResult = null;
+        NotificationLog smsResult = null;
+        
+        // 发送邮件（如果有邮箱地址）
+        if (appointment.getCustomerEmail() != null && !appointment.getCustomerEmail().trim().isEmpty()) {
+            try {
+                emailResult = sendSingleNotification(appointment, templateCode, variables, "EMAIL");
+                log.info("Email notification sent successfully for appointment {}", appointment.getAppointmentId());
+            } catch (Exception e) {
+                log.error("Failed to send email notification for appointment {}", appointment.getAppointmentId(), e);
+            }
+        } else {
+            log.warn("No email address available for appointment {}", appointment.getAppointmentId());
+        }
+        
+        // 发送短信（如果有手机号）
+        if (appointment.getCustomerPhone() != null && !appointment.getCustomerPhone().trim().isEmpty()) {
+            try {
+                smsResult = sendSingleNotification(appointment, templateCode, variables, "SMS");
+                log.info("SMS notification sent successfully for appointment {}", appointment.getAppointmentId());
+            } catch (Exception e) {
+                log.error("Failed to send SMS notification for appointment {}", appointment.getAppointmentId(), e);
+            }
+        } else {
+            log.warn("No phone number available for appointment {}", appointment.getAppointmentId());
+        }
+        
+        // 返回结果：优先返回成功的结果，如果都失败则返回最后一个错误
+        if (emailResult != null && emailResult.getStatus() == NotificationLog.NotificationStatus.SENT) {
+            return emailResult;
+        } else if (smsResult != null && smsResult.getStatus() == NotificationLog.NotificationStatus.SENT) {
+            return smsResult;
+        } else {
+            // 如果都失败了，返回一个合并的错误结果
+            NotificationLog failedResult = smsResult != null ? smsResult : emailResult;
+            if (failedResult != null) {
+                failedResult.setErrorMessage("Both email and SMS notifications failed");
+            }
+            return failedResult;
+        }
+    }
+    
+    private NotificationLog sendSingleNotification(AppointmentNotificationDTO appointment, String templateCode, Map<String, Object> variables, String preferenceOverride) {
         // 根据客户的通信偏好决定发送方式
-        NotificationTemplate.NotificationType notificationType = getNotificationType(appointment.getCommunicationPreference());
+        NotificationTemplate.NotificationType notificationType = getNotificationType(preferenceOverride != null ? preferenceOverride : appointment.getCommunicationPreference());
         String recipient = getRecipient(appointment, notificationType);
         
         // 构建发送请求
@@ -108,6 +165,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         if ("EMAIL".equalsIgnoreCase(communicationPreference)) {
             return NotificationTemplate.NotificationType.EMAIL;
         } else {
+            // SMS 和 PHONE 都使用短信发送
             return NotificationTemplate.NotificationType.SMS;
         }
     }

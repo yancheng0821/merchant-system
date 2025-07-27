@@ -33,6 +33,17 @@ eureka:
 
 # 通知服务配置
 notification:
+  # Mock模式配置 - 开发和测试环境使用
+  mock:
+    enabled: true # 设置为false时使用真实的邮件和短信服务
+    sms:
+      simulateDelay: true # 模拟发送延迟
+      delayMs: 1000 # 模拟延迟时间（毫秒）
+      successRate: 0.95 # 模拟成功率（0.0-1.0）
+    email:
+      simulateDelay: true
+      delayMs: 800
+      successRate: 0.98
   sms:
     provider: aws # aws, mock
     enabled: true

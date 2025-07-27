@@ -4,6 +4,7 @@ import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
 import com.merchant.server.businessservice.service.AppointmentNotificationService;
+import com.merchant.server.businessservice.dto.AppointmentCreateDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +110,73 @@ public class AppointmentServiceImpl implements AppointmentService {
             return appointment;
         } catch (Exception e) {
             log.error("Error creating appointment: ", e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO) {
+        log.info("Creating appointment with services for customer: {}", appointmentDTO.getCustomerId());
+        log.info("Appointment DTO: {}", appointmentDTO);
+        
+        // 创建预约实体
+        Appointment appointment = new Appointment();
+        appointment.setTenantId(appointmentDTO.getTenantId());
+        appointment.setCustomerId(appointmentDTO.getCustomerId());
+        appointment.setResourceId(appointmentDTO.getResourceId());
+        appointment.setResourceType(appointmentDTO.getResourceType());
+        appointment.setAppointmentDate(appointmentDTO.getAppointmentDate());
+        appointment.setAppointmentTime(appointmentDTO.getAppointmentTime());
+        appointment.setDuration(appointmentDTO.getDuration());
+        appointment.setTotalAmount(appointmentDTO.getTotalAmount());
+        appointment.setStatus(appointmentDTO.getStatus() != null ? appointmentDTO.getStatus() : Appointment.AppointmentStatus.CONFIRMED);
+        appointment.setNotes(appointmentDTO.getNotes());
+        appointment.setRating(appointmentDTO.getRating());
+        appointment.setReview(appointmentDTO.getReview());
+        appointment.setCreatedAt(LocalDateTime.now());
+        appointment.setUpdatedAt(LocalDateTime.now());
+        
+        try {
+            // 1. 插入预约记录
+            appointmentMapper.insert(appointment);
+            log.info("Appointment created successfully with ID: {}", appointment.getId());
+            
+            // 2. 插入预约服务记录
+            if (appointmentDTO.getServices() != null && !appointmentDTO.getServices().isEmpty()) {
+                List<com.merchant.server.businessservice.entity.AppointmentService> appointmentServices = new ArrayList<>();
+                
+                for (AppointmentCreateDTO.AppointmentServiceDTO serviceDTO : appointmentDTO.getServices()) {
+                    com.merchant.server.businessservice.entity.AppointmentService appointmentService = 
+                        new com.merchant.server.businessservice.entity.AppointmentService();
+                    appointmentService.setAppointmentId(appointment.getId());
+                    appointmentService.setServiceId(serviceDTO.getServiceId());
+                    appointmentService.setServiceName(serviceDTO.getServiceName());
+                    appointmentService.setPrice(serviceDTO.getPrice());
+                    appointmentService.setDuration(serviceDTO.getDuration());
+                    appointmentService.setCreatedAt(LocalDateTime.now());
+                    
+                    appointmentServices.add(appointmentService);
+                }
+                
+                // 批量插入预约服务
+                appointmentMapper.insertAppointmentServices(appointmentServices);
+                log.info("Inserted {} appointment services for appointment ID: {}", appointmentServices.size(), appointment.getId());
+                
+                // 设置服务信息到预约对象中（用于返回和通知）
+                appointment.setAppointmentServices(appointmentServices);
+            }
+            
+            // 3. 发送预约确认通知
+            try {
+                notificationService.sendConfirmationNotification(appointment);
+            } catch (Exception e) {
+                log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
+            }
+            
+            return appointment;
+        } catch (Exception e) {
+            log.error("Error creating appointment with services: ", e);
             throw e;
         }
     }

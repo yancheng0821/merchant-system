@@ -87,6 +87,11 @@ public class EmailService {
             return true;
         }
         
+        // 如果启用了Mock模式，直接使用Mock发送
+        if (notificationConfig.getMock().isEnabled()) {
+            return sendEmailViaMock(to, subject, content);
+        }
+        
         String provider = notificationConfig.getEmail().getProvider();
         
         switch (provider.toLowerCase()) {
@@ -173,8 +178,29 @@ public class EmailService {
     }
     
     private boolean sendEmailViaMock(String to, String subject, String content) {
-        log.info("Mock邮件发送 - 收件人：{}，主题：{}，内容长度：{}", to, subject, content.length());
-        log.debug("Mock邮件内容：{}", content);
-        return true;
+        NotificationConfig.Mock.MockEmail mockConfig = notificationConfig.getMock().getEmail();
+        
+        // 模拟发送延迟
+        if (mockConfig.isSimulateDelay()) {
+            try {
+                Thread.sleep(mockConfig.getDelayMs());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Mock邮件发送延迟被中断");
+            }
+        }
+        
+        // 模拟成功率
+        double random = Math.random();
+        boolean success = random < mockConfig.getSuccessRate();
+        
+        if (success) {
+            log.info("✅ Mock邮件发送成功 - 收件人：{}，主题：{}，内容长度：{}", to, subject, content.length());
+            log.debug("Mock邮件内容：{}", content);
+        } else {
+            log.error("❌ Mock邮件发送失败 - 收件人：{}，主题：{}（模拟失败）", to, subject);
+        }
+        
+        return success;
     }
 }

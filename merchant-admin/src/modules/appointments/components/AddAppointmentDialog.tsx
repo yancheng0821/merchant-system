@@ -7,7 +7,6 @@ import {
   Button,
   TextField,
   Grid,
-
   Chip,
   Box,
   Typography,
@@ -41,7 +40,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
 import { CurrencyUtils } from '../../../config/constants';
-import { Appointment, Customer, Resource, customerApi, resourceApi } from '../../../services/api';
+import { Appointment, Customer, Resource, Service, ServiceCategory, customerApi, resourceApi, serviceApi, serviceCategoryApi, merchantConfigApi } from '../../../services/api';
 import ResourceSelector from '../../../components/common/ResourceSelector';
 
 interface AddAppointmentDialogProps {
@@ -51,14 +50,7 @@ interface AddAppointmentDialogProps {
   onSave: (appointment: Partial<Appointment>) => void;
 }
 
-const serviceOptions = [
-  { category: 'Hair & Beauty', items: ['Hair Cut', 'Hair Color', 'Hair Styling', 'Blow Dry', 'Beard Trim'] },
-  { category: 'Nail Care', items: ['Manicure', 'Pedicure', 'Gel Polish', 'Nail Art'] },
-  { category: 'Facial Treatment', items: ['Basic Facial', 'Deep Cleansing', 'Anti-Aging Treatment', 'Acne Treatment'] },
-  { category: 'Spa Package', items: ['Full Body Massage', 'Aromatherapy', 'Hot Stone Massage', 'Reflexology'] },
-];
-
-// 移除硬编码的员工数据，改为从API获取
+// 移除硬编码的服务数据，改为从API获取
 
 const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   open,
@@ -99,15 +91,21 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
     phone: '',
     email: ''
   });
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('');
   const [selectedResource, setSelectedResource] = useState<number | ''>('');
+  const [selectedRoom, setSelectedRoom] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resourceOptions, setResourceOptions] = useState<Resource[]>([]);
+  const [merchantResourceTypes, setMerchantResourceTypes] = useState<string[]>([]);
+  const [loadingResourceTypes, setLoadingResourceTypes] = useState(false);
 
 
 
@@ -117,19 +115,47 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
     return Number(user.tenantId || 1);
   }, []);
 
-  // 加载资源数据
+  // 加载资源数据和服务数据
   useEffect(() => {
-    const loadResources = async () => {
+    const loadData = async () => {
       try {
-        const resources = await resourceApi.getAllResources(tenantId);
-        setResourceOptions(resources);
+        setLoadingServices(true);
+        setLoadingResourceTypes(true);
+        
+        // 并行加载资源、服务分类、服务数据和商户资源类型配置
+        const [resources, categories, servicesData, resourceTypes] = await Promise.all([
+          resourceApi.getAllResources(tenantId),
+          serviceCategoryApi.getCategories(tenantId),
+          serviceApi.getServices(tenantId.toString()),
+          merchantConfigApi.getResourceTypes(tenantId).catch(() => ['STAFF']) // 默认为员工类型
+        ]);
+        
+        console.log('Loaded data:', {
+          resources: resources?.length || 0,
+          categories: categories?.length || 0,
+          services: servicesData?.length || 0,
+          resourceTypes: resourceTypes
+        });
+        
+        setResourceOptions(resources || []);
+        setServiceCategories(categories || []);
+        setServices(servicesData || []);
+        setMerchantResourceTypes(resourceTypes || ['STAFF']);
       } catch (error) {
-        console.error('Failed to load resources:', error);
+        console.error('Failed to load data:', error);
+        // 设置空数组以防止UI错误
+        setResourceOptions([]);
+        setServiceCategories([]);
+        setServices([]);
+        setMerchantResourceTypes(['STAFF']); // 默认为员工类型
+      } finally {
+        setLoadingServices(false);
+        setLoadingResourceTypes(false);
       }
     };
 
     if (open) {
-      loadResources();
+      loadData();
     }
   }, [open, tenantId]);
 
@@ -140,9 +166,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       setSelectedCustomer(null);
       setNewCustomerData({ firstName: '', lastName: '', phone: '', email: '' });
       setSelectedServices([]);
+      setServiceCategories([]);
+      setServices([]);
       setAppointmentDate('');
       setAppointmentTime('');
       setSelectedResource('');
+      setSelectedRoom('');
       setNotes('');
       setCustomerSearch('');
       setErrors({});
@@ -202,8 +231,29 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         }
         break;
       case 2: // 时间安排
-        if (!appointmentDate.trim() || !appointmentTime.trim() || !selectedResource) {
+        if (!appointmentDate.trim() || !appointmentTime.trim()) {
           newErrors.schedule = t('appointments.validation.scheduleRequired');
+        }
+        
+        // 根据商户资源类型验证资源选择
+        if (merchantResourceTypes.includes('ROOM') && merchantResourceTypes.includes('STAFF')) {
+          // 如果同时支持房间和员工，必须先选择房间，再选择员工
+          if (!selectedRoom) {
+            newErrors.room = t('appointments.validation.roomRequired');
+          }
+          if (!selectedResource) {
+            newErrors.staff = t('appointments.validation.staffRequired');
+          }
+        } else if (merchantResourceTypes.includes('ROOM')) {
+          // 只支持房间
+          if (!selectedRoom) {
+            newErrors.room = t('appointments.validation.roomRequired');
+          }
+        } else if (merchantResourceTypes.includes('STAFF')) {
+          // 只支持员工
+          if (!selectedResource) {
+            newErrors.staff = t('appointments.validation.staffRequired');
+          }
         }
         break;
     }
@@ -248,9 +298,36 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         customerId = Number(selectedCustomer.id);
       }
 
-      // 计算总时长和总价格（这里应该根据实际选择的服务计算）
-      const totalDuration = selectedServices.length * 60; // 临时计算，应该根据实际服务
-      const totalAmount = selectedServices.length * 80;   // 临时计算，应该根据实际服务价格
+      // 计算总时长和总价格（根据实际选择的服务计算）
+      const totalDuration = selectedServices.reduce((total, service) => total + service.duration, 0);
+      const totalAmount = selectedServices.reduce((total, service) => total + service.price, 0);
+
+      // 根据商户资源类型配置确定resourceId和resourceType
+      let finalResourceId = null;
+      let finalResourceType = null;
+
+      if (merchantResourceTypes.includes('ROOM') && merchantResourceTypes.includes('STAFF')) {
+        // 同时支持房间和员工，优先使用员工，房间作为附加信息
+        if (selectedResource) {
+          finalResourceId = selectedResource;
+          finalResourceType = 'STAFF';
+        } else if (selectedRoom) {
+          finalResourceId = selectedRoom;
+          finalResourceType = 'ROOM';
+        }
+      } else if (merchantResourceTypes.includes('ROOM')) {
+        // 只支持房间
+        if (selectedRoom) {
+          finalResourceId = selectedRoom;
+          finalResourceType = 'ROOM';
+        }
+      } else if (merchantResourceTypes.includes('STAFF')) {
+        // 只支持员工
+        if (selectedResource) {
+          finalResourceId = selectedResource;
+          finalResourceType = 'STAFF';
+        }
+      }
 
       const appointment: any = {
         tenantId,
@@ -261,10 +338,18 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         totalAmount: totalAmount, // 后端会自动转换为BigDecimal
         status: 'CONFIRMED',
         notes: notes.trim() || null,
-        resourceId: selectedResource || null,
-        resourceType: selectedResource ? 'STAFF' : null, // 默认为员工类型，可以根据实际选择的资源类型调整
+        resourceId: finalResourceId,
+        resourceType: finalResourceType,
         rating: null, // 明确设置为null
         review: null, // 明确设置为null
+        // 添加服务信息
+        services: selectedServices.map(service => ({
+          serviceId: service.id,
+          serviceName: service.name,
+          duration: service.duration,
+          price: service.price,
+          categoryId: service.categoryId
+        }))
       };
 
       // 验证必需字段
@@ -404,16 +489,16 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         <ListItemText
                           primary={`${customer.firstName} ${customer.lastName}`}
                           secondary={
-                            <Box>
-                              <Box display="flex" alignItems="center" gap={0.5}>
+                            <>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <PhoneIcon sx={{ fontSize: 12 }} />
-                                <Typography variant="caption">{customer.phone}</Typography>
-                              </Box>
-                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <Typography variant="caption" component="span">{customer.phone}</Typography>
+                              </span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <EmailIcon sx={{ fontSize: 12 }} />
-                                <Typography variant="caption">{customer.email}</Typography>
-                              </Box>
-                            </Box>
+                                <Typography variant="caption" component="span">{customer.email}</Typography>
+                              </span>
+                            </>
                           }
                         />
                       </ListItem>
@@ -542,52 +627,64 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               </Alert>
             )}
 
-            <Grid container spacing={2}>
-              {serviceOptions.map((category) => (
-                <Grid item xs={12} sm={6} key={category.category}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      border: '1px solid',
-                      borderColor: alpha('#8B5CF6', 0.2),
-                      borderRadius: 2,
-                      background: alpha('#8B5CF6', 0.02),
-                    }}
-                  >
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
-                      {category.category}
-                    </Typography>
-                    {category.items.map((service) => (
-                      <Chip
-                        key={service}
-                        label={service}
-                        clickable
-                        variant={selectedServices.includes(service) ? "filled" : "outlined"}
-                        onClick={() => {
-                          if (selectedServices.includes(service)) {
-                            setSelectedServices(prev => prev.filter(s => s !== service));
-                          } else {
-                            setSelectedServices(prev => [...prev, service]);
-                          }
-                        }}
+            {loadingServices ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+                <CircularProgress sx={{ color: '#8B5CF6' }} />
+              </Box>
+            ) : (
+              <Grid container spacing={2}>
+                {serviceCategories.map((category) => {
+                  const categoryServices = services.filter(service => service.categoryId === category.id && service.status === 'ACTIVE');
+                  
+                  if (categoryServices.length === 0) return null;
+                  
+                  return (
+                    <Grid item xs={12} sm={6} key={category.id}>
+                      <Paper
+                        elevation={0}
                         sx={{
-                          m: 0.5,
-                          borderColor: '#8B5CF6',
-                          color: selectedServices.includes(service) ? 'white' : '#8B5CF6',
-                          backgroundColor: selectedServices.includes(service) ? '#8B5CF6' : 'transparent',
-                          '&:hover': {
-                            backgroundColor: selectedServices.includes(service)
-                              ? '#7C3AED'
-                              : alpha('#8B5CF6', 0.1),
-                          },
+                          p: 2,
+                          border: '1px solid',
+                          borderColor: alpha('#8B5CF6', 0.2),
+                          borderRadius: 2,
+                          background: alpha('#8B5CF6', 0.02),
                         }}
-                      />
-                    ))}
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
+                      >
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
+                          {category.name}
+                        </Typography>
+                        {categoryServices.map((service) => (
+                          <Chip
+                            key={service.id}
+                            label={`${service.name} - ${formatCurrency(service.price)}`}
+                            clickable
+                            variant={selectedServices.some(s => s.id === service.id) ? "filled" : "outlined"}
+                            onClick={() => {
+                              if (selectedServices.some(s => s.id === service.id)) {
+                                setSelectedServices(prev => prev.filter(s => s.id !== service.id));
+                              } else {
+                                setSelectedServices(prev => [...prev, service]);
+                              }
+                            }}
+                            sx={{
+                              m: 0.5,
+                              borderColor: '#8B5CF6',
+                              color: selectedServices.some(s => s.id === service.id) ? 'white' : '#8B5CF6',
+                              backgroundColor: selectedServices.some(s => s.id === service.id) ? '#8B5CF6' : 'transparent',
+                              '&:hover': {
+                                backgroundColor: selectedServices.some(s => s.id === service.id)
+                                  ? '#7C3AED'
+                                  : alpha('#8B5CF6', 0.1),
+                              },
+                            }}
+                          />
+                        ))}
+                      </Paper>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            )}
 
             {selectedServices.length > 0 && (
               <Paper
@@ -607,9 +704,9 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                 <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
                   {selectedServices.map((service) => (
                     <Chip
-                      key={service}
-                      label={service}
-                      onDelete={() => setSelectedServices(prev => prev.filter(s => s !== service))}
+                      key={service.id}
+                      label={`${service.name} - ${formatCurrency(service.price)}`}
+                      onDelete={() => setSelectedServices(prev => prev.filter(s => s.id !== service.id))}
                       sx={{
                         backgroundColor: alpha('#10B981', 0.1),
                         color: '#10B981',
@@ -624,7 +721,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       {t('appointments.estimatedDuration')}:
                     </Typography>
                     <Typography variant="h6" sx={{ color: '#10B981' }}>
-                      {selectedServices.length * 60} {t('dialogs.minutes')}
+                      {selectedServices.reduce((total, service) => total + service.duration, 0)} {t('dialogs.minutes')}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
@@ -632,7 +729,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       {t('appointments.estimatedPrice')}:
                     </Typography>
                     <Typography variant="h6" sx={{ color: '#10B981' }}>
-                      {formatCurrency(selectedServices.length * 80)}
+                      {formatCurrency(selectedServices.reduce((total, service) => total + service.price, 0))}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -717,19 +814,117 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                 />
               </Grid>
 
-              <Grid item xs={12}>
-                <ResourceSelector
-                  tenantId={tenantId}
-                  resourceType="STAFF"
-                  selectedResourceId={selectedResource || undefined}
-                  onResourceSelect={(resource) => setSelectedResource(resource?.id || '')}
-                  appointmentDate={appointmentDate}
-                  appointmentTime={appointmentTime}
-                  duration={selectedServices.length * 60}
-                  showAvailability={true}
-                  variant="dropdown"
-                />
-              </Grid>
+              {/* 根据商户资源类型配置显示资源选择器 */}
+              {loadingResourceTypes ? (
+                <Grid item xs={12}>
+                  <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
+                    <CircularProgress sx={{ color: '#8B5CF6' }} />
+                    <Typography variant="body2" sx={{ ml: 1 }}>
+                      {t('resources.loadingResourceTypes')}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ) : (
+                <>
+                  {/* 如果同时支持房间和员工，先选择房间 */}
+                  {merchantResourceTypes.includes('ROOM') && merchantResourceTypes.includes('STAFF') && (
+                    <>
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                          {t('appointments.selectRoomFirst')}
+                        </Typography>
+                        <ResourceSelector
+                          tenantId={tenantId}
+                          resourceType="ROOM"
+                          selectedResourceId={selectedRoom || undefined}
+                          onResourceSelect={(resource) => {
+                            setSelectedRoom(resource?.id || '');
+                            // 清空员工选择，因为房间变化可能影响可用员工
+                            setSelectedResource('');
+                          }}
+                          appointmentDate={appointmentDate}
+                          appointmentTime={appointmentTime}
+                          duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
+                          showAvailability={true}
+                          variant="dropdown"
+                        />
+                        {errors.room && (
+                          <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                            {errors.room}
+                          </Typography>
+                        )}
+                      </Grid>
+                      
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                          {t('appointments.selectStaffForRoom')}
+                        </Typography>
+                        <ResourceSelector
+                          tenantId={tenantId}
+                          resourceType="STAFF"
+                          selectedResourceId={selectedResource || undefined}
+                          onResourceSelect={(resource) => setSelectedResource(resource?.id || '')}
+                          appointmentDate={appointmentDate}
+                          appointmentTime={appointmentTime}
+                          duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
+                          showAvailability={true}
+                          variant="dropdown"
+                          disabled={!selectedRoom} // 必须先选择房间
+                        />
+                        {errors.staff && (
+                          <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                            {errors.staff}
+                          </Typography>
+                        )}
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {/* 如果只支持房间 */}
+                  {merchantResourceTypes.includes('ROOM') && !merchantResourceTypes.includes('STAFF') && (
+                    <Grid item xs={12}>
+                      <ResourceSelector
+                        tenantId={tenantId}
+                        resourceType="ROOM"
+                        selectedResourceId={selectedRoom || undefined}
+                        onResourceSelect={(resource) => setSelectedRoom(resource?.id || '')}
+                        appointmentDate={appointmentDate}
+                        appointmentTime={appointmentTime}
+                        duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
+                        showAvailability={true}
+                        variant="dropdown"
+                      />
+                      {errors.room && (
+                        <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                          {errors.room}
+                        </Typography>
+                      )}
+                    </Grid>
+                  )}
+                  
+                  {/* 如果只支持员工 */}
+                  {merchantResourceTypes.includes('STAFF') && !merchantResourceTypes.includes('ROOM') && (
+                    <Grid item xs={12}>
+                      <ResourceSelector
+                        tenantId={tenantId}
+                        resourceType="STAFF"
+                        selectedResourceId={selectedResource || undefined}
+                        onResourceSelect={(resource) => setSelectedResource(resource?.id || '')}
+                        appointmentDate={appointmentDate}
+                        appointmentTime={appointmentTime}
+                        duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
+                        showAvailability={true}
+                        variant="dropdown"
+                      />
+                      {errors.staff && (
+                        <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                          {errors.staff}
+                        </Typography>
+                      )}
+                    </Grid>
+                  )}
+                </>
+              )}
 
               <Grid item xs={12}>
                 <TextField
@@ -832,8 +1027,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
                       {selectedServices.map((service) => (
                         <Chip
-                          key={service}
-                          label={service}
+                          key={service.id}
+                          label={`${service.name} - ${formatCurrency(service.price)}`}
                           sx={{
                             backgroundColor: alpha('#8B5CF6', 0.1),
                             color: '#8B5CF6',
@@ -848,7 +1043,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           {t('appointments.duration')}
                         </Typography>
                         <Typography variant="h6" sx={{ color: '#8B5CF6' }}>
-                          {selectedServices.length * 60} {t('dialogs.minutes')}
+                          {selectedServices.reduce((total, service) => total + service.duration, 0)} {t('dialogs.minutes')}
                         </Typography>
                       </Grid>
                       <Grid item xs={4}>
@@ -856,7 +1051,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           {t('dialogs.estimatedPrice')}
                         </Typography>
                         <Typography variant="h6" sx={{ color: '#10B981' }}>
-                          {formatCurrency(selectedServices.length * 80)}
+                          {formatCurrency(selectedServices.reduce((total, service) => total + service.price, 0))}
                         </Typography>
                       </Grid>
                     </Grid>
@@ -876,17 +1071,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               </CardContent>
             </Card>
 
-            <Alert
-              severity="info"
-              sx={{
-                mt: 3,
-                borderRadius: 2,
-                backgroundColor: alpha('#3B82F6', 0.1),
-                borderColor: alpha('#3B82F6', 0.2),
-              }}
-            >
-              {t('appointments.notificationsSent')}
-            </Alert>
+
           </Box>
         );
 

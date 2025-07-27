@@ -9,9 +9,31 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "notification")
 public class NotificationConfig {
     
+    private Mock mock = new Mock();
     private Sms sms = new Sms();
     private Email email = new Email();
     private Aws aws = new Aws();
+    
+    @Data
+    public static class Mock {
+        private boolean enabled = true; // 设置为false时使用真实的邮件和短信服务
+        private MockSms sms = new MockSms();
+        private MockEmail email = new MockEmail();
+        
+        @Data
+        public static class MockSms {
+            private boolean simulateDelay = true; // 模拟发送延迟
+            private long delayMs = 1000; // 模拟延迟时间（毫秒）
+            private double successRate = 0.95; // 模拟成功率（0.0-1.0）
+        }
+        
+        @Data
+        public static class MockEmail {
+            private boolean simulateDelay = true;
+            private long delayMs = 800;
+            private double successRate = 0.98;
+        }
+    }
     
     @Data
     public static class Sms {

@@ -598,20 +598,11 @@ export interface ServiceListResponse {
 export const serviceApi = {
   // 获取所有服务
   getServices: async (tenantId: string): Promise<Service[]> => {
-    const response = await createRequest(`/api/business/services?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/services/tenant/${tenantId}`, {
       method: 'GET',
     });
-    // 确保返回数组，处理不同的响应格式
-    if (Array.isArray(response)) {
-      return response;
-    } else if (response && Array.isArray(response.data)) {
-      return response.data;
-    } else if (response && Array.isArray(response.content)) {
-      return response.content;
-    } else {
-      console.warn('getServices returned unexpected format:', response);
-      return [];
-    }
+    // 后端直接返回Service[]数组
+    return response || [];
   },
 
   // 获取活跃服务
@@ -619,17 +610,8 @@ export const serviceApi = {
     const response = await createRequest(`/api/business/services?tenantId=${tenantId}&status=ACTIVE`, {
       method: 'GET',
     });
-    // 确保返回数组，处理不同的响应格式
-    if (Array.isArray(response)) {
-      return response;
-    } else if (response && Array.isArray(response.data)) {
-      return response.data;
-    } else if (response && Array.isArray(response.content)) {
-      return response.content;
-    } else {
-      console.warn('getActiveServices returned unexpected format:', response);
-      return [];
-    }
+    // 分页接口返回的格式，取data字段
+    return response?.data || [];
   },
 };
 
@@ -1275,6 +1257,13 @@ export const notificationApi = {
   // 初始化默认模板
   initDefaultTemplates: async (tenantId: number): Promise<void> => {
     await createRequest(`/api/notification/templates/init-default?tenantId=${tenantId}`, {
+      method: 'POST',
+    });
+  },
+
+  // 发送预约通知
+  sendAppointmentNotification: async (appointmentId: number): Promise<void> => {
+    await createRequest(`/api/notification/appointment/${appointmentId}/send`, {
       method: 'POST',
     });
   },

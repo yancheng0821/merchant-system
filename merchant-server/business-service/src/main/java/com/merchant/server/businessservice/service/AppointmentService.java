@@ -1,6 +1,7 @@
 package com.merchant.server.businessservice.service;
 
 import com.merchant.server.businessservice.entity.Appointment;
+import com.merchant.server.businessservice.dto.AppointmentCreateDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,11 @@ public interface AppointmentService {
      * 创建预约
      */
     Appointment createAppointment(Appointment appointment);
+    
+    /**
+     * 创建预约（包含服务信息）
+     */
+    Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO);
 
     /**
      * 更新预约状态

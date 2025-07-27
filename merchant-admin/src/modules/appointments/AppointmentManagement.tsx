@@ -54,7 +54,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n/config';
 import { TimeZoneUtils, CurrencyUtils } from '../../config/constants';
 import AddAppointmentDialog from './components/AddAppointmentDialog';
-import { Customer, Appointment, appointmentApi, customerApi, handleApiError } from '../../services/api';
+import { Customer, Appointment, appointmentApi, customerApi, notificationApi, handleApiError } from '../../services/api';
 // 预约统计接口
 interface AppointmentStats {
   totalAppointments: number;
@@ -868,7 +868,19 @@ const AppointmentManagement: React.FC = () => {
         customers={customers}
         onSave={async (appointment) => {
           try {
-            await appointmentApi.createAppointment(appointment);
+            // 创建预约
+            const createdAppointment = await appointmentApi.createAppointment(appointment);
+
+            // 预约创建成功后，发送通知
+            try {
+              await notificationApi.sendAppointmentNotification(createdAppointment.id);
+              console.log('Appointment notifications sent successfully');
+            } catch (notificationError) {
+              console.warn('Failed to send notifications:', notificationError);
+              // 通知发送失败不应该影响预约创建的成功状态
+              // 可以考虑显示一个警告消息，但不影响成功状态
+            }
+
             setSnackbar({
               open: true,
               message: t('appointments.createSuccess'),

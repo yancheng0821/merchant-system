@@ -188,10 +188,29 @@
     <select id="findAppointmentServicesByAppointmentId" resultType="com.merchant.server.businessservice.entity.AppointmentService">
         SELECT 
             id, appointment_id as appointmentId, service_id as serviceId, 
-            service_name as serviceName, price, duration
+            service_name as serviceName, price, duration, created_at as createdAt
         FROM appointment_services
         WHERE appointment_id = #{appointmentId}
     </select>
+
+    <!-- 插入预约服务 -->
+    <insert id="insertAppointmentService" parameterType="com.merchant.server.businessservice.entity.AppointmentService" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment_services (
+            appointment_id, service_id, service_name, price, duration, created_at
+        ) VALUES (
+            #{appointmentId}, #{serviceId}, #{serviceName}, #{price}, #{duration}, #{createdAt}
+        )
+    </insert>
+
+    <!-- 批量插入预约服务 -->
+    <insert id="insertAppointmentServices" parameterType="java.util.List">
+        INSERT INTO appointment_services (
+            appointment_id, service_id, service_name, price, duration, created_at
+        ) VALUES
+        <foreach collection="appointmentServices" item="item" separator=",">
+            (#{item.appointmentId}, #{item.serviceId}, #{item.serviceName}, #{item.price}, #{item.duration}, #{item.createdAt})
+        </foreach>
+    </insert>
 
     <!-- 查询所有CONFIRMED状态的预约 -->
     <select id="findConfirmedAppointments" resultMap="AppointmentResultMap">

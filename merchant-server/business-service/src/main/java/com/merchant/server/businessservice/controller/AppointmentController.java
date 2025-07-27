@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.service.AppointmentService;
+import com.merchant.server.businessservice.dto.AppointmentCreateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,8 +52,8 @@ public class AppointmentController {
      * 创建新预约
      */
     @PostMapping
-    public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
-        Appointment created = appointmentService.createAppointment(appointment);
+    public ResponseEntity<Appointment> createAppointment(@RequestBody AppointmentCreateDTO appointmentDTO) {
+        Appointment created = appointmentService.createAppointmentWithServices(appointmentDTO);
         return ResponseEntity.ok(created);
     }
 

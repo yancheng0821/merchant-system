@@ -226,10 +226,14 @@
     "cancelConfirmMessage": "Are you sure you want to cancel this appointment?",
     "cancelNotification": "Customer will be automatically notified of cancellation",
     "confirmCancelAppointment": "Confirm Cancellation",
+    "selectRoomFirst": "Select Room First",
+    "selectStaffForRoom": "Select Staff for Room",
     "validation": {
       "customerRequired": "Please select a customer or enter new customer information",
       "servicesRequired": "Please select at least one service",
-      "scheduleRequired": "Please complete appointment time and staff information"
+      "scheduleRequired": "Please complete appointment time and resource information",
+      "roomRequired": "Please select a room",
+      "staffRequired": "Please select a staff member"
     },
     "totalAppointments": "Total Appointments",
     "pendingService": "Pending Service",
@@ -674,6 +678,7 @@
     "available": "Available",
     "unavailable": "Unavailable",
     "loading": "Loading...",
+    "loadingResourceTypes": "Loading resource type configuration...",
     "loadError": "Failed to load resources",
     "noResourcesAvailable": "No resources available",
     "createSuccess": "Resource created successfully",
