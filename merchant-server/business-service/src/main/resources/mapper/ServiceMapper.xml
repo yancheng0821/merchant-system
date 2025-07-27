@@ -134,33 +134,41 @@
     <select id="getServiceCategoryStats" resultType="map">
         SELECT 
             sc.name as category_name,
-            COUNT(os.id) as order_count,
-            SUM(os.price * os.quantity) as total_revenue
+            COALESCE(stats.order_count, 0) as order_count,
+            COALESCE(stats.total_revenue, 0) as total_revenue
         FROM service_categories sc
-        LEFT JOIN services s ON sc.id = s.category_id
-        LEFT JOIN order_services os ON s.id = os.service_id
-        LEFT JOIN orders o ON os.order_id = o.id
-        WHERE sc.tenant_id = #{tenantId}
-        AND (o.created_at IS NULL OR DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate})
-        AND (o.payment_status IS NULL OR o.payment_status = 'paid')
-        GROUP BY sc.id, sc.name
-        ORDER BY order_count DESC
+        LEFT JOIN (
+            SELECT 
+                s.category_id,
+                COUNT(os.id) as order_count,
+                SUM(os.price * os.quantity) as total_revenue
+            FROM services s
+            LEFT JOIN order_services os ON s.id = os.service_id
+            LEFT JOIN orders o ON os.order_id = o.id
+            WHERE s.tenant_id = #{tenantId}
+            AND o.tenant_id = #{tenantId}
+            AND o.payment_status = 'paid'
+            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+            GROUP BY s.category_id
+        ) stats ON sc.id = stats.category_id
+        WHERE sc.tenant_id = #{tenantId} AND sc.status = 'ACTIVE'
+        ORDER BY COALESCE(stats.order_count, 0) DESC, sc.name
     </select>
 
     <select id="getTopServices" resultType="map">
         SELECT 
             s.name as service_name,
             COUNT(os.id) as order_count,
-            SUM(os.price * os.quantity) as total_revenue
+            SUM(COALESCE(os.price * os.quantity, 0)) as total_revenue
         FROM services s
         LEFT JOIN order_services os ON s.id = os.service_id
-        LEFT JOIN orders o ON os.order_id = o.id
-        WHERE s.tenant_id = #{tenantId}
-        AND o.created_at IS NOT NULL
-        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
-        AND o.payment_status = 'paid'
+        LEFT JOIN orders o ON os.order_id = o.id 
+            AND o.tenant_id = #{tenantId}
+            AND o.payment_status = 'paid'
+            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        WHERE s.tenant_id = #{tenantId} AND s.status = 'ACTIVE'
         GROUP BY s.id, s.name
-        ORDER BY total_revenue DESC
+        ORDER BY SUM(COALESCE(os.price * os.quantity, 0)) DESC, s.name
         LIMIT #{limit}
     </select>
 

@@ -12,7 +12,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false  # 关闭JPA SQL日志
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
@@ -24,6 +24,17 @@ spring:
     port: 5672
     username: guest
     password: guest
+
+# 日志配置
+logging:
+  level:
+    com.merchant.server.analyticsservice: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: INFO
 
 eureka:
   client:

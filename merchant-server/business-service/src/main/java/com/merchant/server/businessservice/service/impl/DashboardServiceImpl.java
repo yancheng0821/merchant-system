@@ -147,22 +147,24 @@ public class DashboardServiceImpl implements DashboardService {
             for (Map<String, Object> stat : categoryStats) {
                 Map<String, Object> category = new HashMap<>();
                 String categoryName = (String) stat.get("category_name");
-                category.put("name", categoryName != null ? categoryName : "未分类");
+                category.put("name", categoryName != null ? categoryName : "Uncategorized");
                 
                 int count = stat.get("order_count") instanceof Number ? 
                     ((Number) stat.get("order_count")).intValue() : 0;
                 
-                double percentage = totalCount > 0 ? (double) count / totalCount * 100 : 0;
+                // 如果没有订单数据，显示分类但设置为0
+                double percentage = totalCount > 0 ? (double) count / totalCount * 100 : 
+                    (categoryStats.size() > 0 ? 100.0 / categoryStats.size() : 100.0);
                 category.put("value", Math.round(percentage * 10) / 10.0); // 保留一位小数
                 category.put("count", count);
                 
                 categoryData.add(category);
             }
             
-            // 如果没有数据，添加默认分类
+            // 如果没有分类数据，添加默认分类
             if (categoryData.isEmpty()) {
                 Map<String, Object> defaultCategory = new HashMap<>();
-                defaultCategory.put("name", "暂无数据");
+                defaultCategory.put("name", "No Data");
                 defaultCategory.put("value", 100.0);
                 defaultCategory.put("count", 0);
                 categoryData.add(defaultCategory);
@@ -190,30 +192,40 @@ public class DashboardServiceImpl implements DashboardService {
             LocalDate endDate = TimeZoneUtils.getCurrentVancouverDate();
             LocalDate startDate = endDate.minusDays(days - 1);
             
+            log.debug("Fetching top services for tenant: {}, date range: {} to {}, limit: {}", tenantId, startDate, endDate, limit);
+            
             // 获取真实的热门服务统计
             List<Map<String, Object>> serviceStats = serviceMapper.getTopServices(tenantId, startDate.toString(), endDate.toString(), limit);
+            
+            log.debug("Found {} service stats for tenant: {}", serviceStats.size(), tenantId);
             
             for (Map<String, Object> stat : serviceStats) {
                 Map<String, Object> service = new HashMap<>();
                 String serviceName = (String) stat.get("service_name");
-                service.put("name", serviceName != null ? serviceName : "未知服务");
+                service.put("name", serviceName != null ? serviceName : "Unknown Service");
                 
                 double revenue = stat.get("total_revenue") instanceof Number ? 
                     ((Number) stat.get("total_revenue")).doubleValue() : 0;
                 service.put("sales", Math.round(revenue));
                 
+                int orderCount = stat.get("order_count") instanceof Number ? 
+                    ((Number) stat.get("order_count")).intValue() : 0;
+                
                 // 计算增长率（这里使用简单的随机增长率，实际应该与上期对比）
                 // TODO: 实现真实的增长率计算
-                double growth = (Math.random() - 0.5) * 50; // -25% 到 +25% 的随机增长率
+                double growth = orderCount > 0 ? (Math.random() - 0.5) * 50 : 0; // -25% 到 +25% 的随机增长率
                 service.put("growth", Math.round(growth * 10) / 10.0);
+                
+                // log.debug("Service: {}, Revenue: {}, Orders: {}", serviceName, revenue, orderCount);
                 
                 topServices.add(service);
             }
             
             // 如果没有数据，添加默认提示
             if (topServices.isEmpty()) {
+                log.warn("No top services data found for tenant: {}", tenantId);
                 Map<String, Object> defaultService = new HashMap<>();
-                defaultService.put("name", "暂无数据");
+                defaultService.put("name", "No Data");
                 defaultService.put("sales", 0);
                 defaultService.put("growth", 0.0);
                 topServices.add(defaultService);

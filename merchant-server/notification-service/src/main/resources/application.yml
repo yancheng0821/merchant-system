@@ -21,7 +21,7 @@ mybatis:
   type-aliases-package: com.merchant.server.notificationservice.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 注释掉SQL日志输出
 
 eureka:
   client:
@@ -65,5 +65,14 @@ notification:
 # 日志配置
 logging:
   level:
-    com.merchant.server.notificationservice: DEBUG
-    software.amazon.awssdk: INFO 
+    com.merchant.server.notificationservice: INFO
+    com.merchant.server.notificationservice.mapper: WARN
+    org.apache.ibatis: WARN
+    java.sql: WARN
+    org.mybatis: WARN
+    org.springframework: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    software.amazon.awssdk: INFO
+    root: INFO 

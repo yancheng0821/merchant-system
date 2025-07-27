@@ -5,6 +5,17 @@ spring:
   application:
     name: eureka-server
 
+# 日志配置
+logging:
+  level:
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
+    org.springframework: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: INFO
+
 eureka:
   instance:
     hostname: localhost

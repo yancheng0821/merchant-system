@@ -61,3 +61,15 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
+
+# 日志配置
+logging:
+  level:
+    com.merchant.server.gatewayservice: INFO
+    org.springframework.cloud.gateway: WARN
+    org.springframework.web: WARN
+    org.springframework: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: INFO
