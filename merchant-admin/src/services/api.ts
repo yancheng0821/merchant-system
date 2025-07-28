@@ -134,6 +134,97 @@ export const merchantConfigApi = {
       throw new Error('Failed to update merchant config');
     }
   },
+
+  // 获取商户基础信息
+  getMerchantBasicInfo: async (tenantId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}/basic`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch merchant basic info');
+    }
+    
+    return response.json();
+  },
+
+  // 更新商户基础信息
+  updateMerchantBasicInfo: async (tenantId: number, merchantInfo: any) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}/basic`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(merchantInfo),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update merchant basic info');
+    }
+    
+    // 检查响应是否有内容
+    const text = await response.text();
+    if (text) {
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: true };
+      }
+    }
+    return { success: true };
+  },
+
+  // 获取所有配置项
+  getAllConfigs: async (tenantId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}/all`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch all configs');
+    }
+    
+    return response.json();
+  },
+
+  // 更新单个配置项
+  updateConfig: async (tenantId: number, configKey: string, configValue: string, description: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}/config/${configKey}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify({
+        configValue,
+        description
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update config');
+    }
+    
+    // 检查响应是否有内容
+    const text = await response.text();
+    if (text) {
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        return { success: true };
+      }
+    }
+    return { success: true };
+  },
 };
 
 // 请求拦截器

@@ -113,6 +113,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTax } from '../../../contexts/TaxContext';
 import { serviceApi, customerApi, appointmentApi, api, Customer as ApiCustomer } from '../../../services/api';
 import { CurrencyUtils } from '../../../config/constants';
 
@@ -173,6 +174,7 @@ interface Appointment {
 const PaymentProcess: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { calculateTax } = useTax();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [serviceSearchTerm, setServiceSearchTerm] = useState('');
@@ -184,7 +186,6 @@ const PaymentProcess: React.FC = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isAppointmentBased, setIsAppointmentBased] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [taxRate] = useState(0.13); // 13% default tax
   const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
   const [notes, setNotes] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
@@ -466,12 +467,14 @@ const PaymentProcess: React.FC = () => {
     return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const calculateTax = () => {
-    return calculateSubtotal() * taxRate;
+  const calculateOrderTax = () => {
+    const subtotal = calculateSubtotal();
+    const taxResult = calculateTax(subtotal);
+    return taxResult.totalTax;
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    return calculateSubtotal() + calculateOrderTax();
   };
 
   const handleSubtotalEdit = () => {
@@ -572,7 +575,7 @@ const PaymentProcess: React.FC = () => {
             resourceType: selectedAppointment.resourceType,
           }),
         }),
-        taxRate: Number(taxRate),
+        taxAmount: calculateOrderTax(),
         tipPercentage: 0.0,
         paymentMethod: paymentMethod, // 添加支付方式
         notes: notes || '',
@@ -595,7 +598,7 @@ const PaymentProcess: React.FC = () => {
         appointmentId: orderData.appointmentId,
         resourceId: orderData.resourceId,
         resourceType: orderData.resourceType,
-        taxRate: typeof orderData.taxRate,
+        taxAmount: typeof orderData.taxAmount,
         servicesCount: orderData.services.length,
         firstService: orderData.services[0],
         isAppointmentBased,
@@ -1626,10 +1629,44 @@ const PaymentProcess: React.FC = () => {
                     </Box>
                   )}
                 </Box>
-                <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Typography variant="body2" sx={{ color: '#6b7280' }}>{t('payments.tax')} ({(taxRate * 100).toFixed(0)}%)</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{CurrencyUtils.formatAmount(calculateTax())}</Typography>
-                </Box>
+                {(() => {
+                  const subtotal = calculateSubtotal();
+                  const taxResult = calculateTax(subtotal);
+                  return (
+                    <>
+                      {taxResult.gstAmount > 0 && (
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                            GST/HST ({((taxResult.gstAmount / subtotal) * 100).toFixed(1)}%)
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {CurrencyUtils.formatAmount(taxResult.gstAmount)}
+                          </Typography>
+                        </Box>
+                      )}
+                      {taxResult.pstAmount > 0 && (
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                            PST ({((taxResult.pstAmount / subtotal) * 100).toFixed(1)}%)
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {CurrencyUtils.formatAmount(taxResult.pstAmount)}
+                          </Typography>
+                        </Box>
+                      )}
+                      {taxResult.totalTax > 0 && (
+                        <Box display="flex" justifyContent="space-between" mb={2}>
+                          <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 600 }}>
+                            {t('payments.totalTax')}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {CurrencyUtils.formatAmount(taxResult.totalTax)}
+                          </Typography>
+                        </Box>
+                      )}
+                    </>
+                  );
+                })()}
                 <Divider sx={{ my: 2 }} />
                 <Box display="flex" justifyContent="space-between" alignItems="center">
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1f2937' }}>{t('payments.total')}</Typography>
@@ -1978,14 +2015,44 @@ const PaymentProcess: React.FC = () => {
                                 {CurrencyUtils.formatAmount(calculateSubtotal())}
                               </Typography>
                             </Box>
-                            <Box display="flex" justifyContent="space-between" mb={1}>
-                              <Typography variant="body2" color="text.secondary">
-                                {t('payments.tax')} ({(taxRate * 100).toFixed(1)}%):
-                              </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {CurrencyUtils.formatAmount(calculateTax())}
-                              </Typography>
-                            </Box>
+                            {(() => {
+                              const subtotal = calculateSubtotal();
+                              const taxResult = calculateTax(subtotal);
+                              return (
+                                <>
+                                  {taxResult.gstAmount > 0 && (
+                                    <Box display="flex" justifyContent="space-between" mb={1}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        GST/HST ({((taxResult.gstAmount / subtotal) * 100).toFixed(1)}%):
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {CurrencyUtils.formatAmount(taxResult.gstAmount)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                  {taxResult.pstAmount > 0 && (
+                                    <Box display="flex" justifyContent="space-between" mb={1}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        PST ({((taxResult.pstAmount / subtotal) * 100).toFixed(1)}%):
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {CurrencyUtils.formatAmount(taxResult.pstAmount)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                  {taxResult.totalTax > 0 && (
+                                    <Box display="flex" justifyContent="space-between" mb={1}>
+                                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                        {t('payments.totalTax')}:
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                        {CurrencyUtils.formatAmount(taxResult.totalTax)}
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                </>
+                              );
+                            })()}
                             <Box
                               display="flex"
                               justifyContent="space-between"

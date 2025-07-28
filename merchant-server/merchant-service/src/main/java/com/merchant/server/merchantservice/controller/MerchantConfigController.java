@@ -1,8 +1,10 @@
 package com.merchant.server.merchantservice.controller;
 
 import com.merchant.server.merchantservice.dto.MerchantConfigDTO;
+import com.merchant.server.merchantservice.entity.Merchant;
 import com.merchant.server.merchantservice.entity.MerchantConfig;
 import com.merchant.server.merchantservice.service.MerchantConfigService;
+import com.merchant.server.merchantservice.service.MerchantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import java.util.List;
 public class MerchantConfigController {
     
     private final MerchantConfigService merchantConfigService;
+    private final MerchantService merchantService;
     
     /**
      * 获取商户完整配置
@@ -112,6 +115,41 @@ public class MerchantConfigController {
             return ResponseEntity.ok(configs);
         } catch (Exception e) {
             log.error("获取所有配置项失败: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * 获取商户基础信息
+     */
+    @GetMapping("/{tenantId}/basic")
+    public ResponseEntity<Merchant> getMerchantBasicInfo(@PathVariable Long tenantId) {
+        try {
+            Merchant merchant = merchantService.getMerchantByTenantId(tenantId);
+            if (merchant != null) {
+                return ResponseEntity.ok(merchant);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("获取商户基础信息失败: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * 更新商户基础信息
+     */
+    @PutMapping("/{tenantId}/basic")
+    public ResponseEntity<Void> updateMerchantBasicInfo(
+            @PathVariable Long tenantId,
+            @RequestBody Merchant merchant) {
+        try {
+            merchant.setTenantId(tenantId);
+            merchantService.updateMerchantInfo(merchant);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("更新商户基础信息失败: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

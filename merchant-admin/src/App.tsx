@@ -31,6 +31,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { TaxProvider } from './contexts/TaxContext';
+import { SessionProvider } from './contexts/SessionContext';
 import { LoginPage, UserProfile } from './components';
 import {
   Dashboard,
@@ -278,6 +280,8 @@ const MainApp: React.FC = () => {
   return (
     <Router>
       {user ? (
+        <TaxProvider>
+          <SessionProvider>
         <Box sx={{ display: 'flex', bgcolor: '#f8fafc' }}>
           <CssBaseline />
 
@@ -514,6 +518,8 @@ const MainApp: React.FC = () => {
             </Container>
           </Box>
         </Box>
+          </SessionProvider>
+        </TaxProvider>
       ) : (
         <LoginPage />
       )}

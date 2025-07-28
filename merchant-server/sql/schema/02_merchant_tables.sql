@@ -7,6 +7,10 @@
 
 USE merchant_management;
 
+-- 设置数据库字符集和时区
+SET NAMES utf8mb4;
+SET time_zone = 'America/Vancouver';
+
 -- 商户基础信息表
 CREATE TABLE IF NOT EXISTS merchants (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '商户ID',
@@ -27,9 +31,10 @@ CREATE TABLE IF NOT EXISTS merchants (
     district VARCHAR(50) COMMENT '区县',
     longitude DECIMAL(10, 7) COMMENT '经度',
     latitude DECIMAL(10, 7) COMMENT '纬度',
+    timezone VARCHAR(50) DEFAULT 'America/Vancouver' COMMENT '时区',
     status ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED') DEFAULT 'ACTIVE' COMMENT '状态',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    created_at TIMESTAMP DEFAULT (CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Vancouver')) COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT (CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Vancouver')) ON UPDATE (CONVERT_TZ(CURRENT_TIMESTAMP, 'UTC', 'America/Vancouver')) COMMENT '更新时间',
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_merchant_code (merchant_code),
     INDEX idx_parent_merchant (parent_merchant_id),

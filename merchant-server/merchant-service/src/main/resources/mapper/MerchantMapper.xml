@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.merchantservice.mapper.MerchantMapper">
+
+    <resultMap id="MerchantResultMap" type="com.merchant.server.merchantservice.entity.Merchant">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="merchant_code" property="merchantCode"/>
+        <result column="merchant_name" property="merchantName"/>
+        <result column="merchant_type" property="merchantType"/>
+        <result column="parent_merchant_id" property="parentMerchantId"/>
+        <result column="business_category" property="businessCategory"/>
+        <result column="business_license" property="businessLicense"/>
+        <result column="legal_person" property="legalPerson"/>
+        <result column="contact_person" property="contactPerson"/>
+        <result column="contact_phone" property="contactPhone"/>
+        <result column="contact_email" property="contactEmail"/>
+        <result column="address" property="address"/>
+        <result column="province" property="province"/>
+        <result column="city" property="city"/>
+        <result column="district" property="district"/>
+        <result column="longitude" property="longitude"/>
+        <result column="latitude" property="latitude"/>
+        <result column="status" property="status"/>
+        <result column="timezone" property="timezone"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectByTenantId" resultMap="MerchantResultMap">
+        SELECT 
+            id, tenant_id, merchant_code, merchant_name, merchant_type,
+            parent_merchant_id, business_category, business_license, legal_person,
+            contact_person, contact_phone, contact_email, address, province,
+            city, district, longitude, latitude, status, timezone,
+            created_at, updated_at
+        FROM merchants 
+        WHERE tenant_id = #{tenantId} AND status = 'ACTIVE'
+        LIMIT 1
+    </select>
+
+    <select id="selectById" resultMap="MerchantResultMap">
+        SELECT 
+            id, tenant_id, merchant_code, merchant_name, merchant_type,
+            parent_merchant_id, business_category, business_license, legal_person,
+            contact_person, contact_phone, contact_email, address, province,
+            city, district, longitude, latitude, status, timezone,
+            created_at, updated_at
+        FROM merchants 
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateMerchantInfo">
+        UPDATE merchants 
+        SET 
+            merchant_name = #{merchantName},
+            contact_person = #{contactPerson},
+            contact_phone = #{contactPhone},
+            contact_email = #{contactEmail},
+            address = #{address},
+            province = #{province},
+            city = #{city},
+            timezone = #{timezone},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE tenant_id = #{tenantId}
+    </update>
+
+    <insert id="insertMerchant" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO merchants (
+            tenant_id, merchant_code, merchant_name, merchant_type,
+            business_category, contact_person, contact_phone, contact_email,
+            address, province, city, district, timezone, status
+        ) VALUES (
+            #{tenantId}, #{merchantCode}, #{merchantName}, #{merchantType},
+            #{businessCategory}, #{contactPerson}, #{contactPhone}, #{contactEmail},
+            #{address}, #{province}, #{city}, #{district}, #{timezone}, 'ACTIVE'
+        )
+    </insert>
+
+</mapper>

@@ -583,7 +583,8 @@
     "unknownError": "发生未知错误",
     "newOrder": "新订单",
     "retryPayment": "重试支付",
-    "complete": "完成"
+    "complete": "完成",
+    "totalTax":"总税费"
   },
   "orders": {
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",
@@ -691,6 +692,7 @@
     "paymentSuccessful": "支付成功！",
     "paymentFailed": "支付失败，请重试",
     "paymentError": "支付处理出错",
+    "totalTax": "总税费",
     "processing": "处理中...",
     "processingCashPayment": "正在处理现金支付...",
     "processingCardPayment": "正在处理银行卡支付...",
@@ -1113,7 +1115,49 @@
     },
     "sessionTimeout": "会话超时时间 (分钟)",
     "debugMode": "启用调试模式",
-    "usageStatistics": "发送使用统计"
+    "usageStatistics": "发送使用统计",
+    "contactPerson": "联系人",
+    "contactEmail": "联系邮箱",
+    "province": "省份",
+    "city": "城市",
+    "provinces": {
+      "Alberta": "阿尔伯塔省",
+      "British Columbia": "不列颠哥伦比亚省",
+      "Manitoba": "马尼托巴省",
+      "New Brunswick": "新不伦瑞克省",
+      "Newfoundland and Labrador": "纽芬兰和拉布拉多省",
+      "Northwest Territories": "西北地区",
+      "Nova Scotia": "新斯科舍省",
+      "Nunavut": "努纳武特地区",
+      "Ontario": "安大略省",
+      "Prince Edward Island": "爱德华王子岛省",
+      "Quebec": "魁北克省",
+      "Saskatchewan": "萨斯喀彻温省",
+      "Yukon": "育空地区"
+    },
+    "saving": "保存中...",
+    "saveFailed": "保存失败，请重试",
+    "timezones": {
+      "beijing": "北京时间 (UTC+8)",
+      "newYork": "纽约时间 (UTC-5)",
+      "vancouver": "温哥华时间 (UTC-8)",
+      "toronto": "多伦多时间 (UTC-5)",
+      "london": "伦敦时间 (UTC+0)",
+      "tokyo": "东京时间 (UTC+9)",
+      "sydney": "悉尼时间 (UTC+10)",
+      "paris": "巴黎时间 (UTC+1)"
+    },
+    "minutes": "分钟",
+    "taxRateHelp": "请输入0-20之间的数字",
+    "sessionTimeoutHelp": "请输入5-480分钟之间的数字",
+    "errors": {
+      "invalidNumber": "请输入有效的数字",
+      "taxRateRange": "税率必须在0-20%之间",
+      "sessionTimeoutRange": "会话超时时间必须在5-480分钟之间",
+      "validationFailed": "请修正输入错误后再保存",
+      "loadFailed": "加载设置信息失败，请刷新页面重试",
+      "sessionTimeoutRequired": "会话超时时间不能为空"
+    }
   },
   "products": {
     "title": "服务管理",

@@ -342,7 +342,8 @@
     "unknownError": "An unknown error occurred",
     "newOrder": "New Order",
     "retryPayment": "Retry Payment",
-    "complete": "Complete"
+    "complete": "Complete",
+    "totalTax": "Total Tax"
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",
@@ -447,6 +448,7 @@
     "paymentSuccessful": "Payment successful!",
     "paymentFailed": "Payment failed, please try again",
     "paymentError": "Payment processing error",
+    "totalTax": "Total Tax",
     "processing": "Processing...",
     "processingCashPayment": "Processing cash payment...",
     "processingCardPayment": "Processing card payment...",
@@ -866,7 +868,49 @@
     },
     "sessionTimeout": "Session Timeout (minutes)",
     "debugMode": "Enable Debug Mode",
-    "usageStatistics": "Send Usage Statistics"
+    "usageStatistics": "Send Usage Statistics",
+    "contactPerson": "Contact Person",
+    "contactEmail": "Contact Email",
+    "province": "Province",
+    "city": "City",
+    "provinces": {
+      "Alberta": "Alberta",
+      "British Columbia": "British Columbia",
+      "Manitoba": "Manitoba",
+      "New Brunswick": "New Brunswick",
+      "Newfoundland and Labrador": "Newfoundland and Labrador",
+      "Northwest Territories": "Northwest Territories",
+      "Nova Scotia": "Nova Scotia",
+      "Nunavut": "Nunavut",
+      "Ontario": "Ontario",
+      "Prince Edward Island": "Prince Edward Island",
+      "Quebec": "Quebec",
+      "Saskatchewan": "Saskatchewan",
+      "Yukon": "Yukon"
+    },
+    "saving": "Saving...",
+    "saveFailed": "Save failed, please try again",
+    "timezones": {
+      "beijing": "Beijing Time (UTC+8)",
+      "newYork": "New York Time (UTC-5)",
+      "vancouver": "Vancouver Time (UTC-8)",
+      "toronto": "Toronto Time (UTC-5)",
+      "london": "London Time (UTC+0)",
+      "tokyo": "Tokyo Time (UTC+9)",
+      "sydney": "Sydney Time (UTC+10)",
+      "paris": "Paris Time (UTC+1)"
+    },
+    "minutes": "minutes",
+    "taxRateHelp": "Enter a number between 0-20",
+    "sessionTimeoutHelp": "Enter a number between 5-480 minutes",
+    "errors": {
+      "invalidNumber": "Please enter a valid number",
+      "taxRateRange": "Tax rate must be between 0-20%",
+      "sessionTimeoutRange": "Session timeout must be between 5-480 minutes",
+      "validationFailed": "Please fix input errors before saving",
+      "loadFailed": "Failed to load settings, please refresh and try again",
+      "sessionTimeoutRequired": "Session timeout cannot be empty"
+    }
   },
   "dashboard": {
     "subtitle": "Real-time Data Overview & Analytics",
