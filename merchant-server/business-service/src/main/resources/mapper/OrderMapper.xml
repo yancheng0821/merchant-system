@@ -210,12 +210,13 @@
             DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
             o.resource_id as resourceId,
             o.resource_type as resourceType,
-            CASE 
-                WHEN r.name IS NOT NULL THEN r.name
-                WHEN o.resource_type = 'STAFF' THEN CONCAT('Staff Member ', o.resource_id)
-                WHEN o.resource_type = 'ROOM' THEN CONCAT('Room ', o.resource_id)
-                ELSE CONCAT('Resource ', o.resource_id)
-            END as resourceName,
+            COALESCE(r.name, 
+                CASE 
+                    WHEN o.resource_type = 'STAFF' THEN CONCAT('Staff Member ', o.resource_id)
+                    WHEN o.resource_type = 'ROOM' THEN CONCAT('Room ', o.resource_id)
+                    ELSE CONCAT('Resource ', o.resource_id)
+                END
+            ) as resourceName,
             COUNT(*) as orderCount,
             COALESCE(SUM(o.total_amount), 0) as totalRevenue,
             4.5 as avgRating,
@@ -223,7 +224,7 @@
             8.0 as workingHours,
             85.0 as efficiencyScore
         FROM orders o
-        LEFT JOIN resource r ON o.resource_id = r.id AND o.tenant_id = r.tenant_id
+        LEFT JOIN resource r ON o.resource_id = r.id AND r.tenant_id = o.tenant_id
         WHERE o.tenant_id = #{tenantId} 
         AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
         AND o.resource_id IS NOT NULL

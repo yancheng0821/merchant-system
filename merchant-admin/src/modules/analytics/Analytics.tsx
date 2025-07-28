@@ -443,7 +443,7 @@ const Analytics: React.FC = () => {
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   backgroundColor: alpha('#F59E0B', 0.08),
-                  transform: 'translateY(-1px)',
+                  // 移除transform效果，避免左右跳动
                 },
                 '&.Mui-selected': {
                   fontWeight: 600,
