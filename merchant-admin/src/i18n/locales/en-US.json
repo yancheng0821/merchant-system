@@ -346,6 +346,8 @@
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",
+    "startDate": "Start Date",
+    "endDate": "End Date",
     "addOrder": "Add Order",
     "orderNumber": "Order Number",
     "customer": "Customer",

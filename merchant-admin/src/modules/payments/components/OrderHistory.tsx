@@ -48,6 +48,7 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../services/api';
 import { TimeZoneUtils, CurrencyUtils } from '../../../config/constants';
+import { useTranslation } from 'react-i18next';
 
 interface Order {
   id: number;
@@ -69,7 +70,7 @@ interface Order {
 }
 
 const OrderHistory: React.FC = () => {
-  // const { t } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(0);
@@ -127,10 +128,10 @@ const OrderHistory: React.FC = () => {
 
   const getStatusChip = (status: string) => {
     const statusConfig = {
-      pending: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: 'Pending' },
-      paid: { color: '#10B981', bg: alpha('#10B981', 0.1), label: 'Paid' },
-      refunded: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: 'Refunded' },
-      failed: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: 'Failed' },
+      pending: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('orders.pending') },
+      paid: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('orders.paid') },
+      refunded: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.refunded') },
+      failed: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.failed') },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -151,11 +152,11 @@ const OrderHistory: React.FC = () => {
 
   const getOrderStatusChip = (status: string) => {
     const statusConfig = {
-      draft: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: 'Draft' },
-      confirmed: { color: '#3B82F6', bg: alpha('#3B82F6', 0.1), label: 'Confirmed' },
-      in_progress: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: 'In Progress' },
-      completed: { color: '#10B981', bg: alpha('#10B981', 0.1), label: 'Completed' },
-      cancelled: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: 'Cancelled' },
+      draft: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: t('orders.draft') },
+      confirmed: { color: '#3B82F6', bg: alpha('#3B82F6', 0.1), label: t('orders.confirmed') },
+      in_progress: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('orders.inProgress') },
+      completed: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('orders.completed') },
+      cancelled: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.cancelled') },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
@@ -208,7 +209,7 @@ const OrderHistory: React.FC = () => {
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                placeholder="Search by order number or customer name..."
+                placeholder={t('orders.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -228,37 +229,37 @@ const OrderHistory: React.FC = () => {
             
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
-                <InputLabel>Payment Status</InputLabel>
+                <InputLabel>{t('orders.paymentStatus')}</InputLabel>
                 <Select
                   value={paymentStatusFilter}
-                  label="Payment Status"
+                  label={t('orders.paymentStatus')}
                   onChange={(e) => setPaymentStatusFilter(e.target.value)}
                   sx={{ borderRadius: 2 }}
                 >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="paid">Paid</MenuItem>
-                  <MenuItem value="refunded">Refunded</MenuItem>
-                  <MenuItem value="failed">Failed</MenuItem>
+                  <MenuItem value="">{t('orders.allPayments')}</MenuItem>
+                  <MenuItem value="pending">{t('orders.pending')}</MenuItem>
+                  <MenuItem value="paid">{t('orders.paid')}</MenuItem>
+                  <MenuItem value="refunded">{t('orders.refunded')}</MenuItem>
+                  <MenuItem value="failed">{t('orders.failed')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
-                <InputLabel>Order Status</InputLabel>
+                <InputLabel>{t('orders.orderStatus')}</InputLabel>
                 <Select
                   value={orderStatusFilter}
-                  label="Order Status"
+                  label={t('orders.orderStatus')}
                   onChange={(e) => setOrderStatusFilter(e.target.value)}
                   sx={{ borderRadius: 2 }}
                 >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="draft">Draft</MenuItem>
-                  <MenuItem value="confirmed">Confirmed</MenuItem>
-                  <MenuItem value="in_progress">In Progress</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
+                  <MenuItem value="">{t('orders.allStatuses')}</MenuItem>
+                  <MenuItem value="draft">{t('orders.draft')}</MenuItem>
+                  <MenuItem value="confirmed">{t('orders.confirmed')}</MenuItem>
+                  <MenuItem value="in_progress">{t('orders.inProgress')}</MenuItem>
+                  <MenuItem value="completed">{t('orders.completed')}</MenuItem>
+                  <MenuItem value="cancelled">{t('orders.cancelled')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -267,7 +268,7 @@ const OrderHistory: React.FC = () => {
               <TextField
                 fullWidth
                 type="date"
-                label="Start Date"
+                label={t('orders.startDate')}
                 value={dateRange.start}
                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                 InputLabelProps={{ shrink: true }}
@@ -279,7 +280,7 @@ const OrderHistory: React.FC = () => {
               <TextField
                 fullWidth
                 type="date"
-                label="End Date"
+                label={t('orders.endDate')}
                 value={dateRange.end}
                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                 InputLabelProps={{ shrink: true }}
@@ -296,14 +297,14 @@ const OrderHistory: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>Order Number</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Customer</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Services</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Amount</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Payment</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('orders.orderNumber')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.customer')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.services')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.amount')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.payment')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.paymentStatus')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.date')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -347,7 +348,7 @@ const OrderHistory: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {order.services?.length || 0} items
+                        {order.services?.length || 0} {t('orders.items')}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -417,11 +418,11 @@ const OrderHistory: React.FC = () => {
       >
         <MenuItem onClick={handleViewDetails}>
           <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
-          View Details
+          {t('orders.viewDetails')}
         </MenuItem>
         <MenuItem onClick={handleExportReceipt}>
           <ReceiptIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
-          Export Receipt
+          {t('orders.printReceipt')}
         </MenuItem>
       </Menu>
 
@@ -434,14 +435,14 @@ const OrderHistory: React.FC = () => {
       >
         <DialogTitle>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Order Details
+            {t('orders.orderDetails')}
           </Typography>
         </DialogTitle>
         <DialogContent>
           {selectedOrder && (
             <Box>
               <Box mb={2}>
-                <Typography variant="subtitle2" color="text.secondary">Order Number</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('orders.orderNumber')}</Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: '#10B981' }}>
                   {selectedOrder.orderNumber}
                 </Typography>
@@ -449,14 +450,14 @@ const OrderHistory: React.FC = () => {
 
               <Grid container spacing={2} mb={2}>
                 <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Customer</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">{t('orders.customer')}</Typography>
                   <Typography variant="body2">{selectedOrder.customerName}</Typography>
                   <Typography variant="caption" color="text.secondary">
                     {selectedOrder.customerPhone}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Date</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">{t('orders.date')}</Typography>
                   <Typography variant="body2">
                     {formatDateTime(selectedOrder.createdAt).date}
                   </Typography>
@@ -468,7 +469,7 @@ const OrderHistory: React.FC = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>Services</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('orders.services')}</Typography>
               <List dense>
                 {selectedOrder.services && selectedOrder.services.map((service, index) => (
                   <ListItem key={index} sx={{ px: 0 }}>
@@ -487,20 +488,20 @@ const OrderHistory: React.FC = () => {
 
               <Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Subtotal</Typography>
+                  <Typography variant="body2">{t('orders.subtotal')}</Typography>
                   <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.subtotal)}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Tax</Typography>
+                  <Typography variant="body2">{t('orders.tax')}</Typography>
                   <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.taxAmount)}</Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Tip</Typography>
+                  <Typography variant="body2">{t('orders.tip')}</Typography>
                   <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.tipAmount)}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
                 <Box display="flex" justifyContent="space-between">
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>{t('orders.total')}</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
                     {CurrencyUtils.formatAmount(selectedOrder.totalAmount)}
                   </Typography>
@@ -508,13 +509,13 @@ const OrderHistory: React.FC = () => {
               </Box>
 
               <Box mt={2}>
-                <Typography variant="subtitle2" color="text.secondary">Payment Status</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{t('orders.paymentStatus')}</Typography>
                 {getStatusChip(selectedOrder.paymentStatus)}
               </Box>
 
               {selectedOrder.notes && (
                 <Box mt={2}>
-                  <Typography variant="subtitle2" color="text.secondary">Notes</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">{t('orders.notes')}</Typography>
                   <Typography variant="body2">{selectedOrder.notes}</Typography>
                 </Box>
               )}
@@ -522,7 +523,7 @@ const OrderHistory: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDetailsDialog(false)}>Close</Button>
+          <Button onClick={() => setDetailsDialog(false)}>{t('orders.close')}</Button>
           <Button
             variant="contained"
             startIcon={<DownloadIcon />}
@@ -534,7 +535,7 @@ const OrderHistory: React.FC = () => {
               },
             }}
           >
-            Export Receipt
+            {t('orders.printReceipt')}
           </Button>
         </DialogActions>
       </Dialog>

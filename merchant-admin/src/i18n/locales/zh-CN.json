@@ -587,6 +587,8 @@
   },
   "orders": {
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
     "addOrder": "新增订单",
     "orderNumber": "订单号",
     "customer": "客户",
@@ -708,7 +710,13 @@
     "invalidRefundAmount": "退款金额无效",
     "refundFailed": "退款失败，请重试",
     "refundError": "退款处理出错",
-    "processingRefund": "正在处理退款..."
+    "processingRefund": "正在处理退款...",
+    "title": "订单管理",
+    "subtitle": "管理所有订单和支付记录",
+    "moreItems": "项",
+    "customerRequired": "请选择客户或输入新客户信息",
+    "phoneRequired": "电话号码是必需的",
+    "emailRequired": "邮箱地址是必需的"
   },
   "services": {
     "title": "服务管理",

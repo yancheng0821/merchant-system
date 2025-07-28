@@ -2,7 +2,6 @@ package com.merchant.server.authservice.mapper;
 
 import com.merchant.server.authservice.entity.Tenant;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
