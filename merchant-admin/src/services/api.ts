@@ -791,6 +791,7 @@ export interface Appointment {
   };
   appointmentServices?: {
     id: number;
+    serviceId: number; // 添加serviceId字段
     serviceName: string;
     price: number;
     duration: number;
@@ -909,9 +910,14 @@ export const appointmentApi = {
     paymentMethod: string;
     amount: number;
     tipAmount?: number;
-  }) => createRequest('/api/business/payments/initiate', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/pay`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      paymentMethod: data.paymentMethod,
+      amount: data.amount,
+      tipAmount: data.tipAmount || 0,
+      terminalId: 'POS-001' // 添加默认的终端ID
+    }),
   }),
 
   processCashPayment: (data: {
@@ -919,9 +925,8 @@ export const appointmentApi = {
     paymentMethod: string;
     amount: number;
     tipAmount?: number;
-  }) => createRequest('/api/business/payments/cash', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/cash?amount=${data.amount}`, {
     method: 'POST',
-    body: JSON.stringify(data),
   }),
 
   processCardPayment: (data: {
@@ -930,20 +935,24 @@ export const appointmentApi = {
     amount: number;
     tipAmount?: number;
     posTerminalId?: string;
-  }) => createRequest('/api/business/payments/card', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/pay`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      paymentMethod: data.paymentMethod,
+      amount: data.amount,
+      tipAmount: data.tipAmount || 0,
+      terminalId: data.posTerminalId || 'POS-001'
+    }),
   }),
 
-  checkPaymentStatus: (orderId: number) => createRequest(`/api/business/payments/status/${orderId}`),
+  checkPaymentStatus: (transactionId: string) => createRequest(`/api/business/payments/transactions/${transactionId}/status`),
 
   processRefund: (data: {
     orderId: number;
     amount: number;
     reason: string;
-  }) => createRequest('/api/business/payments/refund', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/refund?amount=${data.amount}&reason=${encodeURIComponent(data.reason)}`, {
     method: 'POST',
-    body: JSON.stringify(data),
   }),
 };
 
@@ -1014,6 +1023,22 @@ export const resourceApi = {
       method: 'GET',
     });
     return response.data || response;
+  },
+
+  // 获取当前用户的资源信息
+  getCurrentUserResource: async (tenantId: number) => {
+    try {
+      // 首先获取所有STAFF类型的资源
+      const resources = await createRequest(`/api/business/resources/tenant/${tenantId}/type/STAFF`);
+      // 返回第一个可用的资源作为当前用户的资源
+      if (resources && resources.length > 0) {
+        return resources[0];
+      }
+      throw new Error('No staff resources available');
+    } catch (error) {
+      console.error('Failed to get current user resource:', error);
+      throw error;
+    }
   },
 
   // 根据服务获取可用资源
@@ -1344,9 +1369,14 @@ export const api = {
     paymentMethod: string;
     amount: number;
     tipAmount?: number;
-  }) => createRequest('/api/business/payments/initiate', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/pay`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      paymentMethod: data.paymentMethod,
+      amount: data.amount,
+      tipAmount: data.tipAmount || 0,
+      terminalId: 'POS-001' // 添加默认的终端ID
+    }),
   }),
 
   processCashPayment: (data: {
@@ -1354,9 +1384,8 @@ export const api = {
     paymentMethod: string;
     amount: number;
     tipAmount?: number;
-  }) => createRequest('/api/business/payments/cash', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/cash?amount=${data.amount}`, {
     method: 'POST',
-    body: JSON.stringify(data),
   }),
 
   processCardPayment: (data: {
@@ -1365,20 +1394,24 @@ export const api = {
     amount: number;
     tipAmount?: number;
     posTerminalId?: string;
-  }) => createRequest('/api/business/payments/card', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/pay`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      paymentMethod: data.paymentMethod,
+      amount: data.amount,
+      tipAmount: data.tipAmount || 0,
+      terminalId: data.posTerminalId || 'POS-001'
+    }),
   }),
 
-  checkPaymentStatus: (orderId: number) => createRequest(`/api/business/payments/status/${orderId}`),
+  checkPaymentStatus: (transactionId: string) => createRequest(`/api/business/payments/transactions/${transactionId}/status`),
 
   processRefund: (data: {
     orderId: number;
     amount: number;
     reason: string;
-  }) => createRequest('/api/business/payments/refund', {
+  }) => createRequest(`/api/business/payments/orders/${data.orderId}/refund?amount=${data.amount}&reason=${encodeURIComponent(data.reason)}`, {
     method: 'POST',
-    body: JSON.stringify(data),
   }),
 };
 

@@ -102,6 +102,8 @@ public class OrderServiceImpl implements OrderService {
                     throw new RuntimeException("Resource not found with ID: " + orderCreate.getResourceId());
                 }
                 log.info("Resource found: {}", resource.getName());
+            } else {
+                log.info("No resource ID provided, skipping resource validation");
             }
             
             // 创建订单
@@ -117,6 +119,7 @@ public class OrderServiceImpl implements OrderService {
             order.setNotes(orderCreate.getNotes());
             order.setOrderStatus("draft");
             order.setPaymentStatus("pending");
+            order.setPaymentMethod(orderCreate.getPaymentMethod());
             order.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
             order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
             // Set created_by and updated_by to resource_id if available, otherwise null

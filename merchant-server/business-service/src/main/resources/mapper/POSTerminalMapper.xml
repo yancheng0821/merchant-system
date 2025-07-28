@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.POSTerminalMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.POSTerminal">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="terminal_id" property="terminalId" />
+        <result column="terminal_name" property="terminalName" />
+        <result column="pos_provider" property="posProvider" />
+        <result column="provider_config" property="providerConfig" />
+        <result column="api_endpoint" property="apiEndpoint" />
+        <result column="api_key" property="apiKey" />
+        <result column="merchant_id" property="merchantId" />
+        <result column="terminal_status" property="terminalStatus" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <select id="selectByTerminalId" resultMap="BaseResultMap">
+        SELECT * FROM pos_terminals 
+        WHERE terminal_id = #{terminalId} AND tenant_id = #{tenantId}
+    </select>
+
+    <select id="selectActiveTerminals" resultMap="BaseResultMap">
+        SELECT * FROM pos_terminals 
+        WHERE tenant_id = #{tenantId} AND terminal_status = 'ACTIVE'
+        ORDER BY created_at DESC
+    </select>
+
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.POSTerminal" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pos_terminals (tenant_id, terminal_id, terminal_name, pos_provider, provider_config,
+        api_endpoint, api_key, merchant_id, terminal_status, created_at, updated_at)
+        VALUES (#{tenantId}, #{terminalId}, #{terminalName}, #{posProvider}, #{providerConfig},
+        #{apiEndpoint}, #{apiKey}, #{merchantId}, #{terminalStatus}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.POSTerminal">
+        UPDATE pos_terminals SET 
+        terminal_name = #{terminalName},
+        pos_provider = #{posProvider},
+        provider_config = #{providerConfig},
+        api_endpoint = #{apiEndpoint},
+        api_key = #{apiKey},
+        merchant_id = #{merchantId},
+        terminal_status = #{terminalStatus},
+        updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+</mapper> 

@@ -50,6 +50,13 @@
             <result property="name" column="resource_name"/>
             <result property="type" column="resource_type"/>
         </association>
+        <collection property="appointmentServices" ofType="com.merchant.server.businessservice.entity.AppointmentService">
+            <id property="id" column="appointment_service_id"/>
+            <result property="serviceId" column="appointment_service_service_id"/>
+            <result property="serviceName" column="appointment_service_name"/>
+            <result property="price" column="appointment_service_price"/>
+            <result property="duration" column="appointment_service_duration"/>
+        </collection>
     </resultMap>
 
     <!-- 基础查询SQL -->
@@ -71,10 +78,14 @@
             a.id, a.tenant_id, a.customer_id, a.resource_id, a.resource_type, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
-            r.name as resource_name, r.type as resource_type
+            r.name as resource_name, r.type as resource_type,
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id, 
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price, 
+            aps.duration as appointment_service_duration
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
         LEFT JOIN resource r ON a.resource_id = r.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         WHERE a.tenant_id = #{tenantId}
         ORDER BY a.created_at DESC, a.appointment_date DESC, a.appointment_time DESC
     </select>

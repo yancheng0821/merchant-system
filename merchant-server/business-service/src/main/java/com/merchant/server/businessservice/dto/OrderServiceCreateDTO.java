@@ -15,6 +15,7 @@ public class OrderServiceCreateDTO {
     @Positive(message = "Quantity must be positive")
     private Integer quantity = 1;
     
+    // 资源分配信息现在是可选的
     private Long assignedResourceId;
     private String assignedResourceType;
 }

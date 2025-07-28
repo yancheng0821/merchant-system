@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.dto;
 import lombok.Data;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 
 /**
@@ -18,6 +19,7 @@ public class OrderCreateDTO {
     
     private Long appointmentId;
     
+    // 资源ID和类型现在是可选的
     private Long resourceId;
     private String resourceType;
     
@@ -27,8 +29,10 @@ public class OrderCreateDTO {
     @Positive(message = "Tax rate must be positive")
     private Double taxRate = 0.0;
     
-    @Positive(message = "Tip percentage must be positive")
+    @Min(value = 0, message = "Tip percentage must be non-negative")
     private Double tipPercentage = 0.0;
+    
+    private String paymentMethod; // 支付方式
     
     private String notes;
 }

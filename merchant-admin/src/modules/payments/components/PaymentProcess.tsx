@@ -152,11 +152,19 @@ interface Appointment {
     name: string;
     price: number;
     duration: number;
+    serviceId?: number;
   }[];
   appointmentDate: string;
   appointmentTime: string;
   status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   totalAmount: number;
+  appointmentServices?: {
+    id: number;
+    serviceName: string;
+    price: number;
+    duration: number;
+    serviceId: number;
+  }[];
 }
 
 const PaymentProcess: React.FC = () => {
@@ -301,6 +309,7 @@ const PaymentProcess: React.FC = () => {
             appointmentTime: apt.appointmentTime,
             status: apt.status,
             totalAmount: apt.totalAmount || 0,
+            appointmentServices: apt.appointmentServices,
           };
         });
 
@@ -409,6 +418,7 @@ const PaymentProcess: React.FC = () => {
   };
 
   const handleSelectAppointment = (appointment: Appointment) => {
+    console.log('🔍 Selecting appointment:', appointment);
     setSelectedAppointment(appointment);
     setIsAppointmentBased(true);
 
@@ -419,13 +429,24 @@ const PaymentProcess: React.FC = () => {
     }
 
     // 将预约的服务添加到订单项目中
-    const appointmentOrderItems: OrderItem[] = appointment.services.map(service => ({
-      serviceId: service.id,
-      serviceName: service.name,
-      price: service.price,
-      quantity: 1,
-    }));
+    // 使用appointmentServices字段，包含serviceId
+    console.log('📋 Appointment services:', appointment.appointmentServices);
+    
+    const appointmentOrderItems: OrderItem[] = (appointment.appointmentServices || [])
+      .map(service => {
+        console.log('🔍 Service:', service, 'serviceId:', service.serviceId);
+        
+        const orderItem = {
+          serviceId: service.serviceId,
+          serviceName: service.serviceName,
+          price: service.price,
+          quantity: 1,
+        };
+        console.log('✅ Created order item:', orderItem);
+        return orderItem;
+      });
 
+    console.log('📦 Final appointment order items:', appointmentOrderItems);
     setOrderItems(appointmentOrderItems);
 
     // 切换到服务选择标签页以显示已选择的服务
@@ -533,20 +554,18 @@ const PaymentProcess: React.FC = () => {
         }
       }
 
-      // Create order
+      // Create order - 对于walk-in客户，不指定资源ID和资源类型
       const orderData = {
         tenantId: Number(user.tenantId),
         customerId: Number(customerToUse.id),
-        resourceId: Number(user.id),
-        resourceType: 'STAFF',
         taxRate: Number(taxRate),
         tipPercentage: 0.0,
+        paymentMethod: paymentMethod, // 添加支付方式
         notes: notes || '',
         services: orderItems.map(item => ({
           serviceId: Number(item.serviceId),
           quantity: Number(item.quantity),
-          assignedResourceId: Number(user.id),
-          assignedResourceType: 'STAFF',
+          // 不指定assignedResourceId和assignedResourceType，让后端处理
         })),
       };
 
@@ -554,7 +573,6 @@ const PaymentProcess: React.FC = () => {
       console.log('📦 Order data validation:', {
         tenantId: typeof orderData.tenantId,
         customerId: typeof orderData.customerId,
-        resourceId: typeof orderData.resourceId,
         taxRate: typeof orderData.taxRate,
         servicesCount: orderData.services.length,
         firstService: orderData.services[0]
@@ -564,7 +582,11 @@ const PaymentProcess: React.FC = () => {
       try {
         orderResponse = await api.createOrder(orderData);
         console.log('✅ Order created successfully:', orderResponse);
-        order = orderResponse.data;
+        console.log('📦 Order response type:', typeof orderResponse);
+        console.log('📦 Order response keys:', Object.keys(orderResponse || {}));
+        order = orderResponse; // 直接使用orderResponse，因为后端直接返回OrderDTO
+        console.log('📦 Order object:', order);
+        console.log('📦 Order ID:', order?.id);
       } catch (orderError: any) {
         console.error('❌ Order creation failed:', orderError);
         console.error('Order error details:', {
@@ -577,6 +599,11 @@ const PaymentProcess: React.FC = () => {
       }
 
       // Process payment
+      if (!order || !order.id) {
+        console.error('❌ Order is null or missing ID:', order);
+        throw new Error('Order creation failed - order is null or missing ID');
+      }
+
       const paymentData = {
         orderId: order.id,
         paymentMethod: paymentMethod,
@@ -590,7 +617,11 @@ const PaymentProcess: React.FC = () => {
         // Cash payment - mark as paid immediately
         const paymentResponse = await api.processCashPayment(paymentData);
         console.log('✅ Cash payment processed:', paymentResponse);
-        setOrderResult(paymentResponse.data);
+        setOrderResult({
+          ...paymentResponse.data,
+          orderId: order.id,
+          orderNumber: order.orderNumber
+        });
         setPaymentStatus('success');
       } else {
         console.log('💳 Processing card payment...');
@@ -604,6 +635,8 @@ const PaymentProcess: React.FC = () => {
           console.log('✅ POS transaction completed (mocked)');
           setOrderResult({
             ...paymentResponse.data,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
             status: 'completed',
             transactionId: 'MOCK_' + Date.now()
           });
@@ -1972,7 +2005,7 @@ const PaymentProcess: React.FC = () => {
                 {t('payments.paymentCompletedSuccessfully')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('payments.orderNumber')}: #{orderResult?.orderNumber}
+                {t('payments.orderNumber')}: #{orderResult?.orderNumber || 'N/A'}
               </Typography>
             </Box>
           )}
@@ -2064,8 +2097,8 @@ const PaymentProcess: React.FC = () => {
                 },
               }}
             >
-              <AddIcon sx={{ mr: 1, fontSize: 18 }} />
-              {t('payments.newOrder')}
+              <CheckCircleIcon sx={{ mr: 1, fontSize: 18 }} />
+              {t('payments.complete')}
             </Button>
           )}
 

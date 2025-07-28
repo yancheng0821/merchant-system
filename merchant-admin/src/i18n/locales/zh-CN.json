@@ -582,7 +582,8 @@
     "orderNumber": "订单号",
     "unknownError": "发生未知错误",
     "newOrder": "新订单",
-    "retryPayment": "重试支付"
+    "retryPayment": "重试支付",
+    "complete": "完成"
   },
   "orders": {
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",

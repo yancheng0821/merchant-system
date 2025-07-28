@@ -83,7 +83,10 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         posTransaction.setPaymentMethod(paymentRequest.getPaymentMethod());
         posTransaction.setTransactionStatus("pending");
         posTransaction.setRequestData(convertToJson(posRequest));
+        posTransaction.setRetryCount(0); // 设置默认重试次数
+        posTransaction.setNextRetryTime(null); // 初始状态不需要重试时间
         posTransaction.setCreatedAt(LocalDateTime.now());
+        posTransaction.setUpdatedAt(LocalDateTime.now());
         posTransactionMapper.insert(posTransaction);
         
         try {

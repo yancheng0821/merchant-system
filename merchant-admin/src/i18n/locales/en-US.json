@@ -341,7 +341,8 @@
     "orderNumber": "Order Number",
     "unknownError": "An unknown error occurred",
     "newOrder": "New Order",
-    "retryPayment": "Retry Payment"
+    "retryPayment": "Retry Payment",
+    "complete": "Complete"
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",
