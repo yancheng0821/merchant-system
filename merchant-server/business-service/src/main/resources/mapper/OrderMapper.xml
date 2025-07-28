@@ -52,10 +52,10 @@
             AND o.customer_id = #{customerId}
         </if>
         <if test="startDate != null and startDate != ''">
-            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &gt;= #{startDate}
+            AND DATE(o.created_at) &gt;= #{startDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &lt;= #{endDate}
+            AND DATE(o.created_at) &lt;= #{endDate}
         </if>
         ORDER BY o.created_at DESC
         LIMIT #{limit} OFFSET #{offset}
@@ -79,10 +79,10 @@
             AND o.customer_id = #{customerId}
         </if>
         <if test="startDate != null and startDate != ''">
-            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &gt;= #{startDate}
+            AND DATE(o.created_at) &gt;= #{startDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) &lt;= #{endDate}
+            AND DATE(o.created_at) &lt;= #{endDate}
         </if>
     </select>
 
@@ -124,15 +124,15 @@
     <select id="selectTodayOrders" resultMap="BaseResultMap">
         SELECT * FROM orders 
         WHERE tenant_id = #{tenantId} 
-        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = DATE(CONVERT_TZ(NOW(), '+00:00', 'America/Vancouver'))
+        AND DATE(created_at) = DATE(NOW())
         ORDER BY created_at DESC
     </select>
 
     <select id="selectMonthOrders" resultMap="BaseResultMap">
         SELECT * FROM orders 
         WHERE tenant_id = #{tenantId} 
-        AND YEAR(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = YEAR(CONVERT_TZ(NOW(), '+00:00', 'America/Vancouver'))
-        AND MONTH(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = MONTH(CONVERT_TZ(NOW(), '+00:00', 'America/Vancouver'))
+        AND YEAR(created_at) = YEAR(NOW())
+        AND MONTH(created_at) = MONTH(NOW())
         ORDER BY created_at DESC
     </select>
 
@@ -141,7 +141,7 @@
         SELECT id, total_amount, payment_status, order_status, created_at
         FROM orders 
         WHERE tenant_id = #{tenantId} 
-        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) = #{date}
+        AND DATE(created_at) = #{date}
         ORDER BY created_at DESC
     </select>
 
@@ -149,22 +149,22 @@
         SELECT id, total_amount, payment_status, order_status, created_at
         FROM orders 
         WHERE tenant_id = #{tenantId} 
-        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND DATE(created_at) BETWEEN #{startDate} AND #{endDate}
         ORDER BY created_at DESC
     </select>
 
     <select id="getOrderStatsForAnalytics" resultType="map">
         SELECT 
-            DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
+            DATE(o.created_at) as statDate,
             COUNT(*) as totalOrders,
             COALESCE(SUM(o.total_amount), 0) as totalRevenue,
             COALESCE(SUM(o.tip_amount), 0) as totalTips,
             COALESCE(AVG(o.total_amount), 0) as avgOrderValue
         FROM orders o
         WHERE o.tenant_id = #{tenantId} 
-        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND DATE(o.created_at) BETWEEN #{startDate} AND #{endDate}
         AND o.payment_status = 'paid'
-        GROUP BY DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver'))
+        GROUP BY DATE(o.created_at)
         ORDER BY statDate
     </select>
 
@@ -198,7 +198,7 @@
                 COUNT(*) as order_count
             FROM orders 
             WHERE tenant_id = #{tenantId}
-            AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+            AND DATE(created_at) BETWEEN #{startDate} AND #{endDate}
             GROUP BY customer_id
         ) customer_order_count ON o.customer_id = customer_order_count.customer_id
         WHERE o.tenant_id = #{tenantId} 
@@ -207,7 +207,7 @@
 
     <select id="getResourceStatsForAnalytics" resultType="map">
         SELECT 
-            DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
+            DATE(o.created_at) as statDate,
             o.resource_id as resourceId,
             o.resource_type as resourceType,
             COALESCE(r.name, 
@@ -226,10 +226,10 @@
         FROM orders o
         LEFT JOIN resource r ON o.resource_id = r.id AND r.tenant_id = o.tenant_id
         WHERE o.tenant_id = #{tenantId} 
-        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND DATE(o.created_at) BETWEEN #{startDate} AND #{endDate}
         AND o.resource_id IS NOT NULL
         AND o.payment_status = 'paid'
-        GROUP BY DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')), o.resource_id, o.resource_type, r.name
+        GROUP BY DATE(o.created_at), o.resource_id, o.resource_type, r.name
         ORDER BY statDate, resourceId
     </select>
 

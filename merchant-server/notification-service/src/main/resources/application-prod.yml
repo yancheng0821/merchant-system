@@ -6,7 +6,7 @@ spring:
   application:
     name: notification-service
   datasource:
-    url: jdbc:mysql://prod-db-host:3306/merchant_notification?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://prod-db-host:3306/merchant_notification?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

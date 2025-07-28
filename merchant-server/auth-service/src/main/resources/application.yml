@@ -6,7 +6,7 @@ spring:
     name: auth-service
   
   datasource:
-    url: jdbc:mysql://localhost:3306/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&characterSetResults=utf8&connectionCollation=utf8_unicode_ci&zeroDateTimeBehavior=convertToNull
+    url: jdbc:mysql://localhost:3306/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&characterSetResults=utf8&connectionCollation=utf8_unicode_ci&zeroDateTimeBehavior=convertToNull
     username: merchant_app
     password: MerchantApp@2024
     driver-class-name: com.mysql.cj.jdbc.Driver
