@@ -26,7 +26,7 @@ public class OrderCreateDTO {
     @NotNull(message = "Services are required")
     private List<OrderServiceCreateDTO> services;
     
-    @Positive(message = "Tax rate must be positive")
+    @Min(value = 0, message = "Tax rate must be non-negative")
     private Double taxRate = 0.0;
     
     @Min(value = 0, message = "Tip percentage must be non-negative")

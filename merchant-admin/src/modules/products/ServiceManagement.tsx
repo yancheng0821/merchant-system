@@ -110,6 +110,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import ServiceDialog from './components/ServiceDialog';
 import ServiceCategoryDialog from './components/ServiceCategoryDialog';
+import CustomDialog from '../../components/common/CustomDialog';
 import { serviceManagementApi, serviceCategoryApi, ServiceManagement as ServiceManagementType, ServiceCategory, handleApiError } from '../../services/api';
 
 // 使用从API导入的接口类型

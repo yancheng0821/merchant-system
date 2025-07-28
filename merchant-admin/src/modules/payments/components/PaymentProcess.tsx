@@ -226,11 +226,8 @@ const PaymentProcess: React.FC = () => {
 
   const getOrCreateWalkInCustomer = useCallback(async () => {
     if (!user?.tenantId) {
-      console.log('❌ No tenant ID available for walk-in customer');
       return null;
     }
-
-    console.log('🚶 Getting or creating walk-in customer...');
 
     try {
       // 首先尝试查找现有的walk-in客户
@@ -241,20 +238,16 @@ const PaymentProcess: React.FC = () => {
         size: 10
       });
 
-      console.log('🔍 Search response for walk-in customer:', response);
-
       const existingWalkIn = response.customers?.find(customer =>
         customer.firstName === 'Walk-in' && customer.lastName === 'Customer'
       );
 
       if (existingWalkIn) {
-        console.log('✅ Found existing walk-in customer:', existingWalkIn);
         setWalkInCustomer(existingWalkIn);
         return existingWalkIn;
       }
 
       // 如果不存在，创建一个新的walk-in客户
-      console.log('➕ Creating new walk-in customer...');
       const walkInData = {
         tenantId: user?.tenantId || 0,
         firstName: 'Walk-in',
@@ -265,14 +258,11 @@ const PaymentProcess: React.FC = () => {
         notes: 'System generated customer for walk-in transactions'
       };
 
-      console.log('📝 Walk-in customer data:', walkInData);
-
       const newWalkIn = await customerApi.createCustomer(walkInData);
-      console.log('✅ Created new walk-in customer:', newWalkIn);
       setWalkInCustomer(newWalkIn);
       return newWalkIn;
     } catch (error) {
-      console.error('❌ Failed to get or create walk-in customer:', error);
+      console.error('Failed to get or create walk-in customer:', error);
       return null;
     }
   }, [user]);
@@ -425,7 +415,6 @@ const PaymentProcess: React.FC = () => {
   };
 
   const handleSelectAppointment = (appointment: Appointment) => {
-    console.log('🔍 Selecting appointment:', appointment);
     setSelectedAppointment(appointment);
     setIsAppointmentBased(true);
 
@@ -437,23 +426,14 @@ const PaymentProcess: React.FC = () => {
 
     // 将预约的服务添加到订单项目中
     // 使用appointmentServices字段，包含serviceId
-    console.log('📋 Appointment services:', appointment.appointmentServices);
-    
     const appointmentOrderItems: OrderItem[] = (appointment.appointmentServices || [])
-      .map(service => {
-        console.log('🔍 Service:', service, 'serviceId:', service.serviceId);
-        
-        const orderItem = {
-          serviceId: service.serviceId,
-          serviceName: service.serviceName,
-          price: service.price,
-          quantity: 1,
-        };
-        console.log('✅ Created order item:', orderItem);
-        return orderItem;
-      });
+      .map(service => ({
+        serviceId: service.serviceId,
+        serviceName: service.serviceName,
+        price: service.price,
+        quantity: 1,
+      }));
 
-    console.log('📦 Final appointment order items:', appointmentOrderItems);
     setOrderItems(appointmentOrderItems);
 
     // 切换到服务选择标签页以显示已选择的服务
@@ -492,50 +472,30 @@ const PaymentProcess: React.FC = () => {
   };
 
   const handleCreateOrder = async () => {
-    console.log('🛒 Creating order...', {
-      orderItems,
-      selectedCustomer,
-      walkInCustomer
-    });
-
     if (orderItems.length === 0) {
-      console.log('❌ No services selected');
       setPaymentError(t('payments.selectServices'));
       return;
     }
 
-    console.log('✅ Opening payment dialog');
     setPaymentDialog(true);
     setPaymentStatus('idle');
     setPaymentError(null);
   };
 
   const handleProcessPayment = async () => {
-    console.log('🚀 Starting payment process...');
     setPaymentStatus('processing');
     setPaymentError(null);
 
     try {
       // 确定使用的客户ID：选中的客户或walk-in客户
       const customerToUse = selectedCustomer || walkInCustomer;
-      console.log('👤 Customer to use:', {
-        selected: selectedCustomer,
-        walkIn: walkInCustomer,
-        final: customerToUse
-      });
 
       if (!customerToUse) {
-        console.error('❌ No customer available:', {
-          selectedCustomer,
-          walkInCustomer,
-          user
-        });
         throw new Error('No customer available for order creation. Please ensure walk-in customer is created.');
       }
 
       // 验证客户ID
       if (!customerToUse.id) {
-        console.error('❌ Customer ID is missing:', customerToUse);
         throw new Error('Customer ID is missing');
       }
 
@@ -575,7 +535,7 @@ const PaymentProcess: React.FC = () => {
             resourceType: selectedAppointment.resourceType,
           }),
         }),
-        taxAmount: calculateOrderTax(),
+        taxRate: 0.0, // 使用taxRate而不是taxAmount，后端会自动计算税费
         tipPercentage: 0.0,
         paymentMethod: paymentMethod, // 添加支付方式
         notes: notes || '',
@@ -591,47 +551,19 @@ const PaymentProcess: React.FC = () => {
         })),
       };
 
-      console.log('📦 Order data to be sent:', orderData);
-      console.log('📦 Order data validation:', {
-        tenantId: typeof orderData.tenantId,
-        customerId: typeof orderData.customerId,
-        appointmentId: orderData.appointmentId,
-        resourceId: orderData.resourceId,
-        resourceType: orderData.resourceType,
-        taxAmount: typeof orderData.taxAmount,
-        servicesCount: orderData.services.length,
-        firstService: orderData.services[0],
-        isAppointmentBased,
-        selectedAppointment: selectedAppointment ? {
-          id: selectedAppointment.id,
-          resourceId: selectedAppointment.resourceId,
-          resourceType: selectedAppointment.resourceType
-        } : null
-      });
+
 
       let orderResponse, order;
       try {
         orderResponse = await api.createOrder(orderData);
-        console.log('✅ Order created successfully:', orderResponse);
-        console.log('📦 Order response type:', typeof orderResponse);
-        console.log('📦 Order response keys:', Object.keys(orderResponse || {}));
         order = orderResponse; // 直接使用orderResponse，因为后端直接返回OrderDTO
-        console.log('📦 Order object:', order);
-        console.log('📦 Order ID:', order?.id);
       } catch (orderError: any) {
-        console.error('❌ Order creation failed:', orderError);
-        console.error('Order error details:', {
-          message: orderError.message,
-          response: orderError.response,
-          status: orderError.status,
-          orderData
-        });
+        console.error('Order creation failed:', orderError);
         throw orderError;
       }
 
       // Process payment
       if (!order || !order.id) {
-        console.error('❌ Order is null or missing ID:', order);
         throw new Error('Order creation failed - order is null or missing ID');
       }
 
@@ -641,13 +573,9 @@ const PaymentProcess: React.FC = () => {
         amount: calculateTotal(),
       };
 
-      console.log('💳 Payment data:', paymentData);
-
       if (paymentMethod === 'cash') {
-        console.log('💵 Processing cash payment...');
         // Cash payment - mark as paid immediately
         const paymentResponse = await api.processCashPayment(paymentData);
-        console.log('✅ Cash payment processed:', paymentResponse);
         setOrderResult({
           ...paymentResponse.data,
           orderId: order.id,
@@ -655,15 +583,11 @@ const PaymentProcess: React.FC = () => {
         });
         setPaymentStatus('success');
       } else {
-        console.log('💳 Processing card payment...');
         // Card payment - initiate POS transaction
         const paymentResponse = await api.initiatePayment(paymentData);
-        console.log('🔄 Card payment initiated:', paymentResponse);
 
         // Mock POS success after 3 seconds for testing
-        console.log('⏳ Simulating POS transaction...');
         setTimeout(() => {
-          console.log('✅ POS transaction completed (mocked)');
           setOrderResult({
             ...paymentResponse.data,
             orderId: order.id,
@@ -675,12 +599,7 @@ const PaymentProcess: React.FC = () => {
         }, 3000);
       }
     } catch (error: any) {
-      console.error('❌ Payment failed:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error('Payment failed:', error);
       setPaymentError(error.response?.data?.message || error.message || 'Payment failed. Please try again.');
       setPaymentStatus('failed');
     }

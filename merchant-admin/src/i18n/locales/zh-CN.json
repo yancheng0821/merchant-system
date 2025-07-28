@@ -11,6 +11,11 @@
     "loading": "加载中...",
     "close": "关闭"
   },
+  "session": {
+    "expired": "会话已过期",
+    "expiredMessage": "您的会话已过期，请重新登录以继续使用。",
+    "relogin": "重新登录"
+  },
   "nav": {
     "title": "商户后台",
     "systemTitle": "商户管理后台系统",
@@ -1084,11 +1089,6 @@
     "systemPrefs": "系统偏好",
     "timezone": "时区",
     "chinese": "中文",
-    "timezones": {
-      "beijing": "北京时间 (UTC+8)",
-      "newYork": "纽约时间 (UTC-5)",
-      "london": "伦敦时间 (UTC+0)"
-    },
     "systemNotifications": "发送系统通知",
     "dataAnalytics": "允许数据统计",
     "tableHeaders": {
@@ -1157,7 +1157,9 @@
       "validationFailed": "请修正输入错误后再保存",
       "loadFailed": "加载设置信息失败，请刷新页面重试",
       "sessionTimeoutRequired": "会话超时时间不能为空"
-    }
+    },
+    "success": "成功",
+    "error": "错误"
   },
   "products": {
     "title": "服务管理",

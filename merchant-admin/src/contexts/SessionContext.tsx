@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 import { merchantConfigApi } from '../services/api';
+import CustomDialog from '../components/common/CustomDialog';
 
 interface SessionContextType {
   sessionTimeout: number;
@@ -25,10 +27,12 @@ interface SessionProviderProps {
 }
 
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [sessionTimeout, setSessionTimeout] = useState(30); // 默认30分钟
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const [showSessionDialog, setShowSessionDialog] = useState(false);
 
   // 获取会话超时设置
   useEffect(() => {
@@ -91,11 +95,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
       if (timeSinceLastActivity > timeoutMs) {
         setIsSessionExpired(true);
-        // 自动登出
-        setTimeout(() => {
-          logout();
-          alert('会话已过期，请重新登录');
-        }, 1000);
+        setShowSessionDialog(true);
       }
     };
 
@@ -104,6 +104,11 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
     return () => clearInterval(interval);
   }, [lastActivity, sessionTimeout, logout]);
+
+  const handleSessionExpiredConfirm = () => {
+    setShowSessionDialog(false);
+    logout();
+  };
 
   const value: SessionContextType = {
     sessionTimeout,
@@ -116,6 +121,15 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   return (
     <SessionContext.Provider value={value}>
       {children}
+      <CustomDialog
+        open={showSessionDialog}
+        onClose={handleSessionExpiredConfirm}
+        title={t('session.expired')}
+        message={t('session.expiredMessage')}
+        type="warning"
+        confirmText={t('session.relogin')}
+        onConfirm={handleSessionExpiredConfirm}
+      />
     </SessionContext.Provider>
   );
 };

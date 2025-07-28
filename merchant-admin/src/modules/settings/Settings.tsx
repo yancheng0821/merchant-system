@@ -91,12 +91,12 @@ const Settings: React.FC = () => {
     city: '',
     timezone: 'Asia/Shanghai'
   });
-  
+
   const [taxSettings, setTaxSettings] = useState<TaxSettings>({
     gstRate: 13,
     pstRate: 0
   });
-  
+
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     sessionTimeout: 30
   });
@@ -111,9 +111,9 @@ const Settings: React.FC = () => {
     gstRate?: string;
     pstRate?: string;
   }>({});
-  
+
   const [sessionError, setSessionError] = useState<string>('');
-  
+
   // 提示信息状态
   const [notification, setNotification] = useState<{
     open: boolean;
@@ -124,7 +124,7 @@ const Settings: React.FC = () => {
     message: '',
     severity: 'success'
   });
-  
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
   };
@@ -133,7 +133,7 @@ const Settings: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       if (!user?.tenantId) return;
-      
+
       setLoading(true);
       try {
         // 获取商户基础信息
@@ -159,15 +159,15 @@ const Settings: React.FC = () => {
           // 解析税务设置
           const gstConfig = configResponse.find((config: any) => config.configKey === 'gst_rate');
           const pstConfig = configResponse.find((config: any) => config.configKey === 'pst_rate');
-          
+
           const gstRateValue = gstConfig ? parseFloat(gstConfig.configValue) : 13;
           const pstRateValue = pstConfig ? parseFloat(pstConfig.configValue) : 0;
-          
+
           setTaxSettings({
             gstRate: gstRateValue,
             pstRate: pstRateValue
           });
-          
+
           setGstRateDisplay(gstRateValue.toString());
           setPstRateDisplay(pstRateValue.toString());
 
@@ -208,7 +208,7 @@ const Settings: React.FC = () => {
     } else if (field === 'pstRate') {
       setPstRateDisplay(value);
     }
-    
+
     // 清除之前的错误
     setTaxErrors(prev => ({
       ...prev,
@@ -221,7 +221,7 @@ const Settings: React.FC = () => {
     }
 
     const numValue = parseFloat(value);
-    
+
     // 验证是否为有效数字
     if (isNaN(numValue)) {
       setTaxErrors(prev => ({
@@ -250,7 +250,7 @@ const Settings: React.FC = () => {
   const handleSystemSettingsChange = (field: keyof SystemSettings, value: string) => {
     // 更新显示值
     setSessionTimeoutDisplay(value);
-    
+
     // 清除之前的错误
     setSessionError('');
 
@@ -260,7 +260,7 @@ const Settings: React.FC = () => {
     }
 
     const numValue = parseInt(value);
-    
+
     // 验证是否为有效数字
     if (isNaN(numValue)) {
       setSessionError(t('settings.errors.invalidNumber'));
@@ -282,7 +282,7 @@ const Settings: React.FC = () => {
 
   const handleSaveSettings = async () => {
     if (!user?.tenantId) return;
-    
+
     // 检查是否有验证错误
     if (Object.values(taxErrors).some(error => error) || sessionError) {
       setNotification({
@@ -306,23 +306,23 @@ const Settings: React.FC = () => {
     // 检查税率是否为有效值（如果显示为空，使用0）
     const finalGstRate = gstRateDisplay === '' ? 0 : taxSettings.gstRate;
     const finalPstRate = pstRateDisplay === '' ? 0 : taxSettings.pstRate;
-    
+
     setSaving(true);
     try {
       // 保存商户基础信息
       await merchantConfigApi.updateMerchantBasicInfo(user.tenantId, merchantInfo);
-      
+
       // 保存税务设置
       await merchantConfigApi.updateConfig(user.tenantId, 'gst_rate', finalGstRate.toString(), 'GST/HST税率');
       await merchantConfigApi.updateConfig(user.tenantId, 'pst_rate', finalPstRate.toString(), 'PST税率');
-      
+
       // 保存系统设置
       await merchantConfigApi.updateConfig(user.tenantId, 'session_timeout', systemSettings.sessionTimeout.toString(), '会话超时时间(分钟)');
-      
+
       // 刷新Context中的设置
       await refreshTaxSettings();
       updateSessionTimeout(systemSettings.sessionTimeout);
-      
+
       setNotification({
         open: true,
         message: t('settings.settingsSaved'),
@@ -345,9 +345,9 @@ const Settings: React.FC = () => {
   };
 
   const tabsConfig = [
-      { label: t('settings.tabs.basic'), icon: <BusinessIcon />, color: '#6366F1' },
-  { label: t('settings.tabs.tax'), icon: <TaxIcon />, color: '#F59E0B' },
-  { label: t('settings.tabs.system'), icon: <TuneIcon />, color: '#8B5CF6' },
+    { label: t('settings.tabs.basic'), icon: <BusinessIcon />, color: '#6366F1' },
+    { label: t('settings.tabs.tax'), icon: <TaxIcon />, color: '#F59E0B' },
+    { label: t('settings.tabs.system'), icon: <TuneIcon />, color: '#8B5CF6' },
   ];
 
   return (
@@ -356,10 +356,10 @@ const Settings: React.FC = () => {
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              sx={{ 
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
                 fontWeight: 700,
                 background: 'linear-gradient(45deg, #4F46E5, #6366F1)',
                 WebkitBackgroundClip: 'text',
@@ -385,13 +385,13 @@ const Settings: React.FC = () => {
         }}
       >
         {/* 美化的标签栏 */}
-        <Box sx={{ 
-          borderBottom: 1, 
-          borderColor: 'divider', 
+        <Box sx={{
+          borderBottom: 1,
+          borderColor: 'divider',
           background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.02), rgba(139, 92, 246, 0.02))',
         }}>
-          <Tabs 
-            value={selectedTab} 
+          <Tabs
+            value={selectedTab}
             onChange={handleTabChange}
             variant="scrollable"
             scrollButtons="auto"
@@ -423,14 +423,14 @@ const Settings: React.FC = () => {
             }}
           >
             {tabsConfig.map((tab, index) => (
-              <Tab 
+              <Tab
                 key={index}
-                icon={React.cloneElement(tab.icon, { 
-                  sx: { 
+                icon={React.cloneElement(tab.icon, {
+                  sx: {
                     fontSize: 20,
                     color: selectedTab === index ? tab.color : 'text.secondary',
                     transition: 'color 0.3s ease',
-                  } 
+                  }
                 })}
                 iconPosition="start"
                 label={tab.label}
@@ -477,7 +477,7 @@ const Settings: React.FC = () => {
                         {t('settings.merchantInfo')}
                       </Typography>
                     </Box>
-                    
+
                     <Grid container spacing={3}>
                       <Grid item xs={12}>
                         <TextField

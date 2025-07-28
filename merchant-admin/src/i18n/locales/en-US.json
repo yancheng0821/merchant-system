@@ -11,6 +11,11 @@
     "loading": "Loading...",
     "close": "Close"
   },
+  "session": {
+    "expired": "Session Expired",
+    "expiredMessage": "Your session has expired. Please log in again to continue.",
+    "relogin": "Re-login"
+  },
   "nav": {
     "title": "Merchant Admin",
     "systemTitle": "Merchant Management System",
@@ -837,11 +842,6 @@
       "notifications": "Notification Settings",
       "system": "System Settings"
     },
-    "timezones": {
-      "beijing": "Beijing Time (UTC+8)",
-      "newYork": "New York Time (UTC-5)",
-      "london": "London Time (UTC+0)"
-    },
     "systemNotifications": "Send System Notifications",
     "dataAnalytics": "Allow Data Analytics",
     "tableHeaders": {
@@ -910,7 +910,9 @@
       "validationFailed": "Please fix input errors before saving",
       "loadFailed": "Failed to load settings, please refresh and try again",
       "sessionTimeoutRequired": "Session timeout cannot be empty"
-    }
+    },
+    "success": "Success",
+    "error": "Error"
   },
   "dashboard": {
     "subtitle": "Real-time Data Overview & Analytics",
