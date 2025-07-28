@@ -82,60 +82,106 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDTO createOrder(OrderCreateDTO orderCreate) {
-        // 创建订单
-        Order order = new Order();
-        order.setTenantId(orderCreate.getTenantId());
-        order.setOrderNumber(generateOrderNumber());
-        order.setCustomerId(orderCreate.getCustomerId());
-        order.setAppointmentId(orderCreate.getAppointmentId());
-        order.setResourceId(orderCreate.getResourceId());
-        order.setResourceType(orderCreate.getResourceType());
-        order.setTaxRate(orderCreate.getTaxRate());
-        order.setTipPercentage(orderCreate.getTipPercentage());
-        order.setNotes(orderCreate.getNotes());
-        order.setOrderStatus("draft");
-        order.setPaymentStatus("pending");
-        order.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
-        order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+        log.info("Starting order creation process...");
+        log.info("OrderCreateDTO: {}", orderCreate);
         
-        // 计算金额
-        double subtotal = 0.0;
-        for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
-            com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
-            if (service != null) {
+        try {
+            // 验证客户是否存在
+            Customer customer = customerMapper.selectById(orderCreate.getCustomerId());
+            if (customer == null) {
+                log.error("Customer not found with ID: {}", orderCreate.getCustomerId());
+                throw new RuntimeException("Customer not found with ID: " + orderCreate.getCustomerId());
+            }
+            log.info("Customer found: {} {}", customer.getFirstName(), customer.getLastName());
+            
+            // 验证资源是否存在（如果提供了资源ID）
+            if (orderCreate.getResourceId() != null) {
+                Resource resource = resourceMapper.findById(orderCreate.getResourceId());
+                if (resource == null) {
+                    log.error("Resource not found with ID: {}", orderCreate.getResourceId());
+                    throw new RuntimeException("Resource not found with ID: " + orderCreate.getResourceId());
+                }
+                log.info("Resource found: {}", resource.getName());
+            }
+            
+            // 创建订单
+            Order order = new Order();
+            order.setTenantId(orderCreate.getTenantId());
+            order.setOrderNumber(generateOrderNumber());
+            order.setCustomerId(orderCreate.getCustomerId());
+            order.setAppointmentId(orderCreate.getAppointmentId());
+            order.setResourceId(orderCreate.getResourceId());
+            order.setResourceType(orderCreate.getResourceType());
+            order.setTaxRate(orderCreate.getTaxRate());
+            order.setTipPercentage(orderCreate.getTipPercentage());
+            order.setNotes(orderCreate.getNotes());
+            order.setOrderStatus("draft");
+            order.setPaymentStatus("pending");
+            order.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
+            order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+            // Set created_by and updated_by to resource_id if available, otherwise null
+            order.setCreatedBy(orderCreate.getResourceId());
+            order.setUpdatedBy(orderCreate.getResourceId());
+            
+            log.info("Order object created: {}", order);
+            
+            // 计算金额
+            double subtotal = 0.0;
+            for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
+                log.info("Processing service ID: {}", serviceCreate.getServiceId());
+                com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
+                if (service == null) {
+                    log.error("Service not found with ID: {}", serviceCreate.getServiceId());
+                    throw new RuntimeException("Service not found with ID: " + serviceCreate.getServiceId());
+                }
+                log.info("Service found: {} - Price: {}", service.getName(), service.getPrice());
                 subtotal += service.getPrice().doubleValue() * serviceCreate.getQuantity();
             }
-        }
-        
-        order.setSubtotal(subtotal);
-        order.setTaxAmount(subtotal * orderCreate.getTaxRate());
-        order.setTipAmount(subtotal * orderCreate.getTipPercentage() / 100);
-        order.setTotalAmount(subtotal + order.getTaxAmount() + order.getTipAmount());
-        
-        orderMapper.insert(order);
-        
-        // 创建订单服务明细
-        for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
-            com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
-            if (service != null) {
-                com.merchant.server.businessservice.entity.OrderService orderService = new com.merchant.server.businessservice.entity.OrderService();
-                orderService.setOrderId(order.getId());
-                orderService.setServiceId(service.getId());
-                orderService.setServiceName(service.getName());
-                orderService.setServiceCategory(service.getCategory() != null ? service.getCategory().getName() : null);
-                orderService.setPrice(service.getPrice().doubleValue());
-                orderService.setQuantity(serviceCreate.getQuantity());
-                orderService.setDuration(service.getDuration());
-                orderService.setAssignedResourceId(serviceCreate.getAssignedResourceId());
-                orderService.setAssignedResourceType(serviceCreate.getAssignedResourceType());
-                orderService.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
-                orderService.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
-                
-                orderServiceMapper.insert(orderService);
+            
+            order.setSubtotal(subtotal);
+            order.setTaxAmount(subtotal * orderCreate.getTaxRate());
+            order.setTipAmount(subtotal * orderCreate.getTipPercentage() / 100);
+            order.setTotalAmount(subtotal + order.getTaxAmount() + order.getTipAmount());
+            
+            log.info("Order amounts calculated - Subtotal: {}, Tax: {}, Tip: {}, Total: {}", 
+                order.getSubtotal(), order.getTaxAmount(), order.getTipAmount(), order.getTotalAmount());
+            
+            // 插入订单
+            log.info("Inserting order into database...");
+            orderMapper.insert(order);
+            log.info("Order inserted with ID: {}", order.getId());
+            
+            // 创建订单服务明细
+            for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
+                log.info("Creating order service for service ID: {}", serviceCreate.getServiceId());
+                com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
+                if (service != null) {
+                    com.merchant.server.businessservice.entity.OrderService orderService = new com.merchant.server.businessservice.entity.OrderService();
+                    orderService.setOrderId(order.getId());
+                    orderService.setServiceId(service.getId());
+                    orderService.setServiceName(service.getName());
+                    orderService.setServiceCategory(service.getCategory() != null ? service.getCategory().getName() : null);
+                    orderService.setPrice(service.getPrice().doubleValue());
+                    orderService.setQuantity(serviceCreate.getQuantity());
+                    orderService.setDuration(service.getDuration());
+                    orderService.setAssignedResourceId(serviceCreate.getAssignedResourceId());
+                    orderService.setAssignedResourceType(serviceCreate.getAssignedResourceType());
+                    orderService.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
+                    orderService.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+                    
+                    log.info("OrderService object: {}", orderService);
+                    orderServiceMapper.insert(orderService);
+                    log.info("Order service inserted with ID: {}", orderService.getId());
+                }
             }
+            
+            log.info("Order creation completed successfully");
+            return getOrderById(order.getId());
+            
+        } catch (Exception e) {
+            log.error("Error during order creation", e);
+            throw e;
         }
-        
-        return getOrderById(order.getId());
     }
     
     @Override

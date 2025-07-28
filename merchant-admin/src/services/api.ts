@@ -170,20 +170,32 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
     try {
       responseData = await response.json();
     } catch (parseError) {
-      // 如果无法解析JSON，创建一个默认的错误响应
+      // 如果无法解析JSON，尝试获取文本内容
+      let textContent = '';
+      try {
+        textContent = await response.text();
+      } catch (textError) {
+        textContent = 'Unable to read response';
+      }
+      
       responseData = {
         success: false,
         message: `HTTP ${response.status}: ${response.statusText}`,
-        data: null
+        data: null,
+        rawResponse: textContent
       };
     }
 
     // 如果响应不成功，抛出错误
     if (!response.ok) {
       console.error('API Error Response:', responseData);
+      console.error('Request URL:', `${API_BASE_URL}${url}`);
+      console.error('Request Config:', config);
+      
       const error = new Error(responseData.message || `HTTP error! status: ${response.status}`);
       (error as any).response = response;
       (error as any).responseData = responseData;
+      (error as any).status = response.status;
       throw error;
     }
 
@@ -382,10 +394,14 @@ export interface Service {
   description?: string;
   price: number;
   duration: number;
-
+  icon?: string;
   status?: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;
   updatedAt?: string;
+  // 关联信息
+  categoryName?: string;
+  categoryIcon?: string;
+  categoryColor?: string;
 }
 
 // 客户管理相关类型定义

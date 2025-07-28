@@ -140,9 +140,10 @@ const AddOrderDialog: React.FC<AddOrderDialogProps> = ({ open, onClose, onSave }
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!customer && !newCustomerName.trim()) {
-      newErrors.customer = t('orders.customerRequired');
-    }
+    // Customer字段不再是必填的，支持walk-in客户
+    // if (!customer && !newCustomerName.trim()) {
+    //   newErrors.customer = t('orders.customerRequired');
+    // }
 
     if (newCustomerName.trim() && !/^\+?[1-9]\d{1,14}$/.test(newCustomerPhone.replace(/[-\s()]/g, ''))) {
       newErrors.phone = t('orders.invalidPhone');

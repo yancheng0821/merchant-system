@@ -106,10 +106,10 @@
     <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO orders (tenant_id, order_number, customer_id, appointment_id, resource_id, resource_type,
         subtotal, tax_rate, tax_amount, tip_amount, tip_percentage, total_amount, payment_method, payment_status,
-        order_status, notes, created_at, updated_at)
+        order_status, notes, created_at, updated_at, created_by, updated_by)
         VALUES (#{tenantId}, #{orderNumber}, #{customerId}, #{appointmentId}, #{resourceId}, #{resourceType},
         #{subtotal}, #{taxRate}, #{taxAmount}, #{tipAmount}, #{tipPercentage}, #{totalAmount}, #{paymentMethod},
-        #{paymentStatus}, #{orderStatus}, #{notes}, #{createdAt}, #{updatedAt})
+        #{paymentStatus}, #{orderStatus}, #{notes}, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
     </insert>
 
     <update id="updateById" parameterType="com.merchant.server.businessservice.entity.Order">

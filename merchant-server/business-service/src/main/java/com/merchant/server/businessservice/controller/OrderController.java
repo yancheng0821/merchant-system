@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.dto.OrderDTO;
 import com.merchant.server.businessservice.dto.OrderCreateDTO;
+import com.merchant.server.businessservice.dto.OrderServiceCreateDTO;
 import com.merchant.server.businessservice.entity.Order;
 import com.merchant.server.businessservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -83,15 +84,72 @@ public class OrderController {
      * 创建订单
      */
     @PostMapping
-    public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody OrderCreateDTO orderCreate) {
+    public ResponseEntity<?> createOrder(@Valid @RequestBody OrderCreateDTO orderCreate) {
         log.info("Creating new order for tenant: {}", orderCreate.getTenantId());
+        log.info("Order create data: {}", orderCreate);
+        
+        // 详细验证输入数据
+        if (orderCreate.getTenantId() == null) {
+            log.error("Tenant ID is null");
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Tenant ID is required");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        if (orderCreate.getCustomerId() == null) {
+            log.error("Customer ID is null");
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Customer ID is required");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        if (orderCreate.getServices() == null || orderCreate.getServices().isEmpty()) {
+            log.error("Services list is null or empty");
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Services are required");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        // 验证每个服务
+        for (int i = 0; i < orderCreate.getServices().size(); i++) {
+            OrderServiceCreateDTO service = orderCreate.getServices().get(i);
+            if (service.getServiceId() == null) {
+                log.error("Service ID is null at index {}", i);
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Service ID is required for service at index " + i);
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            if (service.getQuantity() == null || service.getQuantity() <= 0) {
+                log.error("Invalid quantity {} at service index {}", service.getQuantity(), i);
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Valid quantity is required for service at index " + i);
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+        }
         
         try {
             OrderDTO createdOrder = orderService.createOrder(orderCreate);
+            log.info("Order created successfully with ID: {}", createdOrder.getId());
             return ResponseEntity.ok(createdOrder);
         } catch (Exception e) {
             log.error("Failed to create order", e);
-            return ResponseEntity.badRequest().build();
+            log.error("Exception type: {}", e.getClass().getSimpleName());
+            log.error("Exception message: {}", e.getMessage());
+            if (e.getCause() != null) {
+                log.error("Root cause: {}", e.getCause().getMessage());
+            }
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("error", e.getClass().getSimpleName());
+            errorResponse.put("details", e.getCause() != null ? e.getCause().getMessage() : null);
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
