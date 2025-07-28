@@ -20,7 +20,6 @@ import {
 } from '@mui/material';
 import {
   Close as CloseIcon,
-  Print as PrintIcon,
   AttachMoney as MoneyIcon,
   CreditCard as CreditCardIcon,
   AccountBalanceWallet as WalletIcon,
@@ -84,9 +83,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+
 
   return (
     <Dialog
@@ -104,9 +101,6 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
             {t('orders.orderDetails')} - {order.orderNumber}
           </Typography>
           <Box>
-            <IconButton onClick={handlePrint} sx={{ mr: 1 }}>
-              <PrintIcon />
-            </IconButton>
             <IconButton onClick={onClose}>
               <CloseIcon />
             </IconButton>
@@ -381,9 +375,6 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
       <DialogActions>
         <Button onClick={onClose}>
           {t('orders.close')}
-        </Button>
-        <Button onClick={handlePrint} startIcon={<PrintIcon />}>
-          {t('orders.printReceipt')}
         </Button>
       </DialogActions>
     </Dialog>

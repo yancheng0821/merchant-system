@@ -21,6 +21,15 @@
         SELECT * FROM order_services WHERE order_id = #{orderId}
     </select>
 
+    <select id="selectByOrderIds" resultMap="BaseResultMap">
+        SELECT * FROM order_services 
+        WHERE order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        ORDER BY order_id, id
+    </select>
+
     <insert id="insert" parameterType="com.merchant.server.businessservice.entity.OrderService" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO order_services (order_id, service_id, service_name, service_category, price, quantity,
         duration, assigned_resource_id, assigned_resource_type, created_at, updated_at)

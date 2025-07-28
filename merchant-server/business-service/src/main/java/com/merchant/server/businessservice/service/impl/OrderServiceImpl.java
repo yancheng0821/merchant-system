@@ -57,6 +57,31 @@ public class OrderServiceImpl implements OrderService {
         List<OrderDTO> orderDTOs = orders.stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
+        
+        // 批量加载订单服务明细
+        if (!orderDTOs.isEmpty()) {
+            List<Long> orderIds = orderDTOs.stream()
+                .map(OrderDTO::getId)
+                .collect(Collectors.toList());
+            
+            // 查询所有订单的服务明细
+            List<com.merchant.server.businessservice.entity.OrderService> allOrderServices = 
+                orderServiceMapper.selectByOrderIds(orderIds);
+            
+            // 按订单ID分组
+            Map<Long, List<com.merchant.server.businessservice.entity.OrderService>> servicesByOrderId = 
+                allOrderServices.stream()
+                    .collect(Collectors.groupingBy(com.merchant.server.businessservice.entity.OrderService::getOrderId));
+            
+            // 为每个订单设置服务明细
+            orderDTOs.forEach(orderDTO -> {
+                List<com.merchant.server.businessservice.entity.OrderService> orderServices = 
+                    servicesByOrderId.getOrDefault(orderDTO.getId(), new ArrayList<>());
+                orderDTO.setServices(orderServices.stream()
+                    .map(this::convertServiceToDTO)
+                    .collect(Collectors.toList()));
+            });
+        }
             
         return new PageImpl<>(orderDTOs, pageable, total);
     }

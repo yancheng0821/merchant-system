@@ -37,8 +37,6 @@ import {
   Search as SearchIcon,
   MoreVert as MoreVertIcon,
   Visibility as VisibilityIcon,
-  Receipt as ReceiptIcon,
-  Download as DownloadIcon,
   AttachMoney as MoneyIcon,
   CreditCard as CreditCardIcon,
   Payment as PaymentIcon,
@@ -56,6 +54,10 @@ interface Order {
   customerId: number;
   customerName: string;
   customerPhone: string;
+  appointmentId?: number;
+  resourceId?: number;
+  resourceName?: string;
+  resourceType?: string;
   services?: any[];
   subtotal: number;
   taxAmount: number;
@@ -190,11 +192,7 @@ const OrderHistory: React.FC = () => {
     setMenuAnchorEl(null);
   };
 
-  const handleExportReceipt = () => {
-    // In real implementation, this would generate a PDF receipt
-    console.log('Exporting receipt for order:', selectedOrder?.orderNumber);
-    setMenuAnchorEl(null);
-  };
+
 
   const formatDateTime = (dateString: string) => {
     return TimeZoneUtils.formatVancouverDateTime(dateString);
@@ -420,10 +418,7 @@ const OrderHistory: React.FC = () => {
           <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
           {t('orders.viewDetails')}
         </MenuItem>
-        <MenuItem onClick={handleExportReceipt}>
-          <ReceiptIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
-          {t('orders.printReceipt')}
-        </MenuItem>
+
       </Menu>
 
       {/* Order Details Dialog */}
@@ -466,6 +461,29 @@ const OrderHistory: React.FC = () => {
                   </Typography>
                 </Grid>
               </Grid>
+
+              {/* 显示预约和资源信息 */}
+              {(selectedOrder.appointmentId || selectedOrder.resourceId) && (
+                <>
+                  <Grid container spacing={2} mb={2}>
+                    {selectedOrder.appointmentId && (
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">{t('orders.appointmentId')}</Typography>
+                        <Typography variant="body2">#{selectedOrder.appointmentId}</Typography>
+                      </Grid>
+                    )}
+                    {selectedOrder.resourceId && (
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">{t('orders.assignedResource')}</Typography>
+                        <Typography variant="body2">{selectedOrder.resourceName || `${selectedOrder.resourceType} #${selectedOrder.resourceId}`}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {selectedOrder.resourceType}
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                </>
+              )}
 
               <Divider sx={{ my: 2 }} />
 
@@ -524,19 +542,6 @@ const OrderHistory: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailsDialog(false)}>{t('orders.close')}</Button>
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={handleExportReceipt}
-            sx={{
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #059669, #047857)',
-              },
-            }}
-          >
-            {t('orders.printReceipt')}
-          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -165,6 +165,9 @@ interface Appointment {
     duration: number;
     serviceId: number;
   }[];
+  // 添加资源信息
+  resourceId?: number;
+  resourceType?: 'STAFF' | 'ROOM';
 }
 
 const PaymentProcess: React.FC = () => {
@@ -310,6 +313,9 @@ const PaymentProcess: React.FC = () => {
             status: apt.status,
             totalAmount: apt.totalAmount || 0,
             appointmentServices: apt.appointmentServices,
+            // 添加资源信息
+            resourceId: apt.resourceId,
+            resourceType: apt.resourceType,
           };
         });
 
@@ -554,10 +560,18 @@ const PaymentProcess: React.FC = () => {
         }
       }
 
-      // Create order - 对于walk-in客户，不指定资源ID和资源类型
+      // Create order - 根据是否基于预约来设置相关字段
       const orderData = {
         tenantId: Number(user.tenantId),
         customerId: Number(customerToUse.id),
+        // 如果是基于预约的订单，添加预约ID和资源信息
+        ...(isAppointmentBased && selectedAppointment && {
+          appointmentId: Number(selectedAppointment.id),
+          ...(selectedAppointment.resourceId && {
+            resourceId: Number(selectedAppointment.resourceId),
+            resourceType: selectedAppointment.resourceType,
+          }),
+        }),
         taxRate: Number(taxRate),
         tipPercentage: 0.0,
         paymentMethod: paymentMethod, // 添加支付方式
@@ -565,7 +579,12 @@ const PaymentProcess: React.FC = () => {
         services: orderItems.map(item => ({
           serviceId: Number(item.serviceId),
           quantity: Number(item.quantity),
-          // 不指定assignedResourceId和assignedResourceType，让后端处理
+          // 对于基于预约的订单，从预约中获取资源信息
+          // 对于直接选择服务的订单，不指定资源信息
+          ...(isAppointmentBased && selectedAppointment?.resourceId && {
+            assignedResourceId: Number(selectedAppointment.resourceId),
+            assignedResourceType: selectedAppointment.resourceType,
+          }),
         })),
       };
 
@@ -573,9 +592,18 @@ const PaymentProcess: React.FC = () => {
       console.log('📦 Order data validation:', {
         tenantId: typeof orderData.tenantId,
         customerId: typeof orderData.customerId,
+        appointmentId: orderData.appointmentId,
+        resourceId: orderData.resourceId,
+        resourceType: orderData.resourceType,
         taxRate: typeof orderData.taxRate,
         servicesCount: orderData.services.length,
-        firstService: orderData.services[0]
+        firstService: orderData.services[0],
+        isAppointmentBased,
+        selectedAppointment: selectedAppointment ? {
+          id: selectedAppointment.id,
+          resourceId: selectedAppointment.resourceId,
+          resourceType: selectedAppointment.resourceType
+        } : null
       });
 
       let orderResponse, order;
