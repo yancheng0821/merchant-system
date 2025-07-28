@@ -24,6 +24,7 @@ public class OrderCreateDTO {
     private String resourceType;
     
     @NotNull(message = "Services are required")
+    @jakarta.validation.Valid
     private List<OrderServiceCreateDTO> services;
     
     @Min(value = 0, message = "Tax rate must be non-negative")

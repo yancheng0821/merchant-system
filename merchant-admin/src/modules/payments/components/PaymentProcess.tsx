@@ -174,7 +174,7 @@ interface Appointment {
 const PaymentProcess: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { calculateTax } = useTax();
+  const { calculateTax, taxSettings } = useTax();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [serviceSearchTerm, setServiceSearchTerm] = useState('');
@@ -535,7 +535,7 @@ const PaymentProcess: React.FC = () => {
             resourceType: selectedAppointment.resourceType,
           }),
         }),
-        taxRate: 0.0, // 使用taxRate而不是taxAmount，后端会自动计算税费
+        taxRate: (taxSettings.gstRate + taxSettings.pstRate) / 100, // 使用实际的税率设置
         tipPercentage: 0.0,
         paymentMethod: paymentMethod, // 添加支付方式
         notes: notes || '',
@@ -600,7 +600,18 @@ const PaymentProcess: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Payment failed:', error);
-      setPaymentError(error.response?.data?.message || error.message || 'Payment failed. Please try again.');
+
+      let errorMessage = 'Payment failed. Please try again.';
+      if (error.responseData?.message) {
+        errorMessage = error.responseData.message;
+      } else if (error.responseData?.fieldErrors) {
+        const fieldErrors = Object.values(error.responseData.fieldErrors).join(', ');
+        errorMessage = `Validation errors: ${fieldErrors}`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setPaymentError(errorMessage);
       setPaymentStatus('failed');
     }
   };

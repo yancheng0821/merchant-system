@@ -107,8 +107,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDTO createOrder(OrderCreateDTO orderCreate) {
-        log.info("Starting order creation process...");
-        log.info("OrderCreateDTO: {}", orderCreate);
+        log.info("Creating order for tenant: {}", orderCreate.getTenantId());
         
         try {
             // 验证客户是否存在
@@ -117,7 +116,7 @@ public class OrderServiceImpl implements OrderService {
                 log.error("Customer not found with ID: {}", orderCreate.getCustomerId());
                 throw new RuntimeException("Customer not found with ID: " + orderCreate.getCustomerId());
             }
-            log.info("Customer found: {} {}", customer.getFirstName(), customer.getLastName());
+
             
             // 验证资源是否存在（如果提供了资源ID）
             if (orderCreate.getResourceId() != null) {
@@ -126,9 +125,7 @@ public class OrderServiceImpl implements OrderService {
                     log.error("Resource not found with ID: {}", orderCreate.getResourceId());
                     throw new RuntimeException("Resource not found with ID: " + orderCreate.getResourceId());
                 }
-                log.info("Resource found: {}", resource.getName());
-            } else {
-                log.info("No resource ID provided, skipping resource validation");
+
             }
             
             // 创建订单
@@ -151,18 +148,18 @@ public class OrderServiceImpl implements OrderService {
             order.setCreatedBy(orderCreate.getResourceId());
             order.setUpdatedBy(orderCreate.getResourceId());
             
-            log.info("Order object created: {}", order);
+
             
             // 计算金额
             double subtotal = 0.0;
             for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
-                log.info("Processing service ID: {}", serviceCreate.getServiceId());
+
                 com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
                 if (service == null) {
                     log.error("Service not found with ID: {}", serviceCreate.getServiceId());
                     throw new RuntimeException("Service not found with ID: " + serviceCreate.getServiceId());
                 }
-                log.info("Service found: {} - Price: {}", service.getName(), service.getPrice());
+
                 subtotal += service.getPrice().doubleValue() * serviceCreate.getQuantity();
             }
             
