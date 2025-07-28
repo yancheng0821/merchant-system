@@ -1449,3 +1449,36 @@ export const dashboardApi = {
     return response;
   },
 };
+
+// Analytics API
+export const analyticsApi = {
+  // 获取分析概览数据
+  getOverview: async (tenantId: number, timePeriod: string = '30days'): Promise<any> => {
+    const response = await createRequest(`/api/analytics/overview?tenantId=${tenantId}&timePeriod=${timePeriod}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 同步业务数据
+  syncBusinessData: async (tenantId: number): Promise<void> => {
+    await createRequest(`/api/analytics/sync/${tenantId}`, {
+      method: 'POST',
+    });
+  },
+
+  // 初始化分析数据
+  initAnalyticsData: async (tenantId: number): Promise<string> => {
+    const response = await createRequest(`/api/analytics/init/${tenantId}`, {
+      method: 'POST',
+    });
+    return response;
+  },
+
+  // 清理过期缓存
+  cleanExpiredCache: async (): Promise<void> => {
+    await createRequest('/api/analytics/cache/clean', {
+      method: 'POST',
+    });
+  },
+};

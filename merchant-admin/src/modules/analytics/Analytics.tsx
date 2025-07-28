@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Box,
@@ -20,6 +20,8 @@ import {
   Avatar,
   LinearProgress,
   alpha,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -31,6 +33,8 @@ import {
   Insights as InsightsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
+import { analyticsApi } from '../../services/api';
 import {
   AreaChart,
   Area,
@@ -51,29 +55,6 @@ import { CurrencyUtils } from '../../config/constants';
 // 颜色主题 - 使用现代化配色
 const COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
 
-// 模拟数据生成
-const generateRevenueData = (days: number) => {
-  const data = [];
-  const baseDate = new Date();
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() - i);
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      revenue: Math.floor(Math.random() * 2000) + 800,
-      orders: Math.floor(Math.random() * 20) + 5,
-      tips: Math.floor(Math.random() * 300) + 100,
-    });
-  }
-  return data;
-};
-
-// serviceData will be defined inside component
-
-// staffPerformanceData will be defined inside component
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -90,8 +71,12 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 
 const Analytics: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('30days');
   const [selectedTab, setSelectedTab] = useState(0);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const handleTimeRangeChange = (event: any) => {
     setTimeRange(event.target.value);
@@ -101,62 +86,67 @@ const Analytics: React.FC = () => {
     setSelectedTab(newValue);
   };
 
-  const revenueData = useMemo(() => generateRevenueData(30), []);
-  
-  const serviceData = [
-    { name: t('analytics.serviceCategories.hairCare'), value: 35, revenue: 12500, count: 85, color: '#EC4899' },
-    { name: t('analytics.serviceCategories.spaTreatments'), value: 28, revenue: 9800, count: 45, color: '#10B981' },
-    { name: t('analytics.serviceCategories.facialCare'), value: 20, revenue: 7200, count: 65, color: '#F59E0B' },
-    { name: t('analytics.serviceCategories.nailCare'), value: 17, revenue: 4800, count: 95, color: '#8B5CF6' },
-  ];
+  // 获取分析数据
+  const fetchAnalyticsData = async () => {
+    if (!user?.tenantId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await analyticsApi.getOverview(user.tenantId, timeRange);
+      setAnalyticsData(data);
+    } catch (err: any) {
+      console.error('Failed to fetch analytics data:', err);
+      setError(err.message || 'Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const staffPerformanceData = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      avatar: 'SJ',
-      revenue: 15600,
-      orders: 124,
-      avgRating: 4.8,
-      topServices: [t('analytics.serviceCategories.hairCare'), t('analytics.serviceCategories.facialCare')],
-      efficiency: 92,
-    },
-    {
-      id: '2',
-      name: 'Jennifer Wong',
-      avatar: 'JW',
-      revenue: 13800,
-      orders: 98,
-      avgRating: 4.9,
-      topServices: [t('analytics.serviceCategories.spaTreatments'), t('analytics.serviceCategories.facialCare')],
-      efficiency: 88,
-    },
-    {
-      id: '3',
-      name: 'Maria Lopez',
-      avatar: 'ML',
-      revenue: 11200,
-      orders: 156,
-      avgRating: 4.6,
-      topServices: [t('analytics.serviceCategories.nailCare'), t('analytics.serviceCategories.hairCare')],
-      efficiency: 85,
-    },
-    {
-      id: '4',
-      name: 'Alex Chen',
-      avatar: 'AC',
-      revenue: 9800,
-      orders: 89,
-      avgRating: 4.7,
-      topServices: [t('analytics.serviceCategories.hairCare')],
-      efficiency: 78,
-    },
-  ];
-  
-  // 计算汇总数据
-  const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
-  const totalOrders = revenueData.reduce((sum, item) => sum + item.orders, 0);
-  const avgOrderValue = totalRevenue / totalOrders;
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [user?.tenantId, timeRange]);
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box mb={4}>
+        <Alert severity="error" sx={{ borderRadius: 2 }}>
+          {error}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <Box mb={4}>
+        <Alert severity="info" sx={{ borderRadius: 2 }}>
+          {t('analytics.noDataAvailable')}
+        </Alert>
+      </Box>
+    );
+  }
+
+  const {
+    totalRevenue = 0,
+    totalOrders = 0,
+    avgOrderValue = 0,
+    activeStaff = 0,
+    avgRating = 0,
+    revenueData = [],
+    serviceStats = [],
+    staffPerformance = [],
+    businessMetrics = {}
+  } = analyticsData;
 
   // 自定义Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -406,7 +396,7 @@ const Analytics: React.FC = () => {
                   <PeopleIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
-                  {staffPerformanceData.length}
+                  {activeStaff}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -415,7 +405,7 @@ const Analytics: React.FC = () => {
               <Box display="flex" alignItems="center" mt={1}>
                 <StarIcon sx={{ fontSize: 16, color: '#F59E0B', mr: 0.5 }} />
                 <Typography variant="caption" sx={{ color: '#F59E0B', fontWeight: 600 }}>
-                  {t('analytics.avgRating')} 4.7
+                  {t('analytics.avgRating')} {avgRating}
                 </Typography>
               </Box>
             </CardContent>
@@ -562,20 +552,21 @@ const Analytics: React.FC = () => {
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
-                    data={serviceData}
+                    data={serviceStats}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
                     outerRadius={120}
                     paddingAngle={2}
-                    dataKey="value"
+                    dataKey="percentage"
+                    nameKey="serviceName"
                   >
-                    {serviceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {serviceStats.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number, name: string) => [`${value}%`, name]}
+                    formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
                   />
                   <Legend />
                 </PieChart>
@@ -598,10 +589,10 @@ const Analytics: React.FC = () => {
                 </Typography>
               </Box>
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={serviceData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <BarChart data={serviceStats} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={alpha('#000', 0.1)} />
                   <XAxis 
-                    dataKey="name" 
+                    dataKey="serviceName" 
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -614,7 +605,7 @@ const Analytics: React.FC = () => {
                   <Tooltip 
                     formatter={(value: number) => [CurrencyUtils.formatAmountWithCommas(value), t('analytics.chartLabels.income')]}
                   />
-                  <Bar dataKey="revenue" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="totalRevenue" fill="#F59E0B" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Grid>
@@ -651,26 +642,26 @@ const Analytics: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {staffPerformanceData.map((staff) => (
-                  <TableRow key={staff.id} sx={{ '&:hover': { backgroundColor: alpha('#8B5CF6', 0.04) } }}>
+                {staffPerformance.map((staff: any) => (
+                  <TableRow key={staff.staffId} sx={{ '&:hover': { backgroundColor: alpha('#8B5CF6', 0.04) } }}>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={2}>
                         <Avatar sx={{ bgcolor: '#8B5CF6', width: 32, height: 32 }}>
                           {staff.avatar}
                         </Avatar>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {staff.name}
+                          {staff.staffName}
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
-                        {CurrencyUtils.formatAmountWithCommas(staff.revenue)}
+                        {CurrencyUtils.formatAmountWithCommas(staff.totalRevenue)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2">
-                        {staff.orders}
+                        {staff.orderCount}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -685,7 +676,7 @@ const Analytics: React.FC = () => {
                       <Box display="flex" alignItems="center" gap={1}>
                         <LinearProgress
                           variant="determinate"
-                          value={staff.efficiency}
+                          value={staff.efficiencyScore}
                           sx={{
                             flex: 1,
                             height: 8,
@@ -698,13 +689,13 @@ const Analytics: React.FC = () => {
                           }}
                         />
                         <Typography variant="caption" sx={{ fontWeight: 600, color: '#8B5CF6' }}>
-                          {staff.efficiency}%
+                          {staff.efficiencyScore}%
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={0.5}>
-                        {staff.topServices.map((service, index) => (
+                        {staff.topServices?.map((service: string, index: number) => (
                           <Chip
                             key={index}
                             label={service}
@@ -745,10 +736,34 @@ const Analytics: React.FC = () => {
 
           <Grid container spacing={3}>
             {[
-              { title: t('analytics.metrics.customerSatisfaction'), value: '4.8', unit: '/5.0', color: '#F59E0B', trend: '+0.2' },
-              { title: t('analytics.metrics.serviceCompletionRate'), value: '94.2', unit: '%', color: '#10B981', trend: '+2.1%' },
-              { title: t('analytics.metrics.appointmentCancellationRate'), value: '8.5', unit: '%', color: '#F59E0B', trend: '-1.3%' },
-              { title: t('analytics.metrics.repeatCustomerRate'), value: '67.3', unit: '%', color: '#8B5CF6', trend: '+5.7%' },
+              { 
+                title: t('analytics.metrics.customerSatisfaction'), 
+                value: businessMetrics.customerSatisfaction || '0', 
+                unit: '/5.0', 
+                color: '#F59E0B', 
+                trend: businessMetrics.customerSatisfactionTrend ? `${businessMetrics.customerSatisfactionTrend > 0 ? '+' : ''}${businessMetrics.customerSatisfactionTrend}` : '0'
+              },
+              { 
+                title: t('analytics.metrics.serviceCompletionRate'), 
+                value: businessMetrics.serviceCompletionRate || '0', 
+                unit: '%', 
+                color: '#10B981', 
+                trend: businessMetrics.serviceCompletionRateTrend ? `${businessMetrics.serviceCompletionRateTrend > 0 ? '+' : ''}${businessMetrics.serviceCompletionRateTrend}%` : '0%'
+              },
+              { 
+                title: t('analytics.metrics.appointmentCancellationRate'), 
+                value: businessMetrics.appointmentCancellationRate || '0', 
+                unit: '%', 
+                color: '#F59E0B', 
+                trend: businessMetrics.appointmentCancellationRateTrend ? `${businessMetrics.appointmentCancellationRateTrend > 0 ? '+' : ''}${businessMetrics.appointmentCancellationRateTrend}%` : '0%'
+              },
+              { 
+                title: t('analytics.metrics.repeatCustomerRate'), 
+                value: businessMetrics.repeatCustomerRate || '0', 
+                unit: '%', 
+                color: '#8B5CF6', 
+                trend: businessMetrics.repeatCustomerRateTrend ? `${businessMetrics.repeatCustomerRateTrend > 0 ? '+' : ''}${businessMetrics.repeatCustomerRateTrend}%` : '0%'
+              },
             ].map((metric, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}>
                 <Card

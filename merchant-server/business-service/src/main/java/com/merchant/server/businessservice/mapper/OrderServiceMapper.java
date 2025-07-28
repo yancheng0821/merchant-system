@@ -30,4 +30,18 @@ public interface OrderServiceMapper {
      * 删除订单的所有服务明细
      */
     void deleteByOrderId(@Param("orderId") Long orderId);
+    
+    /**
+     * 获取服务统计数据用于分析
+     */
+    List<java.util.Map<String, Object>> getServiceStatsForAnalytics(@Param("tenantId") Long tenantId, 
+                                                                    @Param("startDate") String startDate, 
+                                                                    @Param("endDate") String endDate);
+    
+    /**
+     * 获取员工统计数据用于分析
+     */
+    List<java.util.Map<String, Object>> getStaffStatsForAnalytics(@Param("tenantId") Long tenantId, 
+                                                                  @Param("startDate") String startDate, 
+                                                                  @Param("endDate") String endDate);
 }

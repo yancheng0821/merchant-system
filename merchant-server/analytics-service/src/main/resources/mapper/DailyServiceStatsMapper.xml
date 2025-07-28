@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.analyticsservice.mapper.DailyServiceStatsMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.analyticsservice.entity.DailyServiceStats">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="service_id" property="serviceId" />
+        <result column="service_name" property="serviceName" />
+        <result column="service_category" property="serviceCategory" />
+        <result column="stat_date" property="statDate" />
+        <result column="order_count" property="orderCount" />
+        <result column="total_quantity" property="totalQuantity" />
+        <result column="total_revenue" property="totalRevenue" />
+        <result column="avg_price" property="avgPrice" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.analyticsservice.entity.DailyServiceStats" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO daily_service_stats (tenant_id, service_id, service_name, service_category, stat_date, order_count, total_quantity, total_revenue, avg_price, created_at, updated_at)
+        VALUES (#{tenantId}, #{serviceId}, #{serviceName}, #{serviceCategory}, #{statDate}, #{orderCount}, #{totalQuantity}, #{totalRevenue}, #{avgPrice}, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+        service_name = #{serviceName},
+        service_category = #{serviceCategory},
+        order_count = #{orderCount},
+        total_quantity = #{totalQuantity},
+        total_revenue = #{totalRevenue},
+        avg_price = #{avgPrice},
+        updated_at = NOW()
+    </insert>
+
+    <select id="selectByTenantIdAndDateRange" resultMap="BaseResultMap">
+        SELECT * FROM daily_service_stats 
+        WHERE tenant_id = #{tenantId} 
+        AND stat_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY stat_date, service_id
+    </select>
+
+    <select id="getServiceStatsSummary" resultType="map">
+        SELECT 
+            service_id as serviceId,
+            service_name as serviceName,
+            service_category as serviceCategory,
+            SUM(order_count) as orderCount,
+            SUM(total_quantity) as totalQuantity,
+            SUM(total_revenue) as totalRevenue,
+            CASE WHEN SUM(total_quantity) > 0 THEN SUM(total_revenue) / SUM(total_quantity) ELSE 0 END as avgPrice
+        FROM daily_service_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY service_id, service_name, service_category
+        ORDER BY totalRevenue DESC
+    </select>
+
+    <select id="getTopServicesByRevenue" resultType="map">
+        SELECT 
+            service_id as serviceId,
+            service_name as serviceName,
+            service_category as serviceCategory,
+            SUM(total_revenue) as totalRevenue,
+            SUM(order_count) as orderCount
+        FROM daily_service_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY service_id, service_name, service_category
+        ORDER BY totalRevenue DESC
+        LIMIT 10
+    </select>
+
+    <delete id="deleteByTenantIdAndDateRange">
+        DELETE FROM daily_service_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </delete>
+
+</mapper>

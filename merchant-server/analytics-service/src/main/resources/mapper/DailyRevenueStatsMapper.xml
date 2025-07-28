@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.analyticsservice.mapper.DailyRevenueStatsMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.analyticsservice.entity.DailyRevenueStats">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="stat_date" property="statDate" />
+        <result column="total_revenue" property="totalRevenue" />
+        <result column="total_orders" property="totalOrders" />
+        <result column="total_tips" property="totalTips" />
+        <result column="avg_order_value" property="avgOrderValue" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.analyticsservice.entity.DailyRevenueStats" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO daily_revenue_stats (tenant_id, stat_date, total_revenue, total_orders, total_tips, avg_order_value, created_at, updated_at)
+        VALUES (#{tenantId}, #{statDate}, #{totalRevenue}, #{totalOrders}, #{totalTips}, #{avgOrderValue}, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+        total_revenue = #{totalRevenue},
+        total_orders = #{totalOrders},
+        total_tips = #{totalTips},
+        avg_order_value = #{avgOrderValue},
+        updated_at = NOW()
+    </insert>
+
+    <select id="selectByTenantIdAndDateRange" resultMap="BaseResultMap">
+        SELECT * FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} 
+        AND stat_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY stat_date
+    </select>
+
+    <select id="selectByTenantIdAndDate" resultMap="BaseResultMap">
+        SELECT * FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date = #{statDate}
+    </select>
+
+    <select id="getTotalRevenueByDateRange" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_revenue), 0) FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="getTotalOrdersByDateRange" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(total_orders), 0) FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="getTotalTipsByDateRange" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_tips), 0) FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="getAvgOrderValueByDateRange" resultType="java.math.BigDecimal">
+        SELECT CASE WHEN SUM(total_orders) > 0 THEN SUM(total_revenue) / SUM(total_orders) ELSE 0 END 
+        FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <delete id="deleteByTenantIdAndDateRange">
+        DELETE FROM daily_revenue_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </delete>
+
+</mapper>

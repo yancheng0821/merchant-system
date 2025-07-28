@@ -80,4 +80,25 @@ public interface OrderMapper {
      */
     List<java.util.Map<String, Object>> selectOrdersByDate(@Param("tenantId") Long tenantId, @Param("date") String date);
     List<java.util.Map<String, Object>> selectOrdersByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+    
+    /**
+     * 获取订单统计数据用于分析
+     */
+    List<java.util.Map<String, Object>> getOrderStatsForAnalytics(@Param("tenantId") Long tenantId, 
+                                                                  @Param("startDate") String startDate, 
+                                                                  @Param("endDate") String endDate);
+    
+    /**
+     * 获取业务指标数据用于分析
+     */
+    java.util.Map<String, Object> getBusinessMetricsForAnalytics(@Param("tenantId") Long tenantId, 
+                                                                 @Param("startDate") String startDate, 
+                                                                 @Param("endDate") String endDate);
+    
+    /**
+     * 获取资源统计数据用于分析
+     */
+    List<java.util.Map<String, Object>> getResourceStatsForAnalytics(@Param("tenantId") Long tenantId, 
+                                                                     @Param("startDate") String startDate, 
+                                                                     @Param("endDate") String endDate);
 }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.analyticsservice.mapper.DailyResourceStatsMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.analyticsservice.entity.DailyResourceStats">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="resource_id" property="resourceId" />
+        <result column="resource_name" property="resourceName" />
+        <result column="resource_type" property="resourceType" />
+        <result column="stat_date" property="statDate" />
+        <result column="order_count" property="orderCount" />
+        <result column="total_revenue" property="totalRevenue" />
+        <result column="avg_rating" property="avgRating" />
+        <result column="rating_count" property="ratingCount" />
+        <result column="working_hours" property="workingHours" />
+        <result column="efficiency_score" property="efficiencyScore" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.analyticsservice.entity.DailyResourceStats" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO daily_resource_stats (tenant_id, resource_id, resource_name, resource_type, stat_date, order_count, total_revenue, avg_rating, rating_count, working_hours, efficiency_score, created_at, updated_at)
+        VALUES (#{tenantId}, #{resourceId}, #{resourceName}, #{resourceType}, #{statDate}, #{orderCount}, #{totalRevenue}, #{avgRating}, #{ratingCount}, #{workingHours}, #{efficiencyScore}, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+        resource_name = #{resourceName},
+        resource_type = #{resourceType},
+        order_count = #{orderCount},
+        total_revenue = #{totalRevenue},
+        avg_rating = #{avgRating},
+        rating_count = #{ratingCount},
+        working_hours = #{workingHours},
+        efficiency_score = #{efficiencyScore},
+        updated_at = NOW()
+    </insert>
+
+    <select id="selectByTenantIdAndDateRange" resultMap="BaseResultMap">
+        SELECT * FROM daily_resource_stats 
+        WHERE tenant_id = #{tenantId} 
+        AND stat_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY stat_date, resource_id
+    </select>
+
+    <select id="getResourceStatsSummary" resultType="map">
+        SELECT 
+            resource_id as resourceId,
+            resource_name as resourceName,
+            resource_type as resourceType,
+            SUM(order_count) as orderCount,
+            SUM(total_revenue) as totalRevenue,
+            CASE WHEN SUM(rating_count) > 0 THEN SUM(avg_rating * rating_count) / SUM(rating_count) ELSE 0 END as avgRating,
+            AVG(efficiency_score) as efficiencyScore
+        FROM daily_resource_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY resource_id, resource_name, resource_type
+        ORDER BY totalRevenue DESC
+    </select>
+
+    <select id="getActiveResourceCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT resource_id) FROM daily_resource_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+        AND order_count > 0
+    </select>
+
+    <select id="getOverallAvgRating" resultType="java.math.BigDecimal">
+        SELECT CASE WHEN SUM(rating_count) > 0 THEN SUM(avg_rating * rating_count) / SUM(rating_count) ELSE 0 END 
+        FROM daily_resource_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+        AND rating_count > 0
+    </select>
+
+    <delete id="deleteByTenantIdAndDateRange">
+        DELETE FROM daily_resource_stats 
+        WHERE tenant_id = #{tenantId} AND stat_date BETWEEN #{startDate} AND #{endDate}
+    </delete>
+
+</mapper>

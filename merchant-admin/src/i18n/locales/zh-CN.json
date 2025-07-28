@@ -1451,7 +1451,7 @@
     "totalTips": "总小费",
     "revenueAnalysis": "收入分析",
     "serviceAnalysis": "服务分析",
-    "staffPerformance": "员工绩效",
+    "staffPerformance": "资源绩效",
     "customerInsights": "客户洞察",
     "timeAnalysis": "时间分析",
     "revenueChart": "收入趋势图",
@@ -1459,8 +1459,8 @@
     "tips": "小费",
     "serviceDistribution": "服务分布",
     "serviceRevenue": "服务收入",
-    "staffPerformanceTable": "员工绩效表",
-    "staff": "员工",
+    "staffPerformanceTable": "资源绩效表",
+    "staff": "资源",
     "orders": "订单数",
     "rating": "评分",
     "topServices": "主要服务",
@@ -1491,23 +1491,23 @@
     "completionRate": "服务完成率",
     "avgResponseTime": "平均响应时间",
     "repeatCustomerRate": "回头客率",
-    "activeStaff": "活跃员工",
+    "activeStaff": "活跃资源",
     "avgRating": "平均评分",
     "tabs": {
       "revenueTrend": "收入趋势",
       "serviceAnalysis": "服务分析",
-      "staffPerformance": "员工表现",
+      "staffPerformance": "资源表现",
       "businessInsights": "业务洞察"
     },
     "charts": {
       "revenueOrderTrend": "收入与订单趋势",
       "serviceRevenueDistribution": "服务收入分布",
       "serviceRevenueRanking": "服务收入排行",
-      "staffPerformanceRanking": "员工业绩排行",
+      "staffPerformanceRanking": "资源业绩排行",
       "keyBusinessMetrics": "关键业务指标"
     },
     "tableHeaders": {
-      "staff": "员工",
+      "staff": "资源",
       "revenue": "收入",
       "orders": "订单",
       "rating": "评分",
@@ -1525,7 +1525,8 @@
       "revenue": "收入",
       "orders": "订单数",
       "income": "收入"
-    }
+    },
+    "noDataAvailable": "暂无数据"
   },
   "chart": {
     "date": "日期",

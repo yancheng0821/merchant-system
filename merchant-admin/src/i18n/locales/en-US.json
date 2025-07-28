@@ -1324,7 +1324,7 @@
     "totalTips": "Total Tips",
     "revenueAnalysis": "Revenue Analysis",
     "serviceAnalysis": "Service Analysis",
-    "staffPerformance": "Staff Performance",
+    "staffPerformance": "Resource Performance",
     "customerInsights": "Customer Insights",
     "timeAnalysis": "Time Analysis",
     "revenueChart": "Revenue Trend",
@@ -1332,8 +1332,8 @@
     "tips": "Tips",
     "serviceDistribution": "Service Distribution",
     "serviceRevenue": "Service Revenue",
-    "staffPerformanceTable": "Staff Performance Table",
-    "staff": "Staff",
+    "staffPerformanceTable": "Resource Performance Table",
+    "staff": "Resource",
     "orders": "Orders",
     "rating": "Rating",
     "topServices": "Top Services",
@@ -1365,23 +1365,23 @@
       "1year": "Last 1 Year"
     },
     "repeatCustomerRate": "Repeat Customer Rate",
-    "activeStaff": "Active Staff",
+    "activeStaff": "Active Resources",
     "avgRating": "Avg Rating",
     "tabs": {
       "revenueTrend": "Revenue Trend",
       "serviceAnalysis": "Service Analysis",
-      "staffPerformance": "Staff Performance",
+      "staffPerformance": "Resource Performance",
       "businessInsights": "Business Insights"
     },
     "charts": {
       "revenueOrderTrend": "Revenue & Order Trend",
       "serviceRevenueDistribution": "Service Revenue Distribution",
       "serviceRevenueRanking": "Service Revenue Ranking",
-      "staffPerformanceRanking": "Staff Performance Ranking",
+      "staffPerformanceRanking": "Resource Performance Ranking",
       "keyBusinessMetrics": "Key Business Metrics"
     },
     "tableHeaders": {
-      "staff": "Staff",
+      "staff": "Resource",
       "revenue": "Revenue",
       "orders": "Orders",
       "rating": "Rating",
@@ -1399,7 +1399,8 @@
       "revenue": "Revenue",
       "orders": "Orders",
       "income": "Income"
-    }
+    },
+    "noDataAvailable": "No data available"
   },
   "chart": {
     "date": "Date",

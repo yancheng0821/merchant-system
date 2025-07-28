@@ -153,4 +153,83 @@
         ORDER BY created_at DESC
     </select>
 
+    <select id="getOrderStatsForAnalytics" resultType="map">
+        SELECT 
+            DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
+            COUNT(*) as totalOrders,
+            COALESCE(SUM(o.total_amount), 0) as totalRevenue,
+            COALESCE(SUM(o.tip_amount), 0) as totalTips,
+            COALESCE(AVG(o.total_amount), 0) as avgOrderValue
+        FROM orders o
+        WHERE o.tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND o.payment_status = 'paid'
+        GROUP BY DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver'))
+        ORDER BY statDate
+    </select>
+
+    <select id="getBusinessMetricsForAnalytics" resultType="map">
+        SELECT 
+            -- 客户满意度 (暂时返回固定值，后续可从appointments表获取)
+            4.5 as customerSatisfaction,
+            
+            -- 服务完成率 (已完成订单 / 总订单)
+            COALESCE(
+                (COUNT(CASE WHEN o.order_status = 'completed' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 
+                0
+            ) as serviceCompletionRate,
+            
+            -- 预约取消率 (已取消订单 / 总订单)
+            COALESCE(
+                (COUNT(CASE WHEN o.order_status = 'cancelled' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 
+                0
+            ) as appointmentCancellationRate,
+            
+            -- 回头客率 (有多次订单的客户 / 总客户数)
+            COALESCE(
+                (COUNT(CASE WHEN customer_order_count.order_count > 1 THEN 1 END) * 100.0 / 
+                 NULLIF(COUNT(DISTINCT customer_order_count.customer_id), 0)), 
+                0
+            ) as repeatCustomerRate
+        FROM orders o
+        LEFT JOIN (
+            SELECT 
+                customer_id, 
+                COUNT(*) as order_count
+            FROM orders 
+            WHERE tenant_id = #{tenantId}
+            AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+            GROUP BY customer_id
+        ) customer_order_count ON o.customer_id = customer_order_count.customer_id
+        WHERE o.tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="getResourceStatsForAnalytics" resultType="map">
+        SELECT 
+            DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
+            o.resource_id as resourceId,
+            o.resource_type as resourceType,
+            CASE 
+                WHEN r.name IS NOT NULL THEN r.name
+                WHEN o.resource_type = 'STAFF' THEN CONCAT('Staff Member ', o.resource_id)
+                WHEN o.resource_type = 'ROOM' THEN CONCAT('Room ', o.resource_id)
+                ELSE CONCAT('Resource ', o.resource_id)
+            END as resourceName,
+            COUNT(*) as orderCount,
+            COALESCE(SUM(o.total_amount), 0) as totalRevenue,
+            4.5 as avgRating,
+            COUNT(*) as ratingCount,
+            8.0 as workingHours,
+            85.0 as efficiencyScore
+        FROM orders o
+        LEFT JOIN resource r ON o.resource_id = r.id AND o.tenant_id = r.tenant_id
+        WHERE o.tenant_id = #{tenantId} 
+        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND o.resource_id IS NOT NULL
+        AND o.payment_status = 'paid'
+        GROUP BY DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')), o.resource_id, o.resource_type, r.name
+        ORDER BY statDate, resourceId
+    </select>
+
 </mapper>
