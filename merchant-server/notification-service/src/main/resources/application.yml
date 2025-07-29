@@ -35,7 +35,7 @@ eureka:
 notification:
   # Mock模式配置 - 开发和测试环境使用
   mock:
-    enabled: true # 设置为false时使用真实的邮件和短信服务
+    enabled: false # 设置为false时使用真实的邮件和短信服务
     sms:
       simulateDelay: true # 模拟发送延迟
       delayMs: 1000 # 模拟延迟时间（毫秒）
@@ -49,7 +49,7 @@ notification:
     enabled: true
   email:
     provider: aws # aws, smtp, mock
-    from: noreply@yourcompany.com
+    from: yancheng0723@gmail.com
     fromName: 美容院预约系统
     enabled: true
     # SMTP配置（备用）
@@ -60,7 +60,7 @@ notification:
     starttlsEnable: true
     auth: true
   aws:
-    region: us-east-1
+    region: us-east-1  # 或者你的AWS CLI配置的区域
     useLocalCredentials: true # 本地测试时使用AWS CLI配置的凭证
     maxRetries: 3 # 最大重试次数
     retryDelayMs: 1000 # 重试间隔（毫秒）
@@ -68,7 +68,7 @@ notification:
     # accessKeyId: your-access-key-id
     # secretAccessKey: your-secret-access-key
     ses:
-      fromEmail: noreply@yourcompany.com
+      fromEmail: yancheng0723@gmail.com
       fromName: 美容院预约系统
       # configurationSetName: your-configuration-set # 可选
     sns:

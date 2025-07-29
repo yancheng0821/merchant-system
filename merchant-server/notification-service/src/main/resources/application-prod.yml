@@ -41,7 +41,7 @@ notification:
     enabled: true
   email:
     provider: aws # 生产环境使用AWS SES
-    from: ${EMAIL_FROM:noreply@yourcompany.com}
+    from: ${EMAIL_FROM:yancheng0723@gmail.com}
     fromName: ${EMAIL_FROM_NAME:美容院预约系统}
     enabled: true
   aws:
@@ -52,7 +52,7 @@ notification:
     accessKeyId: ${AWS_ACCESS_KEY_ID}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
     ses:
-      fromEmail: ${AWS_SES_FROM_EMAIL:noreply@yourcompany.com}
+      fromEmail: ${AWS_SES_FROM_EMAIL:yancheng0723@gmail.com}
       fromName: ${AWS_SES_FROM_NAME:美容院预约系统}
       configurationSetName: ${AWS_SES_CONFIG_SET:}
     sns:

@@ -162,9 +162,20 @@ public class SmsService {
                 .messageAttributes(smsAttributes)
                 .build();
             
+            log.info("准备发送AWS SNS短信，手机号：{}，内容长度：{}，区域：{}", 
+                formattedPhoneNumber, content.length(), notificationConfig.getAws().getRegion());
+            
             PublishResponse response = getSnsClient().publish(request);
             
-            log.info("AWS SNS短信发送成功，手机号：{}，MessageId：{}", phoneNumber, response.messageId());
+            log.info("AWS SNS短信发送成功，手机号：{}，MessageId：{}，响应：{}", 
+                phoneNumber, response.messageId(), response.toString());
+            
+            // 添加额外的成功信息
+            log.info("短信发送详情 - 原始手机号：{}，格式化手机号：{}，消息类型：{}，发送者ID：{}", 
+                phoneNumber, formattedPhoneNumber, 
+                notificationConfig.getAws().getSns().getDefaultMessageType(),
+                notificationConfig.getAws().getSns().getDefaultSenderId());
+            
             return true;
             
         } catch (SnsException e) {
