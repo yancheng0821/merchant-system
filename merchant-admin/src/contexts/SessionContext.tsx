@@ -61,11 +61,13 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
   // 刷新会话活动时间
   const refreshSession = useCallback(() => {
+    // 如果session已经过期，不允许刷新
+    if (isSessionExpired) {
+      return;
+    }
     setLastActivity(Date.now());
-    setIsSessionExpired(false);
-    setShowSessionDialog(false);
     setWarningShown(false);
-  }, []);
+  }, [isSessionExpired]);
 
   // 更新会话超时时间
   const updateSessionTimeout = useCallback((timeout: number) => {
@@ -75,12 +77,16 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     // 重置过期状态
     setIsSessionExpired(false);
     setShowSessionDialog(false);
+    setWarningShown(false);
   }, []);
 
   // 监听用户活动
   useEffect(() => {
     const handleActivity = () => {
-      refreshSession();
+      // 只有在session未过期时才处理用户活动
+      if (!isSessionExpired) {
+        refreshSession();
+      }
     };
 
     // 监听各种用户活动事件
@@ -95,11 +101,16 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
         document.removeEventListener(event, handleActivity, true);
       });
     };
-  }, [refreshSession]);
+  }, [refreshSession, isSessionExpired]);
 
   // 检查会话是否过期
   useEffect(() => {
     const checkSession = () => {
+      // 如果已经过期，不需要重复检查
+      if (isSessionExpired) {
+        return;
+      }
+
       const now = Date.now();
       const timeSinceLastActivity = now - lastActivity;
       const timeoutMs = sessionTimeout * 60 * 1000; // 转换为毫秒
@@ -120,10 +131,13 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     const interval = setInterval(checkSession, 15000);
 
     return () => clearInterval(interval);
-  }, [lastActivity, sessionTimeout, logout]);
+  }, [lastActivity, sessionTimeout, isSessionExpired]);
 
   const handleSessionExpiredConfirm = () => {
     setShowSessionDialog(false);
+    // 确保清理所有session相关状态
+    setIsSessionExpired(false);
+    setWarningShown(false);
     logout();
   };
 

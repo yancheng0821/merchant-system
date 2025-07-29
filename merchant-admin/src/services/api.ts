@@ -1194,7 +1194,7 @@ export const resourceApi = {
 
   // 获取资源详情
   getResourceById: async (id: number): Promise<Resource> => {
-    const response = await createRequest(`/api/business/resources/${id}`, {
+    const response = await createRequest(`/api/business/resources/detail/${id}`, {
       method: 'GET',
     });
     return response;
@@ -1220,6 +1220,24 @@ export const resourceApi = {
   checkResourceBookingSlot: async (resourceId: number, date: string, startTime: string, endTime: string): Promise<boolean> => {
     const queryParams = new URLSearchParams({ date, startTime, endTime });
     const response = await createRequest(`/api/business/resources/${resourceId}/booking-slot/check?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取资源的预约时间段
+  getResourceBookingSlots: async (resourceId: number, date: string): Promise<any[]> => {
+    const queryParams = new URLSearchParams({ date });
+    const response = await createRequest(`/api/business/resources/${resourceId}/booking-slots?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取资源的详细可用性（包括已预约时间段）
+  getResourceDetailedAvailability: async (resourceId: number, date: string): Promise<any> => {
+    const queryParams = new URLSearchParams({ date });
+    const response = await createRequest(`/api/business/resources/${resourceId}/detailed-availability?${queryParams.toString()}`, {
       method: 'GET',
     });
     return response;

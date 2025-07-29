@@ -16,6 +16,7 @@ import {
     Tooltip,
     TextField,
     InputAdornment,
+    Button,
 } from '@mui/material';
 import {
     Person as PersonIcon,
@@ -29,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { getFullImageUrl, ResourceStatus, Resource, ResourceAvailability } from '../../../services/api';
+import DetailedAvailabilityView from '../../../components/common/DetailedAvailabilityView';
 
 interface ResourceAvailabilityViewProps {
     resourceType: 'STAFF' | 'ROOM';
@@ -43,6 +45,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'today' | 'week'>('today');
+    const [selectedResourceForDetail, setSelectedResourceForDetail] = useState<Resource | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     // 主题色
@@ -302,6 +305,27 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                             );
                                         })}
                                     </Box>
+                                    
+                                    {/* 查看详细按钮 */}
+                                    <Box mt={2} display="flex" justifyContent="center">
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={() => {
+                                                setSelectedResourceForDetail(resource);
+                                            }}
+                                            sx={{
+                                                borderColor: themeColor,
+                                                color: themeColor,
+                                                '&:hover': {
+                                                    borderColor: themeColor,
+                                                    backgroundColor: alpha(themeColor, 0.05),
+                                                },
+                                            }}
+                                        >
+                                            {t('resources.availability.viewDetailed')}
+                                        </Button>
+                                    </Box>
                                 </Box>
                             </CardContent>
                         </Card>
@@ -483,50 +507,52 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                     </Box>
                 </Box>
 
-                <Box display="flex" alignItems="center" gap={2}>
-                    <Tooltip title={t('common.refresh')}>
-                        <IconButton onClick={fetchResources} sx={{ color: themeColor }}>
-                            <RefreshIcon />
-                        </IconButton>
-                    </Tooltip>
+                {!selectedResourceForDetail && (
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Tooltip title={t('common.refresh')}>
+                            <IconButton onClick={fetchResources} sx={{ color: themeColor }}>
+                                <RefreshIcon />
+                            </IconButton>
+                        </Tooltip>
 
-                    <Tabs
-                        value={viewMode}
-                        onChange={(_, newValue) => setViewMode(newValue)}
-                        sx={{
-                            minHeight: 'auto',
-                            '& .MuiTab-root': {
+                        <Tabs
+                            value={viewMode}
+                            onChange={(_, newValue) => setViewMode(newValue)}
+                            sx={{
                                 minHeight: 'auto',
-                                py: 1,
-                                px: 2,
-                                fontSize: '0.875rem',
-                                '&.Mui-selected': {
-                                    color: themeColor,
+                                '& .MuiTab-root': {
+                                    minHeight: 'auto',
+                                    py: 1,
+                                    px: 2,
+                                    fontSize: '0.875rem',
+                                    '&.Mui-selected': {
+                                        color: themeColor,
+                                    },
                                 },
-                            },
-                            '& .MuiTabs-indicator': {
-                                backgroundColor: themeColor,
-                            },
-                        }}
-                    >
-                        <Tab
-                            value="today"
-                            label={t('resources.availability.todayView')}
-                            icon={<TodayIcon />}
-                            iconPosition="start"
-                        />
-                        <Tab
-                            value="week"
-                            label={t('resources.availability.weekView')}
-                            icon={<WeekIcon />}
-                            iconPosition="start"
-                        />
-                    </Tabs>
-                </Box>
+                                '& .MuiTabs-indicator': {
+                                    backgroundColor: themeColor,
+                                },
+                            }}
+                        >
+                            <Tab
+                                value="today"
+                                label={t('resources.availability.todayView')}
+                                icon={<TodayIcon />}
+                                iconPosition="start"
+                            />
+                            <Tab
+                                value="week"
+                                label={t('resources.availability.weekView')}
+                                icon={<WeekIcon />}
+                                iconPosition="start"
+                            />
+                        </Tabs>
+                    </Box>
+                )}
             </Box>
 
-            {/* 搜索框 - 仅员工类型显示 */}
-            {resourceType === 'STAFF' && (
+            {/* 搜索框 - 仅员工类型显示且不在详细视图中 */}
+            {resourceType === 'STAFF' && !selectedResourceForDetail && (
                 <Box mb={3}>
                     <TextField
                         fullWidth
@@ -587,6 +613,31 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                         {t('resources.availability.addResourcesFirst')}
                     </Typography>
                 </Card>
+            ) : selectedResourceForDetail ? (
+                <Box>
+                    <Box display="flex" alignItems="center" gap={2} mb={3}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setSelectedResourceForDetail(null);
+                            }}
+                            sx={{
+                                borderColor: themeColor,
+                                color: themeColor,
+                            }}
+                        >
+                            ← {t('common.back')}
+                        </Button>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {selectedResourceForDetail.name} - {t('resources.availability.detailedView')}
+                        </Typography>
+                    </Box>
+                    <DetailedAvailabilityView
+                        resourceId={selectedResourceForDetail.id}
+                        resourceName={selectedResourceForDetail.name}
+                        resourceType={selectedResourceForDetail.type}
+                    />
+                </Box>
             ) : (
                 viewMode === 'today' ? renderTodayView() : renderWeekView()
             )}

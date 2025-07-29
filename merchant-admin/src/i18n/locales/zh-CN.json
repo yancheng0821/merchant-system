@@ -10,7 +10,8 @@
     "confirm": "确定",
     "loading": "加载中...",
     "close": "关闭",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "back": "返回"
   },
   "session": {
     "expired": "会话已过期",
@@ -1031,6 +1032,8 @@
       "unavailable": "不可用",
       "busy": "忙碌",
       "break": "休息",
+      "detailedView": "详情展示", 
+      "viewDetailed": "查看详情",
       "off": "休息",
       "unknown": "未知",
       "searchStaffPlaceholder": "搜索员工姓名、职位或描述...",

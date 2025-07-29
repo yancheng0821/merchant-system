@@ -42,6 +42,8 @@ import i18n from '../../../i18n/config';
 import { CurrencyUtils } from '../../../config/constants';
 import { Appointment, Customer, Resource, Service, ServiceCategory, customerApi, resourceApi, serviceApi, serviceCategoryApi, merchantConfigApi } from '../../../services/api';
 import ResourceSelector from '../../../components/common/ResourceSelector';
+import SmartTimeSelector from '../../../components/common/SmartTimeSelector';
+import ResourceAvailabilityDisplay from '../../../components/common/ResourceAvailabilityDisplay';
 
 interface AddAppointmentDialogProps {
   open: boolean;
@@ -784,33 +786,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('appointments.appointmentTime')}
-                  type="time"
-                  value={appointmentTime}
-                  onChange={(e) => setAppointmentTime(e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <TimeIcon sx={{ color: '#8B5CF6' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
-                      },
-                    },
-                  }}
+                <SmartTimeSelector
+                  selectedDate={appointmentDate}
+                  selectedTime={appointmentTime}
+                  onTimeChange={setAppointmentTime}
+                  resourceId={selectedResource || selectedRoom || undefined}
+                  duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
                 />
               </Grid>
 
@@ -924,6 +905,32 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     </Grid>
                   )}
                 </>
+              )}
+
+              {/* 显示选中资源的可用性 */}
+              {(selectedResource || selectedRoom) && appointmentDate && (
+                <Grid item xs={12}>
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    {selectedResource && (
+                      <ResourceAvailabilityDisplay
+                        resourceId={selectedResource}
+                        resourceName={resourceOptions.find(r => r.id === selectedResource)?.name || 'Staff'}
+                        resourceType="STAFF"
+                        selectedDate={appointmentDate}
+                        compact={true}
+                      />
+                    )}
+                    {selectedRoom && selectedRoom !== selectedResource && (
+                      <ResourceAvailabilityDisplay
+                        resourceId={selectedRoom}
+                        resourceName={resourceOptions.find(r => r.id === selectedRoom)?.name || 'Room'}
+                        resourceType="ROOM"
+                        selectedDate={appointmentDate}
+                        compact={true}
+                      />
+                    )}
+                  </Box>
+                </Grid>
               )}
 
               <Grid item xs={12}>

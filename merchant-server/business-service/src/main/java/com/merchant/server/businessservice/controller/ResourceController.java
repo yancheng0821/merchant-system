@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
+import com.merchant.server.businessservice.entity.ResourceBookingSlot;
 import com.merchant.server.businessservice.dto.ResourceCreateDTO;
 import com.merchant.server.businessservice.service.ResourceService;
 import lombok.RequiredArgsConstructor;
@@ -173,7 +174,7 @@ public class ResourceController {
     /**
      * 获取资源详情
      */
-    @GetMapping("/{id}")
+    @GetMapping("/detail/{id}")
     public ResponseEntity<Resource> getResourceById(@PathVariable Long id) {
         log.info("Getting resource by id: {}", id);
         Resource resource = resourceService.getResourceById(id);
@@ -225,6 +226,50 @@ public class ResourceController {
         
         boolean isBooked = resourceService.isResourceBookedInTimeSlot(resourceId, bookingDate, start, end);
         return ResponseEntity.ok(isBooked);
+    }
+
+    /**
+     * 获取资源的预约时间段
+     */
+    @GetMapping("/{resourceId}/booking-slots")
+    public ResponseEntity<List<ResourceBookingSlot>> getResourceBookingSlots(
+            @PathVariable Long resourceId,
+            @RequestParam String date) {
+        log.info("Getting booking slots for resource: {} on {}", resourceId, date);
+        
+        LocalDate bookingDate = LocalDate.parse(date);
+        List<ResourceBookingSlot> bookingSlots = resourceService.getResourceBookingSlots(resourceId, bookingDate);
+        return ResponseEntity.ok(bookingSlots);
+    }
+
+    /**
+     * 获取资源的详细可用性（包括已预约时间段）
+     */
+    @GetMapping("/{resourceId}/detailed-availability")
+    public ResponseEntity<DetailedAvailabilityDTO> getResourceDetailedAvailability(
+            @PathVariable Long resourceId,
+            @RequestParam String date) {
+        log.info("Getting detailed availability for resource: {} on {}", resourceId, date);
+        
+        LocalDate queryDate = LocalDate.parse(date);
+        
+        // 获取基础可用性
+        List<ResourceAvailability> availabilities = resourceService.getResourceAvailability(resourceId);
+        
+        // 获取预约时间段
+        List<ResourceBookingSlot> bookingSlots = resourceService.getResourceBookingSlots(resourceId, queryDate);
+        
+        log.info("Found {} availabilities and {} booking slots for resource {} on {}", 
+                availabilities.size(), bookingSlots.size(), resourceId, queryDate);
+        
+        // 构建详细可用性响应
+        DetailedAvailabilityDTO detailedAvailability = new DetailedAvailabilityDTO();
+        detailedAvailability.setResourceId(resourceId);
+        detailedAvailability.setDate(queryDate);
+        detailedAvailability.setAvailabilities(availabilities);
+        detailedAvailability.setBookingSlots(bookingSlots);
+        
+        return ResponseEntity.ok(detailedAvailability);
     }
 
     /**
@@ -297,5 +342,26 @@ public class ResourceController {
 
         public LocalDateTime getLastUpdated() { return lastUpdated; }
         public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
+    }
+
+    // 详细可用性DTO
+    public static class DetailedAvailabilityDTO {
+        private Long resourceId;
+        private LocalDate date;
+        private List<ResourceAvailability> availabilities;
+        private List<ResourceBookingSlot> bookingSlots;
+
+        // Getters and Setters
+        public Long getResourceId() { return resourceId; }
+        public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
+
+        public LocalDate getDate() { return date; }
+        public void setDate(LocalDate date) { this.date = date; }
+
+        public List<ResourceAvailability> getAvailabilities() { return availabilities; }
+        public void setAvailabilities(List<ResourceAvailability> availabilities) { this.availabilities = availabilities; }
+
+        public List<ResourceBookingSlot> getBookingSlots() { return bookingSlots; }
+        public void setBookingSlots(List<ResourceBookingSlot> bookingSlots) { this.bookingSlots = bookingSlots; }
     }
 }
