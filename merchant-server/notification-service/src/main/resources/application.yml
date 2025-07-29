@@ -62,6 +62,8 @@ notification:
   aws:
     region: us-east-1
     useLocalCredentials: true # 本地测试时使用AWS CLI配置的凭证
+    maxRetries: 3 # 最大重试次数
+    retryDelayMs: 1000 # 重试间隔（毫秒）
     # 如果不使用本地凭证，请配置以下内容：
     # accessKeyId: your-access-key-id
     # secretAccessKey: your-secret-access-key

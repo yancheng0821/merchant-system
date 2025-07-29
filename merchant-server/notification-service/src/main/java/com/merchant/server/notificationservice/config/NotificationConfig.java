@@ -62,6 +62,8 @@ public class NotificationConfig {
         private String accessKeyId;
         private String secretAccessKey;
         private boolean useLocalCredentials = true; // 本地测试时使用AWS CLI配置的凭证
+        private int maxRetries = 3; // 最大重试次数
+        private long retryDelayMs = 1000; // 重试间隔（毫秒）
         private Ses ses = new Ses();
         private Sns sns = new Sns();
         

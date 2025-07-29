@@ -47,6 +47,8 @@ notification:
   aws:
     region: ${AWS_REGION:us-east-1}
     useLocalCredentials: false # 生产环境使用配置的凭证
+    maxRetries: ${AWS_MAX_RETRIES:3} # 最大重试次数
+    retryDelayMs: ${AWS_RETRY_DELAY_MS:1000} # 重试间隔（毫秒）
     accessKeyId: ${AWS_ACCESS_KEY_ID}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
     ses:
