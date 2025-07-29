@@ -254,7 +254,16 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
+    // 添加超时控制
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+    
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...config,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
 
     // 尝试解析响应数据
     let responseData;
@@ -282,6 +291,8 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
       console.error('API Error Response:', responseData);
       console.error('Request URL:', `${API_BASE_URL}${url}`);
       console.error('Request Config:', config);
+      console.error('Response Status:', response.status);
+      console.error('Response Headers:', Object.fromEntries(response.headers.entries()));
       
       const error = new Error(responseData.message || `HTTP error! status: ${response.status}`);
       (error as any).response = response;
@@ -551,6 +562,61 @@ export interface CustomerSearchParams {
   sortDir?: 'asc' | 'desc';
 }
 
+// 客户导入相关接口
+export interface UploadResponse {
+  importSessionId: string;
+  fileName: string;
+  totalRecords: number;
+  detectedColumns: string[];
+  sampleData: Record<string, any>[];
+}
+
+export interface PreviewResponse {
+  importSessionId: string;
+  totalRecords: number;
+  validRecords: number;
+  invalidRecords: number;
+  records: PreviewRecord[];
+  errors: ValidationError[];
+}
+
+export interface PreviewRecord {
+  rowIndex: number;
+  data: Record<string, any>;
+  isValid: boolean;
+  errors: string[];
+}
+
+export interface ValidationError {
+  rowIndex: number;
+  field: string;
+  message: string;
+  value: any;
+}
+
+export interface ImportResult {
+  importSessionId: string;
+  status: string;
+  totalRecords: number;
+  successRecords: number;
+  failedRecords: number;
+  message: string;
+  completedAt: string;
+}
+
+export interface ImportLog {
+  id: number;
+  importSessionId: string;
+  fileName: string;
+  totalRecords: number;
+  successRecords: number;
+  failedRecords: number;
+  status: string;
+  errorMessage?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
 // 客户管理API
 export const customerApi = {
   // 获取客户列表
@@ -646,6 +712,85 @@ export const customerApi = {
       method: 'GET',
     });
     return response;
+  },
+
+  // 客户导入相关API
+  uploadCustomerImportFile: async (tenantId: string, file: File): Promise<UploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('tenantId', tenantId);
+
+    const response = await fetch(`${API_BASE_URL}/api/business/customers/import/upload`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Upload failed');
+    }
+
+    const result = await response.json();
+    return result.data || result;
+  },
+
+  validateCustomerImportMapping: async (tenantId: string, data: {
+    importSessionId: string;
+    fieldMapping: Record<string, string>;
+  }): Promise<PreviewResponse> => {
+    const response = await createRequest(`/api/business/customers/import/mapping?tenantId=${tenantId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data || response;
+  },
+
+  executeCustomerImport: async (tenantId: string, data: {
+    importSessionId: string;
+    skipInvalidRecords: boolean;
+  }): Promise<ImportResult> => {
+    const response = await createRequest(`/api/business/customers/import/execute?tenantId=${tenantId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data || response;
+  },
+
+  downloadCustomerImportErrorReport: async (tenantId: string, importSessionId: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/api/business/customers/import/logs/${importSessionId}/error-report?tenantId=${tenantId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download error report');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `import-error-report-${importSessionId}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+
+  getCustomerImportLogs: async (tenantId: string): Promise<ImportLog[]> => {
+    try {
+      const response = await createRequest(`/api/business/customers/import/logs?tenantId=${tenantId}`, {
+        method: 'GET',
+      });
+      return response.data || [];
+    } catch (error) {
+      throw error;
+    }
   },
 };
 
@@ -1551,6 +1696,8 @@ export const api = {
   }) => createRequest(`/api/business/payments/orders/${data.orderId}/refund?amount=${data.amount}&reason=${encodeURIComponent(data.reason)}`, {
     method: 'POST',
   }),
+
+
 };
 
 // Dashboard API

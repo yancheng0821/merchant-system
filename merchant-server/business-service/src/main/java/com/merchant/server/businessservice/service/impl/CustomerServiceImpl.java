@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -77,6 +78,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
     
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
         // 检查电话号码是否已存在
         if (customerMapper.existsByTenantIdAndPhone(customerDTO.getTenantId(), customerDTO.getPhone())) {
@@ -140,6 +142,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
     
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CustomerDTO getCustomerByPhone(Long tenantId, String phone) {
         Customer customer = customerMapper.selectByTenantIdAndPhone(tenantId, phone);
         if (customer == null) {

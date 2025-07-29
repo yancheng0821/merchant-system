@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CustomerImportLogMapper">
+
+    <resultMap id="CustomerImportLogResultMap" type="com.merchant.server.businessservice.entity.CustomerImportLog">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="import_session_id" property="importSessionId"/>
+        <result column="file_name" property="fileName"/>
+        <result column="total_records" property="totalRecords"/>
+        <result column="success_records" property="successRecords"/>
+        <result column="failed_records" property="failedRecords"/>
+        <result column="status" property="status"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="completed_at" property="completedAt"/>
+    </resultMap>
+
+    <insert id="save" parameterType="com.merchant.server.businessservice.entity.CustomerImportLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_import_log (tenant_id, import_session_id, file_name, total_records, success_records, failed_records, status, error_message, created_at, completed_at)
+        VALUES (#{tenantId}, #{importSessionId}, #{fileName}, #{totalRecords}, #{successRecords}, #{failedRecords}, #{status}, #{errorMessage}, #{createdAt}, #{completedAt})
+    </insert>
+
+    <select id="findByTenantIdAndImportSessionId" resultMap="CustomerImportLogResultMap">
+        SELECT * FROM customer_import_log 
+        WHERE tenant_id = #{tenantId} AND import_session_id = #{importSessionId}
+    </select>
+
+    <select id="findByTenantIdOrderByCreatedAtDesc" resultMap="CustomerImportLogResultMap">
+        SELECT * FROM customer_import_log 
+        WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.CustomerImportLog">
+        UPDATE customer_import_log 
+        SET total_records = #{totalRecords}, 
+            success_records = #{successRecords}, 
+            failed_records = #{failedRecords}, 
+            status = #{status}, 
+            error_message = #{errorMessage}, 
+            completed_at = #{completedAt}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

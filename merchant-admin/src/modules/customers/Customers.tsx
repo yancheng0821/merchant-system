@@ -47,12 +47,16 @@ import {
   AccountBalanceWallet as WalletIcon,
   Block as BlockIcon,
   CheckCircle as CheckCircleIcon,
+  Upload as UploadIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { customerApi, Customer, CustomerStats, handleApiError } from '../../services/api';
 import { CurrencyUtils } from '../../config/constants';
 import CustomerDialog from './components/CustomerDialog';
 import AppointmentHistory from './components/AppointmentHistory';
+import { CustomerImport } from './components/CustomerImport';
+import { ImportHistory } from './components/ImportHistory';
 
 // 使用API中定义的Customer接口
 
@@ -77,6 +81,8 @@ const CustomerManagement: React.FC = () => {
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [appointmentHistoryOpen, setAppointmentHistoryOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerImportOpen, setCustomerImportOpen] = useState(false);
+  const [importHistoryOpen, setImportHistoryOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   // 通知状态
@@ -681,27 +687,78 @@ const CustomerManagement: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={2}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setCustomerDialogOpen(true)}
-                sx={{
-                  borderRadius: 2,
-                  py: 1.5,
-                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #D97706, #B45309)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                {t('customers.addCustomer')}
-              </Button>
+            <Grid item xs={12} md={6}>
+              <Box display="flex" gap={2} flexWrap="wrap">
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setCustomerDialogOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    px: 3,
+                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #D97706, #B45309)',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
+                    },
+                    transition: 'all 0.3s ease',
+                    minWidth: 140,
+                  }}
+                >
+                  {t('customers.addCustomer')}
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  startIcon={<UploadIcon />}
+                  onClick={() => setCustomerImportOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    px: 3,
+                    borderColor: '#6366F1',
+                    color: '#6366F1',
+                    borderWidth: 2,
+                    '&:hover': {
+                      borderColor: '#4F46E5',
+                      backgroundColor: alpha('#6366F1', 0.04),
+                      transform: 'translateY(-1px)',
+                      borderWidth: 2,
+                    },
+                    transition: 'all 0.3s ease',
+                    minWidth: 140,
+                  }}
+                >
+                  {t('customers.batchImport')}
+                </Button>
+                
+                <Button
+                  variant="outlined"
+                  startIcon={<HistoryIcon />}
+                  onClick={() => setImportHistoryOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    px: 3,
+                    borderColor: '#10B981',
+                    color: '#10B981',
+                    borderWidth: 2,
+                    '&:hover': {
+                      borderColor: '#059669',
+                      backgroundColor: alpha('#10B981', 0.04),
+                      transform: 'translateY(-1px)',
+                      borderWidth: 2,
+                    },
+                    transition: 'all 0.3s ease',
+                    minWidth: 140,
+                  }}
+                >
+                  {t('customers.importHistory')}
+                </Button>
+              </Box>
             </Grid>
           </Grid>
         </CardContent>
@@ -956,6 +1013,28 @@ const CustomerManagement: React.FC = () => {
         open={appointmentHistoryOpen}
         onClose={() => setAppointmentHistoryOpen(false)}
         customer={selectedCustomer}
+      />
+
+      {/* 客户数据导入对话框 */}
+      <CustomerImport
+        open={customerImportOpen}
+        onClose={() => setCustomerImportOpen(false)}
+        onImportComplete={() => {
+          // 重新加载客户数据和统计信息
+          fetchCustomers(buildQueryParams());
+          loadCustomerStats();
+          setSnackbar({
+            open: true,
+            message: '客户数据导入成功',
+            severity: 'success',
+          });
+        }}
+      />
+
+      {/* 导入历史对话框 */}
+      <ImportHistory
+        open={importHistoryOpen}
+        onClose={() => setImportHistoryOpen(false)}
       />
 
       {/* 删除确认对话框 */}

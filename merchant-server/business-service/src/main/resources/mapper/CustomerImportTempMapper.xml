@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CustomerImportTempMapper">
+
+    <resultMap id="CustomerImportTempResultMap" type="com.merchant.server.businessservice.entity.CustomerImportTemp">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="import_session_id" property="importSessionId"/>
+        <result column="row_index" property="rowIndex"/>
+        <result column="raw_data" property="rawData"/>
+        <result column="status" property="status"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="save" parameterType="com.merchant.server.businessservice.entity.CustomerImportTemp" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_import_temp (tenant_id, import_session_id, row_index, raw_data, status, error_message, created_at)
+        VALUES (#{tenantId}, #{importSessionId}, #{rowIndex}, #{rawData}, #{status}, #{errorMessage}, #{createdAt})
+    </insert>
+
+    <select id="findByTenantIdAndImportSessionId" resultMap="CustomerImportTempResultMap">
+        SELECT * FROM customer_import_temp 
+        WHERE tenant_id = #{tenantId} AND import_session_id = #{importSessionId}
+        ORDER BY row_index
+    </select>
+
+    <select id="findByTenantIdAndImportSessionIdAndStatus" resultMap="CustomerImportTempResultMap">
+        SELECT * FROM customer_import_temp 
+        WHERE tenant_id = #{tenantId} AND import_session_id = #{importSessionId} AND status = #{status}
+        ORDER BY row_index
+    </select>
+
+    <select id="countByTenantIdAndImportSessionIdAndStatus" resultType="long">
+        SELECT COUNT(*) FROM customer_import_temp 
+        WHERE tenant_id = #{tenantId} AND import_session_id = #{importSessionId} AND status = #{status}
+    </select>
+
+    <delete id="deleteByImportSessionId">
+        DELETE FROM customer_import_temp WHERE import_session_id = #{importSessionId}
+    </delete>
+
+    <update id="updateStatus">
+        UPDATE customer_import_temp 
+        SET status = #{status}, error_message = #{errorMessage}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
