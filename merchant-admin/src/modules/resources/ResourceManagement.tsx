@@ -12,10 +12,12 @@ import {
 import {
     Person as PersonIcon,
     Room as RoomIcon,
+    Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import StaffResourceManagement from './components/StaffResourceManagement';
 import RoomResourceManagement from './components/RoomResourceManagement';
+import ResourceAvailabilityView from './components/ResourceAvailabilityView';
 import { configPreloader, MerchantConfig } from '../../utils/configPreloader';
 
 // 资源类型枚举
@@ -257,11 +259,29 @@ const ResourceManagement: React.FC = () => {
         const hasStaff = resourceTypes.includes('STAFF');
         const hasRoom = resourceTypes.includes('ROOM');
 
+        // 计算Tab索引
+        const getTabIndex = (type: 'staff' | 'room' | 'staffAvailability' | 'roomAvailability') => {
+            let index = 0;
+            
+            if (type === 'staff') return hasStaff ? index : -1;
+            if (hasStaff) index++;
+            
+            if (type === 'room') return hasRoom ? index : -1;
+            if (hasRoom) index++;
+            
+            if (type === 'staffAvailability') return hasStaff ? index : -1;
+            if (hasStaff) index++;
+            
+            if (type === 'roomAvailability') return hasRoom ? index : -1;
+            
+            return -1;
+        };
+
         return (
             <Fade in={true} timeout={300}>
                 <Box>
-                    {/* 条件显示Tab栏 - 只有多种资源类型时才显示 */}
-                    {hasMultipleTypes && (
+                    {/* 条件显示Tab栏 - 总是显示Tab栏以包含可用性视图 */}
+                    {(hasMultipleTypes || hasStaff || hasRoom) && (
                         <Card
                             sx={{
                                 mb: 3,
@@ -273,12 +293,15 @@ const ResourceManagement: React.FC = () => {
                             <Tabs
                                 value={tabValue}
                                 onChange={handleTabChange}
+                                variant="scrollable"
+                                scrollButtons="auto"
                                 sx={{
                                     backgroundColor: '#f8fafc',
                                     '& .MuiTab-root': {
                                         color: 'text.secondary',
                                         fontWeight: 500,
                                         py: 2,
+                                        minWidth: 120,
                                         '&.Mui-selected': {
                                             color: themeColor,
                                             fontWeight: 600,
@@ -304,19 +327,43 @@ const ResourceManagement: React.FC = () => {
                                         iconPosition="start"
                                     />
                                 )}
+                                {hasStaff && (
+                                    <Tab
+                                        icon={<ScheduleIcon />}
+                                        label={t('resources.availability.staffAvailability')}
+                                        iconPosition="start"
+                                    />
+                                )}
+                                {hasRoom && (
+                                    <Tab
+                                        icon={<ScheduleIcon />}
+                                        label={t('resources.availability.roomAvailability')}
+                                        iconPosition="start"
+                                    />
+                                )}
                             </Tabs>
                         </Card>
                     )}
 
                     {/* 内容区域 - 统一使用TabPanel结构 */}
                     {hasStaff && (
-                        <TabPanel value={hasMultipleTypes ? tabValue : 0} index={0}>
+                        <TabPanel value={tabValue} index={getTabIndex('staff')}>
                             <StaffResourceManagement />
                         </TabPanel>
                     )}
                     {hasRoom && (
-                        <TabPanel value={hasMultipleTypes ? tabValue : 0} index={hasStaff ? 1 : 0}>
+                        <TabPanel value={tabValue} index={getTabIndex('room')}>
                             <RoomResourceManagement />
+                        </TabPanel>
+                    )}
+                    {hasStaff && (
+                        <TabPanel value={tabValue} index={getTabIndex('staffAvailability')}>
+                            <ResourceAvailabilityView resourceType="STAFF" />
+                        </TabPanel>
+                    )}
+                    {hasRoom && (
+                        <TabPanel value={tabValue} index={getTabIndex('roomAvailability')}>
+                            <ResourceAvailabilityView resourceType="ROOM" />
                         </TabPanel>
                     )}
                 </Box>

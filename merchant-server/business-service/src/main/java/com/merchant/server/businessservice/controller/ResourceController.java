@@ -151,4 +151,76 @@ public class ResourceController {
         List<ResourceAvailability> availabilities = resourceService.getResourceAvailability(resourceId);
         return ResponseEntity.ok(availabilities);
     }
+
+    /**
+     * 获取资源实时状态
+     */
+    @GetMapping("/{resourceId}/status")
+    public ResponseEntity<ResourceStatusDTO> getResourceStatus(@PathVariable Long resourceId) {
+        log.info("Getting real-time status for resource: {}", resourceId);
+        
+        Resource resource = resourceService.getResourceById(resourceId);
+        if (resource == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 构建状态响应
+        ResourceStatusDTO status = new ResourceStatusDTO();
+        status.setResourceId(resourceId);
+        status.setResourceName(resource.getName());
+        status.setResourceType(resource.getType().name());
+        status.setStatus(resource.getStatus().name());
+        
+        // 检查当前时间的可用性
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+        LocalTime currentTime = now.toLocalTime();
+        
+        // 获取今天是星期几 (1-7, 1为周一)
+        int dayOfWeek = today.getDayOfWeek().getValue();
+        
+        // 检查当前时间段的可用性
+        List<ResourceAvailability> availabilities = resourceService.getResourceAvailability(resourceId);
+        boolean isCurrentlyAvailable = availabilities.stream()
+            .anyMatch(availability -> 
+                availability.getDayOfWeek() == dayOfWeek &&
+                availability.getIsAvailable() &&
+                !currentTime.isBefore(availability.getStartTime()) &&
+                currentTime.isBefore(availability.getEndTime())
+            );
+        
+        status.setCurrentlyAvailable(isCurrentlyAvailable);
+        status.setLastUpdated(resource.getUpdatedAt());
+        
+        return ResponseEntity.ok(status);
+    }
+
+    // 资源状态DTO
+    public static class ResourceStatusDTO {
+        private Long resourceId;
+        private String resourceName;
+        private String resourceType;
+        private String status;
+        private boolean currentlyAvailable;
+        private LocalDateTime lastUpdated;
+
+        // Getters and Setters
+        public Long getResourceId() { return resourceId; }
+        public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
+
+        public String getResourceName() { return resourceName; }
+        public void setResourceName(String resourceName) { this.resourceName = resourceName; }
+
+        public String getResourceType() { return resourceType; }
+        public void setResourceType(String resourceType) { this.resourceType = resourceType; }
+
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+
+        public boolean isCurrentlyAvailable() { return currentlyAvailable; }
+        public void setCurrentlyAvailable(boolean currentlyAvailable) { this.currentlyAvailable = currentlyAvailable; }
+
+        public LocalDateTime getLastUpdated() { return lastUpdated; }
+        public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
+    }
 }

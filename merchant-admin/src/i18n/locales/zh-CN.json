@@ -9,7 +9,8 @@
     "delete": "删除",
     "confirm": "确定",
     "loading": "加载中...",
-    "close": "关闭"
+    "close": "关闭",
+    "refresh": "刷新"
   },
   "session": {
     "expired": "会话已过期",
@@ -1014,6 +1015,24 @@
     "validation": {
       "nameRequired": "名称不能为空",
       "capacityRequired": "容量必须大于0"
+    },
+    "availability": {
+      "staffAvailability": "员工可用性",
+      "roomAvailability": "场地可用性",
+      "subtitle": "查看资源可用性时间表和时间段",
+      "todayView": "今日视图",
+      "weekView": "周视图",
+      "todaySchedule": "今日时间表",
+      "availableToday": "今日可用",
+      "noStaffAvailable": "暂无可用员工",
+      "noRoomsAvailable": "暂无可用场地",
+      "addResourcesFirst": "请先添加资源以查看可用性",
+      "available": "可用",
+      "unavailable": "不可用",
+      "busy": "忙碌",
+      "break": "休息",
+      "off": "休息",
+      "unknown": "未知"
     }
   },
   "settings": {

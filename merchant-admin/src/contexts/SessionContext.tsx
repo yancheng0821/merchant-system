@@ -33,6 +33,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
+  const [warningShown, setWarningShown] = useState(false);
 
   // 获取会话超时设置
   useEffect(() => {
@@ -44,7 +45,10 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
         if (configResponse) {
           const sessionConfig = configResponse.find((config: any) => config.configKey === 'session_timeout');
           if (sessionConfig) {
-            setSessionTimeout(parseInt(sessionConfig.configValue));
+            const newTimeout = parseInt(sessionConfig.configValue);
+            setSessionTimeout(newTimeout);
+            // 重置最后活动时间，避免立即过期
+            setLastActivity(Date.now());
           }
         }
       } catch (error) {
@@ -59,11 +63,18 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const refreshSession = useCallback(() => {
     setLastActivity(Date.now());
     setIsSessionExpired(false);
+    setShowSessionDialog(false);
+    setWarningShown(false);
   }, []);
 
   // 更新会话超时时间
   const updateSessionTimeout = useCallback((timeout: number) => {
     setSessionTimeout(timeout);
+    // 重置最后活动时间，避免立即过期
+    setLastActivity(Date.now());
+    // 重置过期状态
+    setIsSessionExpired(false);
+    setShowSessionDialog(false);
   }, []);
 
   // 监听用户活动
@@ -96,11 +107,17 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       if (timeSinceLastActivity > timeoutMs) {
         setIsSessionExpired(true);
         setShowSessionDialog(true);
+      } else {
+        // 重置警告状态
+        setWarningShown(false);
       }
     };
 
-    // 每分钟检查一次会话状态
-    const interval = setInterval(checkSession, 60000);
+    // 立即检查一次
+    checkSession();
+
+    // 每15秒检查一次会话状态，确保更及时的响应
+    const interval = setInterval(checkSession, 15000);
 
     return () => clearInterval(interval);
   }, [lastActivity, sessionTimeout, logout]);
@@ -126,9 +143,10 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
         onClose={handleSessionExpiredConfirm}
         title={t('session.expired')}
         message={t('session.expiredMessage')}
-        type="warning"
+        type="info"
         confirmText={t('session.relogin')}
         onConfirm={handleSessionExpiredConfirm}
+        moduleColor="#6366F1"
       />
     </SessionContext.Provider>
   );

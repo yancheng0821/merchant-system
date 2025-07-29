@@ -767,7 +767,38 @@
     "validation": {
       "nameRequired": "Name is required",
       "capacityRequired": "Capacity must be greater than 0"
+    },
+    "availability": {
+      "staffAvailability": "Staff Availability",
+      "roomAvailability": "Room Availability",
+      "subtitle": "View resource availability schedules and time slots",
+      "todayView": "Today View",
+      "weekView": "Week View",
+      "todaySchedule": "Today's Schedule",
+      "availableToday": "Available Today",
+      "noStaffAvailable": "No staff available",
+      "noRoomsAvailable": "No rooms available",
+      "addResourcesFirst": "Please add resources first to view availability",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "busy": "Busy",
+      "break": "Break",
+      "off": "Off",
+      "unknown": "Unknown"
     }
+  },
+  "common": {
+    "language": "Language",
+    "chinese": "中文",
+    "english": "English",
+    "cancel": "Cancel",
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "close": "Close",
+    "refresh": "Refresh"
   },
   "settings": {
     "businessSettings": "Business Settings",

@@ -1098,6 +1098,15 @@ export interface ResourceAvailability {
   updatedAt?: string;
 }
 
+export interface ResourceStatus {
+  resourceId: number;
+  resourceName: string;
+  resourceType: string;
+  status: string;
+  currentlyAvailable: boolean;
+  lastUpdated: string;
+}
+
 // 资源管理API
 export const resourceApi = {
   // 获取租户下所有资源
@@ -1193,6 +1202,14 @@ export const resourceApi = {
   // 获取资源可用性
   getResourceAvailability: async (resourceId: number): Promise<ResourceAvailability[]> => {
     const response = await createRequest(`/api/business/resources/${resourceId}/availability`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取资源实时状态
+  getResourceStatus: async (resourceId: number): Promise<ResourceStatus> => {
+    const response = await createRequest(`/api/business/resources/${resourceId}/status`, {
       method: 'GET',
     });
     return response;
