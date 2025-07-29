@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
+import com.merchant.server.businessservice.dto.ResourceCreateDTO;
 import com.merchant.server.businessservice.service.ResourceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -92,6 +93,61 @@ public class ResourceController {
     }
 
     /**
+     * 创建资源（包含可用性信息）
+     */
+    @PostMapping("/with-availability")
+    public ResponseEntity<Resource> createResourceWithAvailability(@RequestBody ResourceCreateDTO resourceDTO) {
+        log.info("Creating resource with availability: {}", resourceDTO.getName());
+        
+        // 创建资源实体
+        Resource resource = new Resource();
+        resource.setTenantId(resourceDTO.getTenantId());
+        resource.setName(resourceDTO.getName());
+        resource.setType(resourceDTO.getType());
+        resource.setDescription(resourceDTO.getDescription());
+        resource.setCapacity(resourceDTO.getCapacity());
+        resource.setLocation(resourceDTO.getLocation());
+        resource.setEquipment(resourceDTO.getEquipment());
+        resource.setSpecialties(resourceDTO.getSpecialties());
+        resource.setHourlyRate(resourceDTO.getHourlyRate());
+        resource.setStatus(resourceDTO.getStatus());
+        resource.setPhone(resourceDTO.getPhone());
+        resource.setEmail(resourceDTO.getEmail());
+        resource.setPosition(resourceDTO.getPosition());
+        resource.setStartDate(resourceDTO.getStartDate());
+        resource.setAvatar(resourceDTO.getAvatar());
+        resource.setIcon(resourceDTO.getIcon());
+        resource.setCreatedAt(LocalDateTime.now());
+        resource.setUpdatedAt(LocalDateTime.now());
+        
+        // 创建资源
+        Resource createdResource = resourceService.createResource(resource);
+        
+        // 如果有可用性信息，设置可用性
+        if (resourceDTO.getAvailabilities() != null && !resourceDTO.getAvailabilities().isEmpty()) {
+            List<ResourceAvailability> availabilities = new ArrayList<>();
+            
+            for (ResourceCreateDTO.ResourceAvailabilityDTO availabilityDTO : resourceDTO.getAvailabilities()) {
+                ResourceAvailability availability = new ResourceAvailability();
+                availability.setResourceId(createdResource.getId());
+                availability.setDayOfWeek(availabilityDTO.getDayOfWeek());
+                availability.setStartTime(LocalTime.parse(availabilityDTO.getStartTime()));
+                availability.setEndTime(LocalTime.parse(availabilityDTO.getEndTime()));
+                availability.setIsAvailable(availabilityDTO.getIsAvailable());
+                availability.setCreatedAt(LocalDateTime.now());
+                availability.setUpdatedAt(LocalDateTime.now());
+                
+                availabilities.add(availability);
+            }
+            
+            resourceService.setResourceAvailability(createdResource.getId(), availabilities);
+            log.info("Set {} availability records for resource: {}", availabilities.size(), createdResource.getId());
+        }
+        
+        return ResponseEntity.ok(createdResource);
+    }
+
+    /**
      * 更新资源
      */
     @PutMapping("/{id}")
@@ -150,6 +206,25 @@ public class ResourceController {
         log.info("Getting availability for resource: {}", resourceId);
         List<ResourceAvailability> availabilities = resourceService.getResourceAvailability(resourceId);
         return ResponseEntity.ok(availabilities);
+    }
+
+    /**
+     * 检查资源在指定时间段是否已被预约
+     */
+    @GetMapping("/{resourceId}/booking-slot/check")
+    public ResponseEntity<Boolean> checkResourceBookingSlot(
+            @PathVariable Long resourceId,
+            @RequestParam String date,
+            @RequestParam String startTime,
+            @RequestParam String endTime) {
+        log.info("Checking booking slot for resource: {} on {} from {} to {}", resourceId, date, startTime, endTime);
+        
+        LocalDate bookingDate = LocalDate.parse(date);
+        LocalTime start = LocalTime.parse(startTime);
+        LocalTime end = LocalTime.parse(endTime);
+        
+        boolean isBooked = resourceService.isResourceBookedInTimeSlot(resourceId, bookingDate, start, end);
+        return ResponseEntity.ok(isBooked);
     }
 
     /**

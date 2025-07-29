@@ -4,6 +4,7 @@ import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
 import com.merchant.server.businessservice.service.AppointmentNotificationService;
+import com.merchant.server.businessservice.service.ResourceService;
 import com.merchant.server.businessservice.dto.AppointmentCreateDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentMapper appointmentMapper;
     private final AppointmentNotificationService notificationService;
+    private final ResourceService resourceService;
 
     @Override
     public List<Appointment> getAllAppointmentsByTenantId(Long tenantId) {
@@ -100,6 +103,27 @@ public class AppointmentServiceImpl implements AppointmentService {
             appointmentMapper.insert(appointment);
             log.info("Appointment created successfully with ID: {}", appointment.getId());
             
+            // 如果有资源ID，创建预约时间段
+            if (appointment.getResourceId() != null && appointment.getDuration() != null) {
+                LocalTime startTime = appointment.getAppointmentTime();
+                LocalTime endTime = startTime.plusMinutes(appointment.getDuration());
+                
+                try {
+                    resourceService.createBookingSlot(
+                        appointment.getResourceId(),
+                        appointment.getId(),
+                        appointment.getAppointmentDate(),
+                        startTime,
+                        endTime
+                    );
+                    log.info("Booking slot created for appointment: {}", appointment.getId());
+                } catch (Exception e) {
+                    log.error("Failed to create booking slot for appointment: {}", appointment.getId(), e);
+                    // 如果创建预约时间段失败，回滚预约创建
+                    throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
+                }
+            }
+            
             // 发送预约确认通知
             try {
                 notificationService.sendConfirmationNotification(appointment);
@@ -142,7 +166,28 @@ public class AppointmentServiceImpl implements AppointmentService {
             appointmentMapper.insert(appointment);
             log.info("Appointment created successfully with ID: {}", appointment.getId());
             
-            // 2. 插入预约服务记录
+            // 2. 如果有资源ID，创建预约时间段
+            if (appointment.getResourceId() != null && appointment.getDuration() != null) {
+                LocalTime startTime = appointment.getAppointmentTime();
+                LocalTime endTime = startTime.plusMinutes(appointment.getDuration());
+                
+                try {
+                    resourceService.createBookingSlot(
+                        appointment.getResourceId(),
+                        appointment.getId(),
+                        appointment.getAppointmentDate(),
+                        startTime,
+                        endTime
+                    );
+                    log.info("Booking slot created for appointment: {}", appointment.getId());
+                } catch (Exception e) {
+                    log.error("Failed to create booking slot for appointment: {}", appointment.getId(), e);
+                    // 如果创建预约时间段失败，回滚预约创建
+                    throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
+                }
+            }
+            
+            // 3. 插入预约服务记录
             if (appointmentDTO.getServices() != null && !appointmentDTO.getServices().isEmpty()) {
                 List<com.merchant.server.businessservice.entity.AppointmentService> appointmentServices = new ArrayList<>();
                 
@@ -167,7 +212,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 appointment.setAppointmentServices(appointmentServices);
             }
             
-            // 3. 发送预约确认通知
+            // 4. 发送预约确认通知
             try {
                 notificationService.sendConfirmationNotification(appointment);
             } catch (Exception e) {
@@ -182,18 +227,29 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    @Transactional
     public Appointment updateAppointmentStatus(Long id, String status) {
         log.info("Updating appointment status: {} to {}", id, status);
         Appointment appointment = appointmentMapper.findById(id);
         if (appointment != null) {
             Appointment.AppointmentStatus oldStatus = appointment.getStatus();
-            appointment.setStatus(Appointment.AppointmentStatus.valueOf(status));
+            Appointment.AppointmentStatus newStatus = Appointment.AppointmentStatus.valueOf(status);
+            appointment.setStatus(newStatus);
             appointment.setUpdatedAt(LocalDateTime.now());
             appointmentMapper.update(appointment);
             
+            // 如果预约被取消，释放预约时间段
+            if (newStatus == Appointment.AppointmentStatus.CANCELLED && oldStatus != Appointment.AppointmentStatus.CANCELLED) {
+                try {
+                    resourceService.cancelBookingSlot(id);
+                    log.info("Booking slot cancelled for appointment: {}", id);
+                } catch (Exception e) {
+                    log.error("Failed to cancel booking slot for appointment: {}", id, e);
+                }
+            }
+            
             // 根据状态变化发送通知
             try {
-                Appointment.AppointmentStatus newStatus = Appointment.AppointmentStatus.valueOf(status);
                 if (newStatus == Appointment.AppointmentStatus.CANCELLED && oldStatus != Appointment.AppointmentStatus.CANCELLED) {
                     notificationService.sendCancellationNotification(appointment);
                 } else if (newStatus == Appointment.AppointmentStatus.COMPLETED && oldStatus != Appointment.AppointmentStatus.COMPLETED) {
@@ -215,8 +271,19 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    @Transactional
     public void deleteAppointment(Long id) {
         log.info("Deleting appointment: {}", id);
+        
+        // 先删除预约时间段
+        try {
+            resourceService.cancelBookingSlot(id);
+            log.info("Booking slot deleted for appointment: {}", id);
+        } catch (Exception e) {
+            log.error("Failed to delete booking slot for appointment: {}", id, e);
+        }
+        
+        // 再删除预约记录
         appointmentMapper.deleteById(id);
     }
 

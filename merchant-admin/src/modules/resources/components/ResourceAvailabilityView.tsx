@@ -14,6 +14,8 @@ import {
     Tab,
     IconButton,
     Tooltip,
+    TextField,
+    InputAdornment,
 } from '@mui/material';
 import {
     Person as PersonIcon,
@@ -23,6 +25,7 @@ import {
     Today as TodayIcon,
     DateRange as WeekIcon,
     Refresh as RefreshIcon,
+    Search as SearchIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { getFullImageUrl, ResourceStatus, Resource, ResourceAvailability } from '../../../services/api';
@@ -34,11 +37,13 @@ interface ResourceAvailabilityViewProps {
 const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ resourceType }) => {
     const { t } = useTranslation();
     const [resources, setResources] = useState<Resource[]>([]);
+    const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
     const [availabilities, setAvailabilities] = useState<Record<number, ResourceAvailability[]>>({});
     const [resourceStatuses, setResourceStatuses] = useState<Record<number, ResourceStatus>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'today' | 'week'>('today');
+    const [searchTerm, setSearchTerm] = useState('');
 
     // 主题色
     const themeColor = '#DC2626';
@@ -78,7 +83,8 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
             setLoading(true);
             const { resourceApi } = await import('../../../services/api');
             const resourcesData = await resourceApi.getResourcesByType(tenantId, resourceType);
-            setResources(resourcesData.filter((r: Resource) => r.status === 'ACTIVE'));
+            const activeResources = resourcesData.filter((r: Resource) => r.status === 'ACTIVE');
+            setResources(activeResources);
 
             // 获取每个资源的可用性和实时状态
             const dataPromises = resourcesData.map(async (resource: Resource) => {
@@ -118,6 +124,27 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     useEffect(() => {
         fetchResources();
     }, [tenantId, resourceType]);
+
+    // 搜索和过滤逻辑
+    useEffect(() => {
+        let filtered = resources;
+
+        // 如果是员工类型，应用搜索过滤
+        if (resourceType === 'STAFF' && searchTerm) {
+            filtered = filtered.filter(resource =>
+                resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (resource.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (resource.position || '').toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // 如果是员工类型且没有搜索，只显示前9个
+        if (resourceType === 'STAFF' && !searchTerm) {
+            filtered = filtered.slice(0, 9);
+        }
+
+        setFilteredResources(filtered);
+    }, [resources, searchTerm, resourceType]);
 
     // 检查资源在特定时间的可用性
     const checkResourceAvailability = (resourceId: number, dayOfWeek: number, time: string): boolean => {
@@ -197,7 +224,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
 
         return (
             <Grid container spacing={3}>
-                {resources.map((resource) => (
+                {filteredResources.map((resource) => (
                     <Grid item xs={12} md={6} lg={4} key={resource.id}>
                         <Card
                             sx={{
@@ -317,7 +344,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                         </Box>
 
                         {/* 资源行 */}
-                        {resources.map((resource) => (
+                        {filteredResources.map((resource) => (
                             <Box
                                 key={resource.id}
                                 sx={{
@@ -498,96 +525,49 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                 </Box>
             </Box>
 
-            {/* 统计信息 */}
-            <Grid container spacing={3} mb={4}>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card
-                        sx={{
-                            borderRadius: 3,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                            border: '1px solid rgba(0,0,0,0.06)',
+            {/* 搜索框 - 仅员工类型显示 */}
+            {resourceType === 'STAFF' && (
+                <Box mb={3}>
+                    <TextField
+                        fullWidth
+                        placeholder={t('resources.availability.searchStaffPlaceholder')}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: themeColor }} />
+                                </InputAdornment>
+                            ),
                         }}
-                    >
-                        <CardContent>
-                            <Box display="flex" alignItems="center" justifyContent="space-between">
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 700, color: themeColor }}>
-                                        {resources.length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {resourceType === 'STAFF'
-                                            ? t('resources.totalStaff')
-                                            : t('resources.totalRooms')
-                                        }
-                                    </Typography>
-                                </Box>
-                                <Box
-                                    sx={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: 2,
-                                        background: `linear-gradient(135deg, ${themeColor}, ${themeColor}80)`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    {resourceType === 'STAFF' ? (
-                                        <PersonIcon sx={{ color: 'white', fontSize: 24 }} />
-                                    ) : (
-                                        <RoomIcon sx={{ color: 'white', fontSize: 24 }} />
-                                    )}
-                                </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card
                         sx={{
-                            borderRadius: 3,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                            border: '1px solid rgba(0,0,0,0.06)',
+                            maxWidth: 400,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 3,
+                                backgroundColor: '#f8fafc',
+                                border: '2px solid transparent',
+                                '&:hover': {
+                                    backgroundColor: '#f1f5f9',
+                                    borderColor: alpha(themeColor, 0.3),
+                                },
+                                '&.Mui-focused': {
+                                    backgroundColor: 'white',
+                                    borderColor: themeColor,
+                                    boxShadow: `0 0 0 3px ${alpha(themeColor, 0.1)}`,
+                                },
+                            },
                         }}
-                    >
-                        <CardContent>
-                            <Box display="flex" alignItems="center" justifyContent="space-between">
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                                        {resources.filter(r => {
-                                            const todayDayOfWeek = getTodayDayOfWeek();
-                                            const resourceAvailability = availabilities[r.id] || [];
-                                            return resourceAvailability.some(a =>
-                                                a.dayOfWeek === todayDayOfWeek && a.isAvailable
-                                            );
-                                        }).length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('resources.availability.availableToday')}
-                                    </Typography>
-                                </Box>
-                                <Box
-                                    sx={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: 2,
-                                        background: 'linear-gradient(135deg, #10B981, #10B98180)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <AvailableIcon sx={{ color: 'white', fontSize: 24 }} />
-                                </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+                    />
+                    {!searchTerm && (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                            {t('resources.availability.showingFirst9Staff')}
+                        </Typography>
+                    )}
+                </Box>
+            )}
 
             {/* 内容区域 */}
-            {resources.length === 0 ? (
+            {filteredResources.length === 0 ? (
                 <Card
                     sx={{
                         borderRadius: 3,

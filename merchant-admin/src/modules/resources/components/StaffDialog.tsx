@@ -63,6 +63,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
         startDate: '',
         avatar: '', // 添加头像字段
     });
+    const [availabilities, setAvailabilities] = useState<Record<number, { isAvailable: boolean; startTime: string; endTime: string }>>({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +72,17 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         return Number(user.tenantId || 1);
     }, []);
+
+    // 星期配置
+    const weekDays = React.useMemo(() => [
+        { key: 1, label: t('staff.weekdays.monday') },
+        { key: 2, label: t('staff.weekdays.tuesday') },
+        { key: 3, label: t('staff.weekdays.wednesday') },
+        { key: 4, label: t('staff.weekdays.thursday') },
+        { key: 5, label: t('staff.weekdays.friday') },
+        { key: 6, label: t('staff.weekdays.saturday') },
+        { key: 7, label: t('staff.weekdays.sunday') },
+    ], [t]);
 
     // 初始化表单数据
     useEffect(() => {
@@ -98,6 +110,16 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 startDate: new Date().toISOString().split('T')[0],
                 avatar: '',
             });
+            // 初始化默认可用性（周一到周五 9:00-22:00）
+            const defaultAvailabilities: Record<number, { isAvailable: boolean; startTime: string; endTime: string }> = {};
+            for (let i = 1; i <= 7; i++) {
+                defaultAvailabilities[i] = {
+                    isAvailable: i <= 5, // 周一到周五默认可用
+                    startTime: '09:00',
+                    endTime: '22:00'
+                };
+            }
+            setAvailabilities(defaultAvailabilities);
         }
         setError(null);
     }, [staff, open]);
@@ -112,6 +134,16 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
             console.log('New formData:', newData); // 调试日志
             return newData;
         });
+    };
+
+    const handleAvailabilityChange = (dayOfWeek: number, field: 'isAvailable' | 'startTime' | 'endTime', value: any) => {
+        setAvailabilities(prev => ({
+            ...prev,
+            [dayOfWeek]: {
+                ...prev[dayOfWeek],
+                [field]: value
+            }
+        }));
     };
 
     const handleSubmit = async () => {
@@ -137,7 +169,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
             // 验证电话号码格式（支持国际手机号和座机）
             if (formData.phone && formData.phone.trim()) {
                 const phone = formData.phone.trim().replace(/[\s\-()]/g, ''); // 去除空格、横线、括号
-                
+
                 // 支持多种电话格式：
                 // 1. 中国手机号：13812345678
                 // 2. 国际手机号：+8613812345678, +1234567890
@@ -149,22 +181,57 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     /^0\d{2,3}\d{7,8}$/, // 中国座机（区号+号码）
                     /^\d{7,15}$/, // 普通号码（7-15位数字）
                 ];
-                
+
                 const isValidPhone = phonePatterns.some(pattern => pattern.test(phone));
-                
+
                 if (!isValidPhone) {
                     setError(t('staff.validation.phoneInvalid'));
                     return;
                 }
             }
 
-            const staffData: Partial<StaffResource> = {
-                ...formData,
-                tenantId,
-                type: 'STAFF',
-            };
+            if (!staff) {
+                // 新建员工，使用包含可用性的API
+                const resourceCreateData = {
+                    tenantId,
+                    name: formData.name,
+                    type: 'STAFF',
+                    description: formData.description,
+                    phone: formData.phone,
+                    email: formData.email,
+                    position: formData.position,
+                    startDate: formData.startDate,
+                    avatar: formData.avatar,
+                    status: formData.status,
+                    specialties: formData.skills, // 将skills映射到specialties
+                    availabilities: Object.entries(availabilities)
+                        .filter(([_, availability]) => availability.isAvailable)
+                        .map(([dayOfWeek, availability]) => ({
+                            dayOfWeek: parseInt(dayOfWeek),
+                            startTime: availability.startTime,
+                            endTime: availability.endTime,
+                            isAvailable: true
+                        }))
+                };
 
-            await onSave(staffData);
+                // 调用新的API创建资源
+                const { resourceApi } = await import('../../../services/api');
+                const createdResource = await resourceApi.createResourceWithAvailability(resourceCreateData);
+
+                // 触发父组件的刷新和成功提示
+                if (onSave) {
+                    // 传递一个标识，让父组件知道这是新建的员工
+                    await onSave({ ...createdResource, isNewStaff: true } as any);
+                }
+            } else {
+                // 更新现有员工
+                const staffData: Partial<StaffResource> = {
+                    ...formData,
+                    tenantId,
+                    type: 'STAFF',
+                };
+                await onSave(staffData);
+            }
             onClose();
         } catch (err: any) {
             console.error('保存员工失败:', err);
@@ -215,9 +282,9 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                             <PersonIcon sx={{ fontSize: 24 }} />
                         </Box>
                         <Box>
-                            <Typography 
-                                variant="h5" 
-                                sx={{ 
+                            <Typography
+                                variant="h5"
+                                sx={{
                                     fontWeight: 700,
                                     color: 'text.primary',
                                     mb: 0.5,
@@ -230,7 +297,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                             </Typography>
                         </Box>
                     </Box>
-                    <IconButton 
+                    <IconButton
                         onClick={onClose}
                         sx={{
                             '&:hover': {
@@ -246,10 +313,10 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
             <DialogContent sx={{ p: 0 }}>
                 <Box sx={{ p: 3 }}>
                     {error && (
-                        <Alert 
-                            severity="error" 
-                            sx={{ 
-                                mb: 3, 
+                        <Alert
+                            severity="error"
+                            sx={{
+                                mb: 3,
                                 borderRadius: 2,
                                 backgroundColor: alpha('#EF4444', 0.1),
                                 borderColor: alpha('#EF4444', 0.2),
@@ -548,20 +615,127 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                             </Grid>
                         </Grid>
                     </Paper>
+
+                    {/* 可用性设置 */}
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            mb: 3,
+                            border: '1px solid',
+                            borderColor: alpha(THEME_COLOR, 0.2),
+                            borderRadius: 2,
+                            background: alpha(THEME_COLOR, 0.02),
+                        }}
+                    >
+                        <Box display="flex" alignItems="center" gap={2} mb={3}>
+                            <Box
+                                sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                }}
+                            >
+                                <WorkIcon sx={{ fontSize: 18 }} />
+                            </Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
+                                {t('staff.availability.title')}
+                            </Typography>
+                        </Box>
+
+                        <Grid container spacing={2}>
+                            {/* 工作日可用性设置 */}
+                            {weekDays.map((day) => (
+                                <Grid item xs={12} key={day.key}>
+                                    <Box
+                                        sx={{
+                                            p: 2,
+                                            border: '1px solid',
+                                            borderColor: alpha(THEME_COLOR, 0.1),
+                                            borderRadius: 2,
+                                            background: 'white',
+                                        }}
+                                    >
+                                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                                {day.label}
+                                            </Typography>
+                                            <FormControl>
+                                                <Select
+                                                    size="small"
+                                                    value={availabilities[day.key]?.isAvailable ? 'available' : 'unavailable'}
+                                                    onChange={(e) => handleAvailabilityChange(day.key, 'isAvailable', e.target.value === 'available')}
+                                                    sx={{ minWidth: 120 }}
+                                                >
+                                                    <MenuItem value="available">{t('staff.availability.available')}</MenuItem>
+                                                    <MenuItem value="unavailable">{t('staff.availability.unavailable')}</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        </Box>
+
+                                        {availabilities[day.key]?.isAvailable && (
+                                            <Box display="flex" alignItems="center" gap={2}>
+                                                <TextField
+                                                    label={t('staff.availability.startTime')}
+                                                    type="time"
+                                                    size="small"
+                                                    value={availabilities[day.key]?.startTime || '09:00'}
+                                                    onChange={(e) => handleAvailabilityChange(day.key, 'startTime', e.target.value)}
+                                                    InputLabelProps={{
+                                                        shrink: true,
+                                                    }}
+                                                    sx={{
+                                                        flex: 1,
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2,
+                                                        },
+                                                    }}
+                                                />
+                                                <Typography variant="body2" color="text.secondary">
+                                                    -
+                                                </Typography>
+                                                <TextField
+                                                    label={t('staff.availability.endTime')}
+                                                    type="time"
+                                                    size="small"
+                                                    value={availabilities[day.key]?.endTime || '22:00'}
+                                                    onChange={(e) => handleAvailabilityChange(day.key, 'endTime', e.target.value)}
+                                                    InputLabelProps={{
+                                                        shrink: true,
+                                                    }}
+                                                    sx={{
+                                                        flex: 1,
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2,
+                                                        },
+                                                    }}
+                                                />
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Paper>
                 </Box>
             </DialogContent>
 
-            <DialogActions 
-                sx={{ 
+            <DialogActions
+                sx={{
                     p: 3,
                     borderTop: '1px solid',
                     borderColor: 'divider',
                     background: alpha(THEME_COLOR, 0.02),
                 }}
             >
-                <Button 
+                <Button
                     onClick={onClose}
-                    sx={{ 
+                    sx={{
                         borderRadius: 2,
                         px: 3,
                         color: 'text.secondary',

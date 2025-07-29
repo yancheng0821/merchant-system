@@ -107,12 +107,24 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
       const endTime = calculateEndTime(appointmentTime, duration);
       const availabilityPromises = resources.map(async (resource) => {
         try {
-          const available = await resourceApi.checkResourceAvailability(
+          // 检查基础可用性（工作时间）
+          const basicAvailable = await resourceApi.checkResourceAvailability(
             resource.id,
             appointmentDate,
             appointmentTime,
             endTime
           );
+
+          // 检查预约时间段占用情况
+          const isBooked = await resourceApi.checkResourceBookingSlot(
+            resource.id,
+            appointmentDate,
+            appointmentTime,
+            endTime
+          );
+
+          // 只有基础可用且未被预约才算可用
+          const available = basicAvailable && !isBooked;
           return { resourceId: resource.id, available };
         } catch (error) {
           console.error(`Failed to check availability for resource ${resource.id}:`, error);

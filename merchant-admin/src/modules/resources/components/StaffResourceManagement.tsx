@@ -87,6 +87,8 @@ const StaffResourceManagement: React.FC = () => {
                 const { resourceApi } = await import('../../../services/api');
                 const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
                 const staffData = (response || []).map(convertToStaffResource);
+                // 按创建时间倒序排序，新创建的在最上面
+                staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 setStaff(staffData);
             } catch (err) {
                 console.error('获取员工数据失败:', err);
@@ -158,26 +160,28 @@ const StaffResourceManagement: React.FC = () => {
         try {
             const { resourceApi } = await import('../../../services/api');
             
-            // 转换为API期望的Resource类型
-            const resourceData = convertStaffToResource(staffData);
+            // 检查是否是新建员工（通过isNewStaff标识）
+            const isNewStaff = (staffData as any).isNewStaff || !selectedStaff;
             
-            if (selectedStaff) {
+            if (selectedStaff && !isNewStaff) {
                 // 更新员工
+                const resourceData = convertStaffToResource(staffData);
                 await resourceApi.updateResource(selectedStaff.id, resourceData);
-            } else {
-                // 创建员工
-                await resourceApi.createResource(resourceData as any);
             }
+            // 新建员工的情况已经在StaffDialog中处理了，这里只需要刷新数据
             
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
-            setStaff((response || []).map(convertToStaffResource));
+            const staffDataList = (response || []).map(convertToStaffResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            staffDataList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setStaff(staffDataList);
             
             setStaffDialogOpen(false);
             setSelectedStaff(null);
             
             // 显示成功消息
-            setSuccessMessage(selectedStaff ? t('staff.updateSuccess') : t('staff.createSuccess'));
+            setSuccessMessage(isNewStaff ? t('staff.createSuccess') : t('staff.updateSuccess'));
         } catch (err) {
             console.error('保存员工失败:', err);
             throw err;
@@ -194,7 +198,10 @@ const StaffResourceManagement: React.FC = () => {
             
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
-            setStaff((response || []).map(convertToStaffResource));
+            const staffData = (response || []).map(convertToStaffResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setStaff(staffData);
             
             setDeleteDialogOpen(false);
             setSelectedStaff(null);
@@ -222,7 +229,10 @@ const StaffResourceManagement: React.FC = () => {
             
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
-            setStaff((response || []).map(convertToStaffResource));
+            const staffData = (response || []).map(convertToStaffResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setStaff(staffData);
             
             setSelectedStaff(null);
             
@@ -249,7 +259,10 @@ const StaffResourceManagement: React.FC = () => {
             
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
-            setStaff((response || []).map(convertToStaffResource));
+            const staffData = (response || []).map(convertToStaffResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setStaff(staffData);
             
             setSelectedStaff(null);
             

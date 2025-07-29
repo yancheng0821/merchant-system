@@ -85,7 +85,10 @@ const RoomResourceManagement: React.FC = () => {
                 const { resourceApi } = await import('../../../services/api');
                 const response = await resourceApi.getResourcesByType(tenantId, 'ROOM');
                 console.log('Room data received:', response);
-                setRooms((response || []).map(convertToRoomResource));
+                const roomData = (response || []).map(convertToRoomResource);
+                // 按创建时间倒序排序，新创建的在最上面
+                roomData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                setRooms(roomData);
             } catch (err) {
                 console.error('获取场地数据失败:', err);
                 setError(err instanceof Error ? err.message : '获取场地数据失败');
@@ -186,26 +189,28 @@ const RoomResourceManagement: React.FC = () => {
         try {
             const { resourceApi } = await import('../../../services/api');
 
-            // 转换为API期望的Resource类型
-            const resourceData = convertRoomToResource(roomData);
+            // 检查是否是新建房间（通过isNewRoom标识）
+            const isNewRoom = (roomData as any).isNewRoom || !selectedRoom;
 
-            if (selectedRoom) {
+            if (selectedRoom && !isNewRoom) {
                 // 更新房间
+                const resourceData = convertRoomToResource(roomData);
                 await resourceApi.updateResource(selectedRoom.id, resourceData);
-            } else {
-                // 创建房间
-                await resourceApi.createResource(resourceData as any);
             }
+            // 新建房间的情况已经在RoomDialog中处理了，这里只需要刷新数据
 
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'ROOM');
-            setRooms((response || []).map(convertToRoomResource));
+            const roomDataList = (response || []).map(convertToRoomResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            roomDataList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setRooms(roomDataList);
 
             setRoomDialogOpen(false);
             setSelectedRoom(null);
             
             // 显示成功消息
-            setSuccessMessage(selectedRoom ? t('resources.updateSuccess') : t('resources.createSuccess'));
+            setSuccessMessage(isNewRoom ? t('resources.createSuccess') : t('resources.updateSuccess'));
         } catch (err) {
             console.error('保存房间失败:', err);
             throw err;
@@ -222,7 +227,10 @@ const RoomResourceManagement: React.FC = () => {
 
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'ROOM');
-            setRooms((response || []).map(convertToRoomResource));
+            const roomData = (response || []).map(convertToRoomResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            roomData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setRooms(roomData);
 
             setDeleteDialogOpen(false);
             setSelectedRoom(null);
@@ -250,7 +258,10 @@ const RoomResourceManagement: React.FC = () => {
 
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'ROOM');
-            setRooms((response || []).map(convertToRoomResource));
+            const roomData = (response || []).map(convertToRoomResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            roomData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setRooms(roomData);
 
             setSelectedRoom(null);
             
@@ -277,7 +288,10 @@ const RoomResourceManagement: React.FC = () => {
 
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'ROOM');
-            setRooms((response || []).map(convertToRoomResource));
+            const roomData = (response || []).map(convertToRoomResource);
+            // 按创建时间倒序排序，新创建的在最上面
+            roomData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setRooms(roomData);
 
             setSelectedRoom(null);
             

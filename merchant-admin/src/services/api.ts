@@ -1167,6 +1167,15 @@ export const resourceApi = {
     return response.data || response;
   },
 
+  // 创建资源（包含可用性信息）
+  createResourceWithAvailability: async (resourceData: any): Promise<Resource> => {
+    const response = await createRequest('/api/business/resources/with-availability', {
+      method: 'POST',
+      body: JSON.stringify(resourceData),
+    });
+    return response.data || response;
+  },
+
   // 更新资源
   updateResource: async (id: number, resource: Partial<Resource>): Promise<Resource> => {
     const response = await createRequest(`/api/business/resources/${id}`, {
@@ -1202,6 +1211,15 @@ export const resourceApi = {
   // 获取资源可用性
   getResourceAvailability: async (resourceId: number): Promise<ResourceAvailability[]> => {
     const response = await createRequest(`/api/business/resources/${resourceId}/availability`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 检查资源在指定时间段是否已被预约
+  checkResourceBookingSlot: async (resourceId: number, date: string, startTime: string, endTime: string): Promise<boolean> => {
+    const queryParams = new URLSearchParams({ date, startTime, endTime });
+    const response = await createRequest(`/api/business/resources/${resourceId}/booking-slot/check?${queryParams.toString()}`, {
       method: 'GET',
     });
     return response;

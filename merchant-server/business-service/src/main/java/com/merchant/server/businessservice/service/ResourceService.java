@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.service;
 
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
+import com.merchant.server.businessservice.entity.ResourceBookingSlot;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -58,4 +59,24 @@ public interface ResourceService {
      * 获取资源可用性
      */
     List<ResourceAvailability> getResourceAvailability(Long resourceId);
+    
+    /**
+     * 创建预约时间段
+     */
+    void createBookingSlot(Long resourceId, Long appointmentId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime);
+    
+    /**
+     * 取消预约时间段
+     */
+    void cancelBookingSlot(Long appointmentId);
+    
+    /**
+     * 检查资源在指定时间段是否已被预约
+     */
+    boolean isResourceBookedInTimeSlot(Long resourceId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime);
+    
+    /**
+     * 获取资源的预约时间段
+     */
+    List<ResourceBookingSlot> getResourceBookingSlots(Long resourceId, LocalDate bookingDate);
 }

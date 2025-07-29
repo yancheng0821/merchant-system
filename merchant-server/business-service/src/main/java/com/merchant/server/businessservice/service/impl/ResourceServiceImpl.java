@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.service.impl;
 
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
+import com.merchant.server.businessservice.entity.ResourceBookingSlot;
 import com.merchant.server.businessservice.entity.Staff;
 import com.merchant.server.businessservice.mapper.ResourceMapper;
 import com.merchant.server.businessservice.mapper.StaffMapper;
@@ -135,5 +136,48 @@ public class ResourceServiceImpl implements ResourceService {
     public List<ResourceAvailability> getResourceAvailability(Long resourceId) {
         log.info("Getting availability for resource: {}", resourceId);
         return resourceMapper.findAvailabilitiesByResourceId(resourceId);
+    }
+
+    @Override
+    @Transactional
+    public void createBookingSlot(Long resourceId, Long appointmentId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime) {
+        log.info("Creating booking slot for resource: {} on {} from {} to {}", resourceId, bookingDate, startTime, endTime);
+        
+        // 检查时间段是否已被预约
+        if (isResourceBookedInTimeSlot(resourceId, bookingDate, startTime, endTime)) {
+            throw new RuntimeException("Resource is already booked in this time slot");
+        }
+        
+        ResourceBookingSlot bookingSlot = new ResourceBookingSlot();
+        bookingSlot.setResourceId(resourceId);
+        bookingSlot.setAppointmentId(appointmentId);
+        bookingSlot.setBookingDate(bookingDate);
+        bookingSlot.setStartTime(startTime);
+        bookingSlot.setEndTime(endTime);
+        bookingSlot.setStatus(ResourceBookingSlot.BookingStatus.BOOKED);
+        bookingSlot.setCreatedAt(LocalDateTime.now());
+        bookingSlot.setUpdatedAt(LocalDateTime.now());
+        
+        resourceMapper.insertBookingSlot(bookingSlot);
+        log.info("Booking slot created with ID: {}", bookingSlot.getId());
+    }
+
+    @Override
+    @Transactional
+    public void cancelBookingSlot(Long appointmentId) {
+        log.info("Cancelling booking slots for appointment: {}", appointmentId);
+        resourceMapper.deleteBookingSlotsByAppointmentId(appointmentId);
+    }
+
+    @Override
+    public boolean isResourceBookedInTimeSlot(Long resourceId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime) {
+        log.info("Checking if resource: {} is booked on {} from {} to {}", resourceId, bookingDate, startTime, endTime);
+        return resourceMapper.isResourceBookedInTimeSlot(resourceId, bookingDate, startTime, endTime);
+    }
+
+    @Override
+    public List<ResourceBookingSlot> getResourceBookingSlots(Long resourceId, LocalDate bookingDate) {
+        log.info("Getting booking slots for resource: {} on {}", resourceId, bookingDate);
+        return resourceMapper.findBookingSlotsByResourceIdAndDate(resourceId, bookingDate);
     }
 }

@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.mapper;
 
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
+import com.merchant.server.businessservice.entity.ResourceBookingSlot;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -46,4 +47,24 @@ public interface ResourceMapper {
     void deleteAvailability(@Param("id") Long id);
     
     void deleteAvailabilitiesByResourceId(@Param("resourceId") Long resourceId);
+    
+    // 资源预约时间段操作
+    List<ResourceBookingSlot> findBookingSlotsByResourceId(@Param("resourceId") Long resourceId);
+    
+    List<ResourceBookingSlot> findBookingSlotsByResourceIdAndDate(@Param("resourceId") Long resourceId, 
+                                                                  @Param("bookingDate") LocalDate bookingDate);
+    
+    void insertBookingSlot(ResourceBookingSlot bookingSlot);
+    
+    void updateBookingSlot(ResourceBookingSlot bookingSlot);
+    
+    void deleteBookingSlot(@Param("id") Long id);
+    
+    void deleteBookingSlotsByAppointmentId(@Param("appointmentId") Long appointmentId);
+    
+    // 检查资源在指定时间段是否已被预约
+    boolean isResourceBookedInTimeSlot(@Param("resourceId") Long resourceId,
+                                       @Param("bookingDate") LocalDate bookingDate,
+                                       @Param("startTime") LocalTime startTime,
+                                       @Param("endTime") LocalTime endTime);
 }

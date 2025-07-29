@@ -41,14 +41,14 @@
     <select id="findByTenantId" resultMap="ResourceResultMap">
         SELECT * FROM resource 
         WHERE tenant_id = #{tenantId} AND status != 'DELETED'
-        ORDER BY type, name
+        ORDER BY type, created_at DESC, name
     </select>
 
     <!-- 根据租户ID和类型查询资源 -->
     <select id="findByTenantIdAndType" resultMap="ResourceResultMap">
         SELECT * FROM resource 
         WHERE tenant_id = #{tenantId} AND type = #{type} AND status != 'DELETED'
-        ORDER BY name
+        ORDER BY created_at DESC, name
     </select>
 
     <!-- 根据ID查询资源 -->
@@ -163,5 +163,75 @@
     <delete id="deleteAvailabilitiesByResourceId">
         DELETE FROM resource_availability WHERE resource_id = #{resourceId}
     </delete>
+
+    <!-- 资源预约时间段结果映射 -->
+    <resultMap id="ResourceBookingSlotResultMap" type="com.merchant.server.businessservice.entity.ResourceBookingSlot">
+        <id column="id" property="id"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="appointment_id" property="appointmentId"/>
+        <result column="booking_date" property="bookingDate"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 查询资源的预约时间段 -->
+    <select id="findBookingSlotsByResourceId" resultMap="ResourceBookingSlotResultMap">
+        SELECT * FROM resource_booking_slots 
+        WHERE resource_id = #{resourceId} AND status = 'BOOKED'
+        ORDER BY booking_date, start_time
+    </select>
+
+    <!-- 查询资源在指定日期的预约时间段 -->
+    <select id="findBookingSlotsByResourceIdAndDate" resultMap="ResourceBookingSlotResultMap">
+        SELECT * FROM resource_booking_slots 
+        WHERE resource_id = #{resourceId} AND booking_date = #{bookingDate} AND status = 'BOOKED'
+        ORDER BY start_time
+    </select>
+
+    <!-- 插入预约时间段 -->
+    <insert id="insertBookingSlot" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource_booking_slots (
+            resource_id, appointment_id, booking_date, start_time, end_time, status, created_at, updated_at
+        ) VALUES (
+            #{resourceId}, #{appointmentId}, #{bookingDate}, #{startTime}, #{endTime}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新预约时间段 -->
+    <update id="updateBookingSlot">
+        UPDATE resource_booking_slots SET
+            booking_date = #{bookingDate},
+            start_time = #{startTime},
+            end_time = #{endTime},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除预约时间段 -->
+    <delete id="deleteBookingSlot">
+        DELETE FROM resource_booking_slots WHERE id = #{id}
+    </delete>
+
+    <!-- 根据预约ID删除预约时间段 -->
+    <delete id="deleteBookingSlotsByAppointmentId">
+        DELETE FROM resource_booking_slots WHERE appointment_id = #{appointmentId}
+    </delete>
+
+    <!-- 检查资源在指定时间段是否已被预约 -->
+    <select id="isResourceBookedInTimeSlot" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM resource_booking_slots
+        WHERE resource_id = #{resourceId}
+        AND booking_date = #{bookingDate}
+        AND status = 'BOOKED'
+        AND (
+            (#{startTime} >= start_time AND #{startTime} &lt; end_time) OR
+            (#{endTime} > start_time AND #{endTime} &lt;= end_time) OR
+            (#{startTime} &lt;= start_time AND #{endTime} >= end_time)
+        )
+    </select>
 
 </mapper>

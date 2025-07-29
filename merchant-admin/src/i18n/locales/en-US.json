@@ -643,11 +643,26 @@
     "timeSlots": "Time Slots",
     "legend": "Legend",
     "availability": {
+      "title": "Availability Settings",
       "available": "Available",
+      "unavailable": "Unavailable",
       "busy": "Busy",
       "break": "Break",
       "off": "Off",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "todaySchedule": "Today's Schedule",
+      "staffAvailability": "Staff Availability",
+      "roomAvailability": "Room Availability",
+      "subtitle": "View real-time availability status",
+      "todayView": "Today View",
+      "weekView": "Week View",
+      "searchStaffPlaceholder": "Search staff name, position...",
+      "showingFirst9Staff": "Showing first 9 staff members, use search to find more",
+      "noStaffAvailable": "No staff available",
+      "noRoomsAvailable": "No rooms available",
+      "addResourcesFirst": "Please add resources first"
     },
     "skillOptions": {
       "haircut": "Haircut",
@@ -784,7 +799,9 @@
       "busy": "Busy",
       "break": "Break",
       "off": "Off",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "searchStaffPlaceholder": "Search staff name, position or description...",
+      "showingFirst9Staff": "Showing first 9 staff members, use search to find specific staff"
     }
   },
   "common": {
