@@ -601,7 +601,6 @@ export const customerApi = {
       lastVisit: customer.lastVisit,
     };
     
-    console.log('Creating customer with data:', customerToSend);
     const response = await createRequest('/api/business/customers', {
       method: 'POST',
       body: JSON.stringify(customerToSend),
@@ -1446,12 +1445,7 @@ export const notificationApi = {
     });
   },
 
-  // 发送预约通知
-  sendAppointmentNotification: async (appointmentId: number): Promise<void> => {
-    await createRequest(`/api/notification/appointment/${appointmentId}/send`, {
-      method: 'POST',
-    });
-  },
+  // 注意：预约通知现在在预约创建时自动发送，不需要单独调用
 };
 
 // Combined API export for convenience

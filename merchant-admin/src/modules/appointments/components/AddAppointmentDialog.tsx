@@ -132,12 +132,6 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           merchantConfigApi.getResourceTypes(tenantId).catch(() => ['STAFF']) // 默认为员工类型
         ]);
         
-        console.log('Loaded data:', {
-          resources: resources?.length || 0,
-          categories: categories?.length || 0,
-          services: servicesData?.length || 0,
-          resourceTypes: resourceTypes
-        });
         
         setResourceOptions(resources || []);
         setServiceCategories(categories || []);
@@ -359,18 +353,6 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         throw new Error('Missing required fields: customerId, appointmentDate, or appointmentTime');
       }
 
-      console.log('Submitting appointment:', appointment);
-      console.log('Appointment data types:', {
-        tenantId: typeof appointment.tenantId,
-        customerId: typeof appointment.customerId,
-        appointmentDate: typeof appointment.appointmentDate,
-        appointmentTime: typeof appointment.appointmentTime,
-        duration: typeof appointment.duration,
-        totalAmount: typeof appointment.totalAmount,
-        status: typeof appointment.status,
-        resourceId: typeof appointment.resourceId,
-        resourceType: typeof appointment.resourceType,
-      });
 
       try {
         await onSave(appointment);

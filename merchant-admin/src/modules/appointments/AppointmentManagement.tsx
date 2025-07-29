@@ -868,18 +868,9 @@ const AppointmentManagement: React.FC = () => {
         customers={customers}
         onSave={async (appointment) => {
           try {
-            // 创建预约
+            // 创建预约（通知会在后端自动发送）
             const createdAppointment = await appointmentApi.createAppointment(appointment);
-
-            // 预约创建成功后，发送通知
-            try {
-              await notificationApi.sendAppointmentNotification(createdAppointment.id);
-              console.log('Appointment notifications sent successfully');
-            } catch (notificationError) {
-              console.warn('Failed to send notifications:', notificationError);
-              // 通知发送失败不应该影响预约创建的成功状态
-              // 可以考虑显示一个警告消息，但不影响成功状态
-            }
+            console.log('Appointment created successfully with automatic notifications');
 
             setSnackbar({
               open: true,
@@ -967,7 +958,7 @@ const AppointmentManagement: React.FC = () => {
                   <Typography variant="body2">{selectedAppointment.resource?.name || t('appointments.unassigned')}</Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                     {t('appointments.status')}: {getStatusChip(selectedAppointment.status)}
                   </Typography>
                 </Box>

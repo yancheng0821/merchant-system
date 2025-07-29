@@ -73,9 +73,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const tenantId = user.tenantId || 1;
-        console.log('Loading services for tenantId:', tenantId);
         const serviceList = await serviceApi.getActiveServices(tenantId.toString());
-        console.log('Loaded services:', serviceList);
         // 确保 serviceList 是数组
         setServices(Array.isArray(serviceList) ? serviceList : []);
       } catch (error) {

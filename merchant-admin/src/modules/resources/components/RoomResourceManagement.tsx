@@ -84,7 +84,6 @@ const RoomResourceManagement: React.FC = () => {
                 setLoading(true);
                 const { resourceApi } = await import('../../../services/api');
                 const response = await resourceApi.getResourcesByType(tenantId, 'ROOM');
-                console.log('Room data received:', response);
                 const roomData = (response || []).map(convertToRoomResource);
                 // 按创建时间倒序排序，新创建的在最上面
                 roomData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

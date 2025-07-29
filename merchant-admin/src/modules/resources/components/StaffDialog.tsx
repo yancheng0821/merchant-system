@@ -125,13 +125,11 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
     }, [staff, open]);
 
     const handleInputChange = (field: keyof StaffResource, value: any) => {
-        console.log(`Updating ${field}:`, value); // 调试日志
         setFormData(prev => {
             const newData = {
                 ...prev,
                 [field]: value,
             };
-            console.log('New formData:', newData); // 调试日志
             return newData;
         });
     };
@@ -397,7 +395,6 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                     <ImageUploader
                                         value={getFullImageUrl(formData.avatar)}
                                         onChange={(imageUrl) => {
-                                            console.log('Avatar uploaded:', imageUrl); // 调试日志
                                             handleInputChange('avatar', imageUrl || '');
                                         }}
                                         variant="avatar"
