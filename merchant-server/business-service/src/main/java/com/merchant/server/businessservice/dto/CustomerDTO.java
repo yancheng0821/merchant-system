@@ -255,4 +255,34 @@ public class CustomerDTO {
 
     public LocalDateTime getLastVisit() { return lastVisit; }
     public void setLastVisit(LocalDateTime lastVisit) { this.lastVisit = lastVisit; }
+    
+    @Override
+    public String toString() {
+        return "CustomerDTO{" +
+                "id=" + id +
+                ", tenantId=" + tenantId +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
+                ", address='" + address + '\'' +
+                ", dateOfBirth=" + dateOfBirth +
+                ", gender=" + gender +
+                ", membershipLevel=" + membershipLevel +
+                ", points=" + points +
+                ", totalSpent=" + totalSpent +
+                ", status=" + status +
+                ", notes='" + notes + '\'' +
+                ", allergies='" + allergies + '\'' +
+                ", communicationPreference=" + communicationPreference +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", fullName='" + fullName + '\'' +
+                ", preferredServiceIds=" + preferredServiceIds +
+                ", totalAppointments=" + totalAppointments +
+                ", completedAppointments=" + completedAppointments +
+                ", averageRating=" + averageRating +
+                ", lastVisit=" + lastVisit +
+                '}';
+    }
 }

@@ -109,9 +109,38 @@ public class CustomerController {
      * 更新客户
      */
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable Long id, @Valid @RequestBody CustomerDTO customerDTO) {
-        CustomerDTO updatedCustomer = customerService.updateCustomer(id, customerDTO);
-        return ResponseEntity.ok(updatedCustomer);
+    public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable Long id, @RequestBody CustomerDTO customerDTO) {
+        try {
+            System.out.println("Updating customer with ID: " + id);
+            System.out.println("Received customer data: " + customerDTO);
+            System.out.println("Customer email: '" + customerDTO.getEmail() + "'");
+            System.out.println("Customer email length: " + (customerDTO.getEmail() != null ? customerDTO.getEmail().length() : "null"));
+            System.out.println("Customer communication preference: " + customerDTO.getCommunicationPreference());
+            
+            // 手动验证必填字段
+            if (customerDTO.getFirstName() == null || customerDTO.getFirstName().trim().isEmpty()) {
+                throw new RuntimeException("First name is required");
+            }
+            if (customerDTO.getLastName() == null || customerDTO.getLastName().trim().isEmpty()) {
+                throw new RuntimeException("Last name is required");
+            }
+            if (customerDTO.getPhone() == null || customerDTO.getPhone().trim().isEmpty()) {
+                throw new RuntimeException("Phone is required");
+            }
+            if (customerDTO.getEmail() != null && !customerDTO.getEmail().trim().isEmpty()) {
+                // 验证邮箱格式
+                if (!customerDTO.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                    throw new RuntimeException("Invalid email format");
+                }
+            }
+            
+            CustomerDTO updatedCustomer = customerService.updateCustomer(id, customerDTO);
+            return ResponseEntity.ok(updatedCustomer);
+        } catch (Exception e) {
+            System.err.println("Error updating customer: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
     
     /**
@@ -180,6 +209,35 @@ public class CustomerController {
                 fieldError -> fieldError.getField(),
                 fieldError -> fieldError.getDefaultMessage()
             )));
+        return ResponseEntity.badRequest().body(error);
+    }
+    
+    /**
+     * JSON解析异常处理
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleJsonParseException(
+            org.springframework.http.converter.HttpMessageNotReadableException e) {
+        System.err.println("JSON parsing error: " + e.getMessage());
+        e.printStackTrace();
+        
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "JSON parse error: " + e.getMessage());
+        error.put("type", "HttpMessageNotReadableException");
+        
+        // 如果是枚举值错误，提供更友好的错误信息
+        if (e.getMessage().contains("Gender")) {
+            error.put("message", "Invalid gender value. Valid values are: MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY");
+        } else if (e.getMessage().contains("MembershipLevel")) {
+            error.put("message", "Invalid membership level. Valid values are: REGULAR, SILVER, GOLD, PLATINUM");
+        } else if (e.getMessage().contains("CustomerStatus")) {
+            error.put("message", "Invalid status. Valid values are: ACTIVE, INACTIVE");
+        } else if (e.getMessage().contains("CommunicationPreference")) {
+            error.put("message", "Invalid communication preference. Valid values are: SMS, EMAIL, PHONE");
+        } else {
+            error.put("message", "Invalid data format in request");
+        }
+        
         return ResponseEntity.badRequest().body(error);
     }
 }

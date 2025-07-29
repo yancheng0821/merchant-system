@@ -215,32 +215,17 @@ public class SmsService {
     }
     
     /**
-     * 格式化电话号码，确保包含国家代码
-     * 中国手机号码需要添加+86前缀
+     * 格式化电话号码，直接使用原始号码，不添加国家代码
      */
     private String formatPhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("电话号码不能为空");
         }
         
+        // 清理号码，只保留数字和+号
         String cleanNumber = phoneNumber.replaceAll("[^0-9+]", "");
         
-        // 如果已经包含+号，直接返回
-        if (cleanNumber.startsWith("+")) {
-            return cleanNumber;
-        }
-        
-        // 中国手机号码处理
-        if (cleanNumber.length() == 11 && cleanNumber.startsWith("1")) {
-            return "+86" + cleanNumber;
-        }
-        
-        // 如果是86开头的13位号码
-        if (cleanNumber.length() == 13 && cleanNumber.startsWith("86")) {
-            return "+" + cleanNumber;
-        }
-        
-        // 默认添加+86前缀（假设是中国号码）
-        return "+86" + cleanNumber;
+        // 直接返回清理后的号码，不添加任何前缀
+        return cleanNumber;
     }
 }

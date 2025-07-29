@@ -189,12 +189,32 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         }
       }
 
+      // 安全的枚举值转换函数
+      const convertGender = (gender: string): 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY' => {
+        switch (gender) {
+          case 'male': return 'MALE';
+          case 'female': return 'FEMALE';
+          case 'other': return 'OTHER';
+          case 'prefer-not-to-say': return 'PREFER_NOT_TO_SAY';
+          default: return 'PREFER_NOT_TO_SAY';
+        }
+      };
+
+      const convertCommunicationPreference = (pref: string): 'SMS' | 'EMAIL' | 'PHONE' => {
+        switch (pref) {
+          case 'sms': return 'SMS';
+          case 'email': return 'EMAIL';
+          case 'phone': return 'PHONE';
+          default: return 'EMAIL';
+        }
+      };
+
       const customerData: Partial<Customer> = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        address: formData.address.trim() || undefined,
         dateOfBirth: dateOfBirth,
         // 只有编辑时才传ID
         id: customer?.id,
@@ -205,15 +225,12 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         status: (formData.status === 'active' ? 'ACTIVE' : 'INACTIVE') as 'ACTIVE' | 'INACTIVE',
         // 转换会员等级为大写
         membershipLevel: (formData.membershipLevel || 'regular').toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM',
-        // 转换性别为正确的枚举值
-        gender: formData.gender ? (
-          formData.gender === 'prefer-not-to-say' ? 'PREFER_NOT_TO_SAY' :
-            formData.gender.toUpperCase() as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'
-        ) : undefined,
-        // 转换通信偏好为大写
-        communicationPreference: (formData.communicationPreference === 'sms' ? 'SMS' : formData.communicationPreference.toUpperCase()) as 'SMS' | 'EMAIL' | 'PHONE',
-        notes: formData.notes,
-        allergies: formData.allergies,
+        // 使用安全的性别转换
+        gender: convertGender(formData.gender),
+        // 使用安全的通信偏好转换
+        communicationPreference: convertCommunicationPreference(formData.communicationPreference),
+        notes: formData.notes.trim() || undefined,
+        allergies: formData.allergies.trim() || undefined,
         preferredServiceIds: formData.preferredServiceIds,
       };
 
@@ -233,6 +250,8 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         }
       });
 
+      console.log('Form data gender:', formData.gender);
+      console.log('Converted gender:', customerData.gender);
       console.log('Submitting customer data:', customerData);
       onSave(customerData);
       onClose();
