@@ -12,11 +12,14 @@ const resources = {
   },
 };
 
+// 从 localStorage 获取保存的语言设置，如果没有则使用默认语言
+const savedLanguage = localStorage.getItem('language') || 'en-US';
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'en-US', // 默认语言
+    lng: savedLanguage, // 使用保存的语言或默认语言
     fallbackLng: 'en-US',
     interpolation: {
       escapeValue: false,
