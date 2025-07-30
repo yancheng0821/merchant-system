@@ -1226,7 +1226,10 @@
     "confirm": "Confirm",
     "tenantInfo": "Tenant Information",
     "tenantName": "Tenant Name",
-    "tenantId": "Tenant ID"
+    "tenantId": "Tenant ID",
+    "brandTitle": "Merchant System",
+    "brandSubtitle": "Professional Business Management Platform",
+    "brandDescription": "Streamline your business operations with our comprehensive management solution"
   },
   "dialogs": {
     "createNewService": "Create New Service Item",

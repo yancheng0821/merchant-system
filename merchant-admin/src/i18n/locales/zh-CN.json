@@ -1467,7 +1467,10 @@
     "confirm": "确定",
     "tenantInfo": "租户信息",
     "tenantName": "租户名称",
-    "tenantId": "租户ID"
+    "tenantId": "租户ID",
+    "brandTitle": "商户管理系统",
+    "brandSubtitle": "专业的商业管理平台",
+    "brandDescription": "通过我们全面的管理解决方案简化您的业务运营"
   },
   "dialogs": {
     "createNewService": "创建新的服务项目",

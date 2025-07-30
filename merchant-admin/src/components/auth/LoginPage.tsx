@@ -27,6 +27,7 @@ import {
 import GoogleLoginButton from './GoogleLoginButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 
 
 const LoginPage: React.FC = () => {
@@ -193,8 +194,20 @@ const LoginPage: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
+        position: 'relative',
       }}
     >
+      {/* 语言切换器 - 固定在右上角 */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 24,
+          right: 24,
+          zIndex: 1000,
+        }}
+      >
+        <LanguageSwitcher variant="login" size="medium" />
+      </Box>
       <Container maxWidth="md">
         <Box
           sx={{
@@ -215,13 +228,13 @@ const LoginPage: React.FC = () => {
             >
               <BusinessIcon sx={{ fontSize: 80, mb: 2, opacity: 0.9 }} />
               <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-                Merchant System
+                {t('auth.brandTitle')}
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.8, mb: 3 }}>
-                Professional Business Management Platform
+                {t('auth.brandSubtitle')}
               </Typography>
               <Typography variant="body1" sx={{ opacity: 0.7 }}>
-                Streamline your business operations with our comprehensive management solution
+                {t('auth.brandDescription')}
               </Typography>
             </Box>
           </Fade>

@@ -22,7 +22,6 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Language as LanguageIcon,
   Person as PersonIcon,
   ExitToApp as LogoutIcon,
   ExpandLess,
@@ -48,6 +47,7 @@ import NotificationManagement from './modules/notifications/NotificationManageme
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
 import { getFullImageUrl } from './services/api';
+import LanguageSwitcher from './components/common/LanguageSwitcher';
 
 const drawerWidth = 260;
 
@@ -57,7 +57,6 @@ const MainApp: React.FC = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState('dashboard');
-  const [languageAnchor, setLanguageAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
   // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
@@ -97,18 +96,7 @@ const MainApp: React.FC = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleLanguageClick = (event: React.MouseEvent<HTMLElement>) => {
-    setLanguageAnchor(event.currentTarget);
-  };
 
-  const handleLanguageClose = () => {
-    setLanguageAnchor(null);
-  };
-
-  const handleLanguageChange = (lng: string) => {
-    i18n.changeLanguage(lng);
-    handleLanguageClose();
-  };
 
   const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
@@ -308,27 +296,8 @@ const MainApp: React.FC = () => {
               </IconButton>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                {/* 语言切换按钮 */}
-                <Button
-                  onClick={handleLanguageClick}
-                  startIcon={<LanguageIcon />}
-                  sx={{
-                    borderRadius: 2,
-                    px: 2,
-                    py: 1,
-                    background: alpha('#6366F1', 0.1),
-                    color: '#6366F1',
-                    border: `1px solid ${alpha('#6366F1', 0.2)}`,
-                    '&:hover': {
-                      background: alpha('#6366F1', 0.15),
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {i18n.language === 'zh-CN' ? t('common.chinese') : t('common.english')}
-                </Button>
+                {/* 语言切换组件 */}
+                <LanguageSwitcher variant="default" size="medium" />
 
                 {/* 用户头像和菜单 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -369,42 +338,7 @@ const MainApp: React.FC = () => {
             </Toolbar>
           </AppBar>
 
-          {/* 语言菜单 */}
-          <Menu
-            anchorEl={languageAnchor}
-            open={Boolean(languageAnchor)}
-            onClose={handleLanguageClose}
-            PaperProps={{
-              sx: {
-                borderRadius: 2,
-                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                border: '1px solid rgba(0,0,0,0.08)',
-                mt: 1,
-              }
-            }}
-          >
-            <MenuItem
-              onClick={() => handleLanguageChange('zh-CN')}
-              sx={{
-                minWidth: 120,
-                '&:hover': {
-                  background: alpha('#6366F1', 0.08),
-                }
-              }}
-            >
-              {t('common.chinese')}
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleLanguageChange('en-US')}
-              sx={{
-                '&:hover': {
-                  background: alpha('#6366F1', 0.08),
-                }
-              }}
-            >
-              {t('common.english')}
-            </MenuItem>
-          </Menu>
+
 
           {/* 用户菜单 */}
           <Menu
