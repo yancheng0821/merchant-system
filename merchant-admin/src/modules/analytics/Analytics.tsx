@@ -30,7 +30,7 @@ import {
   Assessment as AssessmentIcon,
   People as PeopleIcon,
   ShoppingCart as OrdersIcon,
-  Insights as InsightsIcon,
+  Business as AiIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -51,6 +51,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { CurrencyUtils } from '../../config/constants';
+import AiBusinessInsights from './components/AiBusinessInsights';
 
 // 颜色主题 - 使用现代化配色
 const COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
@@ -461,7 +462,7 @@ const Analytics: React.FC = () => {
             <Tab icon={<TrendingUpIcon />} iconPosition="start" label={t('analytics.tabs.revenueTrend')} />
             <Tab icon={<AssessmentIcon />} iconPosition="start" label={t('analytics.tabs.serviceAnalysis')} />
             <Tab icon={<PeopleIcon />} iconPosition="start" label={t('analytics.tabs.staffPerformance')} />
-            <Tab icon={<InsightsIcon />} iconPosition="start" label={t('analytics.tabs.businessInsights')} />
+            <Tab icon={<AiIcon />} iconPosition="start" label={t('analytics.tabs.aiBusinessInsights')} />
           </Tabs>
         </Box>
 
@@ -717,81 +718,9 @@ const Analytics: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        {/* 业务洞察 */}
+        {/* AI 业务洞察 */}
         <TabPanel value={selectedTab} index={3}>
-          <Box display="flex" alignItems="center" mb={3}>
-            <Box
-              sx={{
-                width: 6,
-                height: 24,
-                background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                borderRadius: 1,
-                mr: 2,
-              }}
-            />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {t('analytics.charts.keyBusinessMetrics')}
-            </Typography>
-          </Box>
-
-          <Grid container spacing={3}>
-            {[
-              {
-                title: t('analytics.metrics.customerSatisfaction'),
-                value: businessMetrics.customerSatisfaction || '0',
-                unit: '/5.0',
-                color: '#F59E0B',
-                trend: businessMetrics.customerSatisfactionTrend ? `${businessMetrics.customerSatisfactionTrend > 0 ? '+' : ''}${businessMetrics.customerSatisfactionTrend}` : '0'
-              },
-              {
-                title: t('analytics.metrics.serviceCompletionRate'),
-                value: businessMetrics.serviceCompletionRate || '0',
-                unit: '%',
-                color: '#10B981',
-                trend: businessMetrics.serviceCompletionRateTrend ? `${businessMetrics.serviceCompletionRateTrend > 0 ? '+' : ''}${businessMetrics.serviceCompletionRateTrend}%` : '0%'
-              },
-              {
-                title: t('analytics.metrics.appointmentCancellationRate'),
-                value: businessMetrics.appointmentCancellationRate || '0',
-                unit: '%',
-                color: '#F59E0B',
-                trend: businessMetrics.appointmentCancellationRateTrend ? `${businessMetrics.appointmentCancellationRateTrend > 0 ? '+' : ''}${businessMetrics.appointmentCancellationRateTrend}%` : '0%'
-              },
-              {
-                title: t('analytics.metrics.repeatCustomerRate'),
-                value: businessMetrics.repeatCustomerRate || '0',
-                unit: '%',
-                color: '#8B5CF6',
-                trend: businessMetrics.repeatCustomerRateTrend ? `${businessMetrics.repeatCustomerRateTrend > 0 ? '+' : ''}${businessMetrics.repeatCustomerRateTrend}%` : '0%'
-              },
-            ].map((metric, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <Card
-                  sx={{
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: alpha(metric.color, 0.2),
-                    p: 2,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
-                    {metric.title}
-                  </Typography>
-                  <Box display="flex" alignItems="baseline" gap={0.5} mb={1}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: metric.color }}>
-                      {metric.value}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {metric.unit}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600 }}>
-                    {metric.trend} {t('analytics.metrics.vsLastMonth')}
-                  </Typography>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+          <AiBusinessInsights />
         </TabPanel>
       </Card>
     </Box>

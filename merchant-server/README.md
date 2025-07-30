@@ -13,7 +13,6 @@ merchant-server/
 ├── auth-service/          # 认证授权服务 (端口: 8081)
 ├── merchant-service/      # 商户管理服务 (端口: 8082)
 ├── business-service/      # 业务核心服务 (端口: 8083)
-├── ai-service/           # AI智能服务 (端口: 8084) - 核心卖点
 ├── analytics-service/     # 数据分析服务 (端口: 8085)
 ├── notification-service/  # 通知通信服务 (端口: 8086)
 ├── gateway-service/       # API网关服务 (端口: 8080)
@@ -86,7 +85,6 @@ mvn clean install
 cd auth-service && mvn spring-boot:run
 cd merchant-service && mvn spring-boot:run
 cd business-service && mvn spring-boot:run
-cd ai-service && mvn spring-boot:run
 cd analytics-service && mvn spring-boot:run
 cd notification-service && mvn spring-boot:run
 cd gateway-service && mvn spring-boot:run

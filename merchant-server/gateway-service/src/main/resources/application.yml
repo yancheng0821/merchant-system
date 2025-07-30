@@ -40,7 +40,7 @@ spring:
           predicates:
             - Path=/api/business/**
         - id: ai-service
-          uri: lb://ai-service
+          uri: http://localhost:5001  # 直接路由到 Python AI 服务
           predicates:
             - Path=/api/ai/**
         - id: analytics-service

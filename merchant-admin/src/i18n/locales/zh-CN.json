@@ -834,7 +834,8 @@
     "moreItems": "项",
     "customerRequired": "请选择客户或输入新客户信息",
     "phoneRequired": "电话号码是必需的",
-    "emailRequired": "邮箱地址是必需的"
+    "emailRequired": "邮箱地址是必需的",
+    "appointmentInfo":"预约信息"
   },
   "services": {
     "title": "服务管理",
@@ -1621,7 +1622,7 @@
   },
   "analytics": {
     "title": "数据统计",
-    "subtitle": "全面的业务数据分析和报表",
+    "subtitle": "AI驱动的综合业务数据分析与报表",
     "timeRange": "时间范围",
     "last7Days": "近7天",
     "last30Days": "近30天",
@@ -1680,7 +1681,7 @@
       "revenueTrend": "收入趋势",
       "serviceAnalysis": "服务分析",
       "staffPerformance": "资源表现",
-      "businessInsights": "业务洞察"
+      "aiBusinessInsights": "AI 业务洞察"
     },
     "charts": {
       "revenueOrderTrend": "收入与订单趋势",
@@ -1710,6 +1711,34 @@
       "income": "收入"
     },
     "noDataAvailable": "暂无数据"
+  },
+  "ai": {
+    "loading": "AI 正在分析数据...",
+    "businessInsights": {
+      "title": "AI 业务洞察"
+    },
+    "appointmentRecommendations": {
+      "title": "智能预约推荐",
+      "description": "基于客户历史数据的个性化预约建议"
+    },
+    "demandPrediction": {
+      "title": "服务需求预测",
+      "description": "未来7天各服务预计订单量",
+      "ordersNext7Days": "预计未来7天订单量"
+    },
+    "confidence": {
+      "label": "置信度",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "actions": {
+      "bookAppointment": "预约",
+      "viewDetails": "查看详情"
+    },
+    "noRecommendations": "暂无推荐数据",
+    "noPredictions": "暂无预测数据",
+    "disclaimer": "AI 分析结果仅供参考，实际业务决策请结合具体情况综合考虑。"
   },
   "chart": {
     "date": "日期",

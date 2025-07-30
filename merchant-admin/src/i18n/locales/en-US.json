@@ -575,7 +575,8 @@
     "processingRefund": "Processing refund...",
     "newOrder": "New Order",
     "requestRefund": "Request Refund",
-    "deleteOrder": "Delete Order"
+    "deleteOrder": "Delete Order",
+    "appointmentInfo":"Appointment Information"
   },
   "services": {
     "title": "Service Management",
@@ -1499,7 +1500,7 @@
   },
   "analytics": {
     "title": "Analytics",
-    "subtitle": "Comprehensive business data analysis and reports",
+    "subtitle": "AI-powered comprehensive business data analysis and reports",
     "timeRange": "Time Range",
     "last7Days": "Last 7 Days",
     "last30Days": "Last 30 Days",
@@ -1560,7 +1561,7 @@
       "revenueTrend": "Revenue Trend",
       "serviceAnalysis": "Service Analysis",
       "staffPerformance": "Resource Performance",
-      "businessInsights": "Business Insights"
+      "aiBusinessInsights": "AI Business Insights"
     },
     "charts": {
       "revenueOrderTrend": "Revenue & Order Trend",
@@ -1590,6 +1591,34 @@
       "income": "Income"
     },
     "noDataAvailable": "No data available"
+  },
+  "ai": {
+    "loading": "AI is analyzing data...",
+    "businessInsights": {
+      "title": "AI Business Insights"
+    },
+    "appointmentRecommendations": {
+      "title": "Smart Appointment Recommendations",
+      "description": "Personalized appointment suggestions based on customer history"
+    },
+    "demandPrediction": {
+      "title": "Service Demand Prediction",
+      "description": "Predicted order volume for each service in the next 7 days",
+      "ordersNext7Days": "Predicted orders for next 7 days"
+    },
+    "confidence": {
+      "label": "Confidence",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "actions": {
+      "bookAppointment": "Book",
+      "viewDetails": "View Details"
+    },
+    "noRecommendations": "No recommendations available",
+    "noPredictions": "No predictions available",
+    "disclaimer": "AI analysis results are for reference only. Please consider specific circumstances when making business decisions."
   },
   "chart": {
     "date": "Date",
