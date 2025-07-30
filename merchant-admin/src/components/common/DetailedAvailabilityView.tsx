@@ -40,6 +40,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     const [availabilityData, setAvailabilityData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [scrollPosition, setScrollPosition] = useState(0);
 
     // 生成时间段（30分钟间隔）
     const timeSlots = React.useMemo(() => {
@@ -74,6 +75,17 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     useEffect(() => {
         fetchDetailedAvailability();
     }, [resourceId, selectedDate]);
+
+    // 恢复滚动位置
+    useEffect(() => {
+        if (!loading && availabilityData && scrollPosition > 0) {
+            // 使用setTimeout确保DOM已更新
+            setTimeout(() => {
+                window.scrollTo(0, scrollPosition);
+                setScrollPosition(0); // 重置滚动位置
+            }, 100);
+        }
+    }, [loading, availabilityData, scrollPosition]);
 
     // 检查时间段状态
     const getTimeSlotStatus = (timeSlot: string) => {
@@ -143,6 +155,9 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
 
     // 日期导航
     const navigateDate = (direction: 'prev' | 'next') => {
+        // 保存当前滚动位置
+        setScrollPosition(window.pageYOffset || document.documentElement.scrollTop);
+        
         const currentDate = new Date(selectedDate);
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
@@ -361,7 +376,11 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                         <TextField
                             type="date"
                             value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
+                            onChange={(e) => {
+                                // 保存当前滚动位置
+                                setScrollPosition(window.pageYOffset || document.documentElement.scrollTop);
+                                setSelectedDate(e.target.value);
+                            }}
                             size="small"
                             sx={{
                                 '& .MuiOutlinedInput-root': {
@@ -419,7 +438,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                 }}
             >
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: '1rem' }}>
-                    📅 时间段可用性
+                    {t('resources.timeSlotAvailability')}
                 </Typography>
                 
                 <Grid container spacing={1}>
@@ -484,9 +503,6 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                         flex: 1,
                     }}
                 >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 1.5, fontSize: '0.875rem' }}>
-                        🎯 {t('resources.availability.legend')}
-                    </Typography>
                     <Box display="flex" flexDirection="column" gap={1.5}>
                         {['available', 'booked', 'unavailable'].map((status) => {
                             const statusDisplay = getStatusDisplay(status);

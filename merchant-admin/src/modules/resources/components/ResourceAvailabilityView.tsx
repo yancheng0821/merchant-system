@@ -448,7 +448,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                 color="text.secondary"
                                                 sx={{ textAlign: 'center', display: 'block' }}
                                             >
-                                                +{timeSlots.length - 8} 更多时段
+                                                +{timeSlots.length - 8} {t('resources.moreTimeSlots')}
                                             </Typography>
                                         )}
                                     </Box>

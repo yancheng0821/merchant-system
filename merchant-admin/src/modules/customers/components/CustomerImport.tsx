@@ -27,7 +27,11 @@ import {
   Grid,
   Card,
   CardContent,
-  IconButton
+  IconButton,
+  LinearProgress,
+  Fade,
+  Slide,
+  Zoom
 } from '@mui/material';
 import {
   CloudUpload,
@@ -36,7 +40,16 @@ import {
   Download,
   Refresh,
   Upload as UploadIcon,
-  Close
+  Close,
+  FileUpload,
+  Visibility,
+  PlayArrow,
+  CheckCircleOutline,
+  ErrorOutline,
+  InfoOutlined,
+  TrendingUp,
+  Assessment,
+  DataUsage
 } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { customerApi } from '../../../services/api';
@@ -436,12 +449,6 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
               </Alert>
             )}
             
-            {/* 调试信息 */}
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                Debug Info: activeStep={activeStep}, previewResponse={previewResponse ? 'exists' : 'null'}, error={error || 'none'}, loading={loading.toString()}
-              </Typography>
-            </Box>
             
             {previewResponse && (
               <>

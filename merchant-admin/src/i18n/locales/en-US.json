@@ -443,7 +443,8 @@
     "pleaseWait": "Please Wait",
     "transactionCompleted": "Transaction Completed",
     "todayAppointmentsOnly":"Today's appointments only",
-    "appointmentLimitInfo":"Max 20 records, sorted by time descending"
+    "appointmentLimitInfo":"Max 20 records, sorted by time descending",
+    "reviewOrderDetails": "Review Order Details"
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",
@@ -852,6 +853,8 @@
     "noResourcesAvailable": "No resources available",
     "createSuccess": "Resource created successfully",
     "updateSuccess": "Resource updated successfully",
+    "moreTimeSlots": "more time slots",
+    "timeSlotAvailability": "Time Slot Availability",
     "deleteSuccess": "Resource deleted successfully",
     "deleteError": "Failed to delete resource",
     "statusUpdateSuccess": "Resource status updated successfully",

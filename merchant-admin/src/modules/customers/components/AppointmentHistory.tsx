@@ -248,7 +248,7 @@ const AppointmentHistory: React.FC<{
         <DialogContent dividers sx={{ p: 3 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" py={8}>
-              <CircularProgress size={48} sx={{ color: '#F59E0B' }} />
+              <CircularProgress size={48} sx={{ color: '#EC4899' }} />
             </Box>
           ) : error ? (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -346,7 +346,7 @@ const AppointmentHistory: React.FC<{
                       borderRadius: 3,
                       boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                       border: '1px solid',
-                      borderColor: alpha('#F59E0B', 0.1),
+                      borderColor: alpha('#EC4899', 0.1),
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         transform: 'translateY(-2px)',
@@ -361,7 +361,7 @@ const AppointmentHistory: React.FC<{
                             width: 48,
                             height: 48,
                             borderRadius: 2,
-                            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                            background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -370,7 +370,7 @@ const AppointmentHistory: React.FC<{
                         >
                           <WalletIcon sx={{ fontSize: 24 }} />
                         </Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
                           {formatCurrency(stats?.totalSpent || 0)}
                         </Typography>
                       </Box>
@@ -436,11 +436,11 @@ const AppointmentHistory: React.FC<{
                   fontWeight: 600,
                   fontSize: '0.95rem',
                   '&.Mui-selected': {
-                    color: '#F59E0B',
+                    color: '#EC4899',
                   },
                 },
                 '& .MuiTabs-indicator': {
-                  backgroundColor: '#F59E0B',
+                  backgroundColor: '#EC4899',
                   height: 3,
                   borderRadius: '3px 3px 0 0',
                 },
@@ -479,7 +479,7 @@ const AppointmentHistory: React.FC<{
                       key={appointment.id}
                       sx={{
                         '&:hover': {
-                          backgroundColor: alpha('#F59E0B', 0.04),
+                          backgroundColor: alpha('#EC4899', 0.04),
                         },
                         transition: 'background-color 0.2s ease',
                       }}
@@ -498,10 +498,10 @@ const AppointmentHistory: React.FC<{
                                   size="small"
                                   variant="outlined"
                                   sx={{
-                                    borderColor: alpha('#F59E0B', 0.3),
-                                    color: '#D97706',
+                                    borderColor: alpha('#EC4899', 0.3),
+                                    color: '#DB2777',
                                     '&:hover': {
-                                      backgroundColor: alpha('#F59E0B', 0.1),
+                                      backgroundColor: alpha('#EC4899', 0.1),
                                     },
                                   }}
                                 />
@@ -551,7 +551,7 @@ const AppointmentHistory: React.FC<{
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#EC4899' }}>
                           {formatCurrency(appointment.totalAmount || 0)}
                         </Typography>
                       </TableCell>
@@ -561,7 +561,7 @@ const AppointmentHistory: React.FC<{
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               {appointment.rating}
                             </Typography>
-                            <StarIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
+                            <StarIcon sx={{ fontSize: 16, color: '#EC4899' }} />
                           </Box>
                         ) : (
                           <Typography variant="body2" color="text.secondary">
