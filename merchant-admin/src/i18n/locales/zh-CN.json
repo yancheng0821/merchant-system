@@ -683,7 +683,11 @@
     "newOrder": "新订单",
     "retryPayment": "重试支付",
     "complete": "完成",
-    "totalTax":"总税费"
+    "totalTax":"总税费",
+    "pleaseWait": "请等待",
+    "transactionCompleted":"交易完成！",
+    "todayAppointmentsOnly":"仅显示今日预约",
+    "appointmentLimitInfo":"最多显示20条，按时间倒序"
   },
   "orders": {
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",
@@ -791,6 +795,8 @@
     "paymentSuccessful": "支付成功！",
     "paymentFailed": "支付失败，请重试",
     "paymentError": "支付处理出错",
+    "todayAppointmentsOnly": "仅显示今日预约",
+    "appointmentLimitInfo": "最多显示20条，按时间倒序",
     "totalTax": "总税费",
     "processing": "处理中...",
     "processingCashPayment": "正在处理现金支付...",

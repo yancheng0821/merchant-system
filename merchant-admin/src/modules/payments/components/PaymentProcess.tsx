@@ -275,9 +275,16 @@ const PaymentProcess: React.FC = () => {
       const response = await appointmentApi.getAllAppointments(user?.tenantId || 0);
       const allAppointments = Array.isArray(response) ? response : [];
 
+      // 获取今天的日期字符串 (YYYY-MM-DD格式)
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
       // 过滤已确认的预约并格式化数据
       const confirmedAppointments = allAppointments
-        .filter((apt: any) => apt.status === 'CONFIRMED')
+        .filter((apt: any) => {
+          // 只显示今天的已确认预约
+          return apt.status === 'CONFIRMED' && apt.appointmentDate === todayStr;
+        })
         .map((apt: any) => {
           // 从customer对象获取客户信息
           const customerName = apt.customer
@@ -308,7 +315,16 @@ const PaymentProcess: React.FC = () => {
             resourceId: apt.resourceId,
             resourceType: apt.resourceType,
           };
-        });
+        })
+        // 按预约时间倒序排列 (时间最晚的在最上面)
+        .sort((a, b) => {
+          // 将时间字符串转换为可比较的格式
+          const timeA = a.appointmentTime.replace(':', '');
+          const timeB = b.appointmentTime.replace(':', '');
+          return timeB.localeCompare(timeA);
+        })
+        // 最多显示20条记录
+        .slice(0, 20);
 
       setAppointments(confirmedAppointments);
       setFilteredAppointments(confirmedAppointments);
@@ -338,13 +354,21 @@ const PaymentProcess: React.FC = () => {
     if (!appointmentSearchTerm.trim()) {
       setFilteredAppointments(appointments);
     } else {
-      const filtered = appointments.filter(appointment =>
-        appointment.customerName.toLowerCase().includes(appointmentSearchTerm.toLowerCase()) ||
-        appointment.customerPhone.includes(appointmentSearchTerm) ||
-        appointment.services.some(service =>
-          service.name.toLowerCase().includes(appointmentSearchTerm.toLowerCase())
+      const filtered = appointments
+        .filter(appointment =>
+          appointment.customerName.toLowerCase().includes(appointmentSearchTerm.toLowerCase()) ||
+          appointment.customerPhone.includes(appointmentSearchTerm) ||
+          appointment.services.some(service =>
+            service.name.toLowerCase().includes(appointmentSearchTerm.toLowerCase())
+          )
         )
-      );
+        // 搜索结果也按时间倒序排列，最多20条
+        .sort((a, b) => {
+          const timeA = a.appointmentTime.replace(':', '');
+          const timeB = b.appointmentTime.replace(':', '');
+          return timeB.localeCompare(timeA);
+        })
+        .slice(0, 20);
       setFilteredAppointments(filtered);
     }
   }, [appointments, appointmentSearchTerm]);
@@ -1255,6 +1279,20 @@ const PaymentProcess: React.FC = () => {
                         },
                       }}
                     />
+                    {/* 今天预约提示 */}
+                    <Box display="flex" alignItems="center" gap={1} mt={1}>
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: '#10B981',
+                        }}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        {t('payments.todayAppointmentsOnly')} ({t('payments.appointmentLimitInfo')})
+                      </Typography>
+                    </Box>
                   </Box>
 
                   {Array.isArray(filteredAppointments) && filteredAppointments.length === 0 && (
@@ -1278,85 +1316,116 @@ const PaymentProcess: React.FC = () => {
                     </Box>
                   )}
 
-                  <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                  <Box sx={{ maxHeight: 450, overflowY: 'auto', pr: 0.5 }}>
                     {Array.isArray(filteredAppointments) && filteredAppointments.map((appointment) => (
                       <Card
                         key={appointment.id}
                         sx={{
-                          mb: 2,
+                          mb: 1.5,
                           cursor: 'pointer',
-                          transition: 'all 0.3s ease',
+                          transition: 'all 0.2s ease',
                           borderRadius: 2,
-                          border: selectedAppointment?.id === appointment.id ? '2px solid #10B981' : '2px solid transparent',
+                          border: selectedAppointment?.id === appointment.id ? '2px solid #10B981' : '1px solid #e5e7eb',
                           background: selectedAppointment?.id === appointment.id
                             ? 'linear-gradient(135deg, #ecfdf5, #d1fae5)'
-                            : 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                            : '#ffffff',
                           '&:hover': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 8px 20px rgba(16, 185, 129, 0.15)',
-                            border: '2px solid #10B981',
-                            background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.12)',
+                            border: '1px solid #10B981',
                           },
                         }}
                         onClick={() => handleSelectAppointment(appointment)}
                       >
-                        <CardContent sx={{ p: 2.5 }}>
-                          <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
-                            <Box
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 1.5,
-                                background: 'linear-gradient(135deg, #10B981, #059669)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                              }}
-                            >
-                              <EventIcon sx={{ fontSize: 16 }} />
+                        <CardContent sx={{ p: 2 }}>
+                          {/* 头部信息 - 客户和时间 */}
+                          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                              <Box
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 1.5,
+                                  background: 'linear-gradient(135deg, #10B981, #059669)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'white',
+                                }}
+                              >
+                                <EventIcon sx={{ fontSize: 14 }} />
+                              </Box>
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937', lineHeight: 1.2 }}>
+                                  {appointment.customerName}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                  {appointment.customerPhone}
+                                </Typography>
+                              </Box>
                             </Box>
-                            <Box flex={1}>
-                              <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
-                                {appointment.customerName}
+                            <Box textAlign="right">
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981', fontSize: '0.9rem' }}>
+                                {CurrencyUtils.formatAmount(appointment.totalAmount)}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {appointment.customerPhone}
-                              </Typography>
+                              <Chip
+                                label={appointment.status}
+                                size="small"
+                                sx={{
+                                  bgcolor: '#e0f2fe',
+                                  color: '#0277bd',
+                                  fontWeight: 500,
+                                  fontSize: '0.7rem',
+                                  height: 20,
+                                }}
+                              />
                             </Box>
                           </Box>
 
-                          <Box display="flex" alignItems="center" gap={1} mb={1}>
-                            <TimeIcon sx={{ fontSize: 14, color: '#6b7280' }} />
-                            <Typography variant="caption" color="text.secondary">
+                          {/* 时间信息 */}
+                          <Box display="flex" alignItems="center" gap={1} mb={1.5}>
+                            <TimeIcon sx={{ fontSize: 12, color: '#6b7280' }} />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                               {appointment.appointmentDate} {appointment.appointmentTime}
                             </Typography>
                           </Box>
 
-                          <Box mb={1.5}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                              {t('payments.services')}:
+                          {/* 服务信息 - 紧凑显示 */}
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.75rem', mb: 0.5, display: 'block' }}>
+                              {t('payments.services')} ({appointment.services.length}):
                             </Typography>
-                            {appointment.services.map((service, index) => (
-                              <Typography key={service.id} variant="caption" color="text.secondary" sx={{ display: 'block', ml: 1 }}>
-                                • {service.name} ({service.duration} min)
-                              </Typography>
-                            ))}
-                          </Box>
-
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Chip
-                              label={appointment.status}
-                              size="small"
-                              sx={{
-                                bgcolor: '#e0f2fe',
-                                color: '#0277bd',
-                                fontWeight: 500,
-                              }}
-                            />
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
-                              {CurrencyUtils.formatAmount(appointment.totalAmount)}
-                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={0.5}>
+                              {appointment.services.slice(0, 3).map((service, index) => (
+                                <Chip
+                                  key={service.id}
+                                  label={`${service.name} (${service.duration}min)`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: '0.7rem',
+                                    height: 22,
+                                    borderColor: '#d1d5db',
+                                    color: '#6b7280',
+                                    '& .MuiChip-label': {
+                                      px: 1,
+                                    },
+                                  }}
+                                />
+                              ))}
+                              {appointment.services.length > 3 && (
+                                <Chip
+                                  label={`+${appointment.services.length - 3}`}
+                                  size="small"
+                                  sx={{
+                                    fontSize: '0.7rem',
+                                    height: 22,
+                                    bgcolor: '#f3f4f6',
+                                    color: '#6b7280',
+                                  }}
+                                />
+                              )}
+                            </Box>
                           </Box>
                         </CardContent>
                       </Card>
@@ -1730,44 +1799,63 @@ const PaymentProcess: React.FC = () => {
       >
         <DialogTitle
           sx={{
-            pb: 1,
-            background: paymentStatus === 'idle' ? alpha('#10B981', 0.05) :
-              paymentStatus === 'processing' ? alpha('#F59E0B', 0.05) :
-                paymentStatus === 'success' ? alpha('#10B981', 0.05) : alpha('#EF4444', 0.05),
+            pb: 2,
+            pt: 3,
+            background: paymentStatus === 'idle' ? 'linear-gradient(135deg, #ecfdf5, #d1fae5)' :
+              paymentStatus === 'processing' ? 'linear-gradient(135deg, #fef3c7, #fde68a)' :
+                paymentStatus === 'success' ? 'linear-gradient(135deg, #ecfdf5, #d1fae5)' : 'linear-gradient(135deg, #fee2e2, #fecaca)',
             borderBottom: '1px solid',
-            borderColor: paymentStatus === 'idle' ? alpha('#10B981', 0.1) :
-              paymentStatus === 'processing' ? alpha('#F59E0B', 0.1) :
-                paymentStatus === 'success' ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
+            borderColor: paymentStatus === 'idle' ? alpha('#10B981', 0.15) :
+              paymentStatus === 'processing' ? alpha('#F59E0B', 0.15) :
+                paymentStatus === 'success' ? alpha('#10B981', 0.15) : alpha('#EF4444', 0.15),
             position: 'relative'
           }}
         >
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Avatar sx={{
-                bgcolor: paymentStatus === 'idle' ? '#10B981' :
-                  paymentStatus === 'processing' ? '#F59E0B' :
-                    paymentStatus === 'success' ? '#10B981' : '#EF4444',
-                width: 40,
-                height: 40
-              }}>
-                {paymentStatus === 'idle' && <PaymentIcon />}
-                {paymentStatus === 'processing' && <CircularProgress size={20} sx={{ color: 'white' }} />}
-                {paymentStatus === 'success' && <CheckCircleIcon />}
-                {paymentStatus === 'failed' && <ErrorIcon />}
-              </Avatar>
-              <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'text.primary' }}>
-                {paymentStatus === 'idle' && t('payments.confirmPayment')}
-                {paymentStatus === 'processing' && t('payments.processingPayment')}
-                {paymentStatus === 'success' && t('payments.paymentSuccessful')}
-                {paymentStatus === 'failed' && t('payments.paymentFailed')}
-              </Typography>
+            <Box display="flex" alignItems="center" gap={2.5}>
+              <Box
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 3,
+                  background: paymentStatus === 'idle' ? 'linear-gradient(135deg, #10B981, #059669)' :
+                    paymentStatus === 'processing' ? 'linear-gradient(135deg, #F59E0B, #D97706)' :
+                      paymentStatus === 'success' ? 'linear-gradient(135deg, #10B981, #059669)' : 'linear-gradient(135deg, #EF4444, #DC2626)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                }}
+              >
+                {paymentStatus === 'idle' && <PaymentIcon sx={{ fontSize: 28 }} />}
+                {paymentStatus === 'processing' && <CircularProgress size={28} sx={{ color: 'white' }} />}
+                {paymentStatus === 'success' && <CheckCircleIcon sx={{ fontSize: 28 }} />}
+                {paymentStatus === 'failed' && <ErrorIcon sx={{ fontSize: 28 }} />}
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+                  {paymentStatus === 'idle' && t('payments.confirmPayment')}
+                  {paymentStatus === 'processing' && t('payments.processingPayment')}
+                  {paymentStatus === 'success' && t('payments.paymentSuccessful')}
+                  {paymentStatus === 'failed' && t('payments.paymentFailed')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {paymentStatus === 'idle' && t('payments.reviewOrderDetails')}
+                  {paymentStatus === 'processing' && t('payments.pleaseWait')}
+                  {paymentStatus === 'success' && t('payments.transactionCompleted')}
+                  {paymentStatus === 'failed' && t('payments.transactionFailed')}
+                </Typography>
+              </Box>
             </Box>
             {paymentStatus !== 'processing' && (
               <IconButton
                 onClick={() => setPaymentDialog(false)}
                 sx={{
                   color: 'text.secondary',
-                  '&:hover': { backgroundColor: alpha('#000', 0.04) }
+                  backgroundColor: alpha('#000', 0.04),
+                  '&:hover': { backgroundColor: alpha('#000', 0.08) },
+                  borderRadius: 2,
                 }}
               >
                 <CloseIcon />
@@ -1775,25 +1863,9 @@ const PaymentProcess: React.FC = () => {
             )}
           </Box>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ p: 3 }}>
           {paymentStatus === 'idle' && (
             <Box>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontWeight: 500,
-                  color: '#10B981',
-                  mb: 3,
-                  textAlign: 'center',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 1
-                }}
-              >
-                <PaymentIcon sx={{ fontSize: 20 }} />
-                {t('payments.confirmPaymentMessage')}
-              </Typography>
 
               <Grid container spacing={2}>
                 {/* Customer Information */}
@@ -1804,20 +1876,43 @@ const PaymentProcess: React.FC = () => {
                       border: '1px solid',
                       borderColor: alpha('#10B981', 0.2),
                       borderRadius: 3,
-                      background: alpha('#10B981', 0.02),
-                      height: '100%'
+                      background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+                      height: '100%',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
+                        transform: 'translateY(-1px)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Box display="flex" alignItems="center" gap={2} mb={2}>
-                        <Avatar sx={{ bgcolor: '#10B981', width: 40, height: 40 }}>
-                          <PersonIcon />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        <Box
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 2.5,
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          <PersonIcon sx={{ fontSize: 24 }} />
+                        </Box>
+                        <Box flex={1}>
+                          <Typography variant="caption" color="text.secondary" sx={{
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                            fontWeight: 600,
+                            color: '#10B981'
+                          }}>
                             {t('payments.customer')}
                           </Typography>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'text.primary' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
                             {selectedCustomer
                               ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}`
                               : t('payments.walkInCustomer')}
@@ -1826,19 +1921,24 @@ const PaymentProcess: React.FC = () => {
                       </Box>
 
                       {selectedCustomer && (
-                        <Box sx={{ pl: 7 }}>
+                        <Box sx={{
+                          pl: 0,
+                          pt: 2,
+                          borderTop: '1px solid',
+                          borderColor: alpha('#10B981', 0.1)
+                        }}>
                           {selectedCustomer.phone && (
-                            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                              <PhoneIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
+                            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+                              <PhoneIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                 {selectedCustomer.phone}
                               </Typography>
                             </Box>
                           )}
                           {selectedCustomer.email && (
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <EmailIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                              <EmailIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                 {selectedCustomer.email}
                               </Typography>
                             </Box>
@@ -1855,22 +1955,49 @@ const PaymentProcess: React.FC = () => {
                     elevation={0}
                     sx={{
                       border: '1px solid',
-                      borderColor: alpha('#EF4444', 0.2),
+                      borderColor: alpha('#6366F1', 0.2),
                       borderRadius: 3,
-                      background: alpha('#EF4444', 0.02),
-                      height: '100%'
+                      background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+                      height: '100%',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.1)',
+                        transform: 'translateY(-1px)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Box display="flex" alignItems="center" gap={2}>
-                        <Avatar sx={{ bgcolor: '#EF4444', width: 40, height: 40 }}>
-                          {paymentMethod === 'cash' ? <CashIcon /> : <CreditCardIcon />}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        <Box
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 2.5,
+                            background: paymentMethod === 'cash'
+                              ? 'linear-gradient(135deg, #10B981, #059669)'
+                              : 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            boxShadow: paymentMethod === 'cash'
+                              ? '0 4px 12px rgba(16, 185, 129, 0.3)'
+                              : '0 4px 12px rgba(99, 102, 241, 0.3)',
+                          }}
+                        >
+                          {paymentMethod === 'cash' ? <CashIcon sx={{ fontSize: 24 }} /> : <CreditCardIcon sx={{ fontSize: 24 }} />}
+                        </Box>
+                        <Box flex={1}>
+                          <Typography variant="caption" color="text.secondary" sx={{
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                            fontWeight: 600,
+                            color: paymentMethod === 'cash' ? '#10B981' : '#6366F1'
+                          }}>
                             {t('payments.paymentMethod')}
                           </Typography>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'text.primary' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
                             {paymentMethod === 'cash' ? t('payments.cash') :
                               paymentMethod === 'credit_card' ? t('payments.creditCard') :
                                 paymentMethod === 'debit_card' ? t('payments.debitCard') :
@@ -1890,38 +2017,93 @@ const PaymentProcess: React.FC = () => {
                       border: '1px solid',
                       borderColor: alpha('#10B981', 0.2),
                       borderRadius: 3,
-                      background: alpha('#10B981', 0.02),
+                      background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 8px 24px rgba(16, 185, 129, 0.12)',
+                        transform: 'translateY(-2px)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Box display="flex" alignItems="center" gap={2} mb={3}>
-                        <Avatar sx={{ bgcolor: '#10B981', width: 40, height: 40 }}>
-                          <CashIcon />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        <Box
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 2.5,
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          <CashIcon sx={{ fontSize: 24 }} />
+                        </Box>
+                        <Box flex={1}>
+                          <Typography variant="caption" color="text.secondary" sx={{
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                            fontWeight: 600,
+                            color: '#10B981'
+                          }}>
                             {t('payments.orderSummary')}
                           </Typography>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 500, color: 'text.primary' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
                             {orderItems.length} {orderItems.length === 1 ? t('payments.service') : t('payments.services')}
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1,
+                            borderRadius: 2,
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            color: 'white',
+                          }}
+                        >
+                          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                            {CurrencyUtils.formatAmount(calculateTotal())}
                           </Typography>
                         </Box>
                       </Box>
 
-                      <Grid container spacing={2}>
+                      <Grid container spacing={3}>
                         <Grid item xs={12} md={8}>
-                          <Box sx={{ maxHeight: 120, overflow: 'auto', pr: 1 }}>
+                          <Box sx={{
+                            maxHeight: 140,
+                            overflow: 'auto',
+                            pr: 1,
+                            border: '1px solid',
+                            borderColor: alpha('#10B981', 0.1),
+                            borderRadius: 2,
+                            p: 2,
+                            background: alpha('#10B981', 0.02)
+                          }}>
                             {orderItems.map((item, index) => (
-                              <Box key={index} display="flex" justifyContent="space-between" alignItems="center" py={1}>
-                                <Box>
-                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              <Box
+                                key={index}
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                                py={1.5}
+                                sx={{
+                                  borderBottom: index < orderItems.length - 1 ? '1px solid' : 'none',
+                                  borderColor: alpha('#10B981', 0.1)
+                                }}
+                              >
+                                <Box flex={1}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                                     {item.quantity}x {item.serviceName}
                                   </Typography>
-                                  <Typography variant="caption" color="text.secondary">
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
                                     {CurrencyUtils.formatAmount(item.price)} each
                                   </Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                <Typography variant="body1" sx={{ fontWeight: 700, color: '#10B981' }}>
                                   {CurrencyUtils.formatAmount(item.price * item.quantity)}
                                 </Typography>
                               </Box>
@@ -1931,11 +2113,12 @@ const PaymentProcess: React.FC = () => {
 
                         <Grid item xs={12} md={4}>
                           <Box sx={{
-                            p: 2,
-                            backgroundColor: alpha('#10B981', 0.1),
-                            borderRadius: 2,
-                            border: '1px solid',
-                            borderColor: alpha('#10B981', 0.2)
+                            p: 3,
+                            background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+                            borderRadius: 3,
+                            border: '2px solid',
+                            borderColor: alpha('#10B981', 0.2),
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)'
                           }}>
                             <Box display="flex" justifyContent="space-between" mb={1}>
                               <Typography variant="body2" color="text.secondary">
@@ -1986,16 +2169,17 @@ const PaymentProcess: React.FC = () => {
                             <Box
                               display="flex"
                               justifyContent="space-between"
-                              pt={1}
+                              pt={2}
+                              mt={2}
                               sx={{
-                                borderTop: '1px solid',
-                                borderColor: alpha('#10B981', 0.3)
+                                borderTop: '2px solid',
+                                borderColor: '#10B981'
                               }}
                             >
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#10B981' }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#10B981' }}>
                                 {t('payments.total')}:
                               </Typography>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#10B981' }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#10B981' }}>
                                 {CurrencyUtils.formatAmount(calculateTotal())}
                               </Typography>
                             </Box>

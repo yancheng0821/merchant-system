@@ -439,7 +439,11 @@
     "newOrder": "New Order",
     "retryPayment": "Retry Payment",
     "complete": "Complete",
-    "totalTax": "Total Tax"
+    "totalTax": "Total Tax",
+    "pleaseWait": "Please Wait",
+    "transactionCompleted": "Transaction Completed",
+    "todayAppointmentsOnly":"Today's appointments only",
+    "appointmentLimitInfo":"Max 20 records, sorted by time descending"
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",
@@ -544,6 +548,8 @@
     "paymentSuccessful": "Payment successful!",
     "paymentFailed": "Payment failed, please try again",
     "paymentError": "Payment processing error",
+    "todayAppointmentsOnly": "Today's appointments only",
+    "appointmentLimitInfo": "Max 20 records, sorted by time descending",
     "totalTax": "Total Tax",
     "processing": "Processing...",
     "processingCashPayment": "Processing cash payment...",
