@@ -17,7 +17,6 @@ import {
   Grid,
   Chip,
   IconButton,
-  Menu,
   Avatar,
   InputAdornment,
   Card,
@@ -35,12 +34,17 @@ import {
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  MoreVert as MoreVertIcon,
   Visibility as VisibilityIcon,
   AttachMoney as MoneyIcon,
   CreditCard as CreditCardIcon,
   Payment as PaymentIcon,
   AccountBalanceWallet as WalletIcon,
+  Close as CloseIcon,
+  Person as PersonIcon,
+  Phone as PhoneIcon,
+  CalendarToday as CalendarIcon,
+  AccessTime as TimeIcon,
+  EventNote as EventNoteIcon,
 } from '@mui/icons-material';
 
 import { useAuth } from '../../../contexts/AuthContext';
@@ -82,7 +86,7 @@ const OrderHistory: React.FC = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+
   const [detailsDialog, setDetailsDialog] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
     const today = TimeZoneUtils.getTodayVancouverDateString();
@@ -187,9 +191,9 @@ const OrderHistory: React.FC = () => {
     }
   };
 
-  const handleViewDetails = () => {
+  const handleViewDetails = (order: Order) => {
+    setSelectedOrder(order);
     setDetailsDialog(true);
-    setMenuAnchorEl(null);
   };
 
 
@@ -372,12 +376,14 @@ const OrderHistory: React.FC = () => {
                     <TableCell>
                       <IconButton
                         size="small"
-                        onClick={(e) => {
-                          setMenuAnchorEl(e.currentTarget);
-                          setSelectedOrder(order);
+                        onClick={() => handleViewDetails(order)}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: alpha('#10B981', 0.1),
+                          },
                         }}
                       >
-                        <MoreVertIcon />
+                        <VisibilityIcon sx={{ color: '#10B981' }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -402,147 +408,184 @@ const OrderHistory: React.FC = () => {
         />
       </Card>
 
-      {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={() => setMenuAnchorEl(null)}
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-          }
-        }}
-      >
-        <MenuItem onClick={handleViewDetails}>
-          <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
-          {t('orders.viewDetails')}
-        </MenuItem>
 
-      </Menu>
 
       {/* Order Details Dialog */}
       <Dialog
         open={detailsDialog}
         onClose={() => setDetailsDialog(false)}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          }
+        }}
       >
-        <DialogTitle>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {t('orders.orderDetails')}
-          </Typography>
+        <DialogTitle sx={{ pb: 2 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+              {t('orders.orderDetails')}
+            </Typography>
+            <IconButton onClick={() => setDetailsDialog(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </DialogTitle>
         <DialogContent>
           {selectedOrder && (
-            <Box>
-              <Box mb={2}>
-                <Typography variant="subtitle2" color="text.secondary">{t('orders.orderNumber')}</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: '#10B981' }}>
-                  {selectedOrder.orderNumber}
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                  {t('orders.customer')}
                 </Typography>
-              </Box>
-
-              <Grid container spacing={2} mb={2}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">{t('orders.customer')}</Typography>
-                  <Typography variant="body2">{selectedOrder.customerName}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {selectedOrder.customerPhone}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">{t('orders.date')}</Typography>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <Typography variant="body2">
-                    {formatDateTime(selectedOrder.createdAt).date}
+                    {selectedOrder.customerName}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="body2">{selectedOrder.customerPhone}</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {t('orders.orderNumber')}: 
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
+                      {selectedOrder.orderNumber}
+                    </Typography>
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                  {t('orders.orderInfo')}
+                </Typography>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="body2">{formatDateTime(selectedOrder.createdAt).date}</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="body2">
                     {formatDateTime(selectedOrder.createdAt).time}
                   </Typography>
-                </Grid>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  {getPaymentMethodIcon(selectedOrder.paymentMethod)}
+                  <Typography variant="body2">{selectedOrder.paymentMethod}</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {t('orders.paymentStatus')}: {getStatusChip(selectedOrder.paymentStatus)}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1} mt={1}>
+                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {t('orders.orderStatus')}: {getOrderStatusChip(selectedOrder.orderStatus)}
+                  </Typography>
+                </Box>
               </Grid>
 
               {/* 显示预约和资源信息 */}
               {(selectedOrder.appointmentId || selectedOrder.resourceId) && (
-                <>
-                  <Grid container spacing={2} mb={2}>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                    {t('orders.appointmentInfo')}
+                  </Typography>
+                  <Grid container spacing={2}>
                     {selectedOrder.appointmentId && (
                       <Grid item xs={6}>
-                        <Typography variant="subtitle2" color="text.secondary">{t('orders.appointmentId')}</Typography>
-                        <Typography variant="body2">#{selectedOrder.appointmentId}</Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <EventNoteIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {t('orders.appointmentId')}: #{selectedOrder.appointmentId}
+                          </Typography>
+                        </Box>
                       </Grid>
                     )}
                     {selectedOrder.resourceId && (
                       <Grid item xs={6}>
-                        <Typography variant="subtitle2" color="text.secondary">{t('orders.assignedResource')}</Typography>
-                        <Typography variant="body2">{selectedOrder.resourceName || `${selectedOrder.resourceType} #${selectedOrder.resourceId}`}</Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {selectedOrder.resourceName || `${selectedOrder.resourceType} #${selectedOrder.resourceId}`}
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 3 }}>
                           {selectedOrder.resourceType}
                         </Typography>
                       </Grid>
                     )}
                   </Grid>
-                </>
+                </Grid>
               )}
 
-              <Divider sx={{ my: 2 }} />
-
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('orders.services')}</Typography>
-              <List dense>
-                {selectedOrder.services && selectedOrder.services.map((service, index) => (
-                  <ListItem key={index} sx={{ px: 0 }}>
-                    <ListItemText
-                      primary={service.serviceName}
-                      secondary={`${service.quantity} x ${CurrencyUtils.formatAmount(service.price)}`}
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {CurrencyUtils.formatAmount(service.quantity * service.price)}
-                    </Typography>
-                  </ListItem>
-                ))}
-              </List>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">{t('orders.subtotal')}</Typography>
-                  <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.subtotal)}</Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">{t('orders.tax')}</Typography>
-                  <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.taxAmount)}</Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">{t('orders.tip')}</Typography>
-                  <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.tipAmount)}</Typography>
-                </Box>
-                <Divider sx={{ my: 1 }} />
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>{t('orders.total')}</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                    {CurrencyUtils.formatAmount(selectedOrder.totalAmount)}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                  {t('orders.services')}
+                </Typography>
+                {selectedOrder.services && selectedOrder.services.length > 0 ? (
+                  <Box>
+                    {selectedOrder.services.map((service, index) => (
+                      <Box key={index} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                        <Box>
+                          <Typography variant="body2">{service.serviceName}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {service.quantity} x {CurrencyUtils.formatAmount(service.price)}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {CurrencyUtils.formatAmount(service.quantity * service.price)}
+                        </Typography>
+                      </Box>
+                    ))}
+                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                        <Typography variant="body2">{t('orders.subtotal')}</Typography>
+                        <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.subtotal)}</Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                        <Typography variant="body2">{t('orders.tax')}</Typography>
+                        <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.taxAmount)}</Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="body2">{t('orders.tip')}</Typography>
+                        <Typography variant="body2">{CurrencyUtils.formatAmount(selectedOrder.tipAmount)}</Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} pt={2} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {t('orders.total')}
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+                          {CurrencyUtils.formatAmount(selectedOrder.totalAmount)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('orders.noServiceDetails')}
                   </Typography>
-                </Box>
-              </Box>
-
-              <Box mt={2}>
-                <Typography variant="subtitle2" color="text.secondary">{t('orders.paymentStatus')}</Typography>
-                {getStatusChip(selectedOrder.paymentStatus)}
-              </Box>
+                )}
+              </Grid>
 
               {selectedOrder.notes && (
-                <Box mt={2}>
-                  <Typography variant="subtitle2" color="text.secondary">{t('orders.notes')}</Typography>
-                  <Typography variant="body2">{selectedOrder.notes}</Typography>
-                </Box>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                    {t('orders.notes')}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedOrder.notes}
+                  </Typography>
+                </Grid>
               )}
-            </Box>
+            </Grid>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsDialog(false)}>{t('orders.close')}</Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );
