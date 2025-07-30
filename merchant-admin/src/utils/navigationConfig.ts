@@ -36,7 +36,7 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     { textKey: 'nav.dashboard', icon: React.createElement(DashboardIcon), id: 'dashboard', color: '#6366F1' },
     { textKey: 'nav.products', icon: React.createElement(StoreIcon), id: 'products', color: '#06B6D4' },
     { textKey: 'nav.payments', icon: React.createElement(OrdersIcon), id: 'payments', color: '#10B981' },
-    { textKey: 'nav.customers', icon: React.createElement(CustomersIcon), id: 'customers', color: '#F59E0B' },
+    { textKey: 'nav.customers', icon: React.createElement(CustomersIcon), id: 'customers', color: '#EC4899' },
     { textKey: 'nav.appointments', icon: React.createElement(AppointmentsIcon), id: 'appointments', color: '#8B5CF6' },
   ];
 
@@ -48,8 +48,8 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
 
   // 添加其他固定菜单项
   baseMenuItems.push(
-    { textKey: 'nav.notifications', icon: React.createElement(NotificationsIcon), id: 'notifications', color: '#E91E63' },
-    { textKey: 'nav.analytics', icon: React.createElement(AnalyticsIcon), id: 'analytics', color: '#F97316' },
+    { textKey: 'nav.notifications', icon: React.createElement(NotificationsIcon), id: 'notifications', color: '#F97316' },
+    { textKey: 'nav.analytics', icon: React.createElement(AnalyticsIcon), id: 'analytics', color: '#0891B2' },
     { textKey: 'nav.settings', icon: React.createElement(SettingsIcon), id: 'settings', color: '#6366F1' }
   );
 
@@ -62,24 +62,24 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
 const generateResourceMenuItem = (merchantConfig?: MerchantConfig): MenuItemType | null => {
   if (!merchantConfig || !merchantConfig.resourceTypes || merchantConfig.resourceTypes.length === 0) {
     // 默认显示员工管理（向后兼容）
-    return { textKey: 'nav.staff', icon: React.createElement(StaffIcon), id: 'resources', color: '#DC2626' };
+    return { textKey: 'nav.staff', icon: React.createElement(StaffIcon), id: 'resources', color: '#3B82F6' };
   }
 
   const { resourceTypes } = merchantConfig;
 
   // 仅有员工资源
   if (resourceTypes.length === 1 && resourceTypes[0] === 'STAFF') {
-    return { textKey: 'nav.staffManagement', icon: React.createElement(StaffIcon), id: 'resources', color: '#DC2626' };
+    return { textKey: 'nav.staffManagement', icon: React.createElement(StaffIcon), id: 'resources', color: '#3B82F6' };
   }
 
   // 仅有场地资源
   if (resourceTypes.length === 1 && resourceTypes[0] === 'ROOM') {
-    return { textKey: 'nav.roomManagement', icon: React.createElement(RoomIcon), id: 'resources', color: '#DC2626' };
+    return { textKey: 'nav.roomManagement', icon: React.createElement(RoomIcon), id: 'resources', color: '#3B82F6' };
   }
 
   // 同时有员工和场地资源
   if (resourceTypes.includes('STAFF') && resourceTypes.includes('ROOM')) {
-    return { textKey: 'nav.resources', icon: React.createElement(ResourceIcon), id: 'resources', color: '#DC2626' };
+    return { textKey: 'nav.resources', icon: React.createElement(ResourceIcon), id: 'resources', color: '#3B82F6' };
   }
 
   return null;

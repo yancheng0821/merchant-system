@@ -71,7 +71,7 @@ const StaffResourceManagement: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // 主题色
-    const themeColor = '#DC2626';
+    const themeColor = '#3B82F6';
 
     // 获取租户ID
     const tenantId = useMemo(() => {
@@ -420,12 +420,12 @@ const StaffResourceManagement: React.FC = () => {
                         }}
                         sx={{
                             borderRadius: 3,
-                            background: `linear-gradient(45deg, ${themeColor}, #EF4444)`,
+                            background: `linear-gradient(45deg, ${themeColor}, #3B82F6)`,
                             boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
                             height: '56px',
                             width: '100%',
                             '&:hover': {
-                                background: `linear-gradient(45deg, #B91C1C, ${themeColor})`,
+                                background: `linear-gradient(45deg, #1D4ED8, ${themeColor})`,
                                 transform: 'translateY(-1px)',
                                 boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
                             },

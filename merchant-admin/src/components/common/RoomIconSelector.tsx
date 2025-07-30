@@ -129,13 +129,13 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
                         width: size + 16,
                         height: size + 16,
                         minWidth: 'auto',
-                        border: `2px solid ${isSelected ? '#DC2626' : alpha('#DC2626', 0.2)}`,
+                        border: `2px solid ${isSelected ? '#2563EB' : alpha('#2563EB', 0.2)}`,
                         borderRadius: 2,
-                        bgcolor: isSelected ? alpha('#DC2626', 0.1) : 'transparent',
+                        bgcolor: isSelected ? alpha('#2563EB', 0.1) : 'transparent',
                         fontSize: size * 0.6,
                         '&:hover': {
-                            bgcolor: alpha('#DC2626', 0.08),
-                            borderColor: '#DC2626',
+                            bgcolor: alpha('#2563EB', 0.08),
+                            borderColor: '#2563EB',
                             transform: 'scale(1.05)',
                         },
                         transition: 'all 0.2s ease',
@@ -174,11 +174,11 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
                         px: 2,
                         fontSize: '0.75rem',
                         '&.Mui-selected': {
-                            color: '#DC2626',
+                            color: '#2563EB',
                         }
                     },
                     '& .MuiTabs-indicator': {
-                        backgroundColor: '#DC2626',
+                        backgroundColor: '#2563EB',
                     }
                 }}
             >
@@ -197,9 +197,9 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
                 sx={{
                     minHeight: 120,
                     p: 2,
-                    border: `1px solid ${alpha('#DC2626', 0.2)}`,
+                    border: `1px solid ${alpha('#2563EB', 0.2)}`,
                     borderRadius: 2,
-                    bgcolor: alpha('#DC2626', 0.02),
+                    bgcolor: alpha('#2563EB', 0.02),
                 }}
             >
                 {showUploader ? (
@@ -237,12 +237,12 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
                         sx={{
                             width: 32,
                             height: 32,
-                            border: `1px solid ${alpha('#DC2626', 0.3)}`,
+                            border: `1px solid ${alpha('#2563EB', 0.3)}`,
                             borderRadius: 1,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            bgcolor: alpha('#DC2626', 0.05),
+                            bgcolor: alpha('#2563EB', 0.05),
                         }}
                     >
                         {isImageUrl ? (

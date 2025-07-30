@@ -275,7 +275,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       {/* 现代化对话框标题 */}
       <DialogTitle
         sx={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.08))',
+          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.08))',
           borderBottom: '1px solid',
           borderColor: 'divider',
           pb: 3,
@@ -289,7 +289,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 width: 48,
                 height: 48,
                 borderRadius: 2,
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -318,7 +318,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
             onClick={onClose}
             sx={{
               '&:hover': {
-                backgroundColor: alpha('#F59E0B', 0.1),
+                backgroundColor: alpha('#EC4899', 0.1),
               },
             }}
           >
@@ -336,9 +336,9 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               p: 3,
               mb: 3,
               border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.2),
+              borderColor: alpha('#EC4899', 0.2),
               borderRadius: 2,
-              background: alpha('#F59E0B', 0.02),
+              background: alpha('#EC4899', 0.02),
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -347,7 +347,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -356,7 +356,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               >
                 <PersonIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
                 {t('customers.basicInfo')}
               </Typography>
             </Box>
@@ -374,10 +374,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -395,10 +395,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -416,10 +416,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -438,10 +438,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -458,10 +458,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -481,10 +481,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -492,7 +492,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <FormLabel sx={{ color: '#F59E0B', fontWeight: 600, mb: 1 }}>
+                  <FormLabel sx={{ color: '#EC4899', fontWeight: 600, mb: 1 }}>
                     {t('customers.gender')} ({t('customers.optional')})
                   </FormLabel>
                   <RadioGroup
@@ -502,22 +502,22 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   >
                     <FormControlLabel
                       value="male"
-                      control={<Radio sx={{ color: '#F59E0B', '&.Mui-checked': { color: '#F59E0B' } }} />}
+                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
                       label={t('customers.male')}
                     />
                     <FormControlLabel
                       value="female"
-                      control={<Radio sx={{ color: '#F59E0B', '&.Mui-checked': { color: '#F59E0B' } }} />}
+                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
                       label={t('customers.female')}
                     />
                     <FormControlLabel
                       value="other"
-                      control={<Radio sx={{ color: '#F59E0B', '&.Mui-checked': { color: '#F59E0B' } }} />}
+                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
                       label={t('customers.other')}
                     />
                     <FormControlLabel
                       value="prefer-not-to-say"
-                      control={<Radio sx={{ color: '#F59E0B', '&.Mui-checked': { color: '#F59E0B' } }} />}
+                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
                       label={t('customers.preferNotToSay')}
                     />
                   </RadioGroup>
@@ -533,9 +533,9 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               p: 3,
               mb: 3,
               border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.2),
+              borderColor: alpha('#EC4899', 0.2),
               borderRadius: 2,
-              background: alpha('#F59E0B', 0.02),
+              background: alpha('#EC4899', 0.02),
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -544,7 +544,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -553,7 +553,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               >
                 <MembershipIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
                 {t('customers.membershipInfo')}
               </Typography>
             </Box>
@@ -569,10 +569,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     }}
                   >
@@ -603,8 +603,8 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                         label={t('customers.gold')}
                         size="small"
                         sx={{
-                          backgroundColor: alpha('#F59E0B', 0.1),
-                          color: '#F59E0B',
+                          backgroundColor: alpha('#EC4899', 0.1),
+                          color: '#EC4899',
                           fontWeight: 600,
                         }}
                       />
@@ -633,10 +633,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     }}
                   >
@@ -675,10 +675,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     }}
                   >
@@ -698,9 +698,9 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               p: 3,
               mb: 3,
               border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.2),
+              borderColor: alpha('#EC4899', 0.2),
               borderRadius: 2,
-              background: alpha('#F59E0B', 0.02),
+              background: alpha('#EC4899', 0.02),
             }}
           >
             <Box display="flex" alignItems="center" gap={2} mb={3}>
@@ -709,7 +709,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -718,7 +718,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
               >
                 <PreferencesIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
                 {t('customers.preferences')}({t('customers.optional')})
               </Typography>
             </Box>
@@ -738,8 +738,8 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                         key={option.id}
                         label={option.name}
                         sx={{
-                          backgroundColor: alpha('#F59E0B', 0.1),
-                          color: '#F59E0B',
+                          backgroundColor: alpha('#EC4899', 0.1),
+                          color: '#EC4899',
                           fontWeight: 600,
                         }}
                       />
@@ -754,10 +754,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 2,
                           '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#F59E0B',
+                            borderColor: '#EC4899',
                           },
                           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#F59E0B',
+                            borderColor: '#EC4899',
                           },
                         },
                       }}
@@ -778,10 +778,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -800,10 +800,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#F59E0B',
+                        borderColor: '#EC4899',
                       },
                     },
                   }}
@@ -819,7 +819,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
           p: 3,
           borderTop: '1px solid',
           borderColor: 'divider',
-          background: alpha('#F59E0B', 0.02),
+          background: alpha('#EC4899', 0.02),
         }}
       >
         <Button
@@ -838,11 +838,11 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
           sx={{
             borderRadius: 2,
             px: 3,
-            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-            boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+            background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+            boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
             '&:hover': {
-              background: 'linear-gradient(135deg, #D97706, #B45309)',
-              boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
+              background: 'linear-gradient(135deg, #DB2777, #BE185D)',
+              boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
             },
           }}
         >

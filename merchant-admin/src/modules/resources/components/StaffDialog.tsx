@@ -33,10 +33,10 @@ import { useTranslation } from 'react-i18next';
 import { StaffResource } from '../types';
 import { getFullImageUrl } from '../../../services/api';
 
-// Resources模块主题色 - 红色
-const THEME_COLOR = '#DC2626';
-const THEME_COLOR_DARK = '#B91C1C';
-const THEME_COLOR_DARKER = '#991B1B';
+// Resources模块主题色 - 蓝色
+const THEME_COLOR = '#3B82F6';
+const THEME_COLOR_DARK = '#2563EB';
+const THEME_COLOR_DARKER = '#1D4ED8';
 
 interface StaffDialogProps {
     open: boolean;

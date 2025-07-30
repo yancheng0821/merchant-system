@@ -78,8 +78,8 @@ const NotificationLogManagement: React.FC = () => {
     businessId: ''
   });
 
-  // 更深的粉色主题色，确保文字清晰
-  const themeColor = '#E91E63';
+  // 橙色主题色，确保文字清晰
+  const themeColor = '#F97316';
 
   // 获取租户ID
   const tenantId = useMemo(() => {
@@ -406,10 +406,10 @@ const NotificationLogManagement: React.FC = () => {
                 sx={{
                   borderRadius: 2,
                   py: 1.5,
-                  background: `linear-gradient(135deg, ${themeColor}, #F06292)`,
+                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                   boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #E91E63, #EC407A)',
+                    background: 'linear-gradient(135deg, #F97316, #FB923C)',
                     transform: 'translateY(-1px)',
                     boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
                   },
@@ -618,7 +618,7 @@ const NotificationLogManagement: React.FC = () => {
         {/* 现代化对话框标题 */}
         <DialogTitle
           sx={{
-            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#C2185B', 0.08)})`,
+            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#EA580C', 0.08)})`,
             borderBottom: '1px solid',
             borderColor: 'divider',
             pb: 3,
@@ -632,7 +632,7 @@ const NotificationLogManagement: React.FC = () => {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -692,7 +692,7 @@ const NotificationLogManagement: React.FC = () => {
                         width: 32,
                         height: 32,
                         borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                        background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -792,7 +792,7 @@ const NotificationLogManagement: React.FC = () => {
                         width: 32,
                         height: 32,
                         borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                        background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -868,7 +868,7 @@ const NotificationLogManagement: React.FC = () => {
                         width: 32,
                         height: 32,
                         borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                        background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -938,10 +938,10 @@ const NotificationLogManagement: React.FC = () => {
             sx={{
               borderRadius: 2,
               px: 4,
-              background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+              background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
               boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
               '&:hover': {
-                background: `linear-gradient(135deg, #C2185B, #AD1457)`,
+                background: `linear-gradient(135deg, #EA580C, #C2410C)`,
                 boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
               },
             }}

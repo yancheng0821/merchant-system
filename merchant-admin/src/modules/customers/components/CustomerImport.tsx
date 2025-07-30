@@ -784,10 +784,10 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
                 borderRadius: 2,
                 py: 1.5,
                 px: 3,
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                 boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #D97706, #B45309)',
+                  background: 'linear-gradient(135deg, #DB2777, #BE185D)',
                   transform: 'translateY(-1px)',
                   boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
                 },

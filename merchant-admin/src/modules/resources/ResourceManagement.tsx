@@ -63,7 +63,7 @@ const ResourceManagement: React.FC = () => {
     });
 
     // 主题色
-    const themeColor = '#DC2626';
+    const themeColor = '#3B82F6';
 
     // 使用配置预加载器 - 零闪烁加载
     useEffect(() => {
@@ -426,7 +426,7 @@ const ResourceManagement: React.FC = () => {
                             component="h1"
                             sx={{
                                 fontWeight: 700,
-                                background: 'linear-gradient(45deg, #DC2626, #EF4444)',
+                                background: 'linear-gradient(45deg, #2563EB, #3B82F6)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 mb: 1,

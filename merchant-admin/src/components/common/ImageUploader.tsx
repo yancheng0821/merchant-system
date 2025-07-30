@@ -130,19 +130,19 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 sx={{
                     width: size,
                     height: size,
-                    bgcolor: alpha('#DC2626', 0.1),
-                    color: '#DC2626',
-                    border: `2px dashed ${alpha('#DC2626', 0.3)}`,
+                    bgcolor: alpha('#2563EB', 0.1),
+                    color: '#2563EB',
+                    border: `2px dashed ${alpha('#2563EB', 0.3)}`,
                     cursor: disabled ? 'default' : 'pointer',
                     '&:hover': disabled ? {} : {
-                        borderColor: '#DC2626',
-                        bgcolor: alpha('#DC2626', 0.05),
+                        borderColor: '#2563EB',
+                        bgcolor: alpha('#2563EB', 0.05),
                     },
                 }}
                 onClick={disabled ? undefined : handleUploadClick}
             >
                 {uploading ? (
-                    <CircularProgress size={size * 0.4} sx={{ color: '#DC2626' }} />
+                    <CircularProgress size={size * 0.4} sx={{ color: '#2563EB' }} />
                 ) : value ? null : (
                     <CameraIcon sx={{ fontSize: size * 0.4 }} />
                 )}
@@ -161,7 +161,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                         width: 24,
                         height: 24,
                         '&:hover': {
-                            bgcolor: '#DC2626',
+                            bgcolor: '#2563EB',
                         },
                     }}
                 >
@@ -176,30 +176,30 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             sx={{
                 width: size,
                 height: size * 0.75,
-                border: `2px dashed ${alpha('#DC2626', 0.3)}`,
+                border: `2px dashed ${alpha('#2563EB', 0.3)}`,
                 borderRadius: 2,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: disabled ? 'default' : 'pointer',
-                bgcolor: alpha('#DC2626', 0.02),
+                bgcolor: alpha('#2563EB', 0.02),
                 backgroundImage: value ? `url(${value})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 position: 'relative',
                 '&:hover': disabled ? {} : {
-                    borderColor: '#DC2626',
-                    bgcolor: alpha('#DC2626', 0.05),
+                    borderColor: '#2563EB',
+                    bgcolor: alpha('#2563EB', 0.05),
                 },
             }}
             onClick={disabled ? undefined : handleUploadClick}
         >
             {uploading ? (
-                <CircularProgress size={32} sx={{ color: '#DC2626' }} />
+                <CircularProgress size={32} sx={{ color: '#2563EB' }} />
             ) : !value ? (
                 <>
-                    <UploadIcon sx={{ fontSize: 32, color: '#DC2626', mb: 1 }} />
+                    <UploadIcon sx={{ fontSize: 32, color: '#2563EB', mb: 1 }} />
                     <Typography variant="caption" color="text.secondary" textAlign="center">
                         {placeholder || t('imageUploader.clickToUpload')}
                     </Typography>
@@ -261,9 +261,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                         onClick={handleUploadClick}
                         disabled={uploading}
                         sx={{
-                            color: '#DC2626',
+                            color: '#2563EB',
                             '&:hover': {
-                                bgcolor: alpha('#DC2626', 0.08),
+                                bgcolor: alpha('#2563EB', 0.08),
                             },
                         }}
                     >

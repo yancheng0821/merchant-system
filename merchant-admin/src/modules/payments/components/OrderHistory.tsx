@@ -139,9 +139,9 @@ const OrderHistory: React.FC = () => {
       refunded: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.refunded') },
       failed: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.failed') },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    
+
     return (
       <Chip
         label={config.label}
@@ -164,9 +164,9 @@ const OrderHistory: React.FC = () => {
       completed: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('orders.completed') },
       cancelled: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.cancelled') },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
-    
+
     return (
       <Chip
         label={config.label}
@@ -228,7 +228,7 @@ const OrderHistory: React.FC = () => {
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
                 <InputLabel>{t('orders.paymentStatus')}</InputLabel>
@@ -246,7 +246,7 @@ const OrderHistory: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth>
                 <InputLabel>{t('orders.orderStatus')}</InputLabel>
@@ -265,7 +265,7 @@ const OrderHistory: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={2}>
               <TextField
                 fullWidth
@@ -277,7 +277,7 @@ const OrderHistory: React.FC = () => {
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={2}>
               <TextField
                 fullWidth
@@ -392,7 +392,7 @@ const OrderHistory: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        
+
         <TablePagination
           component="div"
           count={totalElements}
@@ -452,7 +452,7 @@ const OrderHistory: React.FC = () => {
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {t('orders.orderNumber')}: 
+                    {t('orders.orderNumber')}:
                     <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
                       {selectedOrder.orderNumber}
                     </Typography>

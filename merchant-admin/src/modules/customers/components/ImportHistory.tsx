@@ -144,7 +144,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           minHeight: '70vh',
           borderRadius: 4,
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
@@ -154,7 +154,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
     >
       <DialogTitle
         sx={{
-          background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+          background: 'linear-gradient(135deg, #34D399 0%, #10B981 100%)',
           color: 'white',
           borderRadius: 0,
           py: 4,
@@ -194,8 +194,8 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
               </Typography>
             </Box>
           </Box>
-          <IconButton 
-            onClick={fetchImportLogs} 
+          <IconButton
+            onClick={fetchImportLogs}
             disabled={loading}
             sx={{
               color: 'white',
@@ -215,17 +215,17 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       </DialogTitle>
 
       <DialogContent sx={{ p: 5, background: '#fafbfc' }}>
-        <Box sx={{ 
-          background: 'white', 
-          borderRadius: 3, 
-          p: 4, 
+        <Box sx={{
+          background: 'white',
+          borderRadius: 3,
+          p: 4,
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
           border: '1px solid #f3f4f6'
         }}>
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
+            <Alert
+              severity="error"
+              sx={{
                 mb: 3,
                 borderRadius: 2,
                 '& .MuiAlert-icon': {
@@ -343,24 +343,24 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ 
-        p: 4, 
-        gap: 2, 
+      <DialogActions sx={{
+        p: 4,
+        gap: 2,
         borderTop: '1px solid #e5e7eb',
         background: '#f9fafb',
         justifyContent: 'flex-end'
       }}>
-        <Button 
+        <Button
           onClick={onClose}
           sx={{
             borderRadius: 2,
             py: 1.5,
             px: 3,
-            borderColor: '#6B7280',
-            color: '#6B7280',
+            borderColor: '#34D399',
+            color: '#34D399',
             '&:hover': {
-              borderColor: '#4B5563',
-              backgroundColor: 'rgba(107, 114, 128, 0.04)',
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(52, 211, 153, 0.08)'
             },
             transition: 'all 0.3s ease',
           }}

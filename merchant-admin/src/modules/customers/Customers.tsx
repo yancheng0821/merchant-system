@@ -369,7 +369,7 @@ const CustomerManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 700,
-                background: 'linear-gradient(45deg, #D97706, #F59E0B)',
+                background: 'linear-gradient(45deg, #DB2777, #EC4899)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 1,
@@ -392,7 +392,7 @@ const CustomerManagement: React.FC = () => {
               borderRadius: 3,
               boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
               border: '1px solid',
-              borderColor: alpha('#6366F1', 0.1),
+              borderColor: alpha('#EC4899', 0.1),
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
@@ -407,7 +407,7 @@ const CustomerManagement: React.FC = () => {
                     width: 48,
                     height: 48,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -416,7 +416,7 @@ const CustomerManagement: React.FC = () => {
                 >
                   <GroupsIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
                   {customerStats?.totalCustomers || 0}
                 </Typography>
               </Box>
@@ -530,7 +530,7 @@ const CustomerManagement: React.FC = () => {
                     width: 48,
                     height: 48,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -539,7 +539,7 @@ const CustomerManagement: React.FC = () => {
                 >
                   <WalletIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#3B82F6' }}>
                   {CurrencyUtils.formatAmountWithCommas(Math.round(customerStats?.averageSpending || 0))}
                 </Typography>
               </Box>
@@ -584,10 +584,10 @@ const CustomerManagement: React.FC = () => {
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                   },
                 }}
@@ -640,10 +640,10 @@ const CustomerManagement: React.FC = () => {
                   sx={{
                     borderRadius: 2,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                   }}
                 >
@@ -669,10 +669,10 @@ const CustomerManagement: React.FC = () => {
                   sx={{
                     borderRadius: 2,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                   }}
                 >
@@ -697,12 +697,12 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 2,
                     py: 1.5,
                     px: 3,
-                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #D97706, #B45309)',
+                      background: 'linear-gradient(135deg, #DB2777, #BE185D)',
                       transform: 'translateY(-1px)',
-                      boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
+                      boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
                     },
                     transition: 'all 0.3s ease',
                     minWidth: 140,
@@ -719,12 +719,12 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 2,
                     py: 1.5,
                     px: 3,
-                    borderColor: '#6366F1',
-                    color: '#6366F1',
+                    borderColor: '#EC4899',
+                    color: '#EC4899',
                     borderWidth: 2,
                     '&:hover': {
-                      borderColor: '#4F46E5',
-                      backgroundColor: alpha('#6366F1', 0.04),
+                      borderColor: '#DB2777',
+                      backgroundColor: alpha('#EC4899', 0.04),
                       transform: 'translateY(-1px)',
                       borderWidth: 2,
                     },
@@ -743,12 +743,12 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 2,
                     py: 1.5,
                     px: 3,
-                    borderColor: '#10B981',
-                    color: '#10B981',
+                    borderColor: '#EC4899',
+                    color: '#EC4899',
                     borderWidth: 2,
                     '&:hover': {
-                      borderColor: '#059669',
-                      backgroundColor: alpha('#10B981', 0.04),
+                      borderColor: '#DB2777',
+                      backgroundColor: alpha('#EC4899', 0.04),
                       transform: 'translateY(-1px)',
                       borderWidth: 2,
                     },
@@ -807,7 +807,7 @@ const CustomerManagement: React.FC = () => {
                     key={customer.id}
                     sx={{
                       '&:hover': {
-                        backgroundColor: alpha('#F59E0B', 0.04),
+                        backgroundColor: alpha('#EC4899', 0.04),
                       },
                       transition: 'background-color 0.2s ease',
                     }}
@@ -946,9 +946,9 @@ const CustomerManagement: React.FC = () => {
             setAppointmentHistoryOpen(true);
             setMenuAnchorEl(null);
           }}
-          sx={{ '&:hover': { backgroundColor: alpha('#6366F1', 0.08) } }}
+          sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
         >
-          <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
+          <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
           {t('customers.viewAppointments')}
         </MenuItem>
         <MenuItem
@@ -956,9 +956,9 @@ const CustomerManagement: React.FC = () => {
             setCustomerDialogOpen(true);
             setMenuAnchorEl(null);
           }}
-          sx={{ '&:hover': { backgroundColor: alpha('#F59E0B', 0.08) } }}
+          sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
         >
-          <EditIcon sx={{ mr: 1, fontSize: 18, color: '#F59E0B' }} />
+          <EditIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
           {t('customers.editCustomer')}
         </MenuItem>
         <MenuItem

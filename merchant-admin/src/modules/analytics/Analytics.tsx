@@ -77,7 +77,7 @@ const Analytics: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const handleTimeRangeChange = (event: any) => {
     setTimeRange(event.target.value);
   };
@@ -89,10 +89,10 @@ const Analytics: React.FC = () => {
   // 获取分析数据
   const fetchAnalyticsData = async () => {
     if (!user?.tenantId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await analyticsApi.getOverview(user.tenantId, timeRange);
       setAnalyticsData(data);
@@ -181,12 +181,12 @@ const Analytics: React.FC = () => {
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              sx={{ 
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
                 fontWeight: 700,
-                background: 'linear-gradient(45deg, #F59E0B, #D97706)',
+                background: 'linear-gradient(45deg, #0891B2, #0E7490)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 1,
@@ -198,25 +198,25 @@ const Analytics: React.FC = () => {
               {t('analytics.subtitle')}
             </Typography>
           </Box>
-          
+
           <FormControl size="small" sx={{ minWidth: 140 }}>
-            <Select 
-              value={timeRange} 
+            <Select
+              value={timeRange}
               onChange={handleTimeRangeChange}
               sx={{
                 borderRadius: 2,
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#F59E0B', 0.2),
+                  borderColor: alpha('#0891B2', 0.2),
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#F59E0B',
+                  borderColor: '#0891B2',
                 },
               }}
             >
-                          <MenuItem value="7days">{t('analytics.timePeriods.7days')}</MenuItem>
-            <MenuItem value="30days">{t('analytics.timePeriods.30days')}</MenuItem>
-            <MenuItem value="6months">{t('analytics.timePeriods.6months')}</MenuItem>
-            <MenuItem value="1year">{t('analytics.timePeriods.1year')}</MenuItem>
+              <MenuItem value="7days">{t('analytics.timePeriods.7days')}</MenuItem>
+              <MenuItem value="30days">{t('analytics.timePeriods.30days')}</MenuItem>
+              <MenuItem value="6months">{t('analytics.timePeriods.6months')}</MenuItem>
+              <MenuItem value="1year">{t('analytics.timePeriods.1year')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -324,7 +324,7 @@ const Analytics: React.FC = () => {
               borderRadius: 3,
               boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
               border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.1),
+              borderColor: alpha('#0891B2', 0.1),
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
@@ -403,8 +403,8 @@ const Analytics: React.FC = () => {
                 {t('analytics.activeStaff')}
               </Typography>
               <Box display="flex" alignItems="center" mt={1}>
-                <StarIcon sx={{ fontSize: 16, color: '#F59E0B', mr: 0.5 }} />
-                <Typography variant="caption" sx={{ color: '#F59E0B', fontWeight: 600 }}>
+                <StarIcon sx={{ fontSize: 16, color: '#8B5CF6', mr: 0.5 }} />
+                <Typography variant="caption" sx={{ color: '#8B5CF6', fontWeight: 600 }}>
                   {t('analytics.avgRating')} {avgRating}
                 </Typography>
               </Box>
@@ -420,13 +420,13 @@ const Analytics: React.FC = () => {
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         }}
       >
-        <Box sx={{ 
-          borderBottom: 1, 
-          borderColor: 'divider', 
+        <Box sx={{
+          borderBottom: 1,
+          borderColor: 'divider',
           background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.02), rgba(220, 38, 38, 0.02))',
         }}>
-          <Tabs 
-            value={selectedTab} 
+          <Tabs
+            value={selectedTab}
             onChange={handleTabChange}
             variant="scrollable"
             scrollButtons="auto"
@@ -442,19 +442,19 @@ const Analytics: React.FC = () => {
                 borderRadius: 2,
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  backgroundColor: alpha('#F59E0B', 0.08),
+                  backgroundColor: alpha('#0891B2', 0.08),
                   // 移除transform效果，避免左右跳动
                 },
                 '&.Mui-selected': {
                   fontWeight: 600,
-                  backgroundColor: alpha('#F59E0B', 0.1),
-                  color: '#F59E0B',
+                  backgroundColor: alpha('#0891B2', 0.1),
+                  color: '#0891B2',
                 },
               },
               '& .MuiTabs-indicator': {
                 height: 3,
                 borderRadius: 2,
-                background: 'linear-gradient(90deg, #F59E0B, #D97706)',
+                background: 'linear-gradient(90deg, #0891B2, #0E7490)',
               },
             }}
           >
@@ -487,22 +487,22 @@ const Analytics: React.FC = () => {
                 <AreaChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
                     </linearGradient>
                     <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={alpha('#000', 0.1)} />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#6B7280' }}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -565,7 +565,7 @@ const Analytics: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
                   />
                   <Legend />
@@ -591,18 +591,18 @@ const Analytics: React.FC = () => {
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={serviceStats} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={alpha('#000', 0.1)} />
-                  <XAxis 
-                    dataKey="serviceName" 
+                  <XAxis
+                    dataKey="serviceName"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#6B7280' }}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#6B7280' }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value: number) => [CurrencyUtils.formatAmountWithCommas(value), t('analytics.chartLabels.income')]}
                   />
                   <Bar dataKey="totalRevenue" fill="#F59E0B" radius={[4, 4, 0, 0]} />
@@ -736,32 +736,32 @@ const Analytics: React.FC = () => {
 
           <Grid container spacing={3}>
             {[
-              { 
-                title: t('analytics.metrics.customerSatisfaction'), 
-                value: businessMetrics.customerSatisfaction || '0', 
-                unit: '/5.0', 
-                color: '#F59E0B', 
+              {
+                title: t('analytics.metrics.customerSatisfaction'),
+                value: businessMetrics.customerSatisfaction || '0',
+                unit: '/5.0',
+                color: '#F59E0B',
                 trend: businessMetrics.customerSatisfactionTrend ? `${businessMetrics.customerSatisfactionTrend > 0 ? '+' : ''}${businessMetrics.customerSatisfactionTrend}` : '0'
               },
-              { 
-                title: t('analytics.metrics.serviceCompletionRate'), 
-                value: businessMetrics.serviceCompletionRate || '0', 
-                unit: '%', 
-                color: '#10B981', 
+              {
+                title: t('analytics.metrics.serviceCompletionRate'),
+                value: businessMetrics.serviceCompletionRate || '0',
+                unit: '%',
+                color: '#10B981',
                 trend: businessMetrics.serviceCompletionRateTrend ? `${businessMetrics.serviceCompletionRateTrend > 0 ? '+' : ''}${businessMetrics.serviceCompletionRateTrend}%` : '0%'
               },
-              { 
-                title: t('analytics.metrics.appointmentCancellationRate'), 
-                value: businessMetrics.appointmentCancellationRate || '0', 
-                unit: '%', 
-                color: '#F59E0B', 
+              {
+                title: t('analytics.metrics.appointmentCancellationRate'),
+                value: businessMetrics.appointmentCancellationRate || '0',
+                unit: '%',
+                color: '#F59E0B',
                 trend: businessMetrics.appointmentCancellationRateTrend ? `${businessMetrics.appointmentCancellationRateTrend > 0 ? '+' : ''}${businessMetrics.appointmentCancellationRateTrend}%` : '0%'
               },
-              { 
-                title: t('analytics.metrics.repeatCustomerRate'), 
-                value: businessMetrics.repeatCustomerRate || '0', 
-                unit: '%', 
-                color: '#8B5CF6', 
+              {
+                title: t('analytics.metrics.repeatCustomerRate'),
+                value: businessMetrics.repeatCustomerRate || '0',
+                unit: '%',
+                color: '#8B5CF6',
                 trend: businessMetrics.repeatCustomerRateTrend ? `${businessMetrics.repeatCustomerRateTrend > 0 ? '+' : ''}${businessMetrics.repeatCustomerRateTrend}%` : '0%'
               },
             ].map((metric, index) => (

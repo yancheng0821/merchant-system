@@ -45,7 +45,7 @@ const ServiceResourceTypeDialog: React.FC<ServiceResourceTypeDialogProps> = ({
   const [hasResources, setHasResources] = useState(true);
 
   // 主题色
-  const themeColor = '#DC2626';
+  const themeColor = '#2563EB';
 
   useEffect(() => {
     if (open) {

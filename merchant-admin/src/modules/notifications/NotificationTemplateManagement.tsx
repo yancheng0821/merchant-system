@@ -95,8 +95,8 @@ const NotificationTemplateManagement: React.FC = () => {
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<NotificationTemplate | null>(null);
 
-  // 加深的粉色主题色，提高可读性
-  const themeColor = '#E91E63';
+  // 橙色主题色，提高可读性
+  const themeColor = '#F97316';
 
   // 获取租户ID
   const tenantId = useMemo(() => {
@@ -378,11 +378,11 @@ const NotificationTemplateManagement: React.FC = () => {
                 onClick={() => handleOpenDialog()}
                 sx={{
                   borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                   boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
                   fontWeight: 600,
                   '&:hover': {
-                    background: `linear-gradient(135deg, #C2185B, #AD1457)`,
+                    background: `linear-gradient(135deg, #EA580C, #C2410C)`,
                     transform: 'translateY(-1px)',
                     boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
                   },
@@ -471,7 +471,7 @@ const NotificationTemplateManagement: React.FC = () => {
         {/* 现代化对话框标题 */}
         <DialogTitle
           sx={{
-            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#C2185B', 0.08)})`,
+            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#EA580C', 0.08)})`,
             borderBottom: '1px solid',
             borderColor: 'divider',
             pb: 3,
@@ -485,7 +485,7 @@ const NotificationTemplateManagement: React.FC = () => {
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -543,7 +543,7 @@ const NotificationTemplateManagement: React.FC = () => {
                     width: 32,
                     height: 32,
                     borderRadius: 2,
-                    background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                    background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -679,7 +679,7 @@ const NotificationTemplateManagement: React.FC = () => {
                     width: 32,
                     height: 32,
                     borderRadius: 2,
-                    background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+                    background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -774,10 +774,10 @@ const NotificationTemplateManagement: React.FC = () => {
             sx={{
               borderRadius: 2,
               px: 3,
-              background: `linear-gradient(135deg, ${themeColor}, #C2185B)`,
+              background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
               boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
               '&:hover': {
-                background: `linear-gradient(135deg, #C2185B, #AD1457)`,
+                background: `linear-gradient(135deg, #EA580C, #C2410C)`,
                 boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
               },
             }}

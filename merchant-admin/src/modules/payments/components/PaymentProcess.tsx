@@ -647,8 +647,8 @@ const PaymentProcess: React.FC = () => {
             style={{ width: 16, height: 16 }}
           />
         ),
-        color: service.categoryColor || '#6366F1',
-        bgColor: `linear-gradient(135deg, ${service.categoryColor || '#6366F1'}, ${service.categoryColor || '#4F46E5'})`,
+        color: service.categoryColor || '#10B981',
+        bgColor: `linear-gradient(135deg, ${service.categoryColor || '#10B981'}, ${service.categoryColor || '#4F46E5'})`,
       };
     }
 
@@ -1013,16 +1013,16 @@ const PaymentProcess: React.FC = () => {
                     textTransform: 'none',
                     fontWeight: 600,
                     ...(activeTab === 'services' ? {
-                      background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                      background: 'linear-gradient(135deg, #10B981, #059669)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #4F46E5, #3730A3)',
+                        background: 'linear-gradient(135deg, #059669, #047857)',
                       },
                     } : {
                       borderColor: '#d1d5db',
                       color: '#6b7280',
                       '&:hover': {
-                        borderColor: '#6366F1',
-                        color: '#6366F1',
+                        borderColor: '#10B981',
+                        color: '#10B981',
                       },
                     }),
                   }}
