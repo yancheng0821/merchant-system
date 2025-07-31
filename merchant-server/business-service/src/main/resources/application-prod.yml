@@ -1,0 +1,30 @@
+# 生产环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://prod-db-host:3306/merchant_business?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+# 日志配置
+logging:
+  level:
+    root: WARN
+    com.merchant.server: INFO
+
+# POS支付配置 - 生产环境
+pos:
+  mock:
+    enabled: false         # 生产环境关闭mock模式
+    success-rate: 100      # 生产环境不使用随机成功率
+    processing-delay: 1    # 生产环境减少延迟
+  # 真实POS配置（根据实际POS提供商配置）
+  provider:
+    name: "REAL_POS_PROVIDER"
+    api-url: "${POS_API_URL}"
+    api-key: "${POS_API_KEY}"
+    terminal-id: "${POS_TERMINAL_ID}"

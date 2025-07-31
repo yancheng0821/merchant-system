@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.client.impl;
 import com.merchant.server.businessservice.client.AbstractPOSClient;
 import com.merchant.server.businessservice.dto.pos.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,6 +21,15 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component("mockPOSClient")
 public class MockPOSClient extends AbstractPOSClient {
+    
+    @Value("${pos.mock.enabled:true}")
+    private boolean mockEnabled;
+    
+    @Value("${pos.mock.success-rate:90}")
+    private int mockSuccessRate;
+    
+    @Value("${pos.mock.processing-delay:3}")
+    private int mockProcessingDelay;
     
     // 模拟交易存储
     private final Map<String, POSTransactionStatus> transactions = new ConcurrentHashMap<>();
@@ -148,13 +158,24 @@ public class MockPOSClient extends AbstractPOSClient {
             if (transaction != null && "pending".equals(transaction.getStatus())) {
                 // 模拟处理延迟
                 try {
-                    TimeUnit.SECONDS.sleep(3);
+                    TimeUnit.SECONDS.sleep(mockProcessingDelay);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
                 
-                // 随机决定交易结果（90%成功率）
-                boolean approved = ThreadLocalRandom.current().nextInt(100) < 90;
+                // 根据配置决定交易结果
+                boolean approved;
+                if (mockEnabled) {
+                    // Mock模式：根据配置的成功率决定结果
+                    approved = ThreadLocalRandom.current().nextInt(100) < mockSuccessRate;
+                    log.info("Mock payment processing: transactionId={}, approved={}, mockSuccessRate={}", 
+                        transactionId, approved, mockSuccessRate);
+                } else {
+                    // 生产模式：这里应该调用真实的POS API
+                    // 目前暂时返回成功，实际实现时需要替换为真实的POS调用
+                    approved = true;
+                    log.info("Production payment processing: transactionId={} (using mock for now)", transactionId);
+                }
                 
                 if (approved) {
                     transaction.setStatus("approved");
@@ -175,7 +196,8 @@ public class MockPOSClient extends AbstractPOSClient {
                 
                 transaction.setCompletedAt(LocalDateTime.now());
                 
-                log.info("Mock payment processed: {} - {}", transactionId, transaction.getStatus());
+                log.info("Mock payment processed: {} - {}, mockEnabled={}", 
+                    transactionId, transaction.getStatus(), mockEnabled);
             }
         }, 2, TimeUnit.SECONDS);
     }

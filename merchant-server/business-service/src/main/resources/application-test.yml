@@ -1,0 +1,24 @@
+# 测试环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://test-db-host:3306/merchant_business_test?useSSL=false&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.merchant.server: DEBUG
+
+# POS支付配置 - 测试环境
+pos:
+  mock:
+    enabled: true          # 测试环境启用mock模式
+    success-rate: 95       # 测试环境高成功率
+    processing-delay: 2    # 测试环境较短延迟

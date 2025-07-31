@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.entity;
 
+import com.merchant.server.businessservice.enums.CallbackStatus;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -15,7 +16,7 @@ public class PaymentCallback {
     private String transactionId;
     private String callbackType;
     private String callbackData;
-    private String callbackStatus;
+    private CallbackStatus callbackStatus;
     private String processingResult;
     private String errorMessage;
     private Integer retryCount;

@@ -45,6 +45,7 @@ import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
   EventNote as EventNoteIcon,
+  Undo as RefundIcon,
 } from '@mui/icons-material';
 
 import { useAuth } from '../../../contexts/AuthContext';
@@ -88,6 +89,10 @@ const OrderHistory: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const [detailsDialog, setDetailsDialog] = useState(false);
+  const [refundDialog, setRefundDialog] = useState(false);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+  const [refundLoading, setRefundLoading] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
     const today = TimeZoneUtils.getTodayVancouverDateString();
     return {
@@ -194,6 +199,46 @@ const OrderHistory: React.FC = () => {
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
     setDetailsDialog(true);
+  };
+
+  const handleRefund = (order: Order) => {
+    setSelectedOrder(order);
+    setRefundAmount(order.totalAmount.toString());
+    setRefundReason('');
+    setRefundDialog(true);
+  };
+
+  const processRefund = async () => {
+    if (!selectedOrder || !refundAmount || !refundReason) {
+      return;
+    }
+
+    setRefundLoading(true);
+    try {
+      await api.processRefund({
+        orderId: selectedOrder.id,
+        amount: parseFloat(refundAmount),
+        reason: refundReason,
+      });
+
+      // 刷新订单列表
+      await fetchOrders();
+      
+      // 关闭对话框
+      setRefundDialog(false);
+      setRefundAmount('');
+      setRefundReason('');
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error('Failed to process refund:', error);
+      // 这里可以添加错误提示
+    } finally {
+      setRefundLoading(false);
+    }
+  };
+
+  const canRefund = (order: Order) => {
+    return order.paymentStatus === 'paid' && order.orderStatus === 'completed';
   };
 
 
@@ -374,17 +419,32 @@ const OrderHistory: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewDetails(order)}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: alpha('#10B981', 0.1),
-                          },
-                        }}
-                      >
-                        <VisibilityIcon sx={{ color: '#10B981' }} />
-                      </IconButton>
+                      <Box display="flex" gap={1}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewDetails(order)}
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: alpha('#10B981', 0.1),
+                            },
+                          }}
+                        >
+                          <VisibilityIcon sx={{ color: '#10B981' }} />
+                        </IconButton>
+                        {canRefund(order) && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRefund(order)}
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: alpha('#EF4444', 0.1),
+                              },
+                            }}
+                          >
+                            <RefundIcon sx={{ color: '#EF4444' }} />
+                          </IconButton>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 );

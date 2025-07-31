@@ -482,7 +482,7 @@ const PaymentProcess: React.FC = () => {
     setOrderItems(appointmentOrderItems);
 
     // 切换到服务选择标签页以显示已选择的服务
-    setActiveTab('services');
+    //setActiveTab('services');
   };
 
   const calculateSubtotal = () => {
@@ -632,18 +632,14 @@ const PaymentProcess: React.FC = () => {
       } else {
         // Card payment - initiate POS transaction
         const paymentResponse = await api.initiatePayment(paymentData);
-
-        // Mock POS success after 3 seconds for testing
-        setTimeout(() => {
-          setOrderResult({
-            ...paymentResponse.data,
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            status: 'completed',
-            transactionId: 'MOCK_' + Date.now()
-          });
-          setPaymentStatus('success');
-        }, 3000);
+        
+        // 开始轮询支付状态
+        const transactionId = paymentResponse.transactionId;
+        if (transactionId) {
+          pollPaymentStatus(transactionId, order.id, order.orderNumber);
+        } else {
+          throw new Error('Transaction ID not received from payment initiation');
+        }
       }
     } catch (error: any) {
       console.error('Payment failed:', error);
@@ -661,6 +657,66 @@ const PaymentProcess: React.FC = () => {
       setPaymentError(errorMessage);
       setPaymentStatus('failed');
     }
+  };
+
+  // 轮询支付状态
+  const pollPaymentStatus = async (transactionId: string, orderId: number, orderNumber: string) => {
+    const maxAttempts = 30; // 最多轮询30次（2.5分钟）
+    let attempts = 0;
+    
+    const poll = async () => {
+      try {
+        attempts++;
+        console.log(`Polling payment status, attempt ${attempts}/${maxAttempts}`);
+        
+        const statusResponse = await api.checkPaymentStatus(transactionId);
+        console.log('Payment status response:', statusResponse);
+        
+        if (statusResponse.status === 'approved') {
+          // 支付成功
+          setOrderResult({
+            orderId: orderId,
+            orderNumber: orderNumber,
+            status: 'completed',
+            transactionId: transactionId,
+            authorizationCode: statusResponse.authorizationCode,
+            cardLast4: statusResponse.cardLast4
+          });
+          setPaymentStatus('success');
+          return;
+        } else if (statusResponse.status === 'declined' || statusResponse.status === 'failed') {
+          // 支付失败
+          setPaymentError(statusResponse.errorMessage || 'Payment was declined');
+          setPaymentStatus('failed');
+          return;
+        } else if (statusResponse.status === 'cancelled') {
+          // 支付取消
+          setPaymentError('Payment was cancelled');
+          setPaymentStatus('failed');
+          return;
+        }
+        
+        // 如果状态仍然是pending或processing，继续轮询
+        if (attempts < maxAttempts && (statusResponse.status === 'pending' || statusResponse.status === 'processing')) {
+          setTimeout(poll, 5000); // 5秒后再次轮询
+        } else if (attempts >= maxAttempts) {
+          // 轮询超时
+          setPaymentError('Payment processing timeout. Please check the payment status manually.');
+          setPaymentStatus('failed');
+        }
+      } catch (error: any) {
+        console.error('Error polling payment status:', error);
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000); // 出错时也继续轮询
+        } else {
+          setPaymentError('Failed to check payment status. Please verify the payment manually.');
+          setPaymentStatus('failed');
+        }
+      }
+    };
+    
+    // 开始轮询
+    setTimeout(poll, 2000); // 2秒后开始第一次轮询
   };
 
   const handleNewOrder = () => {
