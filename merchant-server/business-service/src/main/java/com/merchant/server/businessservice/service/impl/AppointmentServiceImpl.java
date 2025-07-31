@@ -32,11 +32,15 @@ public class AppointmentServiceImpl implements AppointmentService {
     public List<Appointment> getAllAppointmentsByTenantId(Long tenantId) {
         log.info("Getting all appointments for tenant: {}", tenantId);
         List<Appointment> appointments = appointmentMapper.findByTenantId(tenantId);
+        log.info("Found {} appointments for tenant {}", appointments.size(), tenantId);
         
         // 为每个预约获取服务详情
         for (Appointment appointment : appointments) {
             List<com.merchant.server.businessservice.entity.AppointmentService> services = appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
             appointment.setAppointmentServices(services);
+            log.info("Appointment {}: date={}, time={}, status={}, customer={}, services={}", 
+                appointment.getId(), appointment.getAppointmentDate(), appointment.getAppointmentTime(), 
+                appointment.getStatus(), appointment.getCustomerId(), services.size());
         }
         
         return appointments;

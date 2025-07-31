@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.dto;
 
+import com.merchant.server.common.util.CurrencyUtils;
 import lombok.Data;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -26,4 +27,25 @@ public class PaymentRequestDTO {
     
     // 现金支付时的收款金额
     private BigDecimal cashReceived;
+    
+    /**
+     * 设置金额时自动标准化，处理前端浮点数精度问题
+     */
+    public void setAmount(BigDecimal amount) {
+        this.amount = CurrencyUtils.normalizeAmount(amount);
+    }
+    
+    /**
+     * 设置小费金额时自动标准化
+     */
+    public void setTipAmount(BigDecimal tipAmount) {
+        this.tipAmount = CurrencyUtils.normalizeAmount(tipAmount);
+    }
+    
+    /**
+     * 设置现金收款金额时自动标准化
+     */
+    public void setCashReceived(BigDecimal cashReceived) {
+        this.cashReceived = CurrencyUtils.normalizeAmount(cashReceived);
+    }
 }

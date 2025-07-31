@@ -114,9 +114,24 @@
 
     <update id="updateById" parameterType="com.merchant.server.businessservice.entity.Order">
         UPDATE orders SET 
-        tip_amount = #{tipAmount}, 
-        notes = #{notes}, 
-        total_amount = #{totalAmount},
+        <if test="subtotal != null">subtotal = #{subtotal},</if>
+        <if test="taxRate != null">tax_rate = #{taxRate},</if>
+        <if test="taxAmount != null">tax_amount = #{taxAmount},</if>
+        <if test="tipAmount != null">tip_amount = #{tipAmount},</if>
+        <if test="tipPercentage != null">tip_percentage = #{tipPercentage},</if>
+        <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+        <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
+        <if test="paymentStatus != null">payment_status = #{paymentStatus},</if>
+        <if test="orderStatus != null">order_status = #{orderStatus},</if>
+        <if test="posTerminalId != null">pos_terminal_id = #{posTerminalId},</if>
+        <if test="transactionId != null">transaction_id = #{transactionId},</if>
+        <if test="cardLast4 != null">card_last4 = #{cardLast4},</if>
+        <if test="authorizationCode != null">authorization_code = #{authorizationCode},</if>
+        <if test="notes != null">notes = #{notes},</if>
+        <if test="refundAmount != null">refund_amount = #{refundAmount},</if>
+        <if test="refundReason != null">refund_reason = #{refundReason},</if>
+        <if test="completedAt != null">completed_at = #{completedAt},</if>
+        <if test="updatedBy != null">updated_by = #{updatedBy},</if>
         updated_at = #{updatedAt}
         WHERE id = #{id}
     </update>

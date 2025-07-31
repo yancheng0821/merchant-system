@@ -247,4 +247,40 @@ public class CurrencyUtils {
     public static String getCurrencyCode() {
         return CURRENCY_CODE;
     }
+    
+    /**
+     * 标准化金额 - 处理前端浮点数精度问题
+     * 将类似 300.159999999999972 的值标准化为 300.16
+     */
+    public static Double normalizeAmount(Double amount) {
+        if (amount == null) {
+            return 0.0;
+        }
+        return toBigDecimal(amount).doubleValue();
+    }
+    
+    /**
+     * 标准化金额 - 处理前端浮点数精度问题
+     * 将类似 300.159999999999972 的值标准化为 300.16
+     */
+    public static BigDecimal normalizeAmount(BigDecimal amount) {
+        if (amount == null) {
+            return BigDecimal.ZERO;
+        }
+        return amount.setScale(DECIMAL_PLACES, ROUNDING_MODE);
+    }
+    
+    /**
+     * 批量标准化金额数组
+     */
+    public static Double[] normalizeAmounts(Double... amounts) {
+        if (amounts == null) {
+            return new Double[0];
+        }
+        Double[] normalized = new Double[amounts.length];
+        for (int i = 0; i < amounts.length; i++) {
+            normalized[i] = normalizeAmount(amounts[i]);
+        }
+        return normalized;
+    }
 }

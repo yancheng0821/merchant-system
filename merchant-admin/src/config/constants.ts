@@ -109,6 +109,14 @@ export const CurrencyUtils = {
   },
 
   /**
+   * 标准化金额 - 处理JavaScript浮点数精度问题
+   * 将类似 300.159999999999972 的值标准化为 300.16
+   */
+  normalizeAmount: (amount: number): number => {
+    return Math.round(amount * Math.pow(10, SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES)) / Math.pow(10, SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES);
+  },
+
+  /**
    * 格式化金额显示（带千分位分隔符）
    */
   formatAmountWithCommas: (amount: number, showSymbol: boolean = true): string => {

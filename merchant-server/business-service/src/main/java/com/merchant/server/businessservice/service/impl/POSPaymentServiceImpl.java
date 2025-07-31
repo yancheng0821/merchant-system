@@ -7,6 +7,7 @@ import com.merchant.server.businessservice.dto.pos.*;
 import com.merchant.server.businessservice.entity.*;
 import com.merchant.server.businessservice.mapper.*;
 import com.merchant.server.businessservice.service.POSPaymentService;
+import com.merchant.server.common.util.CurrencyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,6 +15,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +34,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
     private final POSTerminalMapper posTerminalMapper;
     private final POSTransactionMapper posTransactionMapper;
     private final PaymentCallbackMapper paymentCallbackMapper;
+    private final AppointmentMapper appointmentMapper;
     
     @Qualifier("mockPOSClient")
     private final POSClient posClient;
@@ -59,15 +62,20 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             throw new RuntimeException("POS terminal not available: " + paymentRequest.getTerminalId());
         }
         
+        // 标准化金额，处理前端浮点数精度问题
+        Double normalizedTotalAmount = CurrencyUtils.normalizeAmount(order.getTotalAmount());
+        BigDecimal normalizedTipAmount = paymentRequest.getTipAmount() != null ? 
+            CurrencyUtils.normalizeAmount(paymentRequest.getTipAmount()) : null;
+        
         // 构建POS支付请求
         POSPaymentRequest posRequest = POSPaymentRequest.builder()
             .orderId(orderId.toString())
             .terminalId(terminal.getTerminalId())
-            .amount(BigDecimal.valueOf(order.getTotalAmount()))
+            .amount(BigDecimal.valueOf(normalizedTotalAmount))
             .currency("USD")
             .paymentMethod(paymentRequest.getPaymentMethod())
             .description("Order #" + order.getOrderNumber())
-            .tipAmount(paymentRequest.getTipAmount())
+            .tipAmount(normalizedTipAmount)
             .customerEmail(paymentRequest.getCustomerEmail())
             .customerPhone(paymentRequest.getCustomerPhone())
             .build();
@@ -79,7 +87,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         posTransaction.setTransactionId(UUID.randomUUID().toString());
         posTransaction.setPosTerminalId(terminal.getTerminalId());
         posTransaction.setPosProvider(terminal.getPosProvider());
-        posTransaction.setAmount(order.getTotalAmount());
+        posTransaction.setAmount(normalizedTotalAmount);
         posTransaction.setPaymentMethod(paymentRequest.getPaymentMethod());
         posTransaction.setTransactionStatus("pending");
         posTransaction.setRequestData(convertToJson(posRequest));
@@ -116,7 +124,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 .orderId(orderId.toString())
                 .status("processing")
                 .paymentMethod(paymentRequest.getPaymentMethod())
-                .amount(BigDecimal.valueOf(order.getTotalAmount()))
+                .amount(BigDecimal.valueOf(normalizedTotalAmount))
                 .message(initResponse.getMessage())
                 .actionRequired(initResponse.getActionRequired())
                 .displayMessage(initResponse.getDisplayMessage())
@@ -146,21 +154,54 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             throw new RuntimeException("Order not found: " + orderId);
         }
         
-        BigDecimal cashReceived = BigDecimal.valueOf(amount);
-        BigDecimal totalAmount = BigDecimal.valueOf(order.getTotalAmount());
-        BigDecimal change = cashReceived.subtract(totalAmount);
+        // 使用CurrencyUtils标准化金额，处理前端浮点数精度问题
+        BigDecimal totalAmount = CurrencyUtils.normalizeAmount(BigDecimal.valueOf(order.getTotalAmount()));
+        BigDecimal cashReceived;
         
-        if (change.compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("Insufficient cash received");
+        // 如果传入的金额等于订单总金额，说明是精确支付（前端当前的逻辑）
+        // 如果传入的金额大于订单总金额，说明是客户实际支付的现金金额
+        Double normalizedAmount = CurrencyUtils.normalizeAmount(amount);
+        Double normalizedOrderTotal = CurrencyUtils.normalizeAmount(order.getTotalAmount());
+        
+        if (Math.abs(normalizedAmount - normalizedOrderTotal) < 0.01) {
+            // 精确支付，假设客户支付了正确的金额
+            cashReceived = totalAmount;
+            log.info("Exact cash payment - Amount: {}", totalAmount);
+        } else {
+            // 客户实际支付的现金金额
+            cashReceived = CurrencyUtils.normalizeAmount(BigDecimal.valueOf(amount));
+            log.info("Cash payment calculation - Received: {}, Total: {}", cashReceived, totalAmount);
+            
+            if (cashReceived.compareTo(totalAmount) < 0) {
+                throw new RuntimeException(String.format("Insufficient cash received. Required: %s, Received: %s", 
+                    totalAmount, cashReceived));
+            }
         }
         
+        BigDecimal change = cashReceived.subtract(totalAmount);
+        
         // 更新订单状态
+        log.info("Updating order {} status from {} to completed, payment status from {} to paid", 
+            order.getId(), order.getOrderStatus(), order.getPaymentStatus());
+        
         order.setPaymentMethod("cash");
         order.setPaymentStatus("paid");
         order.setOrderStatus("completed");
         order.setCompletedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
-        orderMapper.updateById(order);
+        
+        try {
+            orderMapper.updateById(order);
+            log.info("Successfully updated order {} status to completed and payment status to paid", order.getId());
+        } catch (Exception e) {
+            log.error("Failed to update order {} status", order.getId(), e);
+            throw e;
+        }
+        
+        // 如果订单关联了预约，更新预约状态为已完成
+        if (order.getAppointmentId() != null) {
+            updateAppointmentStatusAfterPayment(order.getAppointmentId(), "COMPLETED");
+        }
         
         return PaymentResponseDTO.builder()
             .orderId(orderId.toString())
@@ -227,20 +268,42 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             // 更新订单状态
             Order order = orderMapper.selectById(posTransaction.getOrderId());
             if (order != null) {
+                log.info("Processing payment callback for order {}, current status: {}, payment status: {}", 
+                    order.getId(), order.getOrderStatus(), order.getPaymentStatus());
+                
                 if (status.isSuccess()) {
+                    log.info("Payment successful for order {}, updating to completed", order.getId());
                     order.setPaymentStatus("paid");
                     order.setOrderStatus("completed");
                     order.setAuthorizationCode(status.getAuthorizationCode());
                     order.setCardLast4(status.getCardLast4());
                     order.setCompletedAt(LocalDateTime.now());
+                    
+                    // 如果订单关联了预约，更新预约状态为已完成
+                    if (order.getAppointmentId() != null) {
+                        updateAppointmentStatusAfterPayment(order.getAppointmentId(), "COMPLETED");
+                    }
                 } else if (status.isFinal()) {
+                    log.info("Payment failed for order {}, updating to failed", order.getId());
                     order.setPaymentStatus("failed");
                     if ("draft".equals(order.getOrderStatus())) {
                         order.setOrderStatus("cancelled");
                     }
+                    
+                    // 如果支付失败且订单关联了预约，可以选择保持预约状态不变或标记为失败
+                    // 这里我们选择保持预约状态不变，让用户可以重新支付
                 }
                 order.setUpdatedAt(LocalDateTime.now());
-                orderMapper.updateById(order);
+                
+                try {
+                    orderMapper.updateById(order);
+                    log.info("Successfully updated order {} after payment callback", order.getId());
+                } catch (Exception e) {
+                    log.error("Failed to update order {} after payment callback", order.getId(), e);
+                    throw e;
+                }
+            } else {
+                log.warn("Order not found for transaction {}", transactionId);
             }
             
             // 更新回调状态
@@ -308,10 +371,13 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         }
         
         try {
+            // 标准化退款金额，处理前端浮点数精度问题
+            Double normalizedRefundAmount = CurrencyUtils.normalizeAmount(amount);
+            
             POSRefundRequest refundRequest = POSRefundRequest.builder()
                 .originalTransactionId(order.getTransactionId())
                 .orderId(orderId.toString())
-                .refundAmount(BigDecimal.valueOf(amount))
+                .refundAmount(BigDecimal.valueOf(normalizedRefundAmount))
                 .reason(reason)
                 .terminalId(order.getPosTerminalId())
                 .build();
@@ -326,7 +392,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 refundTransaction.setTransactionId(refundResponse.getRefundTransactionId());
                 refundTransaction.setPosTerminalId(order.getPosTerminalId());
                 refundTransaction.setPosProvider(originalTransaction.getPosProvider());
-                refundTransaction.setAmount(amount);
+                refundTransaction.setAmount(normalizedRefundAmount);
                 refundTransaction.setPaymentMethod(order.getPaymentMethod());
                 refundTransaction.setTransactionStatus("refunded");
                 refundTransaction.setRequestData(convertToJson(refundRequest));
@@ -335,7 +401,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 posTransactionMapper.insert(refundTransaction);
                 
                 // 更新订单退款信息
-                order.setRefundAmount(amount);
+                order.setRefundAmount(normalizedRefundAmount);
                 order.setRefundReason(reason);
                 order.setPaymentStatus("refunded");
                 order.setUpdatedAt(LocalDateTime.now());
@@ -372,11 +438,11 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             throw new RuntimeException("No previous payment attempt found");
         }
         
-        // 使用上次的支付方式重试
+        // 使用上次的支付方式重试，标准化金额
         PaymentRequestDTO retryRequest = new PaymentRequestDTO();
         retryRequest.setPaymentMethod(lastTransaction.getPaymentMethod());
         retryRequest.setTerminalId(lastTransaction.getPosTerminalId());
-        retryRequest.setAmount(BigDecimal.valueOf(order.getTotalAmount()));
+        retryRequest.setAmount(CurrencyUtils.normalizeAmount(BigDecimal.valueOf(order.getTotalAmount())));
         
         return initiatePayment(orderId, retryRequest);
     }
@@ -417,6 +483,39 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         
         if (attempt >= maxAttempts) {
             log.warn("Payment polling timeout for transaction: {}", transactionId);
+        }
+    }
+    
+    /**
+     * 支付成功后更新预约状态
+     */
+    private void updateAppointmentStatusAfterPayment(Long appointmentId, String status) {
+        try {
+            Appointment appointment = appointmentMapper.findById(appointmentId);
+            if (appointment != null) {
+                log.info("Updating appointment {} status from {} to {} after payment", 
+                    appointmentId, appointment.getStatus(), status);
+                
+                // 创建新的预约状态枚举值
+                Appointment.AppointmentStatus newStatus;
+                try {
+                    newStatus = Appointment.AppointmentStatus.valueOf(status);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid appointment status: {}, using COMPLETED as default", status);
+                    newStatus = Appointment.AppointmentStatus.COMPLETED;
+                }
+                
+                appointment.setStatus(newStatus);
+                appointment.setUpdatedAt(LocalDateTime.now());
+                appointmentMapper.update(appointment);
+                
+                log.info("Successfully updated appointment {} status to {}", appointmentId, newStatus);
+            } else {
+                log.warn("Appointment not found with ID: {}", appointmentId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to update appointment status after payment for appointment ID: {}", appointmentId, e);
+            // 不抛出异常，避免影响支付流程
         }
     }
     

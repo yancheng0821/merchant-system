@@ -115,7 +115,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTax } from '../../../contexts/TaxContext';
 import { serviceApi, customerApi, appointmentApi, api, Customer as ApiCustomer } from '../../../services/api';
-import { CurrencyUtils } from '../../../config/constants';
+import { CurrencyUtils, TimeZoneUtils } from '../../../config/constants';
 
 interface Service {
   id: number;
@@ -275,16 +275,14 @@ const PaymentProcess: React.FC = () => {
       const response = await appointmentApi.getAllAppointments(user?.tenantId || 0);
       const allAppointments = Array.isArray(response) ? response : [];
 
-      // 获取今天的日期字符串 (YYYY-MM-DD格式)
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      // 获取今天的日期字符串 (YYYY-MM-DD格式，温哥华时区)
+      const todayStr = TimeZoneUtils.getTodayVancouverDateString();
+      
+      console.log('Fetched appointments:', allAppointments.length, 'Today:', todayStr);
 
-      // 过滤已确认的预约并格式化数据
-      const confirmedAppointments = allAppointments
-        .filter((apt: any) => {
-          // 只显示今天的已确认预约
-          return apt.status === 'CONFIRMED' && apt.appointmentDate === todayStr;
-        })
+      // 格式化所有已确认的预约数据（不限制日期，用于搜索）
+      const allConfirmedAppointments = allAppointments
+        .filter((apt: any) => apt.status === 'CONFIRMED')
         .map((apt: any) => {
           // 从customer对象获取客户信息
           const customerName = apt.customer
@@ -315,19 +313,24 @@ const PaymentProcess: React.FC = () => {
             resourceId: apt.resourceId,
             resourceType: apt.resourceType,
           };
-        })
-        // 按预约时间倒序排列 (时间最晚的在最上面)
+        });
+
+      // 默认显示今天的预约（最多20条）
+      const todayAppointments = allConfirmedAppointments
+        .filter(apt => apt.appointmentDate === todayStr)
         .sort((a, b) => {
-          // 将时间字符串转换为可比较的格式
+          // 按预约时间倒序排列 (时间最晚的在最上面)
           const timeA = a.appointmentTime.replace(':', '');
           const timeB = b.appointmentTime.replace(':', '');
           return timeB.localeCompare(timeA);
         })
-        // 最多显示20条记录
         .slice(0, 20);
 
-      setAppointments(confirmedAppointments);
-      setFilteredAppointments(confirmedAppointments);
+      console.log('Confirmed appointments:', allConfirmedAppointments.length, 'Today:', todayAppointments.length);
+      
+      // 存储所有已确认的预约用于搜索，显示今天的预约作为默认
+      setAppointments(allConfirmedAppointments);
+      setFilteredAppointments(todayAppointments);
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
       setAppointments([]);
@@ -352,18 +355,36 @@ const PaymentProcess: React.FC = () => {
   // 预约搜索过滤
   useEffect(() => {
     if (!appointmentSearchTerm.trim()) {
-      setFilteredAppointments(appointments);
+      // 没有搜索词时，显示今天的预约（默认行为）
+      const todayStr = TimeZoneUtils.getTodayVancouverDateString();
+      const todayAppointments = appointments
+        .filter(apt => apt.appointmentDate === todayStr)
+        .sort((a, b) => {
+          // 按预约时间倒序排列 (时间最晚的在最上面)
+          const timeA = a.appointmentTime.replace(':', '');
+          const timeB = b.appointmentTime.replace(':', '');
+          return timeB.localeCompare(timeA);
+        })
+        .slice(0, 20);
+      setFilteredAppointments(todayAppointments);
     } else {
+      // 有搜索词时，在所有预约中搜索（不限制日期）
       const filtered = appointments
         .filter(appointment =>
           appointment.customerName.toLowerCase().includes(appointmentSearchTerm.toLowerCase()) ||
           appointment.customerPhone.includes(appointmentSearchTerm) ||
+          appointment.appointmentDate.includes(appointmentSearchTerm) ||
           appointment.services.some(service =>
             service.name.toLowerCase().includes(appointmentSearchTerm.toLowerCase())
           )
         )
-        // 搜索结果也按时间倒序排列，最多20条
+        // 搜索结果按日期和时间排序，最新的在前面，最多20条
         .sort((a, b) => {
+          // 先按日期排序（最新日期在前）
+          const dateCompare = b.appointmentDate.localeCompare(a.appointmentDate);
+          if (dateCompare !== 0) return dateCompare;
+          
+          // 同一天内按时间倒序排列
           const timeA = a.appointmentTime.replace(':', '');
           const timeB = b.appointmentTime.replace(':', '');
           return timeB.localeCompare(timeA);
@@ -466,19 +487,21 @@ const PaymentProcess: React.FC = () => {
 
   const calculateSubtotal = () => {
     if (customSubtotal !== null) {
-      return customSubtotal;
+      return CurrencyUtils.normalizeAmount(customSubtotal);
     }
-    return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return CurrencyUtils.normalizeAmount(subtotal);
   };
 
   const calculateOrderTax = () => {
     const subtotal = calculateSubtotal();
     const taxResult = calculateTax(subtotal);
-    return taxResult.totalTax;
+    return CurrencyUtils.normalizeAmount(taxResult.totalTax);
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateOrderTax();
+    const total = calculateSubtotal() + calculateOrderTax();
+    return CurrencyUtils.normalizeAmount(total);
   };
 
   const handleSubtotalEdit = () => {
