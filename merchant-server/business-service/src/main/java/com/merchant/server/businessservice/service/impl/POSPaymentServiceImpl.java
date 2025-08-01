@@ -402,14 +402,25 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         log.info("Initiating refund for order: {}, amount: {}", orderId, amount);
         
         Order order = orderMapper.selectById(orderId);
-        if (order == null || !"paid".equals(order.getPaymentStatus())) {
-            return false;
+        if (order == null) {
+            log.error("Order not found with ID: {}", orderId);
+            throw new RuntimeException("Order not found with ID: " + orderId);
+        }
+        
+        if (!"paid".equals(order.getPaymentStatus())) {
+            log.error("Order {} is not in paid status, current status: {}", orderId, order.getPaymentStatus());
+            throw new RuntimeException("Order is not in paid status: " + order.getPaymentStatus());
         }
         
         // 获取原始交易
-        POSTransaction originalTransaction = posTransactionMapper.selectByTransactionId(order.getTransactionId());
+        POSTransaction originalTransaction = null;
+        if (order.getTransactionId() != null) {
+            originalTransaction = posTransactionMapper.selectByTransactionId(order.getTransactionId());
+        }
+        
         if (originalTransaction == null) {
-            return false;
+            log.error("Original transaction not found for order: {}, transactionId: {}", orderId, order.getTransactionId());
+            throw new RuntimeException("Original transaction not found for order: " + orderId);
         }
         
         try {
@@ -424,7 +435,9 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 .terminalId(order.getPosTerminalId())
                 .build();
                 
+            log.info("Calling POS client for refund: {}", refundRequest);
             POSRefundResponse refundResponse = posClient.refund(refundRequest);
+            log.info("POS refund response: {}", refundResponse);
             
             if (refundResponse.isSuccess()) {
                 // 创建退款交易记录
@@ -439,7 +452,11 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 refundTransaction.setTransactionStatus("refunded");
                 refundTransaction.setRequestData(convertToJson(refundRequest));
                 refundTransaction.setResponseData(convertToJson(refundResponse));
-                refundTransaction.setCreatedAt(LocalDateTime.now());
+                refundTransaction.setRetryCount(0); // 设置默认重试次数
+                refundTransaction.setNextRetryTime(null); // 退款不需要重试时间
+                LocalDateTime now = LocalDateTime.now();
+                refundTransaction.setCreatedAt(now);
+                refundTransaction.setUpdatedAt(now);
                 posTransactionMapper.insert(refundTransaction);
                 
                 // 更新订单退款信息
@@ -450,12 +467,14 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 orderMapper.updateById(order);
                 
                 return true;
+            } else {
+                log.error("POS refund failed: {}", refundResponse.getMessage());
+                throw new RuntimeException("POS refund failed: " + refundResponse.getMessage());
             }
         } catch (Exception e) {
-            log.error("Failed to initiate refund", e);
+            log.error("Failed to initiate refund for order: {}", orderId, e);
+            throw e; // 重新抛出异常，让控制器处理
         }
-        
-        return false;
     }
     
     @Override

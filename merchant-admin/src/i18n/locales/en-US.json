@@ -442,8 +442,8 @@
     "totalTax": "Total Tax",
     "pleaseWait": "Please Wait",
     "transactionCompleted": "Transaction Completed",
-    "todayAppointmentsOnly":"Today's appointments by default",
-    "appointmentLimitInfo":"Max 20 records, search any time",
+    "todayAppointmentsOnly": "Today's appointments by default",
+    "appointmentLimitInfo": "Max 20 records, search any time",
     "reviewOrderDetails": "Review Order Details"
   },
   "orders": {
@@ -548,6 +548,9 @@
     "mobilePaymentInfo": "Mobile payment, please have customer scan to pay",
     "paymentSuccessful": "Payment successful!",
     "paymentFailed": "Payment failed, please try again",
+    "noServiceDetails": "No service details",
+    "refundValidationError": "Please fill in complete refund information",
+    "refundSuccessMessage": "Refund processed successfully!",
     "paymentError": "Payment processing error",
     "todayAppointmentsOnly": "Today's appointments by default",
     "appointmentLimitInfo": "Max 20 records, search any time",
@@ -556,6 +559,7 @@
     "processingCashPayment": "Processing cash payment...",
     "processingCardPayment": "Processing card payment...",
     "processRefund": "Process Refund",
+    "refundOrderInfo": "Process refund for order {{orderNumber}}",
     "originalAmount": "Original Amount",
     "previousRefunds": "Previous Refunds",
     "availableToRefund": "Available to Refund",
@@ -576,7 +580,7 @@
     "newOrder": "New Order",
     "requestRefund": "Request Refund",
     "deleteOrder": "Delete Order",
-    "appointmentInfo":"Appointment Information"
+    "appointmentInfo": "Appointment Information"
   },
   "services": {
     "title": "Service Management",

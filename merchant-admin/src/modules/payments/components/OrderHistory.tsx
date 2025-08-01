@@ -31,6 +31,10 @@ import {
   ListItemText,
   Divider,
   alpha,
+  Menu,
+  ListItemIcon,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -46,6 +50,7 @@ import {
   AccessTime as TimeIcon,
   EventNote as EventNoteIcon,
   Undo as RefundIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 
 import { useAuth } from '../../../contexts/AuthContext';
@@ -93,6 +98,10 @@ const OrderHistory: React.FC = () => {
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
   const [refundLoading, setRefundLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuOrder, setMenuOrder] = useState<Order | null>(null);
+  const [refundError, setRefundError] = useState<string | null>(null);
+  const [refundSuccess, setRefundSuccess] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
     const today = TimeZoneUtils.getTodayVancouverDateString();
     return {
@@ -210,28 +219,55 @@ const OrderHistory: React.FC = () => {
 
   const processRefund = async () => {
     if (!selectedOrder || !refundAmount || !refundReason) {
+      setRefundError(t('orders.refundValidationError'));
+      return;
+    }
+
+    // 验证退款金额
+    const amount = parseFloat(refundAmount);
+    if (isNaN(amount) || amount <= 0 || amount > selectedOrder.totalAmount) {
+      setRefundError(t('orders.invalidRefundAmount'));
       return;
     }
 
     setRefundLoading(true);
+    setRefundError(null);
+    
     try {
-      await api.processRefund({
+      const response = await api.processRefund({
         orderId: selectedOrder.id,
-        amount: parseFloat(refundAmount),
+        amount: amount,
         reason: refundReason,
       });
 
-      // 刷新订单列表
-      await fetchOrders();
-      
-      // 关闭对话框
-      setRefundDialog(false);
-      setRefundAmount('');
-      setRefundReason('');
-      setSelectedOrder(null);
-    } catch (error) {
+      // 检查响应是否成功
+      if (response && response.success !== false) {
+        // 刷新订单列表
+        await fetchOrders();
+        
+        // 显示成功提示
+        setRefundSuccess(true);
+        
+        // 关闭对话框
+        setRefundDialog(false);
+        setRefundAmount('');
+        setRefundReason('');
+        setSelectedOrder(null);
+      } else {
+        setRefundError(response?.message || t('orders.refundFailed'));
+      }
+    } catch (error: any) {
       console.error('Failed to process refund:', error);
-      // 这里可以添加错误提示
+      
+      // 提取错误信息
+      let errorMessage = t('orders.refundFailed');
+      if (error.responseData?.message) {
+        errorMessage = error.responseData.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setRefundError(errorMessage);
     } finally {
       setRefundLoading(false);
     }
@@ -239,6 +275,30 @@ const OrderHistory: React.FC = () => {
 
   const canRefund = (order: Order) => {
     return order.paymentStatus === 'paid' && order.orderStatus === 'completed';
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, order: Order) => {
+    setAnchorEl(event.currentTarget);
+    setMenuOrder(order);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuOrder(null);
+  };
+
+  const handleMenuViewDetails = () => {
+    if (menuOrder) {
+      handleViewDetails(menuOrder);
+    }
+    handleMenuClose();
+  };
+
+  const handleMenuRefund = () => {
+    if (menuOrder) {
+      handleRefund(menuOrder);
+    }
+    handleMenuClose();
   };
 
 
@@ -419,32 +479,17 @@ const OrderHistory: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Box display="flex" gap={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewDetails(order)}
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: alpha('#10B981', 0.1),
-                            },
-                          }}
-                        >
-                          <VisibilityIcon sx={{ color: '#10B981' }} />
-                        </IconButton>
-                        {canRefund(order) && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRefund(order)}
-                            sx={{
-                              '&:hover': {
-                                backgroundColor: alpha('#EF4444', 0.1),
-                              },
-                            }}
-                          >
-                            <RefundIcon sx={{ color: '#EF4444' }} />
-                          </IconButton>
-                        )}
-                      </Box>
+                      <IconButton
+                        size="small"
+                        onClick={(event) => handleMenuOpen(event, order)}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: alpha('#6B7280', 0.1),
+                          },
+                        }}
+                      >
+                        <MoreVertIcon sx={{ color: '#6B7280' }} />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 );
@@ -468,7 +513,36 @@ const OrderHistory: React.FC = () => {
         />
       </Card>
 
-
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            minWidth: 160,
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={handleMenuViewDetails}>
+          <ListItemIcon>
+            <VisibilityIcon sx={{ fontSize: 20, color: '#10B981' }} />
+          </ListItemIcon>
+          <Typography variant="body2">{t('orders.viewDetails')}</Typography>
+        </MenuItem>
+        {menuOrder && canRefund(menuOrder) && (
+          <MenuItem onClick={handleMenuRefund}>
+            <ListItemIcon>
+              <RefundIcon sx={{ fontSize: 20, color: '#EF4444' }} />
+            </ListItemIcon>
+            <Typography variant="body2">{t('orders.processRefund')}</Typography>
+          </MenuItem>
+        )}
+      </Menu>
 
       {/* Order Details Dialog */}
       <Dialog
@@ -647,6 +721,112 @@ const OrderHistory: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Refund Dialog */}
+      <Dialog
+        open={refundDialog}
+        onClose={() => setRefundDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
+              {t('orders.processRefund')}
+            </Typography>
+            <IconButton onClick={() => setRefundDialog(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedOrder && (
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {t('orders.refundOrderInfo', { orderNumber: selectedOrder.orderNumber })}
+              </Typography>
+              
+              {refundError && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {refundError}
+                </Alert>
+              )}
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label={t('orders.refundAmount')}
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                    helperText={t('orders.maxRefundAmount', { amount: CurrencyUtils.formatAmount(selectedOrder.totalAmount) })}
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label={t('orders.refundReason')}
+                    multiline
+                    rows={3}
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    placeholder={t('orders.refundReasonPlaceholder')}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 2 }}>
+          <Button
+            onClick={() => setRefundDialog(false)}
+            sx={{ mr: 1 }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={processRefund}
+            disabled={refundLoading || !refundAmount || !refundReason}
+            sx={{
+              backgroundColor: '#EF4444',
+              '&:hover': {
+                backgroundColor: '#DC2626',
+              },
+            }}
+          >
+            {refundLoading ? t('orders.processing') : t('orders.processRefund')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={refundSuccess}
+        autoHideDuration={6000}
+        onClose={() => setRefundSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setRefundSuccess(false)} 
+          severity="success" 
+          sx={{ width: '100%' }}
+        >
+          {t('orders.refundSuccessMessage')}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
