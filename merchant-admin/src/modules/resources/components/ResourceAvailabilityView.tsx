@@ -399,19 +399,20 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                         <Box
                                             sx={{
                                                 display: 'grid',
-                                                gridTemplateColumns: 'repeat(4, 1fr)',
-                                                gap: 1,
+                                                gridTemplateColumns: 'repeat(6, 1fr)',
+                                                gap: 0.5,
                                                 mb: 2,
                                             }}
                                         >
-                                            {timeSlots.slice(0, 8).map((time) => {
+                                            {timeSlots.slice(0, 24).map((time) => {
                                                 const isAvailable = checkResourceAvailability(resource.id, todayDayOfWeek, time);
                                                 return (
                                                     <Box
                                                         key={time}
                                                         sx={{
-                                                            p: 1,
-                                                            borderRadius: 2,
+                                                            px: 0.5,
+                                                            py: 0.5,
+                                                            borderRadius: 1.5,
                                                             textAlign: 'center',
                                                             backgroundColor: isAvailable
                                                                 ? alpha('#10B981', 0.1)
@@ -420,9 +421,13 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                                 ? alpha('#10B981', 0.2)
                                                                 : alpha('#EF4444', 0.2)}`,
                                                             transition: 'all 0.2s ease',
+                                                            minHeight: 24,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
                                                             '&:hover': {
                                                                 transform: 'scale(1.05)',
-                                                                boxShadow: `0 2px 8px ${isAvailable
+                                                                boxShadow: `0 1px 4px ${isAvailable
                                                                     ? alpha('#10B981', 0.3)
                                                                     : alpha('#EF4444', 0.3)}`,
                                                             },
@@ -433,6 +438,8 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                             sx={{
                                                                 fontWeight: 600,
                                                                 color: isAvailable ? '#10B981' : '#EF4444',
+                                                                fontSize: '0.65rem',
+                                                                lineHeight: 1,
                                                             }}
                                                         >
                                                             {time}
@@ -442,13 +449,13 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                             })}
                                         </Box>
                                         
-                                        {timeSlots.length > 8 && (
+                                        {timeSlots.length > 24 && (
                                             <Typography
                                                 variant="caption"
                                                 color="text.secondary"
                                                 sx={{ textAlign: 'center', display: 'block' }}
                                             >
-                                                +{timeSlots.length - 8} {t('resources.moreTimeSlots')}
+                                                +{timeSlots.length - 24} {t('resources.moreTimeSlots')}
                                             </Typography>
                                         )}
                                     </Box>
@@ -660,20 +667,23 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                             }}
                                         >
                                             {dayAvailability.length > 0 ? (
-                                                <Box>
+                                                <Box display="flex" flexWrap="wrap" gap={0.25} justifyContent="center">
                                                     {dayAvailability.map((availability, index) => (
                                                         <Box
                                                             key={index}
                                                             sx={{
-                                                                mb: 0.5,
-                                                                p: 1,
-                                                                borderRadius: 2,
+                                                                px: 0.5,
+                                                                py: 0.25,
+                                                                borderRadius: 1,
                                                                 background: `linear-gradient(135deg, ${alpha('#10B981', 0.1)}, ${alpha('#10B981', 0.05)})`,
                                                                 border: `1px solid ${alpha('#10B981', 0.2)}`,
                                                                 transition: 'all 0.2s ease',
+                                                                minHeight: 16,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
                                                                 '&:hover': {
                                                                     transform: 'scale(1.05)',
-                                                                    boxShadow: `0 2px 8px ${alpha('#10B981', 0.3)}`,
+                                                                    boxShadow: `0 1px 4px ${alpha('#10B981', 0.3)}`,
                                                                 },
                                                             }}
                                                         >
@@ -682,7 +692,8 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                                 sx={{
                                                                     fontWeight: 600,
                                                                     color: '#10B981',
-                                                                    fontSize: '0.75rem',
+                                                                    fontSize: '0.65rem',
+                                                                    lineHeight: 1,
                                                                 }}
                                                             >
                                                                 {availability.startTime.slice(0, 5)}-{availability.endTime.slice(0, 5)}
@@ -693,10 +704,15 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                             ) : (
                                                 <Box
                                                     sx={{
-                                                        p: 1,
-                                                        borderRadius: 2,
+                                                        px: 0.75,
+                                                        py: 0.25,
+                                                        borderRadius: 1,
                                                         background: `linear-gradient(135deg, ${alpha('#EF4444', 0.1)}, ${alpha('#EF4444', 0.05)})`,
                                                         border: `1px solid ${alpha('#EF4444', 0.2)}`,
+                                                        minHeight: 16,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
                                                     }}
                                                 >
                                                     <Typography
@@ -704,10 +720,11 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                         sx={{
                                                             fontWeight: 600,
                                                             color: '#EF4444',
-                                                            fontSize: '0.75rem',
+                                                            fontSize: '0.65rem',
+                                                            lineHeight: 1,
                                                         }}
                                                     >
-                                                        不可用
+                                                        {t('resources.availability.unavailable')}
                                                     </Typography>
                                                 </Box>
                                             )}

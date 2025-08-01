@@ -143,40 +143,65 @@ const ResourceAvailabilityDisplay: React.FC<ResourceAvailabilityDisplayProps> = 
                 </Box>
 
                 {todayAvailability.length > 0 ? (
-                    <Box display="flex" flexWrap="wrap" gap={0.5}>
+                    <Box display="flex" flexWrap="wrap" gap={0.25}>
                         {todayAvailability.map((availability, index) => (
-                            <Chip
+                            <Box
                                 key={index}
-                                label={`${availability.startTime.slice(0, 5)}-${availability.endTime.slice(0, 5)}`}
-                                size="small"
-                                icon={<AvailableIcon />}
                                 sx={{
+                                    px: 0.75,
+                                    py: 0.25,
+                                    borderRadius: 1,
                                     backgroundColor: alpha('#10B981', 0.1),
-                                    color: '#10B981',
-                                    fontSize: '0.7rem',
-                                    height: 20,
-                                    '& .MuiChip-icon': {
-                                        fontSize: 12,
-                                    },
+                                    border: `1px solid ${alpha('#10B981', 0.2)}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.25,
+                                    minHeight: 18,
                                 }}
-                            />
+                            >
+                                <AvailableIcon sx={{ fontSize: 10, color: '#10B981' }} />
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: '#10B981',
+                                        fontSize: '0.65rem',
+                                        fontWeight: 600,
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    {availability.startTime.slice(0, 5)}-{availability.endTime.slice(0, 5)}
+                                </Typography>
+                            </Box>
                         ))}
                     </Box>
                 ) : (
-                    <Chip
-                        label={t('resources.availability.unavailable')}
-                        size="small"
-                        icon={<UnavailableIcon />}
+                    <Box
                         sx={{
+                            px: 0.75,
+                            py: 0.25,
+                            borderRadius: 1,
                             backgroundColor: alpha('#EF4444', 0.1),
-                            color: '#EF4444',
-                            fontSize: '0.7rem',
-                            height: 20,
-                            '& .MuiChip-icon': {
-                                fontSize: 12,
-                            },
+                            border: `1px solid ${alpha('#EF4444', 0.2)}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.25,
+                            minHeight: 18,
+                            width: 'fit-content',
                         }}
-                    />
+                    >
+                        <UnavailableIcon sx={{ fontSize: 10, color: '#EF4444' }} />
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: '#EF4444',
+                                fontSize: '0.65rem',
+                                fontWeight: 600,
+                                lineHeight: 1,
+                            }}
+                        >
+                            {t('resources.availability.unavailable')}
+                        </Typography>
+                    </Box>
                 )}
 
                 <Collapse in={expanded}>
@@ -194,32 +219,61 @@ const ResourceAvailabilityDisplay: React.FC<ResourceAvailabilityDisplayProps> = 
                                                 {day.short}
                                             </Typography>
                                             {dayAvailability.length > 0 ? (
-                                                <Box display="flex" flexWrap="wrap" gap={0.5}>
+                                                <Box display="flex" flexWrap="wrap" gap={0.25}>
                                                     {dayAvailability.map((availability, index) => (
-                                                        <Chip
+                                                        <Box
                                                             key={index}
-                                                            label={`${availability.startTime.slice(0, 5)}-${availability.endTime.slice(0, 5)}`}
-                                                            size="small"
                                                             sx={{
+                                                                px: 0.5,
+                                                                py: 0.125,
+                                                                borderRadius: 0.75,
                                                                 backgroundColor: alpha('#10B981', 0.1),
-                                                                color: '#10B981',
-                                                                fontSize: '0.6rem',
-                                                                height: 16,
+                                                                border: `1px solid ${alpha('#10B981', 0.2)}`,
+                                                                minHeight: 14,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
                                                             }}
-                                                        />
+                                                        >
+                                                            <Typography
+                                                                variant="caption"
+                                                                sx={{
+                                                                    color: '#10B981',
+                                                                    fontSize: '0.55rem',
+                                                                    fontWeight: 600,
+                                                                    lineHeight: 1,
+                                                                }}
+                                                            >
+                                                                {availability.startTime.slice(0, 5)}-{availability.endTime.slice(0, 5)}
+                                                            </Typography>
+                                                        </Box>
                                                     ))}
                                                 </Box>
                                             ) : (
-                                                <Chip
-                                                    label={t('resources.availability.unavailable')}
-                                                    size="small"
+                                                <Box
                                                     sx={{
+                                                        px: 0.5,
+                                                        py: 0.125,
+                                                        borderRadius: 0.75,
                                                         backgroundColor: alpha('#EF4444', 0.1),
-                                                        color: '#EF4444',
-                                                        fontSize: '0.6rem',
-                                                        height: 16,
+                                                        border: `1px solid ${alpha('#EF4444', 0.2)}`,
+                                                        minHeight: 14,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        width: 'fit-content',
                                                     }}
-                                                />
+                                                >
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                            color: '#EF4444',
+                                                            fontSize: '0.55rem',
+                                                            fontWeight: 600,
+                                                            lineHeight: 1,
+                                                        }}
+                                                    >
+                                                        {t('resources.availability.unavailable')}
+                                                    </Typography>
+                                                </Box>
                                             )}
                                         </Box>
                                     </Grid>
@@ -299,40 +353,65 @@ const ResourceAvailabilityDisplay: React.FC<ResourceAvailabilityDisplayProps> = 
                                 </Box>
 
                                 {dayAvailability.length > 0 ? (
-                                    <Box display="flex" flexWrap="wrap" gap={0.5}>
+                                    <Box display="flex" flexWrap="wrap" gap={0.25}>
                                         {dayAvailability.map((availability, index) => (
-                                            <Chip
+                                            <Box
                                                 key={index}
-                                                label={`${availability.startTime.slice(0, 5)}-${availability.endTime.slice(0, 5)}`}
-                                                size="small"
-                                                icon={<AvailableIcon />}
                                                 sx={{
+                                                    px: 0.75,
+                                                    py: 0.25,
+                                                    borderRadius: 1,
                                                     backgroundColor: alpha('#10B981', 0.1),
-                                                    color: '#10B981',
-                                                    fontSize: '0.75rem',
-                                                    height: 22,
-                                                    '& .MuiChip-icon': {
-                                                        fontSize: 14,
-                                                    },
+                                                    border: `1px solid ${alpha('#10B981', 0.2)}`,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.25,
+                                                    minHeight: 20,
                                                 }}
-                                            />
+                                            >
+                                                <AvailableIcon sx={{ fontSize: 11, color: '#10B981' }} />
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        color: '#10B981',
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 600,
+                                                        lineHeight: 1,
+                                                    }}
+                                                >
+                                                    {availability.startTime.slice(0, 5)}-{availability.endTime.slice(0, 5)}
+                                                </Typography>
+                                            </Box>
                                         ))}
                                     </Box>
                                 ) : (
-                                    <Chip
-                                        label={t('resources.availability.unavailable')}
-                                        size="small"
-                                        icon={<UnavailableIcon />}
+                                    <Box
                                         sx={{
+                                            px: 0.75,
+                                            py: 0.25,
+                                            borderRadius: 1,
                                             backgroundColor: alpha('#EF4444', 0.1),
-                                            color: '#EF4444',
-                                            fontSize: '0.75rem',
-                                            height: 22,
-                                            '& .MuiChip-icon': {
-                                                fontSize: 14,
-                                            },
+                                            border: `1px solid ${alpha('#EF4444', 0.2)}`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 0.25,
+                                            minHeight: 20,
+                                            width: 'fit-content',
                                         }}
-                                    />
+                                    >
+                                        <UnavailableIcon sx={{ fontSize: 11, color: '#EF4444' }} />
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: '#EF4444',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 600,
+                                                lineHeight: 1,
+                                            }}
+                                        >
+                                            {t('resources.availability.unavailable')}
+                                        </Typography>
+                                    </Box>
                                 )}
                             </Box>
                         </Grid>
