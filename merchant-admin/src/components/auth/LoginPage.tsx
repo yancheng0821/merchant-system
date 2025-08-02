@@ -682,15 +682,15 @@ const LoginPage: React.FC = () => {
                 }}>
                   {/* 员工账户注册链接 */}
                   <Box sx={{ 
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto auto',
-                    alignItems: 'start', 
+                    display: 'flex',
+                    alignItems: 'center', 
                     gap: 1,
                     padding: '8px 16px',
                     borderRadius: '8px',
-                    minWidth: '320px'
+                    minWidth: '320px',
+                    justifyContent: 'center'
                   }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+                    <Typography variant="body2" color="text.secondary">
                       {pageMode === 'login' ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
                     </Typography>
                     <Button
@@ -707,7 +707,6 @@ const LoginPage: React.FC = () => {
                         minWidth: 'auto',
                         fontSize: '0.875rem',
                         lineHeight: 'inherit',
-                        justifySelf: 'start',
                         '&:hover': {
                           backgroundColor: 'transparent',
                           color: '#5a67d8',
@@ -732,16 +731,15 @@ const LoginPage: React.FC = () => {
                   {/* 商户注册链接 */}
                   {pageMode === 'login' && (
                     <Box sx={{ 
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto auto',
-                      alignItems: 'start', 
+                      display: 'flex',
+                      alignItems: 'center', 
                       gap: 1,
                       padding: '8px 16px',
                       borderRadius: '8px',
                       minWidth: '320px',
-                      ml: -3
+                      justifyContent: 'center'
                     }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2" color="text.secondary">
                         {t('auth.noMerchantAccount')}
                       </Typography>
                       <Button
@@ -758,7 +756,6 @@ const LoginPage: React.FC = () => {
                           minWidth: 'auto',
                           fontSize: '0.875rem',
                           lineHeight: 'inherit',
-                          justifySelf: 'start',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'flex-start',
@@ -770,8 +767,7 @@ const LoginPage: React.FC = () => {
                       >
                         {i18n.language === 'zh-CN' ? (
                           <>
-                            <span>商户</span>
-                            <span>注册</span>
+                            <span>商户注册</span>
                           </>
                         ) : (
                           <>
