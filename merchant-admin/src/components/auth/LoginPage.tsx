@@ -35,7 +35,7 @@ import CountryCodeSelector from '../common/CountryCodeSelector';
 
 
 const LoginPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { login, register, loginWithGoogle, loading, error, clearError, setError } = useAuth();
   const [pageMode, setPageMode] = useState<'login' | 'register' | 'merchantRegister'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -210,7 +210,7 @@ const LoginPage: React.FC = () => {
 
   // 如果是商户注册模式，直接返回商户注册页面
   if (pageMode === 'merchantRegister') {
-    return <MerchantRegisterPage />;
+    return <MerchantRegisterPage onBack={() => setPageMode('login')} />;
   }
 
   return (
@@ -318,35 +318,41 @@ const LoginPage: React.FC = () => {
               {pageMode === 'login' ? (
                 /* 登录表单 */
                 <form onSubmit={handleLoginSubmit}>
-                  <Box sx={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 1 }}>
-                    <TextField
-                      fullWidth
-                      label={t('auth.tenantCode')}
-                      name="tenantCode"
-                      value={loginData.tenantCode}
-                      onChange={handleLoginChange}
-                      margin="normal"
-                      required
-                      autoFocus
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BusinessIcon sx={{ color: 'text.secondary' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                        },
-                      }}
-                    />
-                    <HelpTooltip
-                      title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
-                      placement="top"
-                      size="medium"
-                    />
-                  </Box>
+                  <TextField
+                    fullWidth
+                    label={t('auth.tenantCode')}
+                    name="tenantCode"
+                    value={loginData.tenantCode}
+                    onChange={handleLoginChange}
+                    margin="normal"
+                    required
+                    autoFocus
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <BusinessIcon sx={{ color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <HelpTooltip
+                            title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
+                            placement="top"
+                            size="small"
+                            color="primary"
+                            variant="info"
+                            showIcon={false}
+                            compact={true}
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
                   <TextField
                     fullWidth
                     label={t('auth.username')}
@@ -542,11 +548,23 @@ const LoginPage: React.FC = () => {
                     onChange={handleRegisterChange}
                     margin="normal"
                     required
-                    placeholder={t('auth.invitationCodePlaceholder')}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
                           <PersonIcon sx={{ color: 'text.secondary' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <HelpTooltip
+                            title={t('auth.invitationCodeHelp')}
+                            placement="top"
+                            size="small"
+                            color="primary"
+                            variant="info"
+                            showIcon={false}
+                            compact={true}
+                          />
                         </InputAdornment>
                       ),
                     }}
@@ -655,10 +673,26 @@ const LoginPage: React.FC = () => {
               )}
 
               {/* 切换登录/注册 */}
-              <Box textAlign="center" mt={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {pageMode === 'login' ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}{' '}
+              <Box textAlign="center" mt={3}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: 2,
+                  alignItems: 'center'
+                }}>
+                  {/* 员工账户注册链接 */}
+                  <Box sx={{ 
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto auto',
+                    alignItems: 'start', 
+                    gap: 1,
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    minWidth: '320px'
+                  }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+                      {pageMode === 'login' ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
+                    </Typography>
                     <Button
                       variant="text"
                       onClick={() => {
@@ -667,56 +701,97 @@ const LoginPage: React.FC = () => {
                       }}
                       sx={{
                         textTransform: 'none',
-                        fontWeight: 600,
+                        fontWeight: 500,
                         color: '#667eea',
+                        p: 0,
+                        minWidth: 'auto',
+                        fontSize: '0.875rem',
+                        lineHeight: 'inherit',
+                        justifySelf: 'start',
                         '&:hover': {
-                          backgroundColor: alpha('#667eea', 0.04),
+                          backgroundColor: 'transparent',
+                          color: '#5a67d8',
                         },
                       }}
                     >
                       {pageMode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')}
                     </Button>
-                  </Typography>
-                  <HelpTooltip
-                    title={pageMode === 'login' ? t('auth.employeeAccountHelp') : t('auth.employeeAccountRegisterHelp')}
-                    placement="top"
-                    size="small"
-                  />
-                </Box>
+                    {pageMode !== 'register' && (
+                      <HelpTooltip
+                        title={pageMode === 'login' ? t('auth.employeeAccountHelp') : t('auth.employeeAccountRegisterHelp')}
+                        placement="top"
+                        size="small"
+                        color="primary"
+                        variant="info"
+                        showIcon={false}
+                        compact={true}
+                      />
+                    )}
+                  </Box>
 
-                {/* 商户注册链接 */}
-                {pageMode === 'login' && (
-                  <>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1, gap: 0.5 }}>
-                      <Typography variant="body2" color="text.secondary" textAlign="center">
-                        {t('auth.noMerchantAccount')}{' '}
-                        <Button
-                          variant="text"
-                          onClick={() => {
-                            setPageMode('merchantRegister');
-                            setSuccess('');
-                          }}
-                          sx={{
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            color: '#764ba2',
-                            '&:hover': {
-                              backgroundColor: alpha('#764ba2', 0.04),
-                            },
-                          }}
-                        >
-                          {t('auth.merchantRegister')}
-                        </Button>
+                  {/* 商户注册链接 */}
+                  {pageMode === 'login' && (
+                    <Box sx={{ 
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto auto',
+                      alignItems: 'start', 
+                      gap: 1,
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      minWidth: '320px',
+                      ml: -3
+                    }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+                        {t('auth.noMerchantAccount')}
                       </Typography>
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          setPageMode('merchantRegister');
+                          setSuccess('');
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 500,
+                          color: '#764ba2',
+                          p: 0,
+                          minWidth: 'auto',
+                          fontSize: '0.875rem',
+                          lineHeight: 'inherit',
+                          justifySelf: 'start',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          '&:hover': {
+                            backgroundColor: 'transparent',
+                            color: '#6b46c1',
+                          },
+                        }}
+                      >
+                        {i18n.language === 'zh-CN' ? (
+                          <>
+                            <span>商户</span>
+                            <span>注册</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Merchant</span>
+                            <span>Registration</span>
+                          </>
+                        )}
+                      </Button>
                       <HelpTooltip
                         title={t('auth.merchantAccountHelp')}
                         placement="top"
                         size="small"
+                        color="secondary"
+                        variant="info"
+                        showIcon={false}
+                        compact={true}
                       />
                     </Box>
-
-                  </>
-                )}
+                  )}
+                </Box>
               </Box>
 
 

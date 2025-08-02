@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 interface CountryCode {
   code: string;
   name: string;
-  nameZh?: string; // 可选属性
+  nameZh?: string;
   dialCode: string;
   flag: string;
 }
@@ -195,7 +195,7 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
   const selectedCountry = countryCodes.find(country => country.dialCode === value) || countryCodes[0];
   const isZh = i18n.language === 'zh-CN';
 
-  // 获取显示的拨号代码（去掉国家后缀）s
+  // 获取显示的拨号代码（去掉国家后缀）
   const getDisplayDialCode = (dialCode: string) => {
     return dialCode.replace(/-[A-Z]{2}$/, '');
   };
@@ -231,7 +231,7 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
           label={label}
           size={size}
           fullWidth={fullWidth}
-          placeholder={`${selectedCountry.flag} ${getDisplayDialCode(selectedCountry.dialCode)}`}
+          placeholder=""
           InputProps={{
             ...params.InputProps,
             startAdornment: (
@@ -241,7 +241,6 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
                   <span style={{
                     fontWeight: 'medium',
                     color: 'text.primary',
-                    minWidth: '45px',
                     fontSize: '0.875rem'
                   }}>
                     {getDisplayDialCode(selectedCountry.dialCode)}
@@ -249,28 +248,17 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
                 </Box>
               </InputAdornment>
             ),
-            // 确保清除按钮不会遮挡内容
-            endAdornment: (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                {params.InputProps.endAdornment}
-              </Box>
-            ),
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
-              paddingRight: '14px', // 为清除按钮留出空间
             },
             '& .MuiAutocomplete-input': {
-              opacity: 1,
-              cursor: 'text',
-              paddingRight: '8px', // 确保输入文本不会被清除按钮遮挡
+              opacity: 0,
+              cursor: 'pointer',
             },
-            '& .MuiAutocomplete-endAdornment': {
-              right: '14px', // 调整清除按钮位置
-            },
-            '& .MuiAutocomplete-clearIndicator': {
-              marginRight: '2px', // 调整清除按钮边距
+            '& .MuiInputAdornment-root': {
+              marginRight: '8px',
             },
           }}
         />

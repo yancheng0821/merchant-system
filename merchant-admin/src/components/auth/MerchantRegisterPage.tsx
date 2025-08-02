@@ -76,7 +76,11 @@ interface MerchantRegisterData {
   resourceTypes: string[];
 }
 
-const MerchantRegisterPage: React.FC = () => {
+interface MerchantRegisterPageProps {
+  onBack?: () => void;
+}
+
+const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -1200,7 +1204,7 @@ const MerchantRegisterPage: React.FC = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button
                       variant="text"
-                      onClick={() => window.location.href = '/'}
+                      onClick={onBack || (() => window.location.href = '/')}
                       sx={{
                         textTransform: 'none',
                         fontWeight: 600,
