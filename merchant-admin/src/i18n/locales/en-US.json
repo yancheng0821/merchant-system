@@ -131,7 +131,7 @@
     "brandDescription": "Comprehensive management tools and data analytics for your business",
     "login": "Login",
     "register": "Register",
-    "loginSubtitle": "Welcome back, please login to your account",
+    "loginSubtitle": "Welcome! Please sign in or create an account to get started",
     "registerSubtitle": "Create a new account to start using our services",
     "username": "Username",
     "password": "Password",

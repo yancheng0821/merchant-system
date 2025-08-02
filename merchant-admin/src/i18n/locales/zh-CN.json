@@ -127,7 +127,7 @@
       "finish": "完成注册"
     },
     "login": "用户登录",
-    "loginSubtitle": "请输入您的凭据以访问管理系统",
+    "loginSubtitle": "欢迎！请登录或创建账户以开始使用",
     "register": "用户注册",
     "registerSubtitle": "创建您的商户管理系统账户",
     "username": "用户名",
