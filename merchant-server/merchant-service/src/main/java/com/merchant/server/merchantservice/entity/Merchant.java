@@ -21,7 +21,7 @@ public class Merchant {
     private String address;
     private String province;
     private String city;
-    private String district;
+    private String postCode;
     private Double longitude;
     private Double latitude;
     private String status;
@@ -154,12 +154,12 @@ public class Merchant {
         this.city = city;
     }
 
-    public String getDistrict() {
-        return district;
+    public String getPostCode() {
+        return postCode;
     }
 
-    public void setDistrict(String district) {
-        this.district = district;
+    public void setPostCode(String postCode) {
+        this.postCode = postCode;
     }
 
     public Double getLongitude() {

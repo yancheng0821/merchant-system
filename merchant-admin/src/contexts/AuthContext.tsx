@@ -17,7 +17,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string, tenantCode?: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<boolean>;
   loginWithGoogle: (idToken: string) => Promise<boolean>;
   logout: () => void;
@@ -34,7 +34,7 @@ export interface RegisterData {
   password: string;
   realName: string;
   phone?: string;
-  tenantCode?: string;
+  invitationCode: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,48 +73,87 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 检查本地存储中是否有用户信息和令牌
-    const savedUser = localStorage.getItem('user');
-    const token = tokenManager.getToken();
+    const initializeAuth = async () => {
+      // 检查本地存储中是否有用户信息和令牌
+      const savedUser = localStorage.getItem('user');
+      const token = tokenManager.getToken();
 
-    if (savedUser && token) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
+      console.log('Initializing auth - savedUser:', !!savedUser, 'token:', !!token);
 
-        // 验证令牌是否有效
-        validateStoredToken(token);
-      } catch (error) {
-        console.error('Failed to parse saved user data:', error);
-        tokenManager.clearAll();
+      if (savedUser && token) {
+        try {
+          const userData = JSON.parse(savedUser);
+          console.log('Parsed user data:', userData);
+          setUser(userData);
+
+          // 验证令牌是否有效
+          await validateStoredToken(token);
+        } catch (error) {
+          console.error('Failed to parse saved user data:', error);
+          tokenManager.clearAll();
+          localStorage.removeItem('user');
+          setUser(null);
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const validateStoredToken = async (token: string) => {
     try {
+      console.log('Validating stored token...');
       // 修复：去掉Bearer前缀
       const pureToken = token?.startsWith('Bearer ') ? token.slice(7) : token;
+      
+      // 检查token是否为空
+      if (!pureToken || pureToken.trim() === '') {
+        console.log('Token is empty, clearing auth data');
+        tokenManager.clearAll();
+        localStorage.removeItem('user');
+        setUser(null);
+        return;
+      }
+      
       const response = await authApi.validateToken(pureToken);
+      console.log('Token validation response:', response);
+      
       if (!response.success) {
+        console.log('Token is invalid, clearing auth data');
         // 令牌无效，清除本地数据
         tokenManager.clearAll();
+        localStorage.removeItem('user');
         setUser(null);
+      } else {
+        console.log('Token is valid');
+        // Token有效，尝试获取最新的用户资料
+        try {
+          const profileResp = await userApi.getProfile();
+          if (profileResp.success && profileResp.data) {
+            const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
+            console.log('Updated user profile from server:', completeUser);
+            setUser(completeUser);
+            localStorage.setItem('user', JSON.stringify(completeUser));
+          }
+        } catch (profileError) {
+          console.error('Failed to fetch updated profile:', profileError);
+          // 如果获取资料失败，保持现有用户数据
+        }
       }
     } catch (error) {
       console.error('Token validation failed:', error);
-      tokenManager.clearAll();
-      setUser(null);
+      // 网络错误时，不立即清除用户数据，给用户一次机会
+      console.log('Network error during token validation, keeping user logged in');
     }
   };
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string, tenantCode?: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await authApi.login({ username, password });
+      const response = await authApi.login({ username, password, tenantCode });
       console.log('Login response:', response);
 
       if (response.success && response.data) {
@@ -179,18 +218,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         realName: userData.realName,
         email: userData.email,
         phone: userData.phone,
-        tenantCode: userData.tenantCode,
+        invitationCode: userData.invitationCode,
       });
 
       if (response.success && response.data) {
-        const user = mapApiUserToUser(response.data);
+        const userData = mapApiUserToUser(response.data);
 
         // 保存令牌和用户信息
         tokenManager.setToken(response.data.token);
         tokenManager.setRefreshToken(response.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
 
-        setUser(user);
+        // 注册成功后，立即获取完整用户资料
+        try {
+          console.log('Registration success, fetching complete user profile...');
+          const profileResp = await userApi.getProfile();
+          console.log('Profile response after registration:', profileResp);
+
+          if (profileResp.success && profileResp.data) {
+            console.log('Raw profile data after registration:', profileResp.data);
+            const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
+            console.log('Complete user with ID after registration:', completeUser);
+            setUser(completeUser);
+            localStorage.setItem('user', JSON.stringify(completeUser));
+          } else {
+            // 如果获取完整资料失败，使用注册返回的基本信息
+            console.warn('Failed to get complete profile after registration, using basic user data');
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error('Failed to fetch complete profile after registration:', e);
+          // 出错时使用注册返回的基本信息
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+
         return true;
       } else {
         setError(response.message || 'Registration failed');

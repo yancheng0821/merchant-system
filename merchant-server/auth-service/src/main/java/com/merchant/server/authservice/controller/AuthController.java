@@ -1,10 +1,13 @@
 package com.merchant.server.authservice.controller;
 
 import com.merchant.server.authservice.dto.GoogleLoginRequest;
+import com.merchant.server.authservice.dto.InvitationValidationRequest;
 import com.merchant.server.authservice.dto.LoginRequest;
 import com.merchant.server.authservice.dto.LoginResponse;
 import com.merchant.server.authservice.dto.RegisterRequest;
+import com.merchant.server.authservice.entity.TenantInvitation;
 import com.merchant.server.authservice.service.AuthService;
+import com.merchant.server.authservice.service.TenantInvitationService;
 import com.merchant.server.common.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +28,9 @@ public class AuthController {
     
     @Autowired
     private AuthService authService;
+    
+    @Autowired
+    private TenantInvitationService tenantInvitationService;
     
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(
@@ -143,6 +149,25 @@ public class AuthController {
             return ApiResponse.success(isValid);
         } catch (Exception e) {
             logger.error("令牌验证失败: {}", e.getMessage());
+            throw e;
+        }
+    }
+    
+    @PostMapping("/validate-invitation")
+    public ApiResponse<TenantInvitation> validateInvitation(
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
+            @Valid @RequestBody InvitationValidationRequest request) {
+        if (lang != null && !lang.isEmpty()) {
+            LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+        }
+        logger.info("收到邀请码验证请求 - code: {}", request.getInvitationCode());
+        
+        try {
+            TenantInvitation invitation = tenantInvitationService.validateInvitationCode(request.getInvitationCode());
+            logger.info("邀请码验证成功 - code: {}, tenantId: {}", request.getInvitationCode(), invitation.getTenantId());
+            return ApiResponse.success(invitation);
+        } catch (Exception e) {
+            logger.error("邀请码验证失败 - code: {}, error: {}", request.getInvitationCode(), e.getMessage());
             throw e;
         }
     }

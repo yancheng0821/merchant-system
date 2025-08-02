@@ -26,7 +26,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/files/**").permitAll() // 文件访问 - 放在最前面
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/google", "/api/auth/health").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/merchant-register", "/api/auth/google", "/api/auth/health", "/api/auth/validate-invitation").permitAll()
+                .requestMatchers("/api/auth/invitations/validate").permitAll() // 邀请码验证接口
                 .requestMatchers("/api/auth/users/avatar/**").permitAll() // 头像访问路径
                 .requestMatchers("/api/test/**").permitAll()
                 .anyRequest().authenticated()

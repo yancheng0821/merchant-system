@@ -18,7 +18,7 @@
         <result column="address" property="address"/>
         <result column="province" property="province"/>
         <result column="city" property="city"/>
-        <result column="district" property="district"/>
+        <result column="post_code" property="postCode"/>
         <result column="longitude" property="longitude"/>
         <result column="latitude" property="latitude"/>
         <result column="status" property="status"/>
@@ -32,7 +32,7 @@
             id, tenant_id, merchant_code, merchant_name, merchant_type,
             parent_merchant_id, business_category, business_license, legal_person,
             contact_person, contact_phone, contact_email, address, province,
-            city, district, longitude, latitude, status, timezone,
+            city, post_code, longitude, latitude, status, timezone,
             created_at, updated_at
         FROM merchants 
         WHERE tenant_id = #{tenantId} AND status = 'ACTIVE'
@@ -44,7 +44,7 @@
             id, tenant_id, merchant_code, merchant_name, merchant_type,
             parent_merchant_id, business_category, business_license, legal_person,
             contact_person, contact_phone, contact_email, address, province,
-            city, district, longitude, latitude, status, timezone,
+            city, post_code, longitude, latitude, status, timezone,
             created_at, updated_at
         FROM merchants 
         WHERE id = #{id}
@@ -69,11 +69,11 @@
         INSERT INTO merchants (
             tenant_id, merchant_code, merchant_name, merchant_type,
             business_category, contact_person, contact_phone, contact_email,
-            address, province, city, district, timezone, status
+            address, province, city, post_code, timezone, status
         ) VALUES (
             #{tenantId}, #{merchantCode}, #{merchantName}, #{merchantType},
             #{businessCategory}, #{contactPerson}, #{contactPhone}, #{contactEmail},
-            #{address}, #{province}, #{city}, #{district}, #{timezone}, 'ACTIVE'
+            #{address}, #{province}, #{city}, #{postCode}, #{timezone}, 'ACTIVE'
         )
     </insert>
 

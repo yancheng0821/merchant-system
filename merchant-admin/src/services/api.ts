@@ -318,6 +318,7 @@ export interface ApiResponse<T = any> {
 export interface LoginRequest {
   username: string;
   password: string;
+  tenantCode?: string;
 }
 
 export interface RegisterRequest {
@@ -327,7 +328,49 @@ export interface RegisterRequest {
   realName: string;
   email: string;
   phone?: string;
-  tenantCode?: string;
+  invitationCode: string;
+}
+
+export interface MerchantRegisterRequest {
+  // 管理员信息
+  username: string;
+  password: string;
+  confirmPassword: string;
+  realName: string;
+  email: string;
+  phone?: string;
+  
+  // 商户信息
+  merchantName: string;
+  businessCategory: string;
+  businessLicense?: string;
+  contactPerson: string;
+  contactPhone: string;
+  contactEmail?: string;
+  address?: string;
+  province?: string;
+  city?: string;
+  district?: string;
+  timezone: string;
+  
+  // 资源类型
+  resourceTypes: string[];
+}
+
+export interface MerchantRegisterResponse {
+  token: string;
+  refreshToken: string;
+  userId: number;
+  username: string;
+  realName: string;
+  email: string;
+  avatar?: string;
+  tenantId: number;
+  tenantName: string;
+  merchantId: number;
+  merchantName: string;
+  invitationCode: string;
+  tenantCode: string;
 }
 
 export interface LoginResponse {
@@ -413,6 +456,22 @@ export const authApi = {
   health: async (): Promise<ApiResponse<string>> => {
     return createRequest('/api/auth/health', {
       method: 'GET',
+    });
+  },
+
+  // 验证邀请码
+  validateInvitation: async (invitationCode: string): Promise<ApiResponse<any>> => {
+    return createRequest('/api/auth/validate-invitation', {
+      method: 'POST',
+      body: JSON.stringify({ invitationCode }),
+    });
+  },
+
+  // 商户注册
+  merchantRegister: async (data: MerchantRegisterRequest): Promise<ApiResponse<MerchantRegisterResponse>> => {
+    return createRequest('/api/auth/merchant-register', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

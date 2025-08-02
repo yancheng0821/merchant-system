@@ -106,8 +106,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   // 检查会话是否过期
   useEffect(() => {
     const checkSession = () => {
-      // 如果已经过期，不需要重复检查
-      if (isSessionExpired) {
+      // 如果没有用户登录或已经过期，不需要检查
+      if (!user || isSessionExpired) {
         return;
       }
 
@@ -115,7 +115,9 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       const timeSinceLastActivity = now - lastActivity;
       const timeoutMs = sessionTimeout * 60 * 1000; // 转换为毫秒
 
-      if (timeSinceLastActivity > timeoutMs) {
+      // 给新用户一些缓冲时间（30秒），避免刚注册就被踢出
+      const bufferTime = 30 * 1000;
+      if (timeSinceLastActivity > (timeoutMs + bufferTime)) {
         setIsSessionExpired(true);
         setShowSessionDialog(true);
       } else {
@@ -124,14 +126,23 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       }
     };
 
-    // 立即检查一次
-    checkSession();
+    // 只有在用户登录后才开始检查会话
+    if (!user) {
+      return;
+    }
 
-    // 每15秒检查一次会话状态，确保更及时的响应
-    const interval = setInterval(checkSession, 15000);
+    // 延迟1秒后开始检查，给用户登录过程一些时间
+    const initialDelay = setTimeout(() => {
+      checkSession();
+      
+      // 每15秒检查一次会话状态，确保更及时的响应
+      const interval = setInterval(checkSession, 15000);
+      
+      return () => clearInterval(interval);
+    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [lastActivity, sessionTimeout, isSessionExpired]);
+    return () => clearTimeout(initialDelay);
+  }, [lastActivity, sessionTimeout, isSessionExpired, user]);
 
   const handleSessionExpiredConfirm = () => {
     setShowSessionDialog(false);

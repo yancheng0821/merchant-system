@@ -14,6 +14,7 @@ import {
   alpha,
   Fade,
   Slide,
+  Grid,
 } from '@mui/material';
 import {
   Visibility,
@@ -25,22 +26,26 @@ import {
   Lock as LockIcon,
 } from '@mui/icons-material';
 import GoogleLoginButton from './GoogleLoginButton';
+import MerchantRegisterPage from './MerchantRegisterPage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import HelpTooltip from '../common/HelpTooltip';
+import CountryCodeSelector from '../common/CountryCodeSelector';
 
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const { login, register, loginWithGoogle, loading, error, clearError, setError } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [pageMode, setPageMode] = useState<'login' | 'register' | 'merchantRegister'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState<string>('');
 
   const [loginData, setLoginData] = useState({
     username: '',
-    password: ''
+    password: '',
+    tenantCode: ''
   });
 
   const [registerData, setRegisterData] = useState({
@@ -49,7 +54,9 @@ const LoginPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     realName: '',
-    phone: ''
+    phone: '',
+    phoneCountryCode: '+1-CA',
+    invitationCode: ''
   });
 
   // 移除这个会立即清除错误信息的useEffect
@@ -101,12 +108,17 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    if (!loginData.tenantCode.trim()) {
+      setError(t('auth.tenantCodeRequired') || '租户代码不能为空');
+      return;
+    }
+
     if (!loginData.password.trim()) {
       setError(t('auth.passwordRequired') || '密码不能为空');
       return;
     }
 
-    const success = await login(loginData.username, loginData.password);
+    const success = await login(loginData.username, loginData.password, loginData.tenantCode);
     if (success) {
       setSuccess(t('auth.loginSuccess') || '登录成功');
     }
@@ -140,6 +152,11 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    if (!registerData.invitationCode.trim()) {
+      setError(t('auth.invitationCodeRequired') || '邀请码不能为空');
+      return;
+    }
+
     if (!registerData.password) {
       setError(t('auth.passwordRequired') || '密码不能为空');
       return;
@@ -155,12 +172,18 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    // 合并电话号码和国家代码
+    const getDialCode = (dialCode: string) => dialCode.replace(/-[A-Z]{2}$/, '');
+    const fullPhoneNumber = registerData.phone ?
+      getDialCode(registerData.phoneCountryCode) + registerData.phone : '';
+
     const success = await register({
       username: registerData.username,
       email: registerData.email,
       password: registerData.password,
       realName: registerData.realName,
-      phone: registerData.phone
+      phone: fullPhoneNumber,
+      invitationCode: registerData.invitationCode
     });
 
     if (success) {
@@ -184,6 +207,11 @@ const LoginPage: React.FC = () => {
     console.error('Google login error:', error);
     setError('Google login failed');
   };
+
+  // 如果是商户注册模式，直接返回商户注册页面
+  if (pageMode === 'merchantRegister') {
+    return <MerchantRegisterPage />;
+  }
 
   return (
     <Box
@@ -253,10 +281,10 @@ const LoginPage: React.FC = () => {
             >
               <Box textAlign="center" mb={4}>
                 <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-                  {isLogin ? t('auth.login') : t('auth.register')}
+                  {pageMode === 'login' ? t('auth.login') : t('auth.register')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  {isLogin ? t('auth.loginSubtitle') : t('auth.registerSubtitle')}
+                  {pageMode === 'login' ? t('auth.loginSubtitle') : t('auth.registerSubtitle')}
                 </Typography>
               </Box>
 
@@ -287,9 +315,38 @@ const LoginPage: React.FC = () => {
                 </>
               )}
 
-              {isLogin ? (
+              {pageMode === 'login' ? (
                 /* 登录表单 */
                 <form onSubmit={handleLoginSubmit}>
+                  <Box sx={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                    <TextField
+                      fullWidth
+                      label={t('auth.tenantCode')}
+                      name="tenantCode"
+                      value={loginData.tenantCode}
+                      onChange={handleLoginChange}
+                      margin="normal"
+                      required
+                      autoFocus
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BusinessIcon sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                        },
+                      }}
+                    />
+                    <HelpTooltip
+                      title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
+                      placement="top"
+                      size="medium"
+                    />
+                  </Box>
                   <TextField
                     fullWidth
                     label={t('auth.username')}
@@ -298,7 +355,6 @@ const LoginPage: React.FC = () => {
                     onChange={handleLoginChange}
                     margin="normal"
                     required
-                    autoFocus
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -444,17 +500,53 @@ const LoginPage: React.FC = () => {
                       },
                     }}
                   />
+                  <Box sx={{ mt: 2, mb: 1 }}>
+                    <Grid container spacing={1}>
+                      <Grid item xs={5}>
+                        <CountryCodeSelector
+                          value={registerData.phoneCountryCode}
+                          onChange={(code) => setRegisterData(prev => ({ ...prev, phoneCountryCode: code }))}
+                          label={t('common.countryCode')}
+                          size="medium"
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={7}>
+                        <TextField
+                          fullWidth
+                          label={t('auth.phoneNumber')}
+                          name="phone"
+                          value={registerData.phone}
+                          onChange={handleRegisterChange}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <PhoneIcon sx={{ color: 'text.secondary' }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                            },
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
                   <TextField
                     fullWidth
-                    label={t('auth.phoneNumber')}
-                    name="phone"
-                    value={registerData.phone}
+                    label={t('auth.invitationCode')}
+                    name="invitationCode"
+                    value={registerData.invitationCode}
                     onChange={handleRegisterChange}
                     margin="normal"
+                    required
+                    placeholder={t('auth.invitationCodePlaceholder')}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <PhoneIcon sx={{ color: 'text.secondary' }} />
+                          <PersonIcon sx={{ color: 'text.secondary' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -564,26 +656,67 @@ const LoginPage: React.FC = () => {
 
               {/* 切换登录/注册 */}
               <Box textAlign="center" mt={2}>
-                <Typography variant="body2" color="text.secondary">
-                  {isLogin ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}{' '}
-                  <Button
-                    variant="text"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setSuccess('');
-                    }}
-                    sx={{
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      color: '#667eea',
-                      '&:hover': {
-                        backgroundColor: alpha('#667eea', 0.04),
-                      },
-                    }}
-                  >
-                    {isLogin ? t('auth.switchToRegister') : t('auth.switchToLogin')}
-                  </Button>
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {pageMode === 'login' ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}{' '}
+                    <Button
+                      variant="text"
+                      onClick={() => {
+                        setPageMode(pageMode === 'login' ? 'register' : 'login');
+                        setSuccess('');
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        color: '#667eea',
+                        '&:hover': {
+                          backgroundColor: alpha('#667eea', 0.04),
+                        },
+                      }}
+                    >
+                      {pageMode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')}
+                    </Button>
+                  </Typography>
+                  <HelpTooltip
+                    title={pageMode === 'login' ? t('auth.employeeAccountHelp') : t('auth.employeeAccountRegisterHelp')}
+                    placement="top"
+                    size="small"
+                  />
+                </Box>
+
+                {/* 商户注册链接 */}
+                {pageMode === 'login' && (
+                  <>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1, gap: 0.5 }}>
+                      <Typography variant="body2" color="text.secondary" textAlign="center">
+                        {t('auth.noMerchantAccount')}{' '}
+                        <Button
+                          variant="text"
+                          onClick={() => {
+                            setPageMode('merchantRegister');
+                            setSuccess('');
+                          }}
+                          sx={{
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            color: '#764ba2',
+                            '&:hover': {
+                              backgroundColor: alpha('#764ba2', 0.04),
+                            },
+                          }}
+                        >
+                          {t('auth.merchantRegister')}
+                        </Button>
+                      </Typography>
+                      <HelpTooltip
+                        title={t('auth.merchantAccountHelp')}
+                        placement="top"
+                        size="small"
+                      />
+                    </Box>
+
+                  </>
+                )}
               </Box>
 
 

@@ -53,7 +53,7 @@ const drawerWidth = 260;
 
 const MainApp: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState('dashboard');
@@ -264,6 +264,42 @@ const MainApp: React.FC = () => {
       </List>
     </Box>
   );
+
+  // 显示加载状态
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        }}
+      >
+        <Box sx={{ textAlign: 'center', color: 'white' }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {t('common.loading')}
+          </Typography>
+          <Box sx={{ width: 200, height: 4, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'white',
+                borderRadius: 2,
+                animation: 'loading 1.5s ease-in-out infinite',
+                '@keyframes loading': {
+                  '0%': { transform: 'translateX(-100%)' },
+                  '100%': { transform: 'translateX(100%)' },
+                },
+              }}
+            />
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Router>

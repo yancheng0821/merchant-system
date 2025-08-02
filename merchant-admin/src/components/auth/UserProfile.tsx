@@ -537,7 +537,7 @@ const UserProfile: React.FC = () => {
             <Divider sx={{ my: 4 }} />
 
             {/* 租户信息 */}
-            {user.tenantName && (
+            {user.tenantId && (
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                   {t('auth.tenantInfo')}
@@ -551,7 +551,7 @@ const UserProfile: React.FC = () => {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
-                      },
+                      }, 
                     }}
                   />
                   <TextField

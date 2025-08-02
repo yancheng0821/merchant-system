@@ -5,9 +5,11 @@ import com.merchant.server.authservice.dto.LoginRequest;
 import com.merchant.server.authservice.dto.LoginResponse;
 import com.merchant.server.authservice.dto.RegisterRequest;
 import com.merchant.server.authservice.entity.Tenant;
+import com.merchant.server.authservice.entity.TenantInvitation;
 import com.merchant.server.authservice.entity.User;
 import com.merchant.server.authservice.service.AuthService;
 import com.merchant.server.authservice.service.GoogleOAuthService;
+import com.merchant.server.authservice.service.TenantInvitationService;
 import com.merchant.server.authservice.service.TenantService;
 import com.merchant.server.authservice.service.UserService;
 import com.merchant.server.authservice.util.JwtUtil;
@@ -44,19 +46,38 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private GoogleOAuthService googleOAuthService;
     
+    @Autowired
+    private TenantInvitationService tenantInvitationService;
+    
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-        logger.debug("开始处理登录请求 - 用户名: {}", loginRequest.getUsername());
+        logger.debug("开始处理登录请求 - 用户名: {}, 租户代码: {}", loginRequest.getUsername(), loginRequest.getTenantCode());
         
-        // 验证用户名和密码
-        Optional<User> userOpt = userService.findByUsername(loginRequest.getUsername());
+        // 首先验证租户代码
+        if (loginRequest.getTenantCode() == null || loginRequest.getTenantCode().trim().isEmpty()) {
+            logger.warn("登录失败 - 租户代码为空: {}", loginRequest.getUsername());
+            throw new RuntimeException(messageUtil.getMessage("tenant.code.required"));
+        }
+        
+        // 查找租户
+        Optional<Tenant> tenantOpt = tenantService.findByTenantCode(loginRequest.getTenantCode());
+        if (tenantOpt.isEmpty()) {
+            logger.warn("登录失败 - 租户不存在: {}", loginRequest.getTenantCode());
+            throw new RuntimeException(messageUtil.getMessage("tenant.not.found"));
+        }
+        
+        Tenant tenant = tenantOpt.get();
+        logger.debug("找到租户: tenantId={}, tenantName={}", tenant.getId(), tenant.getTenantName());
+        
+        // 在指定租户下查找用户
+        Optional<User> userOpt = userService.findByUsernameAndTenantId(loginRequest.getUsername(), tenant.getId());
         if (userOpt.isEmpty()) {
-            logger.warn("登录失败 - 用户不存在: {}", loginRequest.getUsername());
+            logger.warn("登录失败 - 用户在租户{}下不存在: {}", tenant.getId(), loginRequest.getUsername());
             throw new RuntimeException(messageUtil.getMessage("user.invalid.credentials"));
         }
         
         User user = userOpt.get();
-        logger.debug("找到用户: userId={}, realName={}, status={}", user.getId(), user.getRealName(), user.getStatus());
+        logger.debug("找到用户: userId={}, realName={}, status={}, tenantId={}", user.getId(), user.getRealName(), user.getStatus(), user.getTenantId());
         
         // 验证密码
         logger.debug("开始验证密码");
@@ -102,21 +123,29 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException(messageUtil.getMessage("user.password.mismatch"));
         }
         
-        // 检查用户名是否已存在
-        if (userService.existsByUsername(registerRequest.getUsername())) {
-            logger.warn("注册失败 - 用户名已存在: {}", registerRequest.getUsername());
+        // 验证邀请码并获取租户
+        logger.debug("验证邀请码 - invitationCode: {}", registerRequest.getInvitationCode());
+        TenantInvitation invitation = tenantInvitationService.validateInvitationCode(registerRequest.getInvitationCode());
+        
+        // 获取租户信息
+        Optional<Tenant> tenantOpt = tenantService.findById(invitation.getTenantId());
+        if (tenantOpt.isEmpty()) {
+            logger.error("邀请码关联的租户不存在 - tenantId: {}", invitation.getTenantId());
+            throw new RuntimeException("邀请码关联的租户不存在");
+        }
+        Tenant tenant = tenantOpt.get();
+        
+        // 检查用户名在该租户下是否已存在
+        if (userService.existsByUsernameAndTenantId(registerRequest.getUsername(), tenant.getId())) {
+            logger.warn("注册失败 - 用户名在租户{}下已存在: {}", tenant.getId(), registerRequest.getUsername());
             throw new RuntimeException(messageUtil.getMessage("user.username.exists"));
         }
         
-        // 检查邮箱是否已存在
-        if (registerRequest.getEmail() != null && userService.existsByEmail(registerRequest.getEmail())) {
-            logger.warn("注册失败 - 邮箱已存在: {}", registerRequest.getEmail());
+        // 检查邮箱在该租户下是否已存在
+        if (registerRequest.getEmail() != null && userService.existsByEmailAndTenantId(registerRequest.getEmail(), tenant.getId())) {
+            logger.warn("注册失败 - 邮箱在租户{}下已存在: {}", tenant.getId(), registerRequest.getEmail());
             throw new RuntimeException(messageUtil.getMessage("user.email.exists"));
         }
-        
-        // 获取或创建租户
-        logger.debug("处理租户信息 - tenantCode: {}", registerRequest.getTenantCode());
-        Tenant tenant = getOrCreateTenant(registerRequest.getTenantCode());
         
         // 创建用户
         logger.debug("创建新用户");
@@ -139,6 +168,9 @@ public class AuthServiceImpl implements AuthService {
         // 保存用户
         user = userService.save(user);
         logger.debug("用户保存成功 - userId: {}", user.getId());
+        
+        // 记录邀请码使用
+        tenantInvitationService.useInvitation(invitation.getId(), user.getId());
         
         // 生成JWT令牌
         logger.debug("生成JWT令牌");

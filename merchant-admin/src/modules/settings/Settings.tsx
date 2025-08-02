@@ -479,6 +479,44 @@ const Settings: React.FC = () => {
                     </Box>
 
                     <Grid container spacing={3}>
+                      {/* 用户租户信息 - 只读显示 */}
+                      <Grid item xs={12}>
+                        <Box sx={{ 
+                          p: 2, 
+                          backgroundColor: alpha('#6366F1', 0.05),
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: alpha('#6366F1', 0.1),
+                          mb: 2
+                        }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#6366F1' }}>
+                            {t('settings.userInfo')}
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                              <Typography variant="body2" color="text.secondary">
+                                {t('settings.username')}: <strong>{user?.username}</strong>
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Typography variant="body2" color="text.secondary">
+                                {t('settings.tenantInfo')}: <strong>{user?.tenantName || user?.tenantId}</strong>
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Typography variant="body2" color="text.secondary">
+                                {t('settings.email')}: <strong>{user?.email}</strong>
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Typography variant="body2" color="text.secondary">
+                                {t('settings.realName')}: <strong>{user?.realName}</strong>
+                              </Typography>
+                            </Grid>
+                          </Grid>
+                        </Box>
+                      </Grid>
+                      
                       <Grid item xs={12}>
                         <TextField
                           fullWidth

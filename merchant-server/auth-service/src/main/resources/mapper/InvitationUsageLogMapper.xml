@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.authservice.mapper.InvitationUsageLogMapper">
+
+    <resultMap id="InvitationUsageLogResultMap" type="com.merchant.server.authservice.entity.InvitationUsageLog">
+        <id property="id" column="id"/>
+        <result property="invitationId" column="invitation_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="usedAt" column="used_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.authservice.entity.InvitationUsageLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO invitation_usage_logs (invitation_id, user_id, used_at)
+        VALUES (#{invitationId}, #{userId}, #{usedAt})
+    </insert>
+
+    <select id="findByInvitationId" resultMap="InvitationUsageLogResultMap">
+        SELECT * FROM invitation_usage_logs WHERE invitation_id = #{invitationId} ORDER BY used_at DESC
+    </select>
+
+    <select id="findByUserId" resultMap="InvitationUsageLogResultMap">
+        SELECT * FROM invitation_usage_logs WHERE user_id = #{userId} ORDER BY used_at DESC
+    </select>
+
+</mapper>

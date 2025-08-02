@@ -29,5 +29,6 @@ public class RegisterRequest {
     @Size(max = 20, message = "{user.phone.length}")
     private String phone;
     
-    private String tenantCode;
+    @NotBlank(message = "{invitation.code.required}")
+    private String invitationCode;
 } 

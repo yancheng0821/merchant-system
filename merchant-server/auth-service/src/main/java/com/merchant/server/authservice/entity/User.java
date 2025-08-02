@@ -41,4 +41,13 @@ public class User {
     public enum UserStatus {
         ACTIVE, INACTIVE, LOCKED
     }
+    
+    // 为了兼容性，添加 getAvatar 方法
+    public String getAvatar() {
+        return avatarUrl;
+    }
+    
+    public void setAvatar(String avatar) {
+        this.avatarUrl = avatar;
+    }
 } 

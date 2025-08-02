@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.authservice.mapper.TenantInvitationMapper">
+
+    <resultMap id="TenantInvitationResultMap" type="com.merchant.server.authservice.entity.TenantInvitation">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="invitationCode" column="invitation_code"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="maxUses" column="max_uses"/>
+        <result property="usedCount" column="used_count"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="status" column="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.authservice.entity.TenantInvitation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tenant_invitations (
+            tenant_id, invitation_code, created_by, max_uses, used_count, 
+            expires_at, status, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{invitationCode}, #{createdBy}, #{maxUses}, #{usedCount},
+            #{expiresAt}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.merchant.server.authservice.entity.TenantInvitation">
+        UPDATE tenant_invitations SET
+            tenant_id = #{tenantId},
+            invitation_code = #{invitationCode},
+            created_by = #{createdBy},
+            max_uses = #{maxUses},
+            used_count = #{usedCount},
+            expires_at = #{expiresAt},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="TenantInvitationResultMap">
+        SELECT * FROM tenant_invitations WHERE id = #{id}
+    </select>
+
+    <select id="findByInvitationCode" resultMap="TenantInvitationResultMap">
+        SELECT * FROM tenant_invitations WHERE invitation_code = #{invitationCode}
+    </select>
+
+    <select id="findByTenantId" resultMap="TenantInvitationResultMap">
+        SELECT * FROM tenant_invitations WHERE tenant_id = #{tenantId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findByCreatedBy" resultMap="TenantInvitationResultMap">
+        SELECT * FROM tenant_invitations WHERE created_by = #{createdBy} ORDER BY created_at DESC
+    </select>
+
+    <update id="incrementUsedCount">
+        UPDATE tenant_invitations SET 
+            used_count = used_count + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE tenant_invitations SET 
+            status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>
