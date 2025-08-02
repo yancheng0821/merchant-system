@@ -871,10 +871,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
             {t('auth.merchantRegisterPage.success.tenantCodeLabel')}
           </Typography>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontFamily: 'monospace', 
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: 'monospace',
               fontWeight: 700,
               color: '#0ea5e9',
               letterSpacing: 2,
@@ -923,10 +923,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
         </Box>
 
         {/* 邀请码 */}
-        <Box sx={{ 
-          p: 3, 
+        <Box sx={{
+          p: 3,
           background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-          borderRadius: 3, 
+          borderRadius: 3,
           mb: 3,
           border: '2px dashed #667eea',
           position: 'relative',
@@ -935,10 +935,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
             {t('auth.merchantRegisterPage.success.invitationCodeLabel')}
           </Typography>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontFamily: 'monospace', 
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: 'monospace',
               fontWeight: 700,
               color: '#667eea',
               letterSpacing: 2,
@@ -985,7 +985,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             {copiedInvitationCode ? t('common.copied') : t('auth.merchantRegisterPage.success.copyInvitationCode')}
           </Button>
         </Box>
-        
+
         <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
           {t('auth.merchantRegisterPage.success.confirmCopiedMessage')}
         </Typography>
@@ -1003,11 +1003,11 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             textTransform: 'none',
             fontWeight: 600,
             fontSize: '1.1rem',
-            background: (copiedInvitationCode && copiedTenantCode) 
+            background: (copiedInvitationCode && copiedTenantCode)
               ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
               : alpha('#667eea', 0.3),
             '&:hover': {
-              background: copiedInvitationCode 
+              background: copiedInvitationCode
                 ? 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)'
                 : alpha('#667eea', 0.3),
             },
@@ -1048,9 +1048,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
       <Container maxWidth="lg">
         <Fade in timeout={1000}>
-          <Card 
-            sx={{ 
-              maxWidth: 900, 
+          <Card
+            sx={{
+              maxWidth: 900,
               width: '100%',
               mx: 'auto',
               borderRadius: 4,
@@ -1091,11 +1091,11 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                       {Math.round(((activeStep + 1) / steps.length) * 100)}% {t('common.complete')}
                     </Typography>
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
+                  <LinearProgress
+                    variant="determinate"
                     value={((activeStep + 1) / steps.length) * 100}
-                    sx={{ 
-                      height: 8, 
+                    sx={{
+                      height: 8,
                       borderRadius: 4,
                       backgroundColor: alpha('#667eea', 0.1),
                       '& .MuiLinearProgress-bar': {
@@ -1107,9 +1107,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 </Box>
 
                 {/* 步骤指示器 */}
-                <Stepper 
-                  activeStep={activeStep} 
-                  sx={{ 
+                <Stepper
+                  activeStep={activeStep}
+                  sx={{
                     mb: 4,
                     '& .MuiStepLabel-root .Mui-completed': {
                       color: '#667eea',
@@ -1121,7 +1121,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 >
                   {steps.map((label, index) => (
                     <Step key={label}>
-                      <StepLabel 
+                      <StepLabel
                         StepIconComponent={({ active, completed }) => (
                           <Box
                             sx={{
@@ -1131,9 +1131,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              background: completed 
+                              background: completed
                                 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                                : active 
+                                : active
                                   ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
                                   : alpha('#667eea', 0.1),
                               color: completed || active ? 'white' : '#667eea',
@@ -1145,8 +1145,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                               <CheckCircleIcon sx={{ fontSize: 20 }} />
                             ) : active ? (
                               index === 0 ? <PersonIcon sx={{ fontSize: 20 }} /> :
-                              index === 1 ? <BusinessIcon sx={{ fontSize: 20 }} /> :
-                              <SettingsIcon sx={{ fontSize: 20 }} />
+                                index === 1 ? <BusinessIcon sx={{ fontSize: 20 }} /> :
+                                  <SettingsIcon sx={{ fontSize: 20 }} />
                             ) : (
                               index + 1
                             )}
@@ -1163,10 +1163,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
                 {error && (
                   <Slide direction="down" in={!!error}>
-                    <Alert 
-                      severity="error" 
-                      sx={{ 
-                        mb: 3, 
+                    <Alert
+                      severity="error"
+                      sx={{
+                        mb: 3,
                         borderRadius: 2,
                         '& .MuiAlert-icon': {
                           fontSize: '1.5rem',
@@ -1179,10 +1179,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 )}
 
                 {/* 表单内容区域 */}
-                <Paper 
+                <Paper
                   elevation={0}
-                  sx={{ 
-                    p: 4, 
+                  sx={{
+                    p: 4,
                     mb: 4,
                     borderRadius: 3,
                     border: '1px solid',
@@ -1212,7 +1212,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   >
                     {t('common.previous')}
                   </Button>
-                  
+
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button
                       variant="text"
@@ -1228,7 +1228,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                     >
                       {t('auth.merchantRegisterPage.alreadyHaveAccount')}
                     </Button>
-                    
+
                     {activeStep === steps.length - 1 ? (
                       <Button
                         variant="contained"
@@ -1279,11 +1279,11 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           </Card>
         </Fade>
       </Container>
-      
+
       {/* 成功对话框 */}
-      <Dialog 
-        open={showSuccessDialog} 
-        maxWidth="sm" 
+      <Dialog
+        open={showSuccessDialog}
+        maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
@@ -1294,12 +1294,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
       >
         <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
           <Box sx={{ mb: 2 }}>
-            <CheckCircleIcon 
-              sx={{ 
-                fontSize: 64, 
+            <CheckCircleIcon
+              sx={{
+                fontSize: 64,
                 color: 'success.main',
                 filter: 'drop-shadow(0 4px 8px rgba(76, 175, 80, 0.3))'
-              }} 
+              }}
             />
           </Box>
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
@@ -1307,9 +1307,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ textAlign: 'center', px: 4, py: 2 }}>
-          <Alert 
-            severity="success" 
-            sx={{ 
+          <Alert
+            severity="success"
+            sx={{
               mb: 3,
               borderRadius: 2,
               '& .MuiAlert-icon': {
@@ -1319,12 +1319,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           >
             {t('auth.merchantRegisterPage.success.message')}
           </Alert>
-          
+
           {/* 租户代码 */}
-          <Box sx={{ 
-            p: 3, 
+          <Box sx={{
+            p: 3,
             background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-            borderRadius: 3, 
+            borderRadius: 3,
             mb: 2,
             border: '2px dashed #0ea5e9',
             position: 'relative',
@@ -1333,10 +1333,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
               {t('auth.merchantRegisterPage.success.tenantCodeLabel')}
             </Typography>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                fontFamily: 'monospace', 
+            <Typography
+              variant="h5"
+              sx={{
+                fontFamily: 'monospace',
                 fontWeight: 700,
                 color: '#0ea5e9',
                 letterSpacing: 2,
@@ -1389,10 +1389,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           </Box>
 
           {/* 邀请码 */}
-          <Box sx={{ 
-            p: 3, 
+          <Box sx={{
+            p: 3,
             background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            borderRadius: 3, 
+            borderRadius: 3,
             mb: 3,
             border: '2px dashed #667eea',
             position: 'relative',
@@ -1401,10 +1401,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
               {t('auth.merchantRegisterPage.success.invitationCodeLabel')}
             </Typography>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                fontFamily: 'monospace', 
+            <Typography
+              variant="h5"
+              sx={{
+                fontFamily: 'monospace',
                 fontWeight: 700,
                 color: '#667eea',
                 letterSpacing: 2,
@@ -1455,7 +1455,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               {copiedInvitationCode ? t('common.copied') : t('auth.merchantRegisterPage.success.copyInvitationCode')}
             </Button>
           </Box>
-          
+
           <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
             {t('auth.merchantRegisterPage.success.confirmCopiedMessage')}
           </Typography>
