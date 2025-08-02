@@ -118,6 +118,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
   
   const [activeStep, setActiveStep] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -179,19 +180,19 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
   ];
 
   const canadianProvinces = [
-    { value: 'AB', label: t('auth.merchantRegisterPage.provinces.AB') },
-    { value: 'BC', label: t('auth.merchantRegisterPage.provinces.BC') },
-    { value: 'MB', label: t('auth.merchantRegisterPage.provinces.MB') },
-    { value: 'NB', label: t('auth.merchantRegisterPage.provinces.NB') },
-    { value: 'NL', label: t('auth.merchantRegisterPage.provinces.NL') },
-    { value: 'NS', label: t('auth.merchantRegisterPage.provinces.NS') },
-    { value: 'ON', label: t('auth.merchantRegisterPage.provinces.ON') },
-    { value: 'PE', label: t('auth.merchantRegisterPage.provinces.PE') },
-    { value: 'QC', label: t('auth.merchantRegisterPage.provinces.QC') },
-    { value: 'SK', label: t('auth.merchantRegisterPage.provinces.SK') },
-    { value: 'NT', label: t('auth.merchantRegisterPage.provinces.NT') },
-    { value: 'NU', label: t('auth.merchantRegisterPage.provinces.NU') },
-    { value: 'YT', label: t('auth.merchantRegisterPage.provinces.YT') }
+    { value: 'Alberta', label: t('auth.merchantRegisterPage.provinces.Alberta') },
+    { value: 'British Columbia', label: t('auth.merchantRegisterPage.provinces.British Columbia') },
+    { value: 'Manitoba', label: t('auth.merchantRegisterPage.provinces.Manitoba') },
+    { value: 'New Brunswick', label: t('auth.merchantRegisterPage.provinces.New Brunswick') },
+    { value: 'Newfoundland and Labrador', label: t('auth.merchantRegisterPage.provinces.Newfoundland and Labrador') },
+    { value: 'Nova Scotia', label: t('auth.merchantRegisterPage.provinces.Nova Scotia') },
+    { value: 'Ontario', label: t('auth.merchantRegisterPage.provinces.Ontario') },
+    { value: 'Prince Edward Island', label: t('auth.merchantRegisterPage.provinces.Prince Edward Island') },
+    { value: 'Quebec', label: t('auth.merchantRegisterPage.provinces.Quebec') },
+    { value: 'Saskatchewan', label: t('auth.merchantRegisterPage.provinces.Saskatchewan') },
+    { value: 'Northwest Territories', label: t('auth.merchantRegisterPage.provinces.Northwest Territories') },
+    { value: 'Nunavut', label: t('auth.merchantRegisterPage.provinces.Nunavut') },
+    { value: 'Yukon', label: t('auth.merchantRegisterPage.provinces.Yukon') }
   ];
 
   const handleInputChange = (field: keyof MerchantRegisterData) => (
@@ -553,7 +554,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               <TextField
                 fullWidth
                 label={t('auth.merchantRegisterPage.adminInfo.confirmPassword')}
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={formData.confirmPassword}
                 onChange={handleInputChange('confirmPassword')}
                 required
@@ -561,6 +562,17 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   startAdornment: (
                     <InputAdornment position="start">
                       <LockIcon sx={{ color: '#667eea' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        edge="end"
+                        sx={{ color: '#667eea' }}
+                      >
+                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
                     </InputAdornment>
                   ),
                 }}

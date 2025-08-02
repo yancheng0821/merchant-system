@@ -102,19 +102,19 @@
         "room": "房间资源"
       },
       "provinces": {
-        "AB": "阿尔伯塔省",
-        "BC": "不列颠哥伦比亚省",
-        "MB": "马尼托巴省",
-        "NB": "新不伦瑞克省",
-        "NL": "纽芬兰和拉布拉多省",
-        "NS": "新斯科舍省",
-        "ON": "安大略省",
-        "PE": "爱德华王子岛省",
-        "QC": "魁北克省",
-        "SK": "萨斯喀彻温省",
-        "NT": "西北地区",
-        "NU": "努纳武特地区",
-        "YT": "育空地区"
+        "Alberta": "阿尔伯塔省",
+        "British Columbia": "不列颠哥伦比亚省",
+        "Manitoba": "马尼托巴省",
+        "New Brunswick": "新不伦瑞克省",
+        "Newfoundland and Labrador": "纽芬兰和拉布拉多省",
+        "Nova Scotia": "新斯科舍省",
+        "Ontario": "安大略省",
+        "Prince Edward Island": "爱德华王子岛省",
+        "Quebec": "魁北克省",
+        "Saskatchewan": "萨斯喀彻温省",
+        "Northwest Territories": "西北地区",
+        "Nunavut": "努纳武特地区",
+        "Yukon": "育空地区"
       },
       "timezones": {
         "america_toronto": "东部时间 (Toronto)",

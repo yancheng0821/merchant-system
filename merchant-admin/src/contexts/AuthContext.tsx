@@ -78,12 +78,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const savedUser = localStorage.getItem('user');
       const token = tokenManager.getToken();
 
-      console.log('Initializing auth - savedUser:', !!savedUser, 'token:', !!token);
 
       if (savedUser && token) {
         try {
           const userData = JSON.parse(savedUser);
-          console.log('Parsed user data:', userData);
           setUser(userData);
 
           // 验证令牌是否有效
@@ -103,13 +101,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const validateStoredToken = async (token: string) => {
     try {
-      console.log('Validating stored token...');
       // 修复：去掉Bearer前缀
       const pureToken = token?.startsWith('Bearer ') ? token.slice(7) : token;
       
       // 检查token是否为空
       if (!pureToken || pureToken.trim() === '') {
-        console.log('Token is empty, clearing auth data');
         tokenManager.clearAll();
         localStorage.removeItem('user');
         setUser(null);
@@ -117,22 +113,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       const response = await authApi.validateToken(pureToken);
-      console.log('Token validation response:', response);
       
       if (!response.success) {
-        console.log('Token is invalid, clearing auth data');
         // 令牌无效，清除本地数据
         tokenManager.clearAll();
         localStorage.removeItem('user');
         setUser(null);
       } else {
-        console.log('Token is valid');
         // Token有效，尝试获取最新的用户资料
         try {
           const profileResp = await userApi.getProfile();
           if (profileResp.success && profileResp.data) {
             const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            console.log('Updated user profile from server:', completeUser);
             setUser(completeUser);
             localStorage.setItem('user', JSON.stringify(completeUser));
           }
@@ -143,8 +135,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Token validation failed:', error);
-      // 网络错误时，不立即清除用户数据，给用户一次机会
-      console.log('Network error during token validation, keeping user logged in');
     }
   };
 
@@ -154,27 +144,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       const response = await authApi.login({ username, password, tenantCode });
-      console.log('Login response:', response);
 
       if (response.success && response.data) {
         const userData = mapApiUserToUser(response.data);
-        console.log('Mapped user data:', userData);
 
         // 保存令牌和用户信息
         tokenManager.setToken(response.data.token);
         tokenManager.setRefreshToken(response.data.refreshToken);
-        console.log('Token saved:', response.data.token.substring(0, 20) + '...');
 
         // 登录成功后，立即获取完整用户资料
         try {
-          console.log('Fetching complete user profile...');
           const profileResp = await userApi.getProfile();
-          console.log('Profile response:', profileResp);
 
           if (profileResp.success && profileResp.data) {
-            console.log('Raw profile data:', profileResp.data);
             const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            console.log('Complete user with ID:', completeUser);
             setUser(completeUser);
             localStorage.setItem('user', JSON.stringify(completeUser));
           } else {
@@ -230,14 +213,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // 注册成功后，立即获取完整用户资料
         try {
-          console.log('Registration success, fetching complete user profile...');
           const profileResp = await userApi.getProfile();
-          console.log('Profile response after registration:', profileResp);
 
           if (profileResp.success && profileResp.data) {
-            console.log('Raw profile data after registration:', profileResp.data);
             const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            console.log('Complete user with ID after registration:', completeUser);
             setUser(completeUser);
             localStorage.setItem('user', JSON.stringify(completeUser));
           } else {
@@ -272,7 +251,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      console.log('Google login with token:', idToken.substring(0, 20) + '...');
       const response = await authApi.googleLogin(idToken);
 
       if (response.success && response.data) {
@@ -284,11 +262,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // 获取完整用户资料
         try {
-          console.log('Google login success, fetching complete profile...');
           const profileResp = await userApi.getProfile();
           if (profileResp.success && profileResp.data) {
             const completeUser = { ...profileResp.data, id: Number(profileResp.data.id) };
-            console.log('Complete user profile:', completeUser);
             setUser(completeUser);
             localStorage.setItem('user', JSON.stringify(completeUser));
           } else {
@@ -334,7 +310,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateUserInfo = async (userInfo: Partial<User>): Promise<boolean> => {
     if (!user) return false;
-    setLoading(true);
+    // 不设置全局loading状态，避免全屏loading界面
+    // setLoading(true);
     setError(null);
 
     try {
@@ -376,15 +353,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Update error:', errorMessage);
       setError(errorMessage);
       return false;
-    } finally {
-      setLoading(false);
     }
+    // 移除finally块，因为不再设置loading状态
   };
 
   const uploadAvatar = async (file: File): Promise<boolean> => {
     if (!user) return false;
 
-    setLoading(true);
+    // 不设置全局loading状态，避免全屏loading界面
+    // setLoading(true);
     setError(null);
 
     try {
@@ -403,9 +380,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
       return false;
-    } finally {
-      setLoading(false);
     }
+    // 移除finally块，因为不再设置loading状态
   };
 
   const clearError = () => {

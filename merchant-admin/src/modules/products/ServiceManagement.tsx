@@ -107,6 +107,7 @@ import {
   Watch as WatchIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
 import { CurrencyUtils } from '../../config/constants';
 import ServiceDialog from './components/ServiceDialog';
 import ServiceCategoryDialog from './components/ServiceCategoryDialog';
@@ -117,6 +118,7 @@ import { serviceManagementApi, serviceCategoryApi, ServiceManagement as ServiceM
 
 const ServiceManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   // 状态管理
   const [services, setServices] = useState<ServiceManagementType[]>([]);
@@ -139,11 +141,16 @@ const ServiceManagement: React.FC = () => {
   const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-  // 获取租户ID（这里假设从localStorage或context获取）
-  const tenantId = Number(localStorage.getItem('tenantId') || '4');
+  // 获取租户ID
+  const tenantId = user?.tenantId;
 
   // 加载数据
   const loadData = useCallback(async () => {
+    if (!tenantId) {
+      setError('No tenant ID available');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -172,8 +179,19 @@ const ServiceManagement: React.FC = () => {
 
   // 初始加载
   useEffect(() => {
-    loadData();
+    if (tenantId) {
+      loadData();
+    }
   }, [tenantId, page, rowsPerPage, categoryFilter, statusFilter, searchTerm, loadData]);
+
+  // 如果没有租户ID，显示错误信息
+  if (!tenantId) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Alert severity="error">无法获取租户信息，请重新登录</Alert>
+      </Box>
+    );
+  }
 
   const getCategoryIcon = (categoryId: number) => {
     const category = categories.find(cat => cat.id === categoryId);
