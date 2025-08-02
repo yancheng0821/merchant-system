@@ -77,6 +77,12 @@ public class JwtUtil {
         return getClaimFromToken(token, Claims::getSubject);
     }
     
+    // 新增方法：从token中获取用户ID
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        return claims.get("userId", Long.class);
+    }
+    
     public String getUsernameFromRefreshToken(String refreshToken) {
         return getClaimFromToken(refreshToken, Claims::getSubject);
     }

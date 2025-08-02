@@ -181,9 +181,9 @@ public class UserServiceImpl implements UserService {
     public UserProfileResponse getUserProfile(String token) {
         logger.debug("获取用户信息 - token: {}", token.substring(0, Math.min(20, token.length())) + "...");
         
-        // 从token中提取用户ID
-        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findByUsername(username);
+        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
             throw new RuntimeException("用户不存在");
@@ -216,9 +216,9 @@ public class UserServiceImpl implements UserService {
         logger.debug("更新用户信息 - userId: {}, token: {}", request.getUserId(), 
                     token.substring(0, Math.min(20, token.length())) + "...");
         
-        // 从token中提取用户ID
-        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findByUsername(username);
+        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
             throw new RuntimeException("用户不存在");
@@ -227,7 +227,7 @@ public class UserServiceImpl implements UserService {
         User user = userOpt.get();
         
         // 详细日志
-        logger.info("token username: {}, token userId: {}, request userId: {}", username, user.getId(), request.getUserId());
+        logger.info("token userId: {}, request userId: {}", userId, request.getUserId());
         
         // 验证用户ID是否匹配
         if (!user.getId().equals(request.getUserId())) {
@@ -275,9 +275,9 @@ public class UserServiceImpl implements UserService {
     public AvatarUploadResponse uploadAvatar(String token, MultipartFile file) {
         logger.debug("上传头像 - 文件名: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
         
-        // 从token中提取用户ID
-        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findByUsername(username);
+        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
             throw new RuntimeException("用户不存在");
@@ -342,9 +342,9 @@ public class UserServiceImpl implements UserService {
     public AvatarUploadResponse updateUserAvatar(String token, String avatarUrl) {
         logger.debug("更新用户头像URL - avatarUrl: {}", avatarUrl);
         
-        // 从token中提取用户ID
-        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findByUsername(username);
+        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
             throw new RuntimeException("用户不存在");
@@ -371,9 +371,9 @@ public class UserServiceImpl implements UserService {
         // 打印当前线程的Locale
         logger.info("当前线程的Locale: {}", LocaleContextHolder.getLocale());
         logger.info("国际化内容: {}", messageUtil.getMessage("user.old.password.mismatch"));
-        // 1. 从token获取用户名
-        String username = jwtUtil.getUsernameFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findByUsername(username);
+        // 1. 从token获取用户ID，而不是用户名，避免多租户中相同用户名的问题
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findById(userId);
         if (userOpt.isEmpty()) {
             throw new RuntimeException(messageUtil.getMessage("user.not.found"));
         }

@@ -1,5 +1,7 @@
 package com.merchant.server.authservice.filter;
 
+import com.merchant.server.authservice.entity.User;
+import com.merchant.server.authservice.service.UserService;
 import com.merchant.server.authservice.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,6 +20,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -27,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
     
     @Autowired
-    private UserDetailsService userDetailsService;
+    private UserService userService;
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -37,16 +42,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = getTokenFromRequest(request);
             
             if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
-                String username = jwtUtil.getUsernameFromToken(token);
+                // 使用用户ID而不是用户名，避免多租户中相同用户名的问题
+                Long userId = jwtUtil.getUserIdFromToken(token);
                 
-                if (StringUtils.hasText(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    Optional<User> userOpt = userService.findById(userId);
                     
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                    
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.debug("JWT认证成功 - 用户: {}", username);
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        
+                        // 创建UserDetails对象
+                        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                            .username(user.getUsername())
+                            .password("") // 这里不需要密码，因为使用JWT认证
+                            .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_MERCHANT_ADMIN")))
+                            .accountExpired(false)
+                            .accountLocked(false)
+                            .credentialsExpired(false)
+                            .disabled(!"ACTIVE".equals(user.getStatus()))
+                            .build();
+                        
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                        
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        logger.debug("JWT认证成功 - 用户ID: {}, 用户名: {}", userId, user.getUsername());
+                    }
                 }
             }
         } catch (Exception e) {

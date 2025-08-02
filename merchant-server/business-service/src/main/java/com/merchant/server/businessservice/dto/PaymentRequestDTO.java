@@ -28,6 +28,9 @@ public class PaymentRequestDTO {
     // 现金支付时的收款金额
     private BigDecimal cashReceived;
     
+    // Mock模式标志（用于测试环境）
+    private Boolean mockMode = false;
+    
     /**
      * 设置金额时自动标准化，处理前端浮点数精度问题
      */
