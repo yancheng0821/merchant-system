@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: merchant-config
+  namespace: merchant-system
+data:
+  # 数据库配置
+  DB_HOST: "merchant-mysql.cxxx.us-east-1.rds.amazonaws.com"
+  DB_PORT: "3306"
+  
+  # Redis配置
+  REDIS_HOST: "merchant-redis.xxx.cache.amazonaws.com"
+  REDIS_PORT: "6379"
+  
+  # RabbitMQ配置
+  RABBITMQ_HOST: "merchant-rabbitmq.xxx.mq.us-east-1.amazonaws.com"
+  RABBITMQ_PORT: "5672"
+  
+  # AWS配置
+  AWS_REGION: "us-east-1"
+  AWS_MAX_RETRIES: "3"
+  AWS_RETRY_DELAY_MS: "1000"
+  
+  # 邮件配置
+  EMAIL_FROM: "noreply@yourdomain.com"
+  EMAIL_FROM_NAME: "商户管理系统"
+  AWS_SES_FROM_EMAIL: "noreply@yourdomain.com"
+  AWS_SES_FROM_NAME: "商户管理系统"
+  AWS_SNS_SENDER_ID: "MerchantSystem"
+  
+  # POS配置
+  POS_API_URL: "https://pos-api.yourdomain.com"
+  POS_TERMINAL_ID: "TERMINAL_001"
+  
+  # 应用配置 - 直接使用prod profile
+  SPRING_PROFILES_ACTIVE: "prod"
+  
+  # 服务间通信配置 (K8s内部服务发现)
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8084"
+  MERCHANT_SERVICE_URL: "http://merchant-service:8082"
+  BUSINESS_SERVICE_URL: "http://business-service:8083"
+  ANALYTICS_SERVICE_URL: "http://analytics-service:8086"
+  AUTH_SERVICE_URL: "http://auth-service:8081"
+  AI_SERVICE_URL: "http://ai-service:5000"
+  
+  # 禁用Eureka (使用K8s服务发现)
+  EUREKA_CLIENT_ENABLED: "false"
+  
+  # 前端配置
+  REACT_APP_API_BASE_URL: "https://api.yourdomain.com"

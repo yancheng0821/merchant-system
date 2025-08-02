@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;2025-08-01 17:01:40.026 [http-nio-8081-exec-1] ERROR c.m.s.a.c.MerchantRegisterController - 商户注册失败 - 商户名: 测试商户, 管理员: admin, 错误: 创建商户失败：[404] during [POST] to [http://merchant-service/api/merchants] [MerchantServiceClient#createMerchant(Map)]: [{"timestamp":"2025-08-02T00:01:39.984+00:00","status":404,"error":"Not Found","path":"/api/merchants"}]
+import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Slf4j

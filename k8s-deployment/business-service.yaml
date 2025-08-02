@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: business-service
+  namespace: merchant-system
+  labels:
+    app: business-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: business-service
+  template:
+    metadata:
+      labels:
+        app: business-service
+    spec:
+      containers:
+      - name: business-service
+        image: your-ecr-repo/business-service:latest
+        ports:
+        - containerPort: 8083
+        envFrom:
+        - configMapRef:
+            name: merchant-config
+        - secretRef:
+            name: merchant-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: business-service
+  namespace: merchant-system
+  labels:
+    app: business-service
+spec:
+  selector:
+    app: business-service
+  ports:
+  - protocol: TCP
+    port: 8083
+    targetPort: 8083
+  type: ClusterIP

@@ -53,7 +53,7 @@ else
 fi
 
 # 设置环境变量
-export PORT=${PORT:-5001}
+export PORT=${PORT:-5000}
 
 echo "🚀 启动 AI 服务..."
 echo "   端口: $PORT"
