@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Map;
 
-@FeignClient(name = "merchant-service")
+@FeignClient(name = "merchant-service", url = "http://merchant-service:8082")
 public interface MerchantServiceClient {
     
     /**

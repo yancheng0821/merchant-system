@@ -18,6 +18,17 @@ spring:
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
 
+# HTTP客户端配置
+http:
+  client:
+    connect-timeout: 30000  # 30秒连接超时
+    read-timeout: 60000     # 60秒读取超时
+
+# 通知服务配置
+notification:
+  service:
+    url: http://notification-service:8084
+
 # Actuator配置
 management:
   endpoints:
@@ -33,6 +44,12 @@ logging:
   level:
     root: WARN
     com.merchant.server: INFO
+
+# 文件上传配置
+file:
+  upload:
+    path: ${APP_UPLOAD_PATH:/shared/uploads}
+    url-prefix: ${APP_UPLOAD_URL_PREFIX:/api/files/uploads/}
 
 # POS支付配置 - 生产环境
 pos:

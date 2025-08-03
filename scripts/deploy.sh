@@ -10,28 +10,39 @@ kubectl apply -f k8s-deployment/namespace.yaml
 kubectl apply -f k8s-deployment/configmap.yaml
 kubectl apply -f k8s-deployment/secrets.yaml
 
-# 部署服务 (按依赖顺序)
-echo "部署核心服务..."
-kubectl apply -f k8s-deployment/auth-service.yaml
-kubectl apply -f k8s-deployment/merchant-service.yaml
+# 强制重新部署所有服务
+echo "强制重新部署所有服务..."
+
+# 核心服务
+echo "重新部署核心服务..."
+kubectl rollout restart deployment/auth-service -n merchant-system
+kubectl rollout restart deployment/merchant-service -n merchant-system
 
 echo "等待核心服务启动..."
 kubectl wait --for=condition=ready pod -l app=auth-service -n merchant-system --timeout=300s
 kubectl wait --for=condition=ready pod -l app=merchant-service -n merchant-system --timeout=300s
 
-echo "部署业务服务..."
-kubectl apply -f k8s-deployment/business-service.yaml
-kubectl apply -f k8s-deployment/analytics-service.yaml
-kubectl apply -f k8s-deployment/notification-service.yaml
+# 业务服务
+echo "重新部署业务服务..."
+kubectl rollout restart deployment/business-service -n merchant-system
+kubectl rollout restart deployment/analytics-service -n merchant-system
+kubectl rollout restart deployment/notification-service -n merchant-system
 
-echo "部署AI服务..."
-kubectl apply -f k8s-deployment/ai-service.yaml
+# AI服务
+echo "重新部署AI服务..."
+kubectl rollout restart deployment/ai-service-python -n merchant-system
 
-echo "部署前端应用..."
-kubectl apply -f k8s-deployment/merchant-admin.yaml
+# 前端应用
+echo "重新部署前端应用..."
+kubectl rollout restart deployment/merchant-admin -n merchant-system
 
-# 部署Ingress
-kubectl apply -f k8s-deployment/ingress.yaml
+# 等待所有服务启动
+echo "等待所有服务启动..."
+kubectl wait --for=condition=ready pod -l app=business-service -n merchant-system --timeout=300s
+kubectl wait --for=condition=ready pod -l app=analytics-service -n merchant-system --timeout=300s
+kubectl wait --for=condition=ready pod -l app=notification-service -n merchant-system --timeout=300s
+kubectl wait --for=condition=ready pod -l app=ai-service-python -n merchant-system --timeout=300s
+kubectl wait --for=condition=ready pod -l app=merchant-admin -n merchant-system --timeout=300s
 
 # 检查部署状态
 echo "检查部署状态..."

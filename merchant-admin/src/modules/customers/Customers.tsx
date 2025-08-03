@@ -213,7 +213,6 @@ const CustomerManagement: React.FC = () => {
 
       if (selectedCustomer?.id) {
         // 更新客户
-        console.log('Updating customer with data:', customerData);
         await customerApi.updateCustomer(String(selectedCustomer.id), customerData as Customer);
         setSnackbar({
           open: true,
@@ -241,7 +240,6 @@ const CustomerManagement: React.FC = () => {
         delete customerData.createdAt;
         delete customerData.updatedAt;
 
-        console.log('Creating customer with data:', JSON.stringify(customerData));
         await customerApi.createCustomer(customerData as Customer);
         setSnackbar({
           open: true,

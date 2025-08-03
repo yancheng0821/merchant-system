@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -90,6 +91,26 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", "Bind failed: " + fieldErrors.values().stream().collect(Collectors.joining(", ")));
         
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * 处理静态资源未找到异常（通常是健康检查请求根路径导致的）
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFoundException(NoResourceFoundException ex) {
+        // 对于健康检查请求，使用DEBUG级别记录，避免日志污染
+        if (ex.getMessage() != null && ex.getMessage().contains("No static resource")) {
+            log.debug("Health check request to root path: {}", ex.getMessage());
+        } else {
+            log.warn("Resource not found: {}", ex.getMessage());
+        }
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("success", false);
+        errorResponse.put("error", "Resource Not Found");
+        errorResponse.put("message", "The requested resource was not found");
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     /**

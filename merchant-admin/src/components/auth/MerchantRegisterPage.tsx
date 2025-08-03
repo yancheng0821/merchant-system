@@ -677,21 +677,23 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               </Box>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t('auth.merchantRegisterPage.merchantInfo.contactEmail')}
-                type="email"
-                value={formData.contactEmail}
-                onChange={handleInputChange('contactEmail')}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EmailIcon sx={{ color: '#667eea' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={textFieldSx}
-              />
+              <Box sx={{ mt: 2, mb: 1 }}>
+                <TextField
+                  fullWidth
+                  label={t('auth.merchantRegisterPage.merchantInfo.contactEmail')}
+                  type="email"
+                  value={formData.contactEmail}
+                  onChange={handleInputChange('contactEmail')}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon sx={{ color: '#667eea' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={textFieldSx}
+                />
+              </Box>
             </Grid>
             <Grid item xs={12}>
               <TextField

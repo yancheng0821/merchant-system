@@ -39,11 +39,11 @@ mybatis:
 
 eureka:
   client:
-    enabled: true
+    enabled: false  # 禁用Eureka客户端
     service-url:
       defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: false
+    fetch-registry: false
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}

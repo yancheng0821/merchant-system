@@ -278,8 +278,6 @@ const PaymentProcess: React.FC = () => {
       // 获取今天的日期字符串 (YYYY-MM-DD格式，温哥华时区)
       const todayStr = TimeZoneUtils.getTodayVancouverDateString();
       
-      console.log('Fetched appointments:', allAppointments.length, 'Today:', todayStr);
-
       // 格式化所有已确认的预约数据（不限制日期，用于搜索）
       const allConfirmedAppointments = allAppointments
         .filter((apt: any) => apt.status === 'CONFIRMED')

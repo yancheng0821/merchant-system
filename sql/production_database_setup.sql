@@ -1072,11 +1072,51 @@ INSERT INTO `customers` (`id`, `tenant_id`, `first_name`, `last_name`, `phone`, 
 -- 插入通知模板
 USE `merchant_notification`;
 
-INSERT INTO `notification_templates` (`id`, `tenant_id`, `template_code`, `template_name`, `type`, `subject`, `content`, `status`) VALUES
+INSERT INTO `notification_templates` 
+(`id`, `tenant_id`, `template_code`, `template_name`, `type`, `subject`, `content`, `status`) VALUES
 (1, 1, 'APPOINTMENT_CONFIRMATION', '预约确认通知', 'SMS', NULL, '您好 {{customerName}}，您的预约已确认。时间：{{appointmentDate}} {{appointmentTime}}，服务：{{serviceName}}。地址：{{merchantAddress}}。如需取消请提前24小时联系我们。', 'ACTIVE'),
 (2, 1, 'APPOINTMENT_REMINDER', '预约提醒通知', 'SMS', NULL, '您好 {{customerName}}，提醒您明天 {{appointmentTime}} 有预约，服务：{{serviceName}}。请准时到达，如需调整请联系我们。', 'ACTIVE'),
 (3, 1, 'APPOINTMENT_CONFIRMATION_EMAIL', '预约确认邮件', 'EMAIL', '预约确认 - {{merchantName}}', '亲爱的 {{customerName}}，\n\n您的预约已成功确认！\n\n预约详情：\n时间：{{appointmentDate}} {{appointmentTime}}\n服务：{{serviceName}}\n地址：{{merchantAddress}}\n\n如需取消或修改预约，请提前24小时联系我们。\n\n谢谢！\n{{merchantName}}', 'ACTIVE'),
-(4, 1, 'APPOINTMENT_CANCELLATION', '预约取消通知', 'SMS', NULL, '您好 {{customerName}}，您的预约已取消。原定时间：{{appointmentDate}} {{appointmentTime}}。如需重新预约请联系我们。', 'ACTIVE');
+(4, 1, 'APPOINTMENT_CANCELLATION', '预约取消通知', 'SMS', NULL, '您好 {{customerName}}，您的预约已取消。原定时间：{{appointmentDate}} {{appointmentTime}}。如需重新预约请联系我们。', 'ACTIVE'),
+
+-- 预约取消 - EMAIL模板
+(5, 1, 'APPOINTMENT_CANCELLED', '预约取消邮件', 'EMAIL', '预约取消通知 - ${businessName}', 
+'<html><body>
+<h2>预约取消通知</h2>
+<p>尊敬的 ${customerName}，</p>
+<p>您的预约已成功取消，详情如下：</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+<tr><td><strong>预约时间</strong></td><td>${appointmentDate} ${appointmentTime}</td></tr>
+<tr><td><strong>服务项目</strong></td><td>${serviceName}</td></tr>
+<tr><td><strong>服务人员</strong></td><td>${staffName}</td></tr>
+</table>
+<p><strong>商家信息</strong></p>
+<p>名称：${businessName}<br/>
+地址：${businessAddress}<br/>
+电话：${businessPhone}</p>
+<p>感谢您选择我们的服务，如有疑问请随时联系我们。</p>
+</body></html>', 'ACTIVE'),
+
+-- 预约完成 - EMAIL模板
+(6, 1, 'APPOINTMENT_COMPLETED', '预约完成邮件', 'EMAIL', '预约完成通知 - ${businessName}', 
+'<html><body>
+<h2>预约完成通知</h2>
+<p>尊敬的 ${customerName}，</p>
+<p>您的预约已完成，详情如下：</p>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+<tr><td><strong>预约时间</strong></td><td>${appointmentDate} ${appointmentTime}</td></tr>
+<tr><td><strong>服务项目</strong></td><td>${serviceName}</td></tr>
+<tr><td><strong>服务人员</strong></td><td>${staffName}</td></tr>
+<tr><td><strong>服务时长</strong></td><td>${duration}</td></tr>
+<tr><td><strong>费用</strong></td><td>${totalAmount}</td></tr>
+</table>
+<p><strong>商家信息</strong></p>
+<p>名称：${businessName}<br/>
+地址：${businessAddress}<br/>
+电话：${businessPhone}</p>
+<p>感谢您选择我们的服务，我们期待再次为您提供优质的服务体验。</p>
+<p>祝您生活愉快！</p>
+</body></html>', 'ACTIVE');
 
 -- =====================================================
 -- 8. 设置外键约束和索引优化

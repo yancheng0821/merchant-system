@@ -36,6 +36,13 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Page<Customer> getCustomers(Long tenantId, String keyword, Customer.CustomerStatus status, Customer.MembershipLevel level, Pageable pageable) {
         try {
+            System.out.println("=== CustomerService.getCustomers called ===");
+            System.out.println("tenantId: " + tenantId);
+            System.out.println("keyword: " + keyword);
+            System.out.println("status: " + status);
+            System.out.println("level: " + level);
+            System.out.println("pageable: " + pageable);
+            
             // 从Pageable中提取排序信息
             String sortBy = "updatedAt"; // 默认排序字段
             String sortDir = "DESC"; // 默认排序方向
@@ -46,16 +53,27 @@ public class CustomerServiceImpl implements CustomerService {
                 sortDir = order.getDirection().name();
             }
             
+            System.out.println("sortBy: " + sortBy + ", sortDir: " + sortDir);
+            
             // 获取所有符合条件的客户（已排序）
+            System.out.println("Calling customerMapper.findByCondition...");
             List<Customer> all = customerMapper.findByCondition(tenantId, keyword, status, level, sortBy, sortDir);
+            System.out.println("Found " + (all != null ? all.size() : "null") + " customers");
+            
+            if (all == null) {
+                all = new ArrayList<>();
+            }
             
             // 手动分页
             int start = (int) pageable.getOffset();
             int end = Math.min((start + pageable.getPageSize()), all.size());
             List<Customer> pageContent = start < all.size() ? all.subList(start, end) : new ArrayList<>();
             
+            System.out.println("Returning page with " + pageContent.size() + " items, total: " + all.size());
             return new PageImpl<>(pageContent, pageable, all.size());
         } catch (Exception e) {
+            System.err.println("Error in getCustomers: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to get customers: " + e.getMessage(), e);
         }
     }

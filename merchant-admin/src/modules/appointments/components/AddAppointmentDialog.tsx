@@ -109,6 +109,38 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   const [merchantResourceTypes, setMerchantResourceTypes] = useState<string[]>([]);
   const [loadingResourceTypes, setLoadingResourceTypes] = useState(false);
 
+  // 计算当前选择的服务需要的资源类型
+  const getRequiredResourceTypes = useMemo(() => {
+    if (selectedServices.length === 0) {
+      return merchantResourceTypes; // 如果没有选择服务，使用商户默认配置
+    }
+
+    const serviceResourceTypes = new Set<string>();
+    selectedServices.forEach(service => {
+      if (service.resourceType) {
+        if (service.resourceType === 'BOTH') {
+          serviceResourceTypes.add('STAFF');
+          serviceResourceTypes.add('ROOM');
+        } else {
+          serviceResourceTypes.add(service.resourceType);
+        }
+      }
+    });
+
+    // 如果服务没有指定资源类型，使用商户默认配置
+    if (serviceResourceTypes.size === 0) {
+      return merchantResourceTypes;
+    }
+
+    return Array.from(serviceResourceTypes);
+  }, [selectedServices, merchantResourceTypes]);
+
+  // 当服务选择变化时，清空资源选择
+  useEffect(() => {
+    setSelectedResource('');
+    setSelectedRoom('');
+  }, [selectedServices]);
+
 
 
   // 获取租户ID
@@ -231,22 +263,23 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           newErrors.schedule = t('appointments.validation.scheduleRequired');
         }
         
-        // 根据商户资源类型验证资源选择
-        if (merchantResourceTypes.includes('ROOM') && merchantResourceTypes.includes('STAFF')) {
-          // 如果同时支持房间和员工，必须先选择房间，再选择员工
+        // 根据当前选择的服务需要的资源类型验证资源选择
+        const requiredTypes = getRequiredResourceTypes;
+        if (requiredTypes.includes('ROOM') && requiredTypes.includes('STAFF')) {
+          // 如果同时需要房间和员工，必须先选择房间，再选择员工
           if (!selectedRoom) {
             newErrors.room = t('appointments.validation.roomRequired');
           }
           if (!selectedResource) {
             newErrors.staff = t('appointments.validation.staffRequired');
           }
-        } else if (merchantResourceTypes.includes('ROOM')) {
-          // 只支持房间
+        } else if (requiredTypes.includes('ROOM')) {
+          // 只需要房间
           if (!selectedRoom) {
             newErrors.room = t('appointments.validation.roomRequired');
           }
-        } else if (merchantResourceTypes.includes('STAFF')) {
-          // 只支持员工
+        } else if (requiredTypes.includes('STAFF')) {
+          // 只需要员工
           if (!selectedResource) {
             newErrors.staff = t('appointments.validation.staffRequired');
           }
@@ -298,12 +331,13 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       const totalDuration = selectedServices.reduce((total, service) => total + service.duration, 0);
       const totalAmount = selectedServices.reduce((total, service) => total + service.price, 0);
 
-      // 根据商户资源类型配置确定resourceId和resourceType
+      // 根据当前选择的服务需要的资源类型确定resourceId和resourceType
       let finalResourceId = null;
       let finalResourceType = null;
 
-      if (merchantResourceTypes.includes('ROOM') && merchantResourceTypes.includes('STAFF')) {
-        // 同时支持房间和员工，优先使用员工，房间作为附加信息
+      const requiredTypes = getRequiredResourceTypes;
+      if (requiredTypes.includes('ROOM') && requiredTypes.includes('STAFF')) {
+        // 同时需要房间和员工，优先使用员工，房间作为附加信息
         if (selectedResource) {
           finalResourceId = selectedResource;
           finalResourceType = 'STAFF';
@@ -311,14 +345,14 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           finalResourceId = selectedRoom;
           finalResourceType = 'ROOM';
         }
-      } else if (merchantResourceTypes.includes('ROOM')) {
-        // 只支持房间
+      } else if (requiredTypes.includes('ROOM')) {
+        // 只需要房间
         if (selectedRoom) {
           finalResourceId = selectedRoom;
           finalResourceType = 'ROOM';
         }
-      } else if (merchantResourceTypes.includes('STAFF')) {
-        // 只支持员工
+      } else if (requiredTypes.includes('STAFF')) {
+        // 只需要员工
         if (selectedResource) {
           finalResourceId = selectedResource;
           finalResourceType = 'STAFF';
@@ -649,6 +683,9 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                               } else {
                                 setSelectedServices(prev => [...prev, service]);
                               }
+                              // 清空资源选择，因为服务变化可能需要不同类型的资源
+                              setSelectedResource('');
+                              setSelectedRoom('');
                             }}
                             sx={{
                               m: 0.5,
@@ -690,7 +727,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     <Chip
                       key={service.id}
                       label={`${service.name} - ${formatCurrency(service.price)}`}
-                      onDelete={() => setSelectedServices(prev => prev.filter(s => s.id !== service.id))}
+                      onDelete={() => {
+                        setSelectedServices(prev => prev.filter(s => s.id !== service.id));
+                        // 清空资源选择，因为服务变化可能需要不同类型的资源
+                        setSelectedResource('');
+                        setSelectedRoom('');
+                      }}
                       sx={{
                         backgroundColor: alpha('#10B981', 0.1),
                         color: '#10B981',
@@ -777,26 +819,64 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                 />
               </Grid>
 
-              {/* 根据商户资源类型配置显示资源选择器 */}
+              {/* 根据当前选择的服务需要的资源类型显示资源选择器 */}
               {loadingResourceTypes ? (
                 <Grid item xs={12}>
-                  <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
+                  <Box 
+                    display="flex" 
+                    justifyContent="center" 
+                    alignItems="center" 
+                    minHeight={200}
+                    sx={{
+                      backgroundColor: alpha('#8B5CF6', 0.02),
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: alpha('#8B5CF6', 0.1),
+                    }}
+                  >
                     <CircularProgress sx={{ color: '#8B5CF6' }} />
-                    <Typography variant="body2" sx={{ ml: 1 }}>
+                    <Typography variant="body2" sx={{ ml: 2 }}>
                       {t('resources.loadingResourceTypes')}
                     </Typography>
                   </Box>
                 </Grid>
+              ) : selectedServices.length === 0 ? (
+                <Grid item xs={12}>
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    <Typography variant="body2">
+                      {t('appointments.selectServicesFirst')}
+                    </Typography>
+                  </Alert>
+                </Grid>
               ) : (
                 <>
-                  {/* 如果同时支持房间和员工，先选择房间 */}
-                  {merchantResourceTypes.includes('ROOM') && merchantResourceTypes.includes('STAFF') && (
+                  {/* 显示当前选择的服务需要的资源类型提示 */}
+                  {selectedServices.length > 0 && (
+                    <Grid item xs={12}>
+                      <Alert severity="info" sx={{ borderRadius: 2 }}>
+                        <Typography variant="body2">
+                          {getRequiredResourceTypes.includes('ROOM') && getRequiredResourceTypes.includes('STAFF')
+                            ? t('appointments.requiresBothStaffAndRoom')
+                            : getRequiredResourceTypes.includes('ROOM')
+                            ? t('appointments.requiresRoom')
+                            : getRequiredResourceTypes.includes('STAFF')
+                            ? t('appointments.requiresStaff')
+                            : t('appointments.noResourceRequired')
+                          }
+                        </Typography>
+                      </Alert>
+                    </Grid>
+                  )}
+
+                  {/* 如果同时需要房间和员工，先选择房间 */}
+                  {getRequiredResourceTypes.includes('ROOM') && getRequiredResourceTypes.includes('STAFF') && (
                     <>
                       <Grid item xs={12}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
-                          {t('appointments.selectRoomFirst')}
-                        </Typography>
-                        <ResourceSelector
+                        <Box sx={{ minHeight: 80 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                            {t('appointments.selectRoomFirst')}
+                          </Typography>
+                          <ResourceSelector
                           tenantId={tenantId}
                           resourceType="ROOM"
                           selectedResourceId={selectedRoom || undefined}
@@ -808,21 +888,23 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           appointmentDate={appointmentDate}
                           appointmentTime={appointmentTime}
                           duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
-                          showAvailability={true}
-                          variant="dropdown"
-                        />
-                        {errors.room && (
-                          <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                            {errors.room}
-                          </Typography>
-                        )}
+                            showAvailability={true}
+                            variant="dropdown"
+                          />
+                          {errors.room && (
+                            <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                              {errors.room}
+                            </Typography>
+                          )}
+                        </Box>
                       </Grid>
                       
                       <Grid item xs={12}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
-                          {t('appointments.selectStaffForRoom')}
-                        </Typography>
-                        <ResourceSelector
+                        <Box sx={{ minHeight: 80 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                            {t('appointments.selectStaffForRoom')}
+                          </Typography>
+                          <ResourceSelector
                           tenantId={tenantId}
                           resourceType="STAFF"
                           selectedResourceId={selectedResource || undefined}
@@ -831,22 +913,24 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           appointmentTime={appointmentTime}
                           duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
                           showAvailability={true}
-                          variant="dropdown"
-                          disabled={!selectedRoom} // 必须先选择房间
-                        />
-                        {errors.staff && (
-                          <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                            {errors.staff}
-                          </Typography>
-                        )}
+                            variant="dropdown"
+                            disabled={!selectedRoom} // 必须先选择房间
+                          />
+                          {errors.staff && (
+                            <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                              {errors.staff}
+                            </Typography>
+                          )}
+                        </Box>
                       </Grid>
                     </>
                   )}
                   
-                  {/* 如果只支持房间 */}
-                  {merchantResourceTypes.includes('ROOM') && !merchantResourceTypes.includes('STAFF') && (
+                  {/* 如果只需要房间 */}
+                  {getRequiredResourceTypes.includes('ROOM') && !getRequiredResourceTypes.includes('STAFF') && (
                     <Grid item xs={12}>
-                      <ResourceSelector
+                      <Box sx={{ minHeight: 80 }}>
+                        <ResourceSelector
                         tenantId={tenantId}
                         resourceType="ROOM"
                         selectedResourceId={selectedRoom || undefined}
@@ -854,21 +938,23 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         appointmentDate={appointmentDate}
                         appointmentTime={appointmentTime}
                         duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
-                        showAvailability={true}
-                        variant="dropdown"
-                      />
-                      {errors.room && (
-                        <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                          {errors.room}
-                        </Typography>
-                      )}
+                          showAvailability={true}
+                          variant="dropdown"
+                        />
+                        {errors.room && (
+                          <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                            {errors.room}
+                          </Typography>
+                        )}
+                      </Box>
                     </Grid>
                   )}
                   
-                  {/* 如果只支持员工 */}
-                  {merchantResourceTypes.includes('STAFF') && !merchantResourceTypes.includes('ROOM') && (
+                  {/* 如果只需要员工 */}
+                  {getRequiredResourceTypes.includes('STAFF') && !getRequiredResourceTypes.includes('ROOM') && (
                     <Grid item xs={12}>
-                      <ResourceSelector
+                      <Box sx={{ minHeight: 80 }}>
+                        <ResourceSelector
                         tenantId={tenantId}
                         resourceType="STAFF"
                         selectedResourceId={selectedResource || undefined}
@@ -876,14 +962,15 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         appointmentDate={appointmentDate}
                         appointmentTime={appointmentTime}
                         duration={selectedServices.reduce((total, service) => total + service.duration, 0)}
-                        showAvailability={true}
-                        variant="dropdown"
-                      />
-                      {errors.staff && (
-                        <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                          {errors.staff}
-                        </Typography>
-                      )}
+                          showAvailability={true}
+                          variant="dropdown"
+                        />
+                        {errors.staff && (
+                          <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                            {errors.staff}
+                          </Typography>
+                        )}
+                      </Box>
                     </Grid>
                   )}
                 </>
@@ -892,7 +979,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               {/* 显示选中资源的可用性 */}
               {(selectedResource || selectedRoom) && appointmentDate && (
                 <Grid item xs={12}>
-                  <Box display="flex" flexDirection="column" gap={2}>
+                  <Box display="flex" flexDirection="column" gap={2} sx={{ minHeight: 100 }}>
                     {selectedResource && (
                       <ResourceAvailabilityDisplay
                         resourceId={selectedResource}
@@ -1175,8 +1262,10 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3, minHeight: 400 }}>
-        {getStepContent(activeStep)}
+      <DialogContent sx={{ p: 3, minHeight: 500, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flex: 1, minHeight: 400 }}>
+          {getStepContent(activeStep)}
+        </Box>
       </DialogContent>
 
       <DialogActions

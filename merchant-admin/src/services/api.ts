@@ -557,6 +557,7 @@ export interface Service {
   duration: number;
   icon?: string;
   status?: 'ACTIVE' | 'INACTIVE';
+  resourceType?: 'STAFF' | 'ROOM' | 'BOTH';
   createdAt?: string;
   updatedAt?: string;
   // 关联信息

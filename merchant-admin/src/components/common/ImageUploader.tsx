@@ -67,7 +67,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             
             // 调用真实的上传API
             const imageUrl = await uploadFile(file);
-            console.log('Upload successful, imageUrl:', imageUrl); // 调试日志
             onChange(imageUrl);
         } catch (err) {
             setError(t('imageUploader.uploadFailed'));
@@ -184,7 +183,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 justifyContent: 'center',
                 cursor: disabled ? 'default' : 'pointer',
                 bgcolor: alpha('#2563EB', 0.02),
-                backgroundImage: value ? `url(${value})` : 'none',
+                backgroundImage: (value && value.trim()) ? `url(${value})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 position: 'relative',

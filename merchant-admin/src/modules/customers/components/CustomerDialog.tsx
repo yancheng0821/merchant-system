@@ -248,9 +248,6 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         }
       });
 
-      console.log('Form data gender:', formData.gender);
-      console.log('Converted gender:', customerData.gender);
-      console.log('Submitting customer data:', customerData);
       onSave(customerData);
       onClose();
     }

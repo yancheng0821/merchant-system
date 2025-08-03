@@ -280,8 +280,60 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
     }
   };
 
-  const handleSave = () => {
-    onSave(localCategories);
+  const handleSave = async () => {
+    // 如果当前有正在编辑的类别，先保存它
+    if ((isAdding || editingCategory) && formData.name.trim() && formData.description.trim()) {
+      if (validateForm()) {
+        setLoading(true);
+        setError(null);
+
+        try {
+          if (isAdding) {
+            const newCategoryData = {
+              tenantId,
+              name: formData.name,
+              description: formData.description,
+              icon: formData.icon,
+              color: formData.color,
+              sortOrder: formData.sortOrder,
+              status: 'ACTIVE' as const,
+            };
+            const newCategory = await serviceCategoryApi.createCategory(newCategoryData);
+            const updatedCategories = [...localCategories, newCategory];
+            setLocalCategories(updatedCategories);
+            onSave(updatedCategories);
+          } else if (editingCategory) {
+            const updatedCategoryData = {
+              tenantId: editingCategory.tenantId,
+              name: formData.name,
+              description: formData.description,
+              icon: formData.icon,
+              color: formData.color,
+              sortOrder: formData.sortOrder,
+              status: editingCategory.status,
+            };
+            const updatedCategory = await serviceCategoryApi.updateCategory(editingCategory.id, updatedCategoryData);
+            const updatedCategories = localCategories.map(c =>
+              c.id === editingCategory.id ? updatedCategory : c
+            );
+            setLocalCategories(updatedCategories);
+            onSave(updatedCategories);
+          }
+        } catch (err) {
+          setError(handleApiError(err));
+          setLoading(false);
+          return; // 如果保存失败，不关闭对话框
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        return; // 如果验证失败，不关闭对话框
+      }
+    } else {
+      // 如果没有正在编辑的类别，直接保存现有的类别列表
+      onSave(localCategories);
+    }
+    
     onClose();
   };
 
@@ -493,6 +545,15 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
+          </Alert>
+        )}
+        
+        {(isAdding || editingCategory) && formData.name.trim() && formData.description.trim() && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            {isAdding 
+              ? t('services.unsavedNewCategoryHint')
+              : t('services.unsavedEditCategoryHint')
+            }
           </Alert>
         )}
         <Grid container spacing={3}>
@@ -956,6 +1017,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
         <Button 
           onClick={handleSave} 
           variant="contained"
+          disabled={loading}
           sx={{
             borderRadius: 2,
             px: 4,
@@ -971,7 +1033,11 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
             transition: 'all 0.3s ease',
           }}
         >
-          {t('services.saveChanges')}
+          {loading ? t('common.saving') : (
+            (isAdding || editingCategory) && formData.name.trim() && formData.description.trim()
+              ? t('services.saveAndClose')
+              : t('services.saveChanges')
+          )}
         </Button>
       </DialogActions>
     </Dialog>

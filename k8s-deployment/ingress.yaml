@@ -67,3 +67,10 @@ spec:
             name: ai-service
             port:
               number: 5000
+      - path: /api/files
+        pathType: Prefix
+        backend:
+          service:
+            name: file-service
+            port:
+              number: 80

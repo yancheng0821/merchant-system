@@ -30,6 +30,17 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
+# Feign 客户端配置
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000  # 30秒连接超时
+        readTimeout: 60000     # 60秒读取超时
+      business-service:
+        connectTimeout: 30000
+        readTimeout: 60000
+
 eureka:
   client:
     enabled: false  # 生产环境禁用Eureka

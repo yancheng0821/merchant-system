@@ -6,7 +6,7 @@ metadata:
   labels:
     app: business-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: business-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: business-service
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:auth-service
         ports:
         - containerPort: 8083
         envFrom:
@@ -25,6 +25,20 @@ spec:
             name: merchant-config
         - secretRef:
             name: merchant-secrets
+        env:
+        - name: APP_UPLOAD_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: shared-storage-config
+              key: SHARED_UPLOAD_PATH
+        - name: APP_UPLOAD_URL_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: shared-storage-config
+              key: SHARED_UPLOAD_URL_PREFIX
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
         resources:
           requests:
             memory: "512Mi"
@@ -44,6 +58,9 @@ spec:
             port: 8083
           initialDelaySeconds: 30
           periodSeconds: 10
+      volumes:
+      - name: shared-storage
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

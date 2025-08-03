@@ -3,6 +3,8 @@ package com.merchant.server.businessservice.controller;
 import com.merchant.server.businessservice.dto.CustomerDTO;
 import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.service.CustomerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +21,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/business/customers")
 public class CustomerController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(CustomerController.class);
     
     @Autowired
     private CustomerService customerService;
@@ -63,21 +67,40 @@ public class CustomerController {
             @RequestParam(defaultValue = "updatedAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
         
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        logger.info("=== getCustomers API called ===");
+        logger.info("Request parameters - tenantId: {}, keyword: {}, status: {}, membershipLevel: {}, page: {}, size: {}, sortBy: {}, sortDir: {}", 
+                   tenantId, keyword, status, membershipLevel, page, size, sortBy, sortDir);
         
-        Page<Customer> customerPage = customerService.getCustomers(tenantId, keyword, status, membershipLevel, pageable);
-        Page<CustomerDTO> dtoPage = customerPage.map(this::convertToDTO);
-        Map<String, Object> response = new HashMap<>();
-        response.put("customers", dtoPage.getContent());
-        response.put("currentPage", dtoPage.getNumber());
-        response.put("totalItems", dtoPage.getTotalElements());
-        response.put("totalPages", dtoPage.getTotalPages());
-        response.put("hasNext", dtoPage.hasNext());
-        response.put("hasPrevious", dtoPage.hasPrevious());
-        
-        return ResponseEntity.ok(response);
+        try {
+            Sort sort = sortDir.equalsIgnoreCase("desc") ? 
+                Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            Pageable pageable = PageRequest.of(page, size, sort);
+            
+            logger.info("Calling customerService.getCustomers with pageable: {}", pageable);
+            Page<Customer> customerPage = customerService.getCustomers(tenantId, keyword, status, membershipLevel, pageable);
+            logger.info("CustomerService returned {} customers, total elements: {}", 
+                       customerPage.getContent().size(), customerPage.getTotalElements());
+            
+            Page<CustomerDTO> dtoPage = customerPage.map(this::convertToDTO);
+            Map<String, Object> response = new HashMap<>();
+            response.put("customers", dtoPage.getContent());
+            response.put("currentPage", dtoPage.getNumber());
+            response.put("totalItems", dtoPage.getTotalElements());
+            response.put("totalPages", dtoPage.getTotalPages());
+            response.put("hasNext", dtoPage.hasNext());
+            response.put("hasPrevious", dtoPage.hasPrevious());
+            
+            logger.info("=== getCustomers API completed successfully ===");
+            logger.info("Response - currentPage: {}, totalItems: {}, totalPages: {}, hasNext: {}, hasPrevious: {}", 
+                       dtoPage.getNumber(), dtoPage.getTotalElements(), dtoPage.getTotalPages(), 
+                       dtoPage.hasNext(), dtoPage.hasPrevious());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("=== getCustomers API failed ===");
+            logger.error("Error occurred while getting customers: {}", e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -85,8 +108,21 @@ public class CustomerController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long id) {
-        CustomerDTO customer = customerService.getCustomerById(id);
-        return ResponseEntity.ok(customer);
+        logger.info("=== getCustomerById API called ===");
+        logger.info("Request parameter - customerId: {}", id);
+        
+        try {
+            logger.info("Calling customerService.getCustomerById with id: {}", id);
+            CustomerDTO customer = customerService.getCustomerById(id);
+            logger.info("CustomerService returned customer: {}", customer != null ? "found" : "not found");
+            
+            logger.info("=== getCustomerById API completed successfully ===");
+            return ResponseEntity.ok(customer);
+        } catch (Exception e) {
+            logger.error("=== getCustomerById API failed ===");
+            logger.error("Error occurred while getting customer by id {}: {}", id, e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -94,13 +130,19 @@ public class CustomerController {
      */
     @PostMapping
     public ResponseEntity<CustomerDTO> createCustomer(@Valid @RequestBody CustomerDTO customerDTO) {
+        logger.info("=== createCustomer API called ===");
+        logger.info("Request body - customerDTO: {}", customerDTO);
+        
         try {
-            System.out.println("Received customer data: " + customerDTO);
+            logger.info("Calling customerService.createCustomer");
             CustomerDTO createdCustomer = customerService.createCustomer(customerDTO);
+            logger.info("CustomerService created customer with id: {}", createdCustomer.getId());
+            
+            logger.info("=== createCustomer API completed successfully ===");
             return ResponseEntity.ok(createdCustomer);
         } catch (Exception e) {
-            System.err.println("Error creating customer: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("=== createCustomer API failed ===");
+            logger.error("Error occurred while creating customer: {}", e.getMessage(), e);
             throw e;
         }
     }
@@ -110,35 +152,45 @@ public class CustomerController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable Long id, @RequestBody CustomerDTO customerDTO) {
+        logger.info("=== updateCustomer API called ===");
+        logger.info("Request parameters - customerId: {}, customerDTO: {}", id, customerDTO);
+        logger.info("Customer email: '{}', email length: {}, communication preference: {}", 
+                   customerDTO.getEmail(), 
+                   customerDTO.getEmail() != null ? customerDTO.getEmail().length() : "null",
+                   customerDTO.getCommunicationPreference());
+        
         try {
-            System.out.println("Updating customer with ID: " + id);
-            System.out.println("Received customer data: " + customerDTO);
-            System.out.println("Customer email: '" + customerDTO.getEmail() + "'");
-            System.out.println("Customer email length: " + (customerDTO.getEmail() != null ? customerDTO.getEmail().length() : "null"));
-            System.out.println("Customer communication preference: " + customerDTO.getCommunicationPreference());
-            
+            logger.info("Validating required fields");
             // 手动验证必填字段
             if (customerDTO.getFirstName() == null || customerDTO.getFirstName().trim().isEmpty()) {
+                logger.error("Validation failed: First name is required");
                 throw new RuntimeException("First name is required");
             }
             if (customerDTO.getLastName() == null || customerDTO.getLastName().trim().isEmpty()) {
+                logger.error("Validation failed: Last name is required");
                 throw new RuntimeException("Last name is required");
             }
             if (customerDTO.getPhone() == null || customerDTO.getPhone().trim().isEmpty()) {
+                logger.error("Validation failed: Phone is required");
                 throw new RuntimeException("Phone is required");
             }
             if (customerDTO.getEmail() != null && !customerDTO.getEmail().trim().isEmpty()) {
                 // 验证邮箱格式
                 if (!customerDTO.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                    logger.error("Validation failed: Invalid email format: {}", customerDTO.getEmail());
                     throw new RuntimeException("Invalid email format");
                 }
             }
             
+            logger.info("Validation passed, calling customerService.updateCustomer");
             CustomerDTO updatedCustomer = customerService.updateCustomer(id, customerDTO);
+            logger.info("CustomerService updated customer with id: {}", updatedCustomer.getId());
+            
+            logger.info("=== updateCustomer API completed successfully ===");
             return ResponseEntity.ok(updatedCustomer);
         } catch (Exception e) {
-            System.err.println("Error updating customer: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("=== updateCustomer API failed ===");
+            logger.error("Error occurred while updating customer {}: {}", id, e.getMessage(), e);
             throw e;
         }
     }
@@ -148,10 +200,24 @@ public class CustomerController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteCustomer(@PathVariable Long id) {
-        customerService.deleteCustomer(id);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Customer deleted successfully");
-        return ResponseEntity.ok(response);
+        logger.info("=== deleteCustomer API called ===");
+        logger.info("Request parameter - customerId: {}", id);
+        
+        try {
+            logger.info("Calling customerService.deleteCustomer with id: {}", id);
+            customerService.deleteCustomer(id);
+            logger.info("CustomerService deleted customer with id: {}", id);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Customer deleted successfully");
+            
+            logger.info("=== deleteCustomer API completed successfully ===");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("=== deleteCustomer API failed ===");
+            logger.error("Error occurred while deleting customer {}: {}", id, e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -161,8 +227,21 @@ public class CustomerController {
     public ResponseEntity<CustomerDTO> getCustomerByPhone(
             @RequestParam Long tenantId,
             @PathVariable String phone) {
-        CustomerDTO customer = customerService.getCustomerByPhone(tenantId, phone);
-        return ResponseEntity.ok(customer);
+        logger.info("=== getCustomerByPhone API called ===");
+        logger.info("Request parameters - tenantId: {}, phone: {}", tenantId, phone);
+        
+        try {
+            logger.info("Calling customerService.getCustomerByPhone");
+            CustomerDTO customer = customerService.getCustomerByPhone(tenantId, phone);
+            logger.info("CustomerService returned customer: {}", customer != null ? "found" : "not found");
+            
+            logger.info("=== getCustomerByPhone API completed successfully ===");
+            return ResponseEntity.ok(customer);
+        } catch (Exception e) {
+            logger.error("=== getCustomerByPhone API failed ===");
+            logger.error("Error occurred while getting customer by phone {} for tenant {}: {}", phone, tenantId, e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -170,8 +249,21 @@ public class CustomerController {
      */
     @GetMapping("/stats")
     public ResponseEntity<CustomerService.CustomerStatsDTO> getCustomerStats(@RequestParam Long tenantId) {
-        CustomerService.CustomerStatsDTO stats = customerService.getCustomerStats(tenantId);
-        return ResponseEntity.ok(stats);
+        logger.info("=== getCustomerStats API called ===");
+        logger.info("Request parameter - tenantId: {}", tenantId);
+        
+        try {
+            logger.info("Calling customerService.getCustomerStats");
+            CustomerService.CustomerStatsDTO stats = customerService.getCustomerStats(tenantId);
+            logger.info("CustomerService returned stats: {}", stats);
+            
+            logger.info("=== getCustomerStats API completed successfully ===");
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            logger.error("=== getCustomerStats API failed ===");
+            logger.error("Error occurred while getting customer stats for tenant {}: {}", tenantId, e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -181,8 +273,21 @@ public class CustomerController {
     public ResponseEntity<List<CustomerDTO>> getTopSpendingCustomers(
             @RequestParam Long tenantId,
             @RequestParam(defaultValue = "10") int limit) {
-        List<CustomerDTO> customers = customerService.getTopSpendingCustomers(tenantId, limit);
-        return ResponseEntity.ok(customers);
+        logger.info("=== getTopSpendingCustomers API called ===");
+        logger.info("Request parameters - tenantId: {}, limit: {}", tenantId, limit);
+        
+        try {
+            logger.info("Calling customerService.getTopSpendingCustomers");
+            List<CustomerDTO> customers = customerService.getTopSpendingCustomers(tenantId, limit);
+            logger.info("CustomerService returned {} top spending customers", customers.size());
+            
+            logger.info("=== getTopSpendingCustomers API completed successfully ===");
+            return ResponseEntity.ok(customers);
+        } catch (Exception e) {
+            logger.error("=== getTopSpendingCustomers API failed ===");
+            logger.error("Error occurred while getting top spending customers for tenant {} with limit {}: {}", tenantId, limit, e.getMessage(), e);
+            throw e;
+        }
     }
     
     /**
@@ -190,9 +295,14 @@ public class CustomerController {
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException e) {
+        logger.error("=== RuntimeException handled ===");
+        logger.error("RuntimeException occurred: {}", e.getMessage(), e);
+        
         Map<String, String> error = new HashMap<>();
         error.put("error", e.getMessage());
         error.put("type", e.getClass().getSimpleName());
+        
+        logger.info("Returning error response: {}", error);
         return ResponseEntity.badRequest().body(error);
     }
     
@@ -202,6 +312,9 @@ public class CustomerController {
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
             org.springframework.web.bind.MethodArgumentNotValidException e) {
+        logger.error("=== MethodArgumentNotValidException handled ===");
+        logger.error("Validation exception occurred: {}", e.getMessage(), e);
+        
         Map<String, Object> error = new HashMap<>();
         error.put("error", "Validation failed");
         error.put("details", e.getBindingResult().getFieldErrors().stream()
@@ -209,6 +322,8 @@ public class CustomerController {
                 fieldError -> fieldError.getField(),
                 fieldError -> fieldError.getDefaultMessage()
             )));
+        
+        logger.info("Returning validation error response: {}", error);
         return ResponseEntity.badRequest().body(error);
     }
     
@@ -218,8 +333,8 @@ public class CustomerController {
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleJsonParseException(
             org.springframework.http.converter.HttpMessageNotReadableException e) {
-        System.err.println("JSON parsing error: " + e.getMessage());
-        e.printStackTrace();
+        logger.error("=== HttpMessageNotReadableException handled ===");
+        logger.error("JSON parsing error: {}", e.getMessage(), e);
         
         Map<String, Object> error = new HashMap<>();
         error.put("error", "JSON parse error: " + e.getMessage());
@@ -238,6 +353,7 @@ public class CustomerController {
             error.put("message", "Invalid data format in request");
         }
         
+        logger.info("Returning JSON parse error response: {}", error);
         return ResponseEntity.badRequest().body(error);
     }
 }

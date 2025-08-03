@@ -61,8 +61,6 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
 
         try {
             const data = await resourceApi.getResourceDetailedAvailability(resourceId, selectedDate);
-            console.log('Detailed availability data:', data);
-            console.log('Booking slots:', data.bookingSlots);
             setAvailabilityData(data);
         } catch (err) {
             console.error('Failed to fetch detailed availability:', err);
@@ -109,7 +107,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
             // 确保时间格式一致，都使用HH:mm:ss格式进行比较
             const slotStartTime = slot.startTime.length === 5 ? slot.startTime + ':00' : slot.startTime;
             const slotEndTime = slot.endTime.length === 5 ? slot.endTime + ':00' : slot.endTime;
-            
+
             const isInSlot = slotTime >= slotStartTime && slotTime < slotEndTime && slot.status === 'BOOKED';
             if (isInSlot) {
                 console.log(`Time slot ${timeSlot} is booked by slot:`, slot);
@@ -121,7 +119,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
         if (timeSlot === '10:00' || timeSlot === '14:00') { // 调试特定时间段
             console.log(`Time slot ${timeSlot} status: ${status}, booking slots:`, availabilityData.bookingSlots);
         }
-        
+
         return status;
     };
 
@@ -157,7 +155,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     const navigateDate = (direction: 'prev' | 'next') => {
         // 保存当前滚动位置
         setScrollPosition(window.pageYOffset || document.documentElement.scrollTop);
-        
+
         const currentDate = new Date(selectedDate);
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
@@ -314,12 +312,12 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                                 </Typography>
                             </Box>
                         </Box>
-                        
+
                         <Tooltip title={t('common.refresh')}>
-                            <IconButton 
+                            <IconButton
                                 size="small"
-                                onClick={fetchDetailedAvailability} 
-                                sx={{ 
+                                onClick={fetchDetailedAvailability}
+                                sx={{
                                     color: themeColor,
                                     backgroundColor: alpha(themeColor, 0.1),
                                     '&:hover': {
@@ -348,10 +346,10 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                 }}
             >
                 <Box display="flex" alignItems="center" justifyContent="center" gap={2}>
-                    <IconButton 
+                    <IconButton
                         size="small"
-                        onClick={() => navigateDate('prev')} 
-                        sx={{ 
+                        onClick={() => navigateDate('prev')}
+                        sx={{
                             color: themeColor,
                             backgroundColor: alpha(themeColor, 0.1),
                             '&:hover': {
@@ -363,7 +361,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                     >
                         <PrevIcon fontSize="small" />
                     </IconButton>
-                    
+
                     <Box
                         sx={{
                             px: 2,
@@ -407,11 +405,11 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                             }}
                         />
                     </Box>
-                    
-                    <IconButton 
+
+                    <IconButton
                         size="small"
-                        onClick={() => navigateDate('next')} 
-                        sx={{ 
+                        onClick={() => navigateDate('next')}
+                        sx={{
                             color: themeColor,
                             backgroundColor: alpha(themeColor, 0.1),
                             '&:hover': {
@@ -440,7 +438,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: '1rem' }}>
                     {t('resources.timeSlotAvailability')}
                 </Typography>
-                
+
                 <Grid container spacing={1}>
                     {timeSlots.map((timeSlot) => {
                         const status = getTimeSlotStatus(timeSlot);

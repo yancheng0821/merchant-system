@@ -6,7 +6,7 @@ metadata:
   labels:
     app: auth-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: auth-service
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/auth-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/auth-service:auth-service
         ports:
         - containerPort: 8081
         env:
@@ -66,6 +66,19 @@ spec:
             configMapKeyRef:
               name: merchant-config
               key: GOOGLE_REDIRECT_URI
+        - name: APP_AVATAR_UPLOAD_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: shared-storage-config
+              key: SHARED_AVATAR_PATH
+        - name: APP_AVATAR_URL_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: shared-storage-config
+              key: SHARED_AVATAR_URL_PREFIX
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared
         resources:
           requests:
             memory: "512Mi"
@@ -85,6 +98,9 @@ spec:
             port: 8081
           initialDelaySeconds: 30
           periodSeconds: 10
+      volumes:
+      - name: shared-storage
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

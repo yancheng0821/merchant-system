@@ -47,6 +47,7 @@ logging:
 
 eureka:
   client:
+    enabled: false  # 禁用Eureka客户端
     service-url:
       defaultZone: http://localhost:8761/eureka/
   instance:
