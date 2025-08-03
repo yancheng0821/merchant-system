@@ -1,14 +1,32 @@
 # 生产环境配置
 spring:
   datasource:
-    url: jdbc:mysql://prod-db-host:3306/merchant_business?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_business?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10        # 最大连接数（业务服务需要更多连接）
+      minimum-idle: 3              # 最小空闲连接数
+      connection-timeout: 30000    # 连接超时时间（30秒）
+      idle-timeout: 600000         # 空闲连接超时时间（10分钟）
+      max-lifetime: 1800000        # 连接最大生存时间（30分钟）
+      leak-detection-threshold: 60000  # 连接泄漏检测阈值（60秒）
   rabbitmq:
     host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT}
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
 
 # 日志配置
 logging:

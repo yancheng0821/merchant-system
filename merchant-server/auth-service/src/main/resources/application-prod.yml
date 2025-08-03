@@ -1,0 +1,96 @@
+# 生产环境配置
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_auth?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  cloud:
+    discovery:
+      enabled: false  # 生产环境使用K8s服务发现
+  
+  # 国际化配置
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+    use-code-as-default-message: false
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.authservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+eureka:
+  client:
+    enabled: false  # 生产环境禁用Eureka
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000  # 24小时
+  refresh-expiration: 604800000  # 7天
+
+# Google OAuth2 配置
+google:
+  oauth2:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+# 文件上传配置
+file:
+  upload:
+    path: /opt/merchant-system
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# 生产环境日志配置
+logging:
+  level:
+    com.merchant.server.authservice: INFO
+    com.merchant.server.authservice.mapper: WARN
+    org.apache.ibatis: WARN
+    java.sql: WARN
+    org.mybatis: WARN
+    org.springframework: WARN
+    org.springframework.security: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/auth-service/application.log
+    max-size: 100MB
+    max-history: 30

@@ -17,14 +17,95 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: your-ecr-repo/notification-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/notification-service:latest
         ports:
         - containerPort: 8084
-        envFrom:
-        - configMapRef:
-            name: merchant-config
-        - secretRef:
-            name: merchant-secrets
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: DB_PORT
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: DB_PASSWORD
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: RABBITMQ_PORT
+        - name: RABBITMQ_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: RABBITMQ_USERNAME
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: RABBITMQ_PASSWORD
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: AWS_REGION
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: AWS_SECRET_ACCESS_KEY
+        - name: EMAIL_FROM
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: EMAIL_FROM
+        - name: EMAIL_FROM_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: EMAIL_FROM_NAME
+        - name: AWS_SES_FROM_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: AWS_SES_FROM_EMAIL
+        - name: AWS_SES_FROM_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: AWS_SES_FROM_NAME
+        - name: AWS_SNS_SENDER_ID
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: AWS_SNS_SENDER_ID
         resources:
           requests:
             memory: "512Mi"

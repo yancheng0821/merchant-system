@@ -17,14 +17,37 @@ spec:
     spec:
       containers:
       - name: analytics-service
-        image: your-ecr-repo/analytics-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/analytics-service:latest
         ports:
         - containerPort: 8086
-        envFrom:
-        - configMapRef:
-            name: merchant-config
-        - secretRef:
-            name: merchant-secrets
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: DB_PORT
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: DB_PASSWORD
+
+
         resources:
           requests:
             memory: "512Mi"

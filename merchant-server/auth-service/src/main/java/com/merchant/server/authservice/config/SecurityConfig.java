@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/invitations/validate").permitAll() // 邀请码验证接口
                 .requestMatchers("/api/auth/users/avatar/**").permitAll() // 头像访问路径
                 .requestMatchers("/api/test/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll() // 允许访问actuator端点
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

@@ -1,0 +1,72 @@
+# 生产环境配置
+server:
+  port: 8086
+
+spring:
+  application:
+    name: analytics-service
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_analytics?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.analyticsservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+eureka:
+  client:
+    enabled: false  # 生产环境禁用Eureka
+
+analytics:
+  cache:
+    enabled: true
+    ttl: 3600
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# 生产环境日志配置
+logging:
+  level:
+    com.merchant.server.analyticsservice: INFO
+    com.merchant.server.analyticsservice.mapper: WARN
+    org.apache.ibatis: WARN
+    java.sql: WARN
+    org.mybatis: WARN
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/analytics-service/application.log
+    max-size: 100MB
+    max-history: 30

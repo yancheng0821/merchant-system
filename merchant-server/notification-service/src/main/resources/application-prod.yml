@@ -6,10 +6,16 @@ spring:
   application:
     name: notification-service
   datasource:
-    url: jdbc:mysql://prod-db-host:3306/merchant_notification?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_notification?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   rabbitmq:
     host: ${RABBITMQ_HOST}
     port: 5672
@@ -58,6 +64,16 @@ notification:
     sns:
       defaultSenderId: ${AWS_SNS_SENDER_ID:YourApp}
       defaultMessageType: Transactional
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 
 # 生产环境日志配置
 logging:

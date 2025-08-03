@@ -5,26 +5,26 @@ metadata:
   namespace: merchant-system
 data:
   # 数据库配置
-  DB_HOST: "merchant-mysql.cxxx.us-east-1.rds.amazonaws.com"
+  DB_HOST: "merchant-system-mysql.cr88isi8scoc.ca-central-1.rds.amazonaws.com"
   DB_PORT: "3306"
   
   # Redis配置
-  REDIS_HOST: "merchant-redis.xxx.cache.amazonaws.com"
+  REDIS_HOST: "merchant-system-redis.bhima2.0001.cac1.cache.amazonaws.com"
   REDIS_PORT: "6379"
   
-  # RabbitMQ配置
-  RABBITMQ_HOST: "merchant-rabbitmq.xxx.mq.us-east-1.amazonaws.com"
+  # RabbitMQ配置 (暂时不使用，保留占位符)
+  RABBITMQ_HOST: "merchant-rabbitmq.xxx.mq.ca-central-1.amazonaws.com"
   RABBITMQ_PORT: "5672"
   
   # AWS配置
-  AWS_REGION: "us-east-1"
+  AWS_REGION: "ca-central-1"
   AWS_MAX_RETRIES: "3"
   AWS_RETRY_DELAY_MS: "1000"
   
   # 邮件配置
-  EMAIL_FROM: "noreply@yourdomain.com"
+  EMAIL_FROM: "yancheng0723@gmail.com"
   EMAIL_FROM_NAME: "商户管理系统"
-  AWS_SES_FROM_EMAIL: "noreply@yourdomain.com"
+  AWS_SES_FROM_EMAIL: "yancheng0723@gmail.com"
   AWS_SES_FROM_NAME: "商户管理系统"
   AWS_SNS_SENDER_ID: "MerchantSystem"
   
@@ -46,5 +46,8 @@ data:
   # 禁用Eureka (使用K8s服务发现)
   EUREKA_CLIENT_ENABLED: "false"
   
+  # Google OAuth配置
+  GOOGLE_REDIRECT_URI: "https://swiftmindsystems.com/auth/google/callback"
+  
   # 前端配置
-  REACT_APP_API_BASE_URL: "https://api.yourdomain.com"
+  REACT_APP_API_BASE_URL: "https://swiftmindsystems.com"

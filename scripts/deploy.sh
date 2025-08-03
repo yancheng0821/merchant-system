@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 设置kubectl上下文
-kubectl config use-context your-eks-cluster
+kubectl config use-context arn:aws:eks:ca-central-1:168787218791:cluster/merchant-system-eks
 
 # 创建命名空间
 kubectl apply -f k8s-deployment/namespace.yaml

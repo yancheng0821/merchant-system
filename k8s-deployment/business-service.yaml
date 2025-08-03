@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: business-service
-        image: your-ecr-repo/business-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:latest
         ports:
         - containerPort: 8083
         envFrom:

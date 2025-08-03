@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: merchant-service
-        image: your-ecr-repo/merchant-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/merchant-service:latest
         ports:
         - containerPort: 8082
         envFrom:

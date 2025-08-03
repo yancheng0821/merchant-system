@@ -1,0 +1,81 @@
+# 生产环境配置
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false  # 生产环境禁用服务发现
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "https://swiftmindsystems.com"
+              - "https://www.swiftmindsystems.com"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - Authorization
+              - Content-Type
+              - Accept
+              - Origin
+            allowCredentials: true
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081  # K8s内部服务
+          predicates:
+            - Path=/api/auth/**
+        - id: merchant-service
+          uri: http://merchant-service:8082
+          predicates:
+            - Path=/api/merchant/**
+        - id: business-service
+          uri: http://business-service:8083
+          predicates:
+            - Path=/api/business/**
+        - id: ai-service
+          uri: http://ai-service:5000
+          predicates:
+            - Path=/api/ai/**
+        - id: analytics-service
+          uri: http://analytics-service:8085
+          predicates:
+            - Path=/api/analytics/**
+        - id: notification-service
+          uri: http://notification-service:8084
+          predicates:
+            - Path=/api/notification/**
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
+
+eureka:
+  client:
+    enabled: false  # 生产环境禁用Eureka
+
+# 生产环境日志配置
+logging:
+  level:
+    com.merchant.server.gatewayservice: INFO
+    org.springframework.cloud.gateway: WARN
+    org.springframework.web: WARN
+    org.springframework: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/gateway-service/application.log
+    max-size: 100MB
+    max-history: 30

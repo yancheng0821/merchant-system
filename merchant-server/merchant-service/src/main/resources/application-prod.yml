@@ -1,0 +1,68 @@
+# 生产环境配置
+server:
+  port: 8082
+
+spring:
+  application:
+    name: merchant-service
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_management?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 8         # 最大连接数
+      minimum-idle: 2              # 最小空闲连接数
+      connection-timeout: 30000    # 连接超时时间（30秒）
+      idle-timeout: 600000         # 空闲连接超时时间（10分钟）
+      max-lifetime: 1800000        # 连接最大生存时间（30分钟）
+      leak-detection-threshold: 60000  # 连接泄漏检测阈值（60秒）
+  jpa:
+    hibernate:
+      ddl-auto: validate  # 生产环境使用validate而不是update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.merchantservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+eureka:
+  client:
+    enabled: false  # 生产环境禁用Eureka
+
+# Actuator配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# 生产环境日志配置
+logging:
+  level:
+    com.merchant.server.merchantservice: INFO
+    com.merchant.server.merchantservice.mapper: WARN
+    org.apache.ibatis: WARN
+    java.sql: WARN
+    org.mybatis: WARN
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/merchant-service/application.log
+    max-size: 100MB
+    max-history: 30

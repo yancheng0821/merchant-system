@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: your-ecr-repo/auth-service:latest
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/auth-service:latest
         ports:
         - containerPort: 8081
         env:
@@ -31,6 +31,11 @@ spec:
             configMapKeyRef:
               name: merchant-config
               key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: DB_PORT
         - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
@@ -46,6 +51,21 @@ spec:
             secretKeyRef:
               name: merchant-secrets
               key: JWT_SECRET
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: merchant-secrets
+              key: GOOGLE_CLIENT_SECRET
+        - name: GOOGLE_REDIRECT_URI
+          valueFrom:
+            configMapKeyRef:
+              name: merchant-config
+              key: GOOGLE_REDIRECT_URI
         resources:
           requests:
             memory: "512Mi"
