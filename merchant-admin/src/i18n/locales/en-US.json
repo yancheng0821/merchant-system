@@ -1120,6 +1120,7 @@
       "capacityRequired": "Capacity must be greater than 0"
     },
     "availability": {
+      "title": "Availability Settings",
       "staffAvailability": "Staff Availability",
       "roomAvailability": "Room Availability",
       "subtitle": "View resource availability schedules and time slots",
@@ -1143,7 +1144,9 @@
       "unknown": "Unknown",
       "searchStaffPlaceholder": "Search staff name, position or description...",
       "showingFirst9Staff": "Showing first 9 staff members, use search to find specific staff"
-    }
+    },
+    "equipmentInfo": "Equipment Information",
+    "roomIcon": "Room Icon"
   },
   "settings": {
     "businessSettings": "Business Settings",

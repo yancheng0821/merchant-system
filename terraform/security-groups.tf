@@ -58,3 +58,28 @@ resource "aws_db_subnet_group" "main" {
     Environment = var.environment
   }
 }
+
+# EFS Security Group
+resource "aws_security_group" "efs" {
+  name_prefix = "${var.project_name}-efs-"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = [module.vpc.vpc_cidr_block]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.project_name}-efs-sg"
+    Environment = var.environment
+  }
+}

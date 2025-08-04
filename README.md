@@ -134,7 +134,7 @@ merchant-system/
 - **完整的云原生解决方案**
 - **自动扩缩容和负载均衡**
 - **高可用和容灾能力**
-- **详细部署指南**: [AWS K8s部署文档](README-AWS-DEPLOYMENT.md)
+- **详细部署指南**: [AWS K8s部署文档](DEPLOYMENT-SETUP.md)
 
 #### 💻 开发环境 - 本地开发部署
 
@@ -177,7 +177,7 @@ terraform apply -var="db_password=your-secure-password"
 ./scripts/deploy.sh
 ```
 
-**详细部署指南**: 请参考 [AWS K8s部署文档](README-AWS-DEPLOYMENT.md) 和 [部署检查清单](DEPLOYMENT-CHECKLIST.md)
+**详细部署指南**: 请参考 [AWS K8s部署文档](DEPLOYMENT-SETUP.md) 和 [部署检查清单](DEPLOYMENT-CHECKLIST.md)
 
 #### 💻 本地开发环境
 
@@ -744,7 +744,7 @@ MIT License
 
 ## 📚 相关文档
 
-- [AWS K8s部署指南](README-AWS-DEPLOYMENT.md) - 完整的生产环境部署文档
+- [AWS K8s部署指南](DEPLOYMENT-SETUP.md) - 完整的生产环境部署文档
 - [部署检查清单](DEPLOYMENT-CHECKLIST.md) - 部署前后的检查事项
 - [通知服务配置](merchant-server/notification-service/README.md) - 通知服务详细配置
 - [POS支付配置](merchant-server/business-service/POS_CONFIGURATION.md) - POS支付系统配置

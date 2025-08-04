@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: analytics-service
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/analytics-service:auth-service
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/analytics-service:latest
         ports:
         - containerPort: 8086
         env:

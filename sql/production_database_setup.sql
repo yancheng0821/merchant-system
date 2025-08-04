@@ -1067,7 +1067,7 @@ INSERT INTO `resource_availability` (`resource_id`, `day_of_week`, `start_time`,
 INSERT INTO `customers` (`id`, `tenant_id`, `first_name`, `last_name`, `phone`, `email`, `gender`, `communication_preference`, `status`) VALUES
 (1, 1, '张', '女士', '604-123-4567', 'zhang@example.com', 'FEMALE', 'SMS', 'ACTIVE'),
 (2, 1, '李', '先生', '604-234-5678', 'li@example.com', 'MALE', 'EMAIL', 'ACTIVE'),
-(3, 1, '王', '女士', '604-345-6789', 'wang@example.com', 'FEMALE', 'BOTH', 'ACTIVE');
+(3, 1, '王', '女士', '604-345-6789', 'wang@example.com', 'FEMALE', 'SMS', 'ACTIVE');
 
 -- 插入通知模板
 USE `merchant_notification`;

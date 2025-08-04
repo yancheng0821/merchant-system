@@ -51,6 +51,10 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/api/notification/**
+        - id: file-service
+          uri: lb://file-service
+          predicates:
+            - Path=/api/files/**
   redis:
     host: localhost
     port: 6379

@@ -82,32 +82,49 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
   // 监听用户活动
   useEffect(() => {
+    // 只有在用户登录且session未过期时才监听活动
+    if (!user || isSessionExpired) {
+      return;
+    }
+
+    let activityTimeout: NodeJS.Timeout;
+
     const handleActivity = () => {
-      // 只有在session未过期时才处理用户活动
-      if (!isSessionExpired) {
-        refreshSession();
-      }
+      // 防抖处理，避免过于频繁的更新
+      clearTimeout(activityTimeout);
+      activityTimeout = setTimeout(() => {
+        if (!isSessionExpired) {
+          setLastActivity(Date.now());
+          setWarningShown(false);
+        }
+      }, 1000); // 1秒防抖
     };
 
     // 监听各种用户活动事件
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
     
     events.forEach(event => {
-      document.addEventListener(event, handleActivity, true);
+      document.addEventListener(event, handleActivity, { passive: true });
     });
 
     return () => {
+      clearTimeout(activityTimeout);
       events.forEach(event => {
-        document.removeEventListener(event, handleActivity, true);
+        document.removeEventListener(event, handleActivity);
       });
     };
-  }, [refreshSession, isSessionExpired]);
+  }, [user, isSessionExpired]);
 
   // 检查会话是否过期
   useEffect(() => {
+    // 只有在用户登录后才开始检查会话
+    if (!user) {
+      return;
+    }
+
     const checkSession = () => {
-      // 如果没有用户登录或已经过期，不需要检查
-      if (!user || isSessionExpired) {
+      // 如果已经过期，不需要再检查
+      if (isSessionExpired) {
         return;
       }
 
@@ -115,31 +132,25 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       const timeSinceLastActivity = now - lastActivity;
       const timeoutMs = sessionTimeout * 60 * 1000; // 转换为毫秒
 
-      // 给新用户一些缓冲时间（30秒），避免刚注册就被踢出
-      const bufferTime = 30 * 1000;
-      if (timeSinceLastActivity > (timeoutMs + bufferTime)) {
+      // 检查是否超时
+      if (timeSinceLastActivity > timeoutMs) {
+        console.log('Session expired:', {
+          timeSinceLastActivity: timeSinceLastActivity / 1000 / 60,
+          sessionTimeout,
+          lastActivity: new Date(lastActivity).toLocaleString()
+        });
         setIsSessionExpired(true);
         setShowSessionDialog(true);
-      } else {
-        // 重置警告状态
-        setWarningShown(false);
       }
     };
 
-    // 只有在用户登录后才开始检查会话
-    if (!user) {
-      return;
-    }
-
-    // 延迟1秒后开始检查，给用户登录过程一些时间
+    // 延迟2秒后开始检查，给用户登录过程一些时间
     const initialDelay = setTimeout(() => {
-      checkSession();
-      
-      // 每15秒检查一次会话状态，确保更及时的响应
-      const interval = setInterval(checkSession, 15000);
+      // 每30秒检查一次会话状态
+      const interval = setInterval(checkSession, 30000);
       
       return () => clearInterval(interval);
-    }, 1000);
+    }, 2000);
 
     return () => clearTimeout(initialDelay);
   }, [lastActivity, sessionTimeout, isSessionExpired, user]);

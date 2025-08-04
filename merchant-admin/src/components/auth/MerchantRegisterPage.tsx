@@ -341,20 +341,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
       const { authApi } = await import('../../services/api');
       const response = await authApi.merchantRegister(submitData);
       
-      console.log('完整响应:', response);
       
       if (response.success && response.data) {
-        console.log('商户注册响应数据:', response.data);
-        console.log('邀请码:', response.data.invitationCode);
-        console.log('租户代码:', response.data.tenantCode);
-        console.log('所有字段:', Object.keys(response.data));
-        
+
         const invCode = response.data.invitationCode || '';
         const tenCode = response.data.tenantCode || '';
-        
-        console.log('设置的邀请码:', invCode);
-        console.log('设置的租户代码:', tenCode);
-        
+              
         setInvitationCode(invCode);
         setTenantCode(tenCode);
         setShowSuccessDialog(true);

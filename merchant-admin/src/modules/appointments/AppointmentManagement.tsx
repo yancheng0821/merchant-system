@@ -870,7 +870,6 @@ const AppointmentManagement: React.FC = () => {
           try {
             // 创建预约（通知会在后端自动发送）
             const createdAppointment = await appointmentApi.createAppointment(appointment);
-            console.log('Appointment created successfully with automatic notifications');
 
             setSnackbar({
               open: true,

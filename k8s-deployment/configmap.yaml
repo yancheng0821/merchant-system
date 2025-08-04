@@ -26,7 +26,7 @@ data:
   EMAIL_FROM_NAME: "商户管理系统"
   AWS_SES_FROM_EMAIL: "yancheng0723@gmail.com"
   AWS_SES_FROM_NAME: "商户管理系统"
-  AWS_SNS_SENDER_ID: "MerchantSystem"
+  AWS_SNS_SENDER_ID: "Merchant"
   
   # POS配置
   POS_API_URL: "https://pos-api.yourdomain.com"

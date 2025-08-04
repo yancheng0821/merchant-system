@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/auth-service:auth-service
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/auth-service:latest
         ports:
         - containerPort: 8081
         env:
@@ -78,7 +78,7 @@ spec:
               key: SHARED_AVATAR_URL_PREFIX
         volumeMounts:
         - name: shared-storage
-          mountPath: /shared
+          mountPath: /usr/share/nginx/html/files
         resources:
           requests:
             memory: "512Mi"
@@ -98,9 +98,12 @@ spec:
             port: 8081
           initialDelaySeconds: 30
           periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/hostname: ip-10-0-1-158.ca-central-1.compute.internal
       volumes:
       - name: shared-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: avatars-pvc
 ---
 apiVersion: v1
 kind: Service

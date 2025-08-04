@@ -53,6 +53,10 @@ spring:
           uri: http://notification-service:8084
           predicates:
             - Path=/api/notification/**
+        - id: file-service
+          uri: http://file-service:80
+          predicates:
+            - Path=/api/files/**
   redis:
     host: ${REDIS_HOST}
     port: ${REDIS_PORT}

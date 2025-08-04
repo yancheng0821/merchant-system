@@ -22,6 +22,8 @@ spec:
         - containerPort: 80
         volumeMounts:
         - name: shared-storage
+          mountPath: /usr/share/nginx/html/files/uploads
+        - name: avatars-storage
           mountPath: /usr/share/nginx/html/files
         - name: nginx-config
           mountPath: /etc/nginx/conf.d/default.conf
@@ -45,9 +47,15 @@ spec:
             port: 80
           initialDelaySeconds: 10
           periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/hostname: ip-10-0-1-158.ca-central-1.compute.internal
       volumes:
       - name: shared-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: uploads-pvc
+      - name: avatars-storage
+        persistentVolumeClaim:
+          claimName: avatars-pvc
       - name: nginx-config
         configMap:
           name: file-service-config
@@ -70,7 +78,17 @@ data:
             add_header Content-Type text/plain;
         }
         
-        # 头像文件访问
+        # 头像文件访问 - 支持租户目录结构
+        location ~ ^/api/files/avatars/(tenant_\d+)/(.+)$ {
+            alias /usr/share/nginx/html/files/avatars/$1/$2;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
+        }
+        
+        # 兼容旧的头像路径
         location /api/files/avatars/ {
             alias /usr/share/nginx/html/files/avatars/;
             expires 1y;
@@ -78,6 +96,7 @@ data:
             add_header Access-Control-Allow-Origin *;
             add_header Access-Control-Allow-Methods "GET, OPTIONS";
             add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
+            try_files $uri =404;
         }
         
         # 上传文件访问
@@ -90,9 +109,10 @@ data:
             add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
         }
         
-        # 默认页面
+        # 默认页面 - 重定向到健康检查
         location / {
-            return 404;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
         }
     }
 ---

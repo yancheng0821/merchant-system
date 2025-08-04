@@ -14,7 +14,7 @@ public class GatewayConfig {
                 // 文件访问路由 - 不需要认证
                 .route("file-access", r -> r
                         .path("/api/files/**")
-                        .uri("lb://auth-service")
+                        .uri("lb://file-service")
                 )
                 .build();
     }

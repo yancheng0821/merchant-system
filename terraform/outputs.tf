@@ -1,11 +1,36 @@
+output "vpc_id" {
+  description = "VPC ID"
+  value       = module.vpc.vpc_id
+}
+
+output "private_subnets" {
+  description = "Private subnet IDs"
+  value       = module.vpc.private_subnets
+}
+
 output "cluster_endpoint" {
-  description = "Endpoint for EKS control plane"
+  description = "EKS cluster endpoint"
   value       = module.eks.cluster_endpoint
 }
 
 output "cluster_name" {
-  description = "Kubernetes Cluster Name"
+  description = "EKS cluster name"
   value       = module.eks.cluster_name
+}
+
+output "efs_file_system_id" {
+  description = "EFS File System ID"
+  value       = aws_efs_file_system.shared_storage.id
+}
+
+output "efs_avatars_access_point_id" {
+  description = "EFS Avatars Access Point ID"
+  value       = aws_efs_access_point.avatars.id
+}
+
+output "efs_uploads_access_point_id" {
+  description = "EFS Uploads Access Point ID"
+  value       = aws_efs_access_point.uploads.id
 }
 
 output "rds_endpoint" {

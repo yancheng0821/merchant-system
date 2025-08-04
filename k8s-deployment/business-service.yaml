@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: business-service
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:auth-service
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:latest
         ports:
         - containerPort: 8083
         envFrom:
@@ -58,9 +58,12 @@ spec:
             port: 8083
           initialDelaySeconds: 30
           periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/hostname: ip-10-0-1-158.ca-central-1.compute.internal
       volumes:
       - name: shared-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: uploads-pvc
 ---
 apiVersion: v1
 kind: Service

@@ -1363,6 +1363,7 @@
       "capacityRequired": "容量必须大于0"
     },
     "availability": {
+      "title": "可用性设置",
       "staffAvailability": "员工可用性",
       "roomAvailability": "场地可用性",
       "subtitle": "查看资源可用性时间表和时间段",
@@ -1383,7 +1384,9 @@
       "unknown": "未知",
       "searchStaffPlaceholder": "搜索员工姓名、职位或描述...",
       "showingFirst9Staff": "默认显示前9名员工，使用搜索查找特定员工"
-    }
+    },
+    "equipmentInfo": "设备信息",
+    "roomIcon": "房间图标"
   },
   "settings": {
     "title": "系统设置",

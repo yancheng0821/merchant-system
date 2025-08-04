@@ -148,3 +148,76 @@ resource "aws_ecr_repository" "repos" {
     Project     = var.project_name
   }
 }
+
+# EFS File System for shared storage
+resource "aws_efs_file_system" "shared_storage" {
+  creation_token = "${var.project_name}-shared-storage"
+  encrypted       = true
+
+  performance_mode = "generalPurpose"
+  throughput_mode  = "bursting"
+
+  tags = {
+    Name        = "${var.project_name}-shared-storage"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# EFS Mount Targets
+resource "aws_efs_mount_target" "shared_storage" {
+  count           = length(module.vpc.private_subnets)
+  file_system_id  = aws_efs_file_system.shared_storage.id
+  subnet_id       = module.vpc.private_subnets[count.index]
+  security_groups = [aws_security_group.efs.id]
+}
+
+# EFS Access Point for avatars
+resource "aws_efs_access_point" "avatars" {
+  file_system_id = aws_efs_file_system.shared_storage.id
+
+  root_directory {
+    path = "/avatars"
+    creation_info {
+      owner_gid   = 1000
+      owner_uid   = 1000
+      permissions = "755"
+    }
+  }
+
+  posix_user {
+    gid = 1000
+    uid = 1000
+  }
+
+  tags = {
+    Name        = "${var.project_name}-avatars-access-point"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# EFS Access Point for uploads
+resource "aws_efs_access_point" "uploads" {
+  file_system_id = aws_efs_file_system.shared_storage.id
+
+  root_directory {
+    path = "/uploads"
+    creation_info {
+      owner_gid   = 1000
+      owner_uid   = 1000
+      permissions = "755"
+    }
+  }
+
+  posix_user {
+    gid = 1000
+    uid = 1000
+  }
+
+  tags = {
+    Name        = "${var.project_name}-uploads-access-point"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}

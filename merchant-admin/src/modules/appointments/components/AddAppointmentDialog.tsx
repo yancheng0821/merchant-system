@@ -319,10 +319,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           status: 'ACTIVE' as const,
         };
 
-        console.log('Creating new customer:', newCustomer);
         createdCustomer = await customerApi.createCustomer(newCustomer);
         customerId = Number(createdCustomer.id);
-        console.log('Customer created with ID:', customerId);
       } else {
         customerId = Number(selectedCustomer.id);
       }

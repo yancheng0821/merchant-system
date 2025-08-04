@@ -151,7 +151,6 @@ const UserProfile: React.FC = () => {
         userId: Number(user.id) // 确保userId是数字类型
       };
       
-      console.log('Updating user profile with data:', updateData);
       const success = await updateUserInfo(updateData);
       
       if (success) {

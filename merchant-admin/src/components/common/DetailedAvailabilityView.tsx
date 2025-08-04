@@ -41,6 +41,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [scrollPosition, setScrollPosition] = useState(0);
+    const [shouldRestoreScroll, setShouldRestoreScroll] = useState(false);
 
     // 生成时间段（30分钟间隔）
     const timeSlots = React.useMemo(() => {
@@ -76,14 +77,19 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
 
     // 恢复滚动位置
     useEffect(() => {
-        if (!loading && availabilityData && scrollPosition > 0) {
-            // 使用setTimeout确保DOM已更新
-            setTimeout(() => {
-                window.scrollTo(0, scrollPosition);
-                setScrollPosition(0); // 重置滚动位置
-            }, 100);
+        if (!loading && availabilityData && shouldRestoreScroll && scrollPosition > 0) {
+            // 使用requestAnimationFrame确保DOM已完全更新
+            requestAnimationFrame(() => {
+                window.scrollTo({
+                    top: scrollPosition,
+                    behavior: 'instant' // 使用instant避免动画
+                });
+                // 重置状态
+                setShouldRestoreScroll(false);
+                setScrollPosition(0);
+            });
         }
-    }, [loading, availabilityData, scrollPosition]);
+    }, [loading, availabilityData, shouldRestoreScroll, scrollPosition]);
 
     // 检查时间段状态
     const getTimeSlotStatus = (timeSlot: string) => {
@@ -92,35 +98,42 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
         const date = new Date(selectedDate);
         const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
 
+        // 如果没有可用性数据，默认为不可用
+        if (!availabilityData.availabilities || availabilityData.availabilities.length === 0) {
+            return 'unavailable';
+        }
+
         // 检查是否在工作时间内
-        const isInWorkingHours = availabilityData.availabilities?.some((av: any) => {
-            if (av.dayOfWeek !== dayOfWeek || !av.isAvailable) return false;
+        const isInWorkingHours = availabilityData.availabilities.some((av: any) => {
+            if (av.dayOfWeek !== dayOfWeek) return false;
+            
+            // 如果 isAvailable 为 false，则不可用
+            if (av.isAvailable === false) return false;
+            
             const slotTime = timeSlot + ':00';
-            return slotTime >= av.startTime && slotTime < av.endTime;
+            const startTime = av.startTime.length === 5 ? av.startTime + ':00' : av.startTime;
+            const endTime = av.endTime.length === 5 ? av.endTime + ':00' : av.endTime;
+            
+            return slotTime >= startTime && slotTime < endTime;
         });
 
         if (!isInWorkingHours) return 'unavailable';
 
         // 检查是否已被预约
-        const isBooked = availabilityData.bookingSlots?.some((slot: any) => {
-            const slotTime = timeSlot + ':00';
-            // 确保时间格式一致，都使用HH:mm:ss格式进行比较
-            const slotStartTime = slot.startTime.length === 5 ? slot.startTime + ':00' : slot.startTime;
-            const slotEndTime = slot.endTime.length === 5 ? slot.endTime + ':00' : slot.endTime;
+        if (availabilityData.bookingSlots && availabilityData.bookingSlots.length > 0) {
+            const isBooked = availabilityData.bookingSlots.some((slot: any) => {
+                const slotTime = timeSlot + ':00';
+                // 确保时间格式一致，都使用HH:mm:ss格式进行比较
+                const slotStartTime = slot.startTime.length === 5 ? slot.startTime + ':00' : slot.startTime;
+                const slotEndTime = slot.endTime.length === 5 ? slot.endTime + ':00' : slot.endTime;
 
-            const isInSlot = slotTime >= slotStartTime && slotTime < slotEndTime && slot.status === 'BOOKED';
-            if (isInSlot) {
-                console.log(`Time slot ${timeSlot} is booked by slot:`, slot);
-            }
-            return isInSlot;
-        });
+                return slotTime >= slotStartTime && slotTime < slotEndTime && slot.status === 'BOOKED';
+            });
 
-        const status = isBooked ? 'booked' : 'available';
-        if (timeSlot === '10:00' || timeSlot === '14:00') { // 调试特定时间段
-            console.log(`Time slot ${timeSlot} status: ${status}, booking slots:`, availabilityData.bookingSlots);
+            return isBooked ? 'booked' : 'available';
         }
 
-        return status;
+        return 'available';
     };
 
     // 获取状态颜色和图标
@@ -153,8 +166,10 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
 
     // 日期导航
     const navigateDate = (direction: 'prev' | 'next') => {
-        // 保存当前滚动位置
-        setScrollPosition(window.pageYOffset || document.documentElement.scrollTop);
+        // 保存当前滚动位置并标记需要恢复
+        const currentScrollPosition = window.scrollY || document.documentElement.scrollTop;
+        setScrollPosition(currentScrollPosition);
+        setShouldRestoreScroll(true);
 
         const currentDate = new Date(selectedDate);
         const newDate = new Date(currentDate);
@@ -375,8 +390,10 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                             type="date"
                             value={selectedDate}
                             onChange={(e) => {
-                                // 保存当前滚动位置
-                                setScrollPosition(window.pageYOffset || document.documentElement.scrollTop);
+                                // 保存当前滚动位置并标记需要恢复
+                                const currentScrollPosition = window.scrollY || document.documentElement.scrollTop;
+                                setScrollPosition(currentScrollPosition);
+                                setShouldRestoreScroll(true);
                                 setSelectedDate(e.target.value);
                             }}
                             size="small"

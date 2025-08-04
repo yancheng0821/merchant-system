@@ -58,9 +58,9 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(createErrorResponse("文件大小不能超过5MB"));
             }
 
-            // 创建目录结构: /opt/merchant-system/avatars/tenant_{tenantId}/
+            // 创建目录结构: /usr/share/nginx/html/files/avatars/tenant_{tenantId}/
             String tenantDir = "tenant_" + tenantId;
-            Path uploadDir = Paths.get(uploadBasePath, subDir, tenantDir);
+            Path uploadDir = Paths.get(uploadBasePath, tenantDir);
             Files.createDirectories(uploadDir);
 
             // 生成唯一文件名
@@ -74,8 +74,8 @@ public class FileUploadController {
             Path filePath = uploadDir.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 生成访问URL
-            String fileUrl = String.format("/api/auth/files/%s/%s/%s", subDir, tenantDir, filename);
+            // 生成访问URL - 使用统一的文件服务路径
+            String fileUrl = String.format("/api/files/avatars/%s/%s", tenantDir, filename);
 
             Map<String, String> response = new HashMap<>();
             response.put("url", fileUrl);
@@ -98,7 +98,7 @@ public class FileUploadController {
             @PathVariable String filename) {
         
         try {
-            Path filePath = Paths.get(uploadBasePath, subDir, tenantDir, filename);
+            Path filePath = Paths.get(uploadBasePath, tenantDir, filename);
             
             if (!Files.exists(filePath)) {
                 return ResponseEntity.notFound().build();
@@ -137,11 +137,10 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(createErrorResponse("无效的文件路径"));
             }
 
-            String subDir = pathParts[4];
             String tenantDir = pathParts[5];
             String filename = pathParts[6];
 
-            Path filePath = Paths.get(uploadBasePath, subDir, tenantDir, filename);
+            Path filePath = Paths.get(uploadBasePath, tenantDir, filename);
             
             if (Files.exists(filePath)) {
                 Files.delete(filePath);

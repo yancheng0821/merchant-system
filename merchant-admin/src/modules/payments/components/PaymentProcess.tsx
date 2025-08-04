@@ -324,7 +324,6 @@ const PaymentProcess: React.FC = () => {
         })
         .slice(0, 20);
 
-      console.log('Confirmed appointments:', allConfirmedAppointments.length, 'Today:', todayAppointments.length);
       
       // 存储所有已确认的预约用于搜索，显示今天的预约作为默认
       setAppointments(allConfirmedAppointments);
@@ -665,11 +664,8 @@ const PaymentProcess: React.FC = () => {
     const poll = async () => {
       try {
         attempts++;
-        console.log(`Polling payment status, attempt ${attempts}/${maxAttempts}`);
         
-        const statusResponse = await api.checkPaymentStatus(transactionId);
-        console.log('Payment status response:', statusResponse);
-        
+        const statusResponse = await api.checkPaymentStatus(transactionId);        
         if (statusResponse.status === 'approved') {
           // 支付成功
           setOrderResult({
