@@ -46,6 +46,17 @@ eureka:
   client:
     enabled: false  # 生产环境禁用Eureka
 
+# Feign 客户端配置
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000  # 30秒连接超时
+        readTimeout: 60000     # 60秒读取超时
+      merchant-service:
+        connectTimeout: 30000
+        readTimeout: 60000
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000  # 24小时
@@ -63,17 +74,6 @@ file:
   upload:
     path: ${APP_AVATAR_UPLOAD_PATH:/shared/avatars}
     url-prefix: ${APP_AVATAR_URL_PREFIX:/api/files/avatars/}
-
-# Feign 客户端配置
-feign:
-  client:
-    config:
-      default:
-        connectTimeout: 30000  # 30秒连接超时
-        readTimeout: 60000     # 60秒读取超时
-      merchant-service:
-        connectTimeout: 30000
-        readTimeout: 60000
 
 # Actuator配置
 management:
