@@ -147,6 +147,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO) {
         log.info("Creating appointment with services for customer: {}", appointmentDTO.getCustomerId());
         log.info("Appointment DTO: {}", appointmentDTO);
+        log.info("Selected Resources: {}", appointmentDTO.getSelectedResources());
         
         // 创建预约实体
         Appointment appointment = new Appointment();
@@ -170,24 +171,46 @@ public class AppointmentServiceImpl implements AppointmentService {
             appointmentMapper.insert(appointment);
             log.info("Appointment created successfully with ID: {}", appointment.getId());
             
-            // 2. 如果有资源ID，创建预约时间段
-            if (appointment.getResourceId() != null && appointment.getDuration() != null) {
+            // 2. 创建预约时间段
+            if (appointment.getDuration() != null) {
                 LocalTime startTime = appointment.getAppointmentTime();
                 LocalTime endTime = startTime.plusMinutes(appointment.getDuration());
                 
-                try {
-                    resourceService.createBookingSlot(
-                        appointment.getResourceId(),
-                        appointment.getId(),
-                        appointment.getAppointmentDate(),
-                        startTime,
-                        endTime
-                    );
-                    log.info("Booking slot created for appointment: {}", appointment.getId());
-                } catch (Exception e) {
-                    log.error("Failed to create booking slot for appointment: {}", appointment.getId(), e);
-                    // 如果创建预约时间段失败，回滚预约创建
-                    throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
+                // 处理多个资源的预约时段创建
+                if (appointmentDTO.getSelectedResources() != null && !appointmentDTO.getSelectedResources().isEmpty()) {
+                    // 为每个选中的资源创建预约时段
+                    for (AppointmentCreateDTO.SelectedResourceDTO selectedResource : appointmentDTO.getSelectedResources()) {
+                        try {
+                            resourceService.createBookingSlot(
+                                selectedResource.getId(),
+                                appointment.getId(),
+                                appointment.getAppointmentDate(),
+                                startTime,
+                                endTime
+                            );
+                            log.info("Booking slot created for resource: {} in appointment: {}", selectedResource.getId(), appointment.getId());
+                        } catch (Exception e) {
+                            log.error("Failed to create booking slot for resource: {} in appointment: {}", selectedResource.getId(), appointment.getId(), e);
+                            // 如果创建预约时间段失败，回滚预约创建
+                            throw new RuntimeException("Failed to create booking slot for resource " + selectedResource.getId() + ": " + e.getMessage(), e);
+                        }
+                    }
+                } else if (appointment.getResourceId() != null) {
+                    // 兼容旧逻辑：如果只有主要资源ID，创建单个预约时段
+                    try {
+                        resourceService.createBookingSlot(
+                            appointment.getResourceId(),
+                            appointment.getId(),
+                            appointment.getAppointmentDate(),
+                            startTime,
+                            endTime
+                        );
+                        log.info("Booking slot created for appointment: {}", appointment.getId());
+                    } catch (Exception e) {
+                        log.error("Failed to create booking slot for appointment: {}", appointment.getId(), e);
+                        // 如果创建预约时间段失败，回滚预约创建
+                        throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
+                    }
                 }
             }
             

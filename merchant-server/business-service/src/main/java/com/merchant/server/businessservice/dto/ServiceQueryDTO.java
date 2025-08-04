@@ -18,6 +18,6 @@ public class ServiceQueryDTO {
     private Integer size = 10;
     
     public Integer getOffset() {
-        return (page - 1) * size;
+        return Math.max(0, (page - 1) * size);
     }
 }

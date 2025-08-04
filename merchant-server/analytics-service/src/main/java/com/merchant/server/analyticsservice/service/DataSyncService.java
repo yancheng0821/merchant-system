@@ -65,12 +65,18 @@ public class DataSyncService {
         try {
             // 先删除该时间段的现有数据，避免重复
             revenueStatsMapper.deleteByTenantIdAndDateRange(tenantId, startDate, endDate);
+            log.info("Deleted existing revenue stats records for tenant: {}", tenantId);
             
             // 从business-service获取订单统计数据
             List<Map<String, Object>> orderStats = businessServiceClient.getOrderStats(
                 tenantId, startDate.toString(), endDate.toString());
             
+            log.info("Retrieved {} order stats records from business service for tenant: {}", orderStats.size(), tenantId);
+            
+            int insertedCount = 0;
             for (Map<String, Object> stat : orderStats) {
+                log.debug("Processing order stat: {}", stat);
+                
                 DailyRevenueStats revenueStats = new DailyRevenueStats();
                 revenueStats.setTenantId(tenantId);
                 revenueStats.setStatDate(LocalDate.parse(stat.get("statDate").toString()));
@@ -80,9 +86,12 @@ public class DataSyncService {
                 revenueStats.setAvgOrderValue(convertToBigDecimal(stat.get("avgOrderValue")));
                 
                 revenueStatsMapper.insert(revenueStats);
+                insertedCount++;
+                log.debug("Inserted revenue stat for date: {}, orders: {}, revenue: {}", 
+                    revenueStats.getStatDate(), revenueStats.getTotalOrders(), revenueStats.getTotalRevenue());
             }
             
-            log.info("Revenue stats sync completed for tenant: {}", tenantId);
+            log.info("Revenue stats sync completed for tenant: {}. Inserted {} records", tenantId, insertedCount);
         } catch (Exception e) {
             log.error("Error syncing revenue stats for tenant: {}", tenantId, e);
             throw e;
@@ -95,12 +104,18 @@ public class DataSyncService {
         try {
             // 先删除该时间段的现有数据，避免重复
             serviceStatsMapper.deleteByTenantIdAndDateRange(tenantId, startDate, endDate);
+            log.info("Deleted existing service stats records for tenant: {}", tenantId);
             
             // 从business-service获取服务统计数据
             List<Map<String, Object>> serviceStats = businessServiceClient.getServiceStats(
                 tenantId, startDate.toString(), endDate.toString());
             
+            log.info("Retrieved {} service stats records from business service for tenant: {}", serviceStats.size(), tenantId);
+            
+            int insertedCount = 0;
             for (Map<String, Object> stat : serviceStats) {
+                log.debug("Processing service stat: {}", stat);
+                
                 DailyServiceStats serviceStatsEntity = new DailyServiceStats();
                 serviceStatsEntity.setTenantId(tenantId);
                 serviceStatsEntity.setServiceId(((Number) stat.get("serviceId")).longValue());
@@ -113,9 +128,13 @@ public class DataSyncService {
                 serviceStatsEntity.setAvgPrice(convertToBigDecimal(stat.get("avgPrice")));
                 
                 serviceStatsMapper.insert(serviceStatsEntity);
+                insertedCount++;
+                log.debug("Inserted service stat for service: {}, date: {}, orders: {}, revenue: {}", 
+                    serviceStatsEntity.getServiceName(), serviceStatsEntity.getStatDate(), 
+                    serviceStatsEntity.getOrderCount(), serviceStatsEntity.getTotalRevenue());
             }
             
-            log.info("Service stats sync completed for tenant: {}", tenantId);
+            log.info("Service stats sync completed for tenant: {}. Inserted {} records", tenantId, insertedCount);
         } catch (Exception e) {
             log.error("Error syncing service stats for tenant: {}", tenantId, e);
             throw e;

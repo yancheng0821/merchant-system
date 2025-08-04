@@ -222,29 +222,73 @@
 
     <select id="getResourceStatsForAnalytics" resultType="map">
         SELECT 
-            DATE(o.created_at) as statDate,
-            o.resource_id as resourceId,
-            o.resource_type as resourceType,
-            COALESCE(r.name, 
-                CASE 
-                    WHEN o.resource_type = 'STAFF' THEN CONCAT('Staff Member ', o.resource_id)
-                    WHEN o.resource_type = 'ROOM' THEN CONCAT('Room ', o.resource_id)
-                    ELSE CONCAT('Resource ', o.resource_id)
-                END
-            ) as resourceName,
-            COUNT(*) as orderCount,
-            COALESCE(SUM(o.total_amount), 0) as totalRevenue,
-            4.5 as avgRating,
-            COUNT(*) as ratingCount,
-            8.0 as workingHours,
-            85.0 as efficiencyScore
-        FROM orders o
-        LEFT JOIN resource r ON o.resource_id = r.id AND r.tenant_id = o.tenant_id
-        WHERE o.tenant_id = #{tenantId} 
-        AND DATE(o.created_at) BETWEEN #{startDate} AND #{endDate}
-        AND o.resource_id IS NOT NULL
-        AND o.payment_status = 'paid'
-        GROUP BY DATE(o.created_at), o.resource_id, o.resource_type, r.name
+            statDate,
+            resourceId,
+            resourceType,
+            resourceName,
+            SUM(orderCount) as orderCount,
+            SUM(totalRevenue) as totalRevenue,
+            AVG(avgRating) as avgRating,
+            SUM(ratingCount) as ratingCount,
+            AVG(workingHours) as workingHours,
+            AVG(efficiencyScore) as efficiencyScore
+        FROM (
+            -- 从订单表获取员工资源统计
+            SELECT 
+                DATE(o.created_at) as statDate,
+                o.resource_id as resourceId,
+                o.resource_type as resourceType,
+                COALESCE(r.name, 
+                    CASE 
+                        WHEN o.resource_type = 'STAFF' THEN CONCAT('Staff Member ', o.resource_id)
+                        WHEN o.resource_type = 'ROOM' THEN CONCAT('Room ', o.resource_id)
+                        ELSE CONCAT('Resource ', o.resource_id)
+                    END
+                ) as resourceName,
+                COUNT(*) as orderCount,
+                COALESCE(SUM(o.total_amount), 0) as totalRevenue,
+                4.5 as avgRating,
+                COUNT(*) as ratingCount,
+                8.0 as workingHours,
+                85.0 as efficiencyScore
+            FROM orders o
+            LEFT JOIN resource r ON o.resource_id = r.id AND r.tenant_id = o.tenant_id
+            WHERE o.tenant_id = #{tenantId} 
+            AND DATE(o.created_at) BETWEEN #{startDate} AND #{endDate}
+            AND o.resource_id IS NOT NULL
+            AND o.payment_status = 'paid'
+            GROUP BY DATE(o.created_at), o.resource_id, o.resource_type, r.name
+            
+            UNION ALL
+            
+            -- 从预约表获取房间资源统计
+            SELECT 
+                DATE(a.appointment_date) as statDate,
+                a.resource_id as resourceId,
+                a.resource_type as resourceType,
+                COALESCE(r.name, 
+                    CASE 
+                        WHEN a.resource_type = 'STAFF' THEN CONCAT('Staff Member ', a.resource_id)
+                        WHEN a.resource_type = 'ROOM' THEN CONCAT('Room ', a.resource_id)
+                        ELSE CONCAT('Resource ', a.resource_id)
+                    END
+                ) as resourceName,
+                COUNT(*) as orderCount,
+                COALESCE(SUM(a.total_amount), 0) as totalRevenue,
+                4.5 as avgRating,
+                COUNT(*) as ratingCount,
+                8.0 as workingHours,
+                85.0 as efficiencyScore
+            FROM appointments a
+            LEFT JOIN resource r ON a.resource_id = r.id AND r.tenant_id = a.tenant_id
+            WHERE a.tenant_id = #{tenantId} 
+            AND DATE(a.appointment_date) BETWEEN #{startDate} AND #{endDate}
+            AND a.resource_id IS NOT NULL
+            AND a.resource_type = 'ROOM'
+            AND a.status IN ('CONFIRMED', 'COMPLETED')
+            GROUP BY DATE(a.appointment_date), a.resource_id, a.resource_type, r.name
+        ) combined_stats
+        GROUP BY statDate, resourceId, resourceType, resourceName
         ORDER BY statDate, resourceId
     </select>
 

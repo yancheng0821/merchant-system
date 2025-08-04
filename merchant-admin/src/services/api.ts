@@ -1077,6 +1077,11 @@ export interface Appointment {
   review?: string;
   createdAt: string;
   updatedAt: string;
+  // 选中的资源信息，用于创建资源预约时段
+  selectedResources?: {
+    id: number;
+    type: 'STAFF' | 'ROOM';
+  }[];
   // 关联对象
   customer?: Customer;
   resource?: {

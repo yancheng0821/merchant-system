@@ -56,4 +56,9 @@ public class TenantServiceImpl implements TenantService {
     public boolean existsByTenantCode(String tenantCode) {
         return tenantMapper.existsByTenantCode(tenantCode);
     }
+    
+    @Override
+    public List<Tenant> findActiveTenants() {
+        return tenantMapper.selectActiveTenants();
+    }
 } 

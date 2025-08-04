@@ -23,4 +23,6 @@ public interface TenantMapper {
     int deleteById(Long id);
     
     boolean existsByTenantCode(String tenantCode);
+    
+    List<Tenant> selectActiveTenants();
 } 

@@ -335,11 +335,17 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
       const requiredTypes = getRequiredResourceTypes;
       if (requiredTypes.includes('ROOM') && requiredTypes.includes('STAFF')) {
-        // 同时需要房间和员工，优先使用员工，房间作为附加信息
-        if (selectedResource) {
+        // 同时需要房间和员工，根据用户选择确定主要资源
+        if (selectedResource && selectedRoom) {
+          // 如果用户同时选择了员工和房间，优先使用员工
+          finalResourceId = selectedResource;
+          finalResourceType = 'STAFF';
+        } else if (selectedResource) {
+          // 只选择了员工
           finalResourceId = selectedResource;
           finalResourceType = 'STAFF';
         } else if (selectedRoom) {
+          // 只选择了房间
           finalResourceId = selectedRoom;
           finalResourceType = 'ROOM';
         }

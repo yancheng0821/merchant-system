@@ -80,4 +80,11 @@
         SELECT COUNT(*) > 0 FROM tenants WHERE tenant_code = #{tenantCode}
     </select>
     
+    <select id="selectActiveTenants" resultMap="TenantResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenants
+        WHERE status = 'ACTIVE'
+        ORDER BY id
+    </select>
+    
 </mapper> 

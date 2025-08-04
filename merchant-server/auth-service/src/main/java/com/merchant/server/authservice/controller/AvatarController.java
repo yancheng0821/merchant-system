@@ -26,13 +26,19 @@ public class AvatarController {
     @Value("${file.upload.path:/opt/merchant-system}")
     private String uploadBasePath;
     
+    @Value("${APP_AVATAR_UPLOAD_PATH:}")
+    private String avatarUploadPath;
+    
     @GetMapping("/{filename:.+}")
     public ResponseEntity<Resource> getAvatar(@PathVariable String filename) {
         logger.info("收到头像请求: {}", filename);
         
         try {
-            // 首先尝试在根目录下的avatars文件夹查找（兼容旧路径）
-            Path filePath = Paths.get(uploadBasePath).resolve("avatars").resolve(filename).normalize();
+            // 使用配置的头像上传路径，如果为空则使用默认路径
+            String basePath = (avatarUploadPath != null && !avatarUploadPath.trim().isEmpty()) 
+                ? avatarUploadPath 
+                : uploadBasePath + "/avatars";
+            Path filePath = Paths.get(basePath).resolve(filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
             
             if (resource.exists()) {
@@ -63,7 +69,11 @@ public class AvatarController {
         logger.info("收到头像请求（带租户信息）: tenant_{}/{}", tenantId, filename);
         
         try {
-            Path filePath = Paths.get(uploadBasePath).resolve("avatars").resolve("tenant_" + tenantId).resolve(filename).normalize();
+            // 使用配置的头像上传路径，如果为空则使用默认路径
+            String basePath = (avatarUploadPath != null && !avatarUploadPath.trim().isEmpty()) 
+                ? avatarUploadPath 
+                : uploadBasePath + "/avatars";
+            Path filePath = Paths.get(basePath).resolve("tenant_" + tenantId).resolve(filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
             
             if (resource.exists()) {

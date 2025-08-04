@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import os
@@ -7,6 +8,15 @@ from datetime import datetime, timedelta
 import uvicorn
 
 app = FastAPI(title="AI Service", description="智能预约推荐和需求预测服务", version="1.0.0")
+
+# 添加CORS中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 在生产环境中应该限制为特定域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 请求模型
 class CustomerOrder(BaseModel):

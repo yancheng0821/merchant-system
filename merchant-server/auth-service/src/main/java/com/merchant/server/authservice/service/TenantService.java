@@ -14,6 +14,8 @@ public interface TenantService {
     
     List<Tenant> findByParentTenantId(Long parentTenantId);
     
+    List<Tenant> findActiveTenants();
+    
     Tenant save(Tenant tenant);
     
     void deleteById(Long id);

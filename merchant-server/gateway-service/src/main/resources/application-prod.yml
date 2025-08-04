@@ -46,7 +46,7 @@ spring:
           predicates:
             - Path=/api/ai/**
         - id: analytics-service
-          uri: http://analytics-service:8085
+          uri: http://analytics-service:8086
           predicates:
             - Path=/api/analytics/**
         - id: notification-service

@@ -17,6 +17,9 @@ public class AppointmentCreateDTO {
     private Long resourceId;
     private Appointment.ResourceType resourceType;
     
+    // 选中的资源信息，用于创建资源预约时段
+    private List<SelectedResourceDTO> selectedResources;
+    
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate appointmentDate;
     
@@ -40,5 +43,11 @@ public class AppointmentCreateDTO {
         private Integer duration;
         private BigDecimal price;
         private Long categoryId;
+    }
+    
+    @Data
+    public static class SelectedResourceDTO {
+        private Long id;
+        private String type; // 'STAFF' or 'ROOM'
     }
 }
