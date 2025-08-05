@@ -1,0 +1,140 @@
+{
+  "tenants": {
+    "tenant_beauty_salon": {
+      "services": [
+        {
+          "service_id": "service_tenant_beauty_salon_001",
+          "service_name": "beauty服务",
+          "category": "beauty",
+          "current_price": 150.0,
+          "cost": 60.0,
+          "duration": 90,
+          "competitor_prices": [
+            135.0,
+            165.0,
+            142.5
+          ],
+          "market_demand": "high",
+          "seasonality": "peak",
+          "timestamp": "2025-08-04T16:37:04.888390"
+        }
+      ],
+      "customers": [
+        {
+          "business_type": "salon",
+          "target_audience": [
+            "young_professionals",
+            "students"
+          ],
+          "location": "urban",
+          "current_promotions": [
+            "新客户优惠",
+            "会员折扣"
+          ],
+          "target_goals": [
+            "increase_customers",
+            "boost_revenue"
+          ],
+          "budget": "medium",
+          "timeframe": "medium_term",
+          "timestamp": "2025-08-04T16:37:04.895232"
+        }
+      ],
+      "transactions": [],
+      "created_at": "2025-08-04T16:37:04.888373",
+      "last_updated": "2025-08-04T16:37:04.895243"
+    },
+    "tenant_health_clinic": {
+      "services": [
+        {
+          "service_id": "service_tenant_health_clinic_001",
+          "service_name": "health服务",
+          "category": "health",
+          "current_price": 300.0,
+          "cost": 120.0,
+          "duration": 90,
+          "competitor_prices": [
+            270.0,
+            330.0,
+            285.0
+          ],
+          "market_demand": "high",
+          "seasonality": "peak",
+          "timestamp": "2025-08-04T16:37:04.904179"
+        }
+      ],
+      "customers": [
+        {
+          "business_type": "clinic",
+          "target_audience": [
+            "families",
+            "seniors"
+          ],
+          "location": "urban",
+          "current_promotions": [
+            "新客户优惠",
+            "会员折扣"
+          ],
+          "target_goals": [
+            "increase_customers",
+            "boost_revenue"
+          ],
+          "budget": "medium",
+          "timeframe": "medium_term",
+          "timestamp": "2025-08-04T16:37:04.910562"
+        }
+      ],
+      "transactions": [],
+      "created_at": "2025-08-04T16:37:04.904131",
+      "last_updated": "2025-08-04T16:37:04.910575"
+    },
+    "tenant_test_1": {
+      "services": [
+        {
+          "service_id": "service_tenant_test_1_001",
+          "service_name": "beauty服务",
+          "category": "beauty",
+          "current_price": 100.0,
+          "cost": 40.0,
+          "duration": 90,
+          "competitor_prices": [
+            90.0,
+            110.00000000000001,
+            95.0
+          ],
+          "market_demand": "high",
+          "seasonality": "peak",
+          "timestamp": "2025-08-04T16:37:04.920296"
+        }
+      ],
+      "customers": [],
+      "transactions": [],
+      "created_at": "2025-08-04T16:37:04.920281",
+      "last_updated": "2025-08-04T16:37:04.920300"
+    },
+    "tenant_test_2": {
+      "services": [
+        {
+          "service_id": "service_tenant_test_2_001",
+          "service_name": "health服务",
+          "category": "health",
+          "current_price": 500.0,
+          "cost": 200.0,
+          "duration": 90,
+          "competitor_prices": [
+            450.0,
+            550.0,
+            475.0
+          ],
+          "market_demand": "high",
+          "seasonality": "peak",
+          "timestamp": "2025-08-04T16:37:04.926634"
+        }
+      ],
+      "customers": [],
+      "transactions": [],
+      "created_at": "2025-08-04T16:37:04.926621",
+      "last_updated": "2025-08-04T16:37:04.926637"
+    }
+  }
+}

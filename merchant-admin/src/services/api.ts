@@ -1835,73 +1835,71 @@ export const analyticsApi = {
 
 // AI API - 直接调用 Python AI 服务
 export const aiApi = {
-  // 获取预约推荐
-  getAppointmentRecommendation: async (tenantId: number, customerId: string): Promise<any> => {
-    // 构造符合 Python AI 服务期望的请求格式
+  // 获取定价建议
+  getPricingRecommendation: async (
+    tenantId: number, 
+    serviceInfo: {
+      serviceId: string;
+      serviceName: string;
+      currentPrice: number;
+      category: string;
+      duration: number;
+      cost: number;
+    },
+    marketData: {
+      competitorPrices: number[];
+      marketDemand: string;
+      seasonality: string;
+      customerSegment: string;
+    },
+    businessGoals: string
+  ): Promise<any> => {
     const requestData = {
-      customerId,
-      customerName: `Customer ${customerId}`,
-      orders: [
-        // 模拟一些历史订单数据，实际应该从后端获取
-        {
-          orderId: "ORD001",
-          serviceId: "SRV001", 
-          serviceName: "理发服务",
-          orderDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          amount: 50.0,
-          status: "completed"
-        },
-        {
-          orderId: "ORD002",
-          serviceId: "SRV002",
-          serviceName: "洗剪吹", 
-          orderDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          amount: 80.0,
-          status: "completed"
-        }
-      ]
+      tenantId: tenantId.toString(),
+      serviceInfo,
+      marketData,
+      businessGoals
     };
 
-    const response = await createRequest(`/api/ai/recommend-appointment`, {
+    const response = await createRequest(`/api/ai/pricing-recommendation`, {
       method: 'POST',
       body: JSON.stringify(requestData),
     });
     return response;
   },
 
-  // 预测服务需求
-  predictServiceDemand: async (tenantId: number): Promise<any> => {
-    // 构造符合 Python AI 服务期望的订单数据格式
-    const mockOrders = [];
-    const today = new Date();
-    
-    // 生成最近30天的模拟订单数据
-    for (let i = 0; i < 30; i++) {
-      const orderDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-      const dailyOrders = 2 + Math.floor(Math.random() * 3); // 每天2-4个订单
-      
-      for (let j = 0; j < dailyOrders; j++) {
-        const services = [
-          { id: "SRV001", name: "理发服务", amount: 50.0 },
-          { id: "SRV002", name: "洗剪吹", amount: 80.0 },
-          { id: "SRV003", name: "染发服务", amount: 120.0 }
-        ];
-        const service = services[Math.floor(Math.random() * services.length)];
-        
-        mockOrders.push({
-          orderId: `ORD${i}_${j}`,
-          serviceId: service.id,
-          serviceName: service.name,
-          orderDate: orderDate.toISOString().split('T')[0],
-          amount: service.amount,
-          status: "completed"
-        });
-      }
-    }
+  // 获取营销建议
+  getMarketingRecommendation: async (
+    tenantId: number,
+    businessProfile: {
+      businessType: string;
+      targetAudience: string[];
+      location: string;
+      currentPromotions: string[];
+    },
+    targetGoals: string[],
+    budget: string,
+    timeframe: string
+  ): Promise<any> => {
+    const requestData = {
+      tenantId: tenantId.toString(),
+      businessProfile,
+      targetGoals,
+      budget,
+      timeframe
+    };
 
-    const response = await createRequest(`/api/ai/predict-demand`, {
+    const response = await createRequest(`/api/ai/marketing-recommendation`, {
       method: 'POST',
-      body: JSON.stringify(mockOrders),
+      body: JSON.stringify(requestData),
+    });
+    return response;
+  },
+
+  // 获取市场洞察
+  getMarketInsights: async (): Promise<any> => {
+    const response = await createRequest(`/api/ai/market-insights`, {
+      method: 'GET',
     });
     return response;
   },

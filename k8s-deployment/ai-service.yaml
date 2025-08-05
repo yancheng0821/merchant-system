@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: ai-service-python
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/ai-service-python:v1.2.1
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/ai-service-python:v1.2.3_20250804_173527
         ports:
         - containerPort: 5000
         env:

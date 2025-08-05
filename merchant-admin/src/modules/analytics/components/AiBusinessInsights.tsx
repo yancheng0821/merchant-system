@@ -12,6 +12,16 @@ import {
   CircularProgress,
   alpha,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Autocomplete,
 } from '@mui/material';
 import {
   Business as AiIcon,
@@ -23,6 +33,9 @@ import {
   AutoAwesome as InsightsIcon,
   CalendarToday as CalendarIcon,
   Star as StarIcon,
+  AttachMoney as MoneyIcon,
+  Campaign as CampaignIcon,
+  Psychology as PsychologyIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -37,20 +50,72 @@ interface AppointmentRecommendation {
   reason: string;
 }
 
-interface ServiceDemandPrediction {
-  serviceId: string;
-  serviceName: string;
-  predictedOrders: number;
+
+
+interface PricingRecommendation {
+  recommendedPrice: number;
+  priceRange: { min: number; max: number };
+  strategy: string;
+  reasoning: string[];
+  expectedImpact: { revenue: string; customers: string; profit_margin: string };
   confidence: number;
+}
+
+interface MarketingCampaign {
+  campaignName: string;
+  campaignType: string;
+  description: string;
+  targetAudience: string[];
+  duration: string;
+  expectedROI: string;
+  implementation: string[];
+  budget: string;
+}
+
+interface MarketingRecommendation {
+  campaigns: MarketingCampaign[];
+  priority: string[];
+  expectedOutcomes: { [key: string]: string };
+  timeline: string;
 }
 
 const AiBusinessInsights: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<AppointmentRecommendation[]>([]);
-  const [predictions, setPredictions] = useState<ServiceDemandPrediction[]>([]);
+
+  const [pricingRecommendation, setPricingRecommendation] = useState<PricingRecommendation | null>(null);
+  const [marketingRecommendation, setMarketingRecommendation] = useState<MarketingRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // 定价建议对话框状态
+  const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
+  const [pricingForm, setPricingForm] = useState({
+    serviceId: '',
+    serviceName: '',
+    currentPrice: 0,
+    category: '',
+    duration: 60,
+    cost: 0,
+    competitorPrices: [0],
+    marketDemand: 'medium',
+    seasonality: 'normal',
+    customerSegment: 'standard',
+    businessGoals: 'maintain_quality'
+  });
+
+  // 营销建议对话框状态
+  const [marketingDialogOpen, setMarketingDialogOpen] = useState(false);
+  const [marketingForm, setMarketingForm] = useState({
+    businessType: 'salon',
+    targetAudience: ['young_professionals'],
+    location: 'urban',
+    currentPromotions: [],
+    targetGoals: ['increase_customers'],
+    budget: 'medium',
+    timeframe: 'medium_term'
+  });
 
   const fetchAiInsights = async () => {
     if (!user?.tenantId) return;
@@ -59,22 +124,81 @@ const AiBusinessInsights: React.FC = () => {
     setError(null);
 
     try {
-      // 并行获取推荐和预测数据
-      const [recommendationResult, predictionResult] = await Promise.all([
-        aiApi.getAppointmentRecommendation(user.tenantId, 'sample-customer'),
-        aiApi.predictServiceDemand(user.tenantId)
-      ]);
-
-      if (recommendationResult.success && recommendationResult.data) {
-        setRecommendations(recommendationResult.data);
-      }
-
-      if (predictionResult.success && predictionResult.data) {
-        setPredictions(predictionResult.data);
+      // 只获取市场洞察数据
+      const marketInsights = await aiApi.getMarketInsights();
+      if (marketInsights.success && marketInsights.data) {
+        // 可以在这里处理市场洞察数据
+        console.log('Market insights loaded:', marketInsights.data);
       }
     } catch (err: any) {
       console.error('Failed to fetch AI insights:', err);
       setError(err.message || 'Failed to load AI insights');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePricingRecommendation = async () => {
+    if (!user?.tenantId) return;
+
+    setLoading(true);
+    try {
+      const result = await aiApi.getPricingRecommendation(
+        user.tenantId,
+        {
+          serviceId: pricingForm.serviceId,
+          serviceName: pricingForm.serviceName,
+          currentPrice: pricingForm.currentPrice,
+          category: pricingForm.category,
+          duration: pricingForm.duration,
+          cost: pricingForm.cost
+        },
+        {
+          competitorPrices: pricingForm.competitorPrices,
+          marketDemand: pricingForm.marketDemand,
+          seasonality: pricingForm.seasonality,
+          customerSegment: pricingForm.customerSegment
+        },
+        pricingForm.businessGoals
+      );
+
+      if (result.success && result.data) {
+        setPricingRecommendation(result.data);
+        setPricingDialogOpen(false);
+      }
+    } catch (err: any) {
+      console.error('Failed to get pricing recommendation:', err);
+      setError(err.message || 'Failed to get pricing recommendation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarketingRecommendation = async () => {
+    if (!user?.tenantId) return;
+
+    setLoading(true);
+    try {
+      const result = await aiApi.getMarketingRecommendation(
+        user.tenantId,
+        {
+          businessType: marketingForm.businessType,
+          targetAudience: marketingForm.targetAudience,
+          location: marketingForm.location,
+          currentPromotions: marketingForm.currentPromotions
+        },
+        marketingForm.targetGoals,
+        marketingForm.budget,
+        marketingForm.timeframe
+      );
+
+      if (result.success && result.data) {
+        setMarketingRecommendation(result.data);
+        setMarketingDialogOpen(false);
+      }
+    } catch (err: any) {
+      console.error('Failed to get marketing recommendation:', err);
+      setError(err.message || 'Failed to get marketing recommendation');
     } finally {
       setLoading(false);
     }
@@ -100,7 +224,7 @@ const AiBusinessInsights: React.FC = () => {
     return t('ai.confidence.low');
   };
 
-  if (loading && recommendations.length === 0 && predictions.length === 0) {
+  if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
         <Box textAlign="center">
@@ -164,14 +288,16 @@ const AiBusinessInsights: React.FC = () => {
       )}
 
       <Grid container spacing={3}>
-        {/* 预约推荐卡片 */}
+
+
+        {/* 定价建议卡片 */}
         <Grid item xs={12} lg={6}>
           <Card
             sx={{
               borderRadius: 3,
               boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
               border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
+              borderColor: alpha('#F59E0B', 0.1),
               height: '100%',
             }}
           >
@@ -182,7 +308,7 @@ const AiBusinessInsights: React.FC = () => {
                     width: 40,
                     height: 40,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -190,102 +316,93 @@ const AiBusinessInsights: React.FC = () => {
                     mr: 2,
                   }}
                 >
-                  <ScheduleIcon sx={{ fontSize: 20 }} />
+                  <MoneyIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
-                  {t('ai.appointmentRecommendations.title')}
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+                  {t('ai.pricingRecommendation.title')}
                 </Typography>
               </Box>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {t('ai.appointmentRecommendations.description')}
+                {t('ai.pricingRecommendation.description')}
               </Typography>
 
-              {recommendations.length === 0 ? (
-                <Box textAlign="center" py={4}>
-                  <InsightsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {t('ai.noRecommendations')}
-                  </Typography>
+              {pricingRecommendation ? (
+                <Box>
+                  <Card
+                    sx={{
+                      border: '1px solid',
+                      borderColor: alpha('#F59E0B', 0.1),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#F59E0B' }}>
+                          ¥{pricingRecommendation.recommendedPrice}
+                        </Typography>
+                        <Chip
+                          label={pricingRecommendation.strategy}
+                          size="small"
+                          sx={{
+                            backgroundColor: alpha('#F59E0B', 0.1),
+                            color: '#F59E0B',
+                            fontWeight: 600,
+                          }}
+                        />
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        价格范围: ¥{pricingRecommendation.priceRange.min} - ¥{pricingRecommendation.priceRange.max}
+                      </Typography>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                          预期影响:
+                        </Typography>
+                        <Box display="flex" gap={2}>
+                          <Chip label={`收入 ${pricingRecommendation.expectedImpact.revenue}`} size="small" />
+                          <Chip label={`客户 ${pricingRecommendation.expectedImpact.customers}`} size="small" />
+                        </Box>
+                      </Box>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <StarIcon sx={{ fontSize: 14, color: getConfidenceColor(pricingRecommendation.confidence) }} />
+                        <Typography variant="caption" sx={{ color: getConfidenceColor(pricingRecommendation.confidence), fontWeight: 600 }}>
+                          {t('ai.confidence.label')}: {(pricingRecommendation.confidence * 100).toFixed(0)}%
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
                 </Box>
               ) : (
-                <Box>
-                  {recommendations.map((rec, index) => (
-                    <Card
-                      key={index}
-                      sx={{
-                        mb: 2,
-                        border: '1px solid',
-                        borderColor: alpha('#10B981', 0.1),
-                        borderRadius: 2,
-                        '&:last-child': { mb: 0 },
-                      }}
-                    >
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                          <Box flex={1}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                              {rec.serviceName}
-                            </Typography>
-                            <Box display="flex" alignItems="center" gap={1} mb={1}>
-                              <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
-                                {rec.recommendedDate} {rec.recommendedTime}
-                              </Typography>
-                            </Box>
-                            <Typography variant="caption" color="text.secondary">
-                              {rec.reason}
-                            </Typography>
-                          </Box>
-                          <Box display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
-                            <Chip
-                              label={getConfidenceLabel(rec.confidence)}
-                              size="small"
-                              sx={{
-                                backgroundColor: alpha(getConfidenceColor(rec.confidence), 0.1),
-                                color: getConfidenceColor(rec.confidence),
-                                fontWeight: 600,
-                                fontSize: '0.7rem',
-                              }}
-                            />
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<BookIcon />}
-                              sx={{
-                                backgroundColor: '#10B981',
-                                '&:hover': { backgroundColor: '#059669' },
-                                textTransform: 'none',
-                                fontSize: '0.75rem',
-                              }}
-                            >
-                              {t('ai.actions.bookAppointment')}
-                            </Button>
-                          </Box>
-                        </Box>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <StarIcon sx={{ fontSize: 14, color: getConfidenceColor(rec.confidence) }} />
-                          <Typography variant="caption" sx={{ color: getConfidenceColor(rec.confidence), fontWeight: 600 }}>
-                            {t('ai.confidence.label')}: {(rec.confidence * 100).toFixed(0)}%
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <Box textAlign="center" py={4}>
+                  <PsychologyIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {t('ai.noPricingRecommendation')}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<MoneyIcon />}
+                    onClick={() => setPricingDialogOpen(true)}
+                    sx={{
+                      backgroundColor: '#F59E0B',
+                      '&:hover': { backgroundColor: '#D97706' },
+                    }}
+                  >
+                    {t('ai.actions.getPricingRecommendation')}
+                  </Button>
                 </Box>
               )}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* 需求预测卡片 */}
+        {/* 营销建议卡片 */}
         <Grid item xs={12} lg={6}>
           <Card
             sx={{
               borderRadius: 3,
               boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
               border: '1px solid',
-              borderColor: alpha('#6366F1', 0.1),
+              borderColor: alpha('#EC4899', 0.1),
               height: '100%',
             }}
           >
@@ -296,7 +413,7 @@ const AiBusinessInsights: React.FC = () => {
                     width: 40,
                     height: 40,
                     borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -304,96 +421,270 @@ const AiBusinessInsights: React.FC = () => {
                     mr: 2,
                   }}
                 >
-                  <TrendingUpIcon sx={{ fontSize: 20 }} />
+                  <CampaignIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#6366F1' }}>
-                  {t('ai.demandPrediction.title')}
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+                  {t('ai.marketingRecommendation.title')}
                 </Typography>
               </Box>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {t('ai.demandPrediction.description')}
+                {t('ai.marketingRecommendation.description')}
               </Typography>
 
-              {predictions.length === 0 ? (
-                <Box textAlign="center" py={4}>
-                  <AssessmentIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {t('ai.noPredictions')}
-                  </Typography>
-                </Box>
-              ) : (
+              {marketingRecommendation ? (
                 <Box>
-                  {predictions.map((pred, index) => (
+                  {marketingRecommendation.campaigns.slice(0, 2).map((campaign, index) => (
                     <Card
                       key={index}
                       sx={{
                         mb: 2,
                         border: '1px solid',
-                        borderColor: alpha('#6366F1', 0.1),
+                        borderColor: alpha('#EC4899', 0.1),
                         borderRadius: 2,
                         '&:last-child': { mb: 0 },
                       }}
                     >
                       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Box flex={1}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                              {pred.serviceName}
-                            </Typography>
-                            <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1', mb: 1 }}>
-                              {pred.predictedOrders}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {t('ai.demandPrediction.ordersNext7Days')}
-                            </Typography>
-                          </Box>
-                          <Box display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
-                            <Chip
-                              label={getConfidenceLabel(pred.confidence)}
-                              size="small"
-                              sx={{
-                                backgroundColor: alpha(getConfidenceColor(pred.confidence), 0.1),
-                                color: getConfidenceColor(pred.confidence),
-                                fontWeight: 600,
-                                fontSize: '0.7rem',
-                              }}
-                            />
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={<AssessmentIcon />}
-                              sx={{
-                                borderColor: '#6366F1',
-                                color: '#6366F1',
-                                '&:hover': {
-                                  borderColor: '#4F46E5',
-                                  backgroundColor: alpha('#6366F1', 0.04),
-                                },
-                                textTransform: 'none',
-                                fontSize: '0.75rem',
-                              }}
-                            >
-                              {t('ai.actions.viewDetails')}
-                            </Button>
-                          </Box>
-                        </Box>
-                        <Divider sx={{ my: 1 }} />
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <StarIcon sx={{ fontSize: 14, color: getConfidenceColor(pred.confidence) }} />
-                          <Typography variant="caption" sx={{ color: getConfidenceColor(pred.confidence), fontWeight: 600 }}>
-                            {t('ai.confidence.label')}: {(pred.confidence * 100).toFixed(0)}%
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {campaign.campaignName}
                           </Typography>
+                          <Chip
+                            label={campaign.expectedROI}
+                            size="small"
+                            sx={{
+                              backgroundColor: alpha('#EC4899', 0.1),
+                              color: '#EC4899',
+                              fontWeight: 600,
+                            }}
+                          />
                         </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {campaign.description}
+                        </Typography>
                       </CardContent>
                     </Card>
                   ))}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<CampaignIcon />}
+                    sx={{
+                      borderColor: '#EC4899',
+                      color: '#EC4899',
+                      '&:hover': {
+                        borderColor: '#DB2777',
+                        backgroundColor: alpha('#EC4899', 0.04),
+                      },
+                      textTransform: 'none',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    {t('ai.actions.viewAllCampaigns')}
+                  </Button>
+                </Box>
+              ) : (
+                <Box textAlign="center" py={4}>
+                  <CampaignIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {t('ai.noMarketingRecommendation')}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<CampaignIcon />}
+                    onClick={() => setMarketingDialogOpen(true)}
+                    sx={{
+                      backgroundColor: '#EC4899',
+                      '&:hover': { backgroundColor: '#DB2777' },
+                    }}
+                  >
+                    {t('ai.actions.getMarketingRecommendation')}
+                  </Button>
                 </Box>
               )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+
+      {/* 定价建议对话框 */}
+      <Dialog open={pricingDialogOpen} onClose={() => setPricingDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>获取定价建议</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="服务名称"
+                value={pricingForm.serviceName}
+                onChange={(e) => setPricingForm({ ...pricingForm, serviceName: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="服务分类"
+                value={pricingForm.category}
+                onChange={(e) => setPricingForm({ ...pricingForm, category: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="当前价格"
+                value={pricingForm.currentPrice}
+                onChange={(e) => setPricingForm({ ...pricingForm, currentPrice: Number(e.target.value) })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="成本"
+                value={pricingForm.cost}
+                onChange={(e) => setPricingForm({ ...pricingForm, cost: Number(e.target.value) })}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>市场需求</InputLabel>
+                <Select
+                  value={pricingForm.marketDemand}
+                  onChange={(e) => setPricingForm({ ...pricingForm, marketDemand: e.target.value })}
+                >
+                  <MenuItem value="high">高</MenuItem>
+                  <MenuItem value="medium">中</MenuItem>
+                  <MenuItem value="low">低</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>季节性</InputLabel>
+                <Select
+                  value={pricingForm.seasonality}
+                  onChange={(e) => setPricingForm({ ...pricingForm, seasonality: e.target.value })}
+                >
+                  <MenuItem value="peak">旺季</MenuItem>
+                  <MenuItem value="normal">正常</MenuItem>
+                  <MenuItem value="low">淡季</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>业务目标</InputLabel>
+                <Select
+                  value={pricingForm.businessGoals}
+                  onChange={(e) => setPricingForm({ ...pricingForm, businessGoals: e.target.value })}
+                >
+                  <MenuItem value="maximize_profit">最大化利润</MenuItem>
+                  <MenuItem value="increase_market_share">增加市场份额</MenuItem>
+                  <MenuItem value="maintain_quality">保持质量</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPricingDialogOpen(false)}>取消</Button>
+          <Button onClick={handlePricingRecommendation} variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={20} /> : '获取建议'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 营销建议对话框 */}
+      <Dialog open={marketingDialogOpen} onClose={() => setMarketingDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>获取营销建议</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>业务类型</InputLabel>
+                <Select
+                  value={marketingForm.businessType}
+                  onChange={(e) => setMarketingForm({ ...marketingForm, businessType: e.target.value })}
+                >
+                  <MenuItem value="salon">美容院</MenuItem>
+                  <MenuItem value="spa">水疗中心</MenuItem>
+                  <MenuItem value="clinic">诊所</MenuItem>
+                  <MenuItem value="fitness">健身房</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>位置</InputLabel>
+                <Select
+                  value={marketingForm.location}
+                  onChange={(e) => setMarketingForm({ ...marketingForm, location: e.target.value })}
+                >
+                  <MenuItem value="urban">城市</MenuItem>
+                  <MenuItem value="suburban">郊区</MenuItem>
+                  <MenuItem value="rural">农村</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple
+                options={['young_professionals', 'students', 'families', 'seniors']}
+                value={marketingForm.targetAudience}
+                onChange={(_, newValue) => setMarketingForm({ ...marketingForm, targetAudience: newValue })}
+                renderInput={(params) => (
+                  <TextField {...params} label="目标受众" />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple
+                options={['increase_customers', 'boost_revenue', 'improve_retention']}
+                value={marketingForm.targetGoals}
+                onChange={(_, newValue) => setMarketingForm({ ...marketingForm, targetGoals: newValue })}
+                renderInput={(params) => (
+                  <TextField {...params} label="目标" />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>预算</InputLabel>
+                <Select
+                  value={marketingForm.budget}
+                  onChange={(e) => setMarketingForm({ ...marketingForm, budget: e.target.value })}
+                >
+                  <MenuItem value="low">低</MenuItem>
+                  <MenuItem value="medium">中</MenuItem>
+                  <MenuItem value="high">高</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>时间框架</InputLabel>
+                <Select
+                  value={marketingForm.timeframe}
+                  onChange={(e) => setMarketingForm({ ...marketingForm, timeframe: e.target.value })}
+                >
+                  <MenuItem value="short_term">短期</MenuItem>
+                  <MenuItem value="medium_term">中期</MenuItem>
+                  <MenuItem value="long_term">长期</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMarketingDialogOpen(false)}>取消</Button>
+          <Button onClick={handleMarketingRecommendation} variant="contained" disabled={loading}>
+            {loading ? <CircularProgress size={20} /> : '获取建议'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* AI 提示信息 */}
       <Box mt={3}>

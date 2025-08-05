@@ -1890,6 +1890,14 @@
       "description": "未来7天各服务预计订单量",
       "ordersNext7Days": "预计未来7天订单量"
     },
+    "pricingRecommendation": {
+      "title": "智能定价建议",
+      "description": "基于市场数据和业务目标的定价策略建议"
+    },
+    "marketingRecommendation": {
+      "title": "营销活动建议",
+      "description": "个性化的营销策略和活动方案"
+    },
     "confidence": {
       "label": "置信度",
       "high": "高",
@@ -1898,10 +1906,15 @@
     },
     "actions": {
       "bookAppointment": "预约",
-      "viewDetails": "查看详情"
+      "viewDetails": "查看详情",
+      "getPricingRecommendation": "获取定价建议",
+      "getMarketingRecommendation": "获取营销建议",
+      "viewAllCampaigns": "查看所有活动"
     },
     "noRecommendations": "暂无推荐数据",
     "noPredictions": "暂无预测数据",
+    "noPricingRecommendation": "暂无定价建议",
+    "noMarketingRecommendation": "暂无营销建议",
     "disclaimer": "AI 分析结果仅供参考，实际业务决策请结合具体情况综合考虑。"
   },
   "chart": {

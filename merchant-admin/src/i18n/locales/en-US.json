@@ -1771,6 +1771,14 @@
       "description": "Predicted order volume for each service in the next 7 days",
       "ordersNext7Days": "Predicted orders for next 7 days"
     },
+    "pricingRecommendation": {
+      "title": "Smart Pricing Recommendations",
+      "description": "Pricing strategy suggestions based on market data and business goals"
+    },
+    "marketingRecommendation": {
+      "title": "Marketing Campaign Suggestions",
+      "description": "Personalized marketing strategies and campaign plans"
+    },
     "confidence": {
       "label": "Confidence",
       "high": "High",
@@ -1779,10 +1787,15 @@
     },
     "actions": {
       "bookAppointment": "Book",
-      "viewDetails": "View Details"
+      "viewDetails": "View Details",
+      "getPricingRecommendation": "Get Pricing Recommendation",
+      "getMarketingRecommendation": "Get Marketing Recommendation",
+      "viewAllCampaigns": "View All Campaigns"
     },
     "noRecommendations": "No recommendations available",
     "noPredictions": "No predictions available",
+    "noPricingRecommendation": "No pricing recommendations available",
+    "noMarketingRecommendation": "No marketing recommendations available",
     "disclaimer": "AI analysis results are for reference only. Please consider specific circumstances when making business decisions."
   },
   "chart": {
