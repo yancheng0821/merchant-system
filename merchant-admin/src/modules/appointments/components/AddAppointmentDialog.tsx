@@ -329,37 +329,56 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       const totalDuration = selectedServices.reduce((total, service) => total + service.duration, 0);
       const totalAmount = selectedServices.reduce((total, service) => total + service.price, 0);
 
-      // 根据当前选择的服务需要的资源类型确定resourceId和resourceType
-      let finalResourceId = null;
-      let finalResourceType = null;
-
+      // 构建选中的资源列表
+      const selectedResources: any[] = [];
+      
       const requiredTypes = getRequiredResourceTypes;
       if (requiredTypes.includes('ROOM') && requiredTypes.includes('STAFF')) {
-        // 同时需要房间和员工，根据用户选择确定主要资源
-        if (selectedResource && selectedRoom) {
-          // 如果用户同时选择了员工和房间，优先使用员工
-          finalResourceId = selectedResource;
-          finalResourceType = 'STAFF';
-        } else if (selectedResource) {
-          // 只选择了员工
-          finalResourceId = selectedResource;
-          finalResourceType = 'STAFF';
-        } else if (selectedRoom) {
-          // 只选择了房间
-          finalResourceId = selectedRoom;
-          finalResourceType = 'ROOM';
+        // 同时需要房间和员工
+        if (selectedResource) {
+          selectedResources.push({
+            id: selectedResource,
+            type: 'STAFF'
+          });
+        }
+        if (selectedRoom) {
+          selectedResources.push({
+            id: selectedRoom,
+            type: 'ROOM'
+          });
         }
       } else if (requiredTypes.includes('ROOM')) {
         // 只需要房间
         if (selectedRoom) {
-          finalResourceId = selectedRoom;
-          finalResourceType = 'ROOM';
+          selectedResources.push({
+            id: selectedRoom,
+            type: 'ROOM'
+          });
         }
       } else if (requiredTypes.includes('STAFF')) {
         // 只需要员工
         if (selectedResource) {
-          finalResourceId = selectedResource;
+          selectedResources.push({
+            id: selectedResource,
+            type: 'STAFF'
+          });
+        }
+      }
+
+      // 确定主要资源（用于兼容性）
+      let finalResourceId = null;
+      let finalResourceType = null;
+      if (selectedResources.length > 0) {
+        // 优先使用员工作为主要资源
+        const staffResource = selectedResources.find(r => r.type === 'STAFF');
+        const roomResource = selectedResources.find(r => r.type === 'ROOM');
+        
+        if (staffResource) {
+          finalResourceId = staffResource.id;
           finalResourceType = 'STAFF';
+        } else if (roomResource) {
+          finalResourceId = roomResource.id;
+          finalResourceType = 'ROOM';
         }
       }
 
@@ -374,6 +393,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
         notes: notes.trim() || null,
         resourceId: finalResourceId,
         resourceType: finalResourceType,
+        selectedResources: selectedResources, // 添加选中的资源列表
         rating: null, // 明确设置为null
         review: null, // 明确设置为null
         // 添加服务信息

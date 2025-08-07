@@ -128,7 +128,6 @@ const AiBusinessInsights: React.FC = () => {
       const marketInsights = await aiApi.getMarketInsights();
       if (marketInsights.success && marketInsights.data) {
         // 可以在这里处理市场洞察数据
-        console.log('Market insights loaded:', marketInsights.data);
       }
     } catch (err: any) {
       console.error('Failed to fetch AI insights:', err);
