@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(pod install:*)",
+      "Bash(npx react-native run-ios:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(open ios/MerchantApp.xcworkspace)",
+      "Bash(open:*)",
+      "Bash(killall:*)",
+      "Bash(true)",
+      "Bash(rm:*)",
+      "Bash(npx react-native:*)",
+      "Bash(osascript:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(npm install:*)",
+      "Bash(xcrun simctl openurl:*)",
+      "Bash(lsof:*)",
+      "Bash(xcrun simctl terminate:*)",
+      "Bash(xcrun simctl launch:*)"
+    ],
+    "deny": []
+  }
+}

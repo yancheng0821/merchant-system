@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(npm run ios:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(npm start:*)",
+      "Bash(xcrun simctl list:*)"
+    ],
+    "deny": []
+  }
+}
