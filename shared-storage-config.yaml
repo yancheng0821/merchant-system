@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shared-storage-config
+  namespace: merchant-system
+data:
+  SHARED_AVATAR_PATH: "/usr/share/nginx/html/files"
+  SHARED_AVATAR_URL_PREFIX: "/api/files/avatars/"
+  SHARED_UPLOAD_PATH: "/usr/share/nginx/html/files"
+  SHARED_UPLOAD_URL_PREFIX: "/api/files/uploads/"

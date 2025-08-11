@@ -818,6 +818,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         <CalendarIcon sx={{ color: '#8B5CF6' }} />
                       </InputAdornment>
                     ),
+                    inputProps: {
+                      // 设置最小日期为今天
+                      min: new Date().toISOString().split('T')[0],
+                      // 可选：设置最大日期（例如：未来3个月）
+                      max: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                    }
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {

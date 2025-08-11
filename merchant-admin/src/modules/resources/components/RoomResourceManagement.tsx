@@ -153,9 +153,14 @@ const RoomResourceManagement: React.FC = () => {
         if (room.icon) {
             const isImageUrl = room.icon.startsWith('http') || room.icon.startsWith('/api/') || room.icon.startsWith('data:') || room.icon.startsWith('blob:');
             if (isImageUrl) {
+                // 修复错误的路径：如果是avatars路径，改为room-icons
+                let fixedIcon = room.icon;
+                if (room.icon.includes('/api/files/avatars/')) {
+                    fixedIcon = room.icon.replace('/api/files/avatars/', '/api/files/room-icons/');
+                }
                 return (
                     <img 
-                        src={getFullImageUrl(room.icon)}
+                        src={getFullImageUrl(fixedIcon)}
                         alt={room.name}
                         style={{ 
                             width: '24px', 

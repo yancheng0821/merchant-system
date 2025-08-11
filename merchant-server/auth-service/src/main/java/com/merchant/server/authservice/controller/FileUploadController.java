@@ -18,7 +18,7 @@ import java.util.UUID;
 @RequestMapping("/api/auth/files")
 public class FileUploadController {
 
-    @Value("${file.upload.path:/opt/merchant-system}")
+    @Value("${file.upload.path:/usr/share/nginx/html/files}")
     private String uploadBasePath;
 
     @Value("${server.port:8080}")
@@ -42,6 +42,12 @@ public class FileUploadController {
 
     private ResponseEntity<Map<String, String>> uploadFile(MultipartFile file, Long tenantId, String subDir) {
         try {
+            // Log the upload paths for debugging
+            System.out.println("=== FILE UPLOAD DEBUG ===");
+            System.out.println("uploadBasePath: " + uploadBasePath);
+            System.out.println("subDir: " + subDir);
+            System.out.println("tenantId: " + tenantId);
+            
             // 验证文件
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("文件不能为空"));
@@ -58,9 +64,10 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(createErrorResponse("文件大小不能超过5MB"));
             }
 
-            // 创建目录结构: /usr/share/nginx/html/files/avatars/tenant_{tenantId}/
+            // 创建目录结构: {uploadBasePath}/{subDir}/tenant_{tenantId}/
             String tenantDir = "tenant_" + tenantId;
-            Path uploadDir = Paths.get(uploadBasePath, tenantDir);
+            Path uploadDir = Paths.get(uploadBasePath, subDir, tenantDir);
+            System.out.println("Creating directory: " + uploadDir.toString());
             Files.createDirectories(uploadDir);
 
             // 生成唯一文件名
@@ -72,10 +79,11 @@ public class FileUploadController {
 
             // 保存文件
             Path filePath = uploadDir.resolve(filename);
+            System.out.println("Saving file to: " + filePath.toString());
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 生成访问URL - 使用统一的文件服务路径
-            String fileUrl = String.format("/api/files/avatars/%s/%s", tenantDir, filename);
+            // 生成访问URL - 使用统一的文件服务路径，根据subDir决定路径
+            String fileUrl = String.format("/api/files/%s/%s/%s", subDir, tenantDir, filename);
 
             Map<String, String> response = new HashMap<>();
             response.put("url", fileUrl);
@@ -91,37 +99,38 @@ public class FileUploadController {
         }
     }
 
-    @GetMapping("/{subDir}/{tenantDir}/{filename}")
-    public ResponseEntity<byte[]> getFile(
-            @PathVariable String subDir,
-            @PathVariable String tenantDir,
-            @PathVariable String filename) {
-        
-        try {
-            Path filePath = Paths.get(uploadBasePath, tenantDir, filename);
-            
-            if (!Files.exists(filePath)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            byte[] fileContent = Files.readAllBytes(filePath);
-            
-            // 根据文件扩展名设置Content-Type
-            String contentType = Files.probeContentType(filePath);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
-            }
-
-            return ResponseEntity.ok()
-                    .header("Content-Type", contentType)
-                    .header("Cache-Control", "max-age=3600") // 缓存1小时
-                    .body(fileContent);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+    // 注释掉这个方法，因为文件读取由file-service负责
+    // @GetMapping("/{subDir}/{tenantDir}/{filename}")
+    // public ResponseEntity<byte[]> getFile(
+    //         @PathVariable String subDir,
+    //         @PathVariable String tenantDir,
+    //         @PathVariable String filename) {
+    //     
+    //     try {
+    //         Path filePath = Paths.get(uploadBasePath, subDir, tenantDir, filename);
+    //         
+    //         if (!Files.exists(filePath)) {
+    //             return ResponseEntity.notFound().build();
+    //         }
+    //
+    //         byte[] fileContent = Files.readAllBytes(filePath);
+    //         
+    //         // 根据文件扩展名设置Content-Type
+    //         String contentType = Files.probeContentType(filePath);
+    //         if (contentType == null) {
+    //             contentType = "application/octet-stream";
+    //         }
+    //
+    //         return ResponseEntity.ok()
+    //                 .header("Content-Type", contentType)
+    //                 .header("Cache-Control", "max-age=3600") // 缓存1小时
+    //                 .body(fileContent);
+    //
+    //     } catch (IOException e) {
+    //         e.printStackTrace();
+    //         return ResponseEntity.internalServerError().build();
+    //     }
+    // }
 
     @DeleteMapping("/delete")
     public ResponseEntity<Map<String, String>> deleteFile(@RequestBody Map<String, String> request) {

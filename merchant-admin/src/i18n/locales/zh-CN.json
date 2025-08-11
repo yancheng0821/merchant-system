@@ -20,7 +20,8 @@
     "countryCode": "国家代码",
     "step": "步骤",
     "of": "共",
-    "complete": "完成"
+    "complete": "完成",
+    "today": "今天"
   },
   "auth": {
     "merchantRegister": "商户注册",
@@ -628,6 +629,7 @@
     "building": "大楼",
     "room": "房间",
     "location": "位置",
+    "uploadSuccess": "上传成功",
     "preferNotToSay": "不愿透露",
     "membershipLevel": "会员等级",
     "regular": "普通会员",
@@ -743,6 +745,7 @@
     "emailAlreadyExists": "该邮箱地址的客户已存在"
   },
   "appointments": {
+    "appointments":"所有预约",
     "title": "预约管理",
     "subtitle": "管理所有预约记录和服务安排",
     "searchPlaceholder": "搜索客户姓名、服务员工或服务类型...",
@@ -1383,7 +1386,8 @@
       "off": "休息",
       "unknown": "未知",
       "searchStaffPlaceholder": "搜索员工姓名、职位或描述...",
-      "showingFirst9Staff": "默认显示前9名员工，使用搜索查找特定员工"
+      "showingFirst9Staff": "默认显示前9名员工，使用搜索查找特定员工",
+      "todayBookings": "今日预约"
     },
     "equipmentInfo": "设备信息",
     "roomIcon": "房间图标"

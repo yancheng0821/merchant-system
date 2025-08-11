@@ -15,6 +15,7 @@ import {
     PhotoCamera as CameraIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { getFullImageUrl } from '../../services/api';
 
 interface ImageUploaderProps {
     value?: string; // 当前图片URL
@@ -125,7 +126,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const renderAvatar = () => (
         <Box position="relative" display="inline-block">
             <Avatar
-                src={value}
+                src={getFullImageUrl(value)}
                 sx={{
                     width: size,
                     height: size,
@@ -171,64 +172,81 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     );
 
     const renderRectangle = () => (
-        <Box
-            sx={{
-                width: size,
-                height: size * 0.75,
-                border: `2px dashed ${alpha('#2563EB', 0.3)}`,
-                borderRadius: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: disabled ? 'default' : 'pointer',
-                bgcolor: alpha('#2563EB', 0.02),
-                backgroundImage: (value && value.trim()) ? `url(${value})` : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                position: 'relative',
-                '&:hover': disabled ? {} : {
-                    borderColor: '#2563EB',
-                    bgcolor: alpha('#2563EB', 0.05),
-                },
-            }}
-            onClick={disabled ? undefined : handleUploadClick}
-        >
-            {uploading ? (
-                <CircularProgress size={32} sx={{ color: '#2563EB' }} />
-            ) : !value ? (
-                <>
-                    <UploadIcon sx={{ fontSize: 32, color: '#2563EB', mb: 1 }} />
-                    <Typography variant="caption" color="text.secondary" textAlign="center">
-                        {placeholder || t('imageUploader.clickToUpload')}
-                    </Typography>
-                </>
-            ) : (
-                <Box
+        <Box position="relative">
+            <Box
+                sx={{
+                    width: size,
+                    height: size,
+                    border: `2px dashed ${alpha('#2563EB', 0.3)}`,
+                    borderRadius: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: disabled ? 'default' : 'pointer',
+                    bgcolor: value ? 'white' : alpha('#2563EB', 0.02),
+                    overflow: 'hidden',
+                    position: 'relative',
+                    '&:hover': disabled ? {} : {
+                        borderColor: '#2563EB',
+                        bgcolor: value ? 'white' : alpha('#2563EB', 0.05),
+                    },
+                }}
+                onClick={disabled ? undefined : handleUploadClick}
+            >
+                {uploading ? (
+                    <CircularProgress size={32} sx={{ color: '#2563EB' }} />
+                ) : value ? (
+                    <img 
+                        src={getFullImageUrl(value)} 
+                        alt="Uploaded" 
+                        style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'contain',
+                        }} 
+                    />
+                ) : (
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                        <UploadIcon sx={{ fontSize: 28, color: '#2563EB', mb: 0.5 }} />
+                        <Typography 
+                            variant="caption" 
+                            color="text.secondary" 
+                            sx={{ 
+                                display: 'block',
+                                fontSize: '0.7rem',
+                                lineHeight: 1.2,
+                            }}
+                        >
+                            {placeholder || t('imageUploader.clickToUpload')}
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
+            
+            {value && !disabled && (
+                <IconButton
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete();
+                    }}
                     sx={{
                         position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        bgcolor: 'rgba(0,0,0,0.6)',
-                        borderRadius: 1,
-                        p: 0.5,
+                        top: -8,
+                        right: -8,
+                        bgcolor: '#EF4444',
+                        color: 'white',
+                        width: 24,
+                        height: 24,
+                        '&:hover': {
+                            bgcolor: '#DC2626',
+                        },
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                     }}
                 >
-                    <IconButton
-                        size="small"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete();
-                        }}
-                        sx={{
-                            color: 'white',
-                            width: 20,
-                            height: 20,
-                        }}
-                    >
-                        <DeleteIcon sx={{ fontSize: 12 }} />
-                    </IconButton>
-                </Box>
+                    <DeleteIcon sx={{ fontSize: 14 }} />
+                </IconButton>
             )}
         </Box>
     );

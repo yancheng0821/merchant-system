@@ -3,10 +3,40 @@ import i18n from '../i18n/config';
 // API基础配置
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
+// 获取正确的API基础URL
+const getApiBaseUrl = (): string => {
+  // 优先使用环境变量
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
+  }
+  
+  // 根据当前域名判断
+  const hostname = window.location.hostname;
+  if (hostname === 'swiftmindsystems.com' || hostname === 'www.swiftmindsystems.com') {
+    return 'https://api.swiftmindsystems.com';
+  }
+  
+  // 本地开发环境
+  return 'http://localhost:8080';
+};
+
 // 工具函数：获取完整的文件URL
 export const getFullImageUrl = (imageUrl?: string): string | undefined => {
   if (!imageUrl) return undefined;
-  if (imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+  
+  // 如果已经是完整URL，检查是否需要修正域名
+  if (imageUrl.startsWith('http')) {
+    // 修正错误的域名
+    if (imageUrl.startsWith('https://swiftmindsystems.com/api/') || 
+        imageUrl.startsWith('http://swiftmindsystems.com/api/')) {
+      // 替换为正确的API域名
+      return imageUrl.replace(/https?:\/\/swiftmindsystems\.com\/api\//, 'https://api.swiftmindsystems.com/api/');
+    }
+    return imageUrl;
+  }
+  
+  // data: 和 blob: URL直接返回
+  if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return imageUrl;
   }
   
@@ -16,8 +46,11 @@ export const getFullImageUrl = (imageUrl?: string): string | undefined => {
     processedUrl = imageUrl.replace('/api/users/avatar/', '/api/auth/users/avatar/');
   }
   
+  // 使用正确的API基础URL
+  const apiBaseUrl = getApiBaseUrl();
+  
   // 通过gateway访问文件
-  return `${API_BASE_URL}${processedUrl}`;
+  return `${apiBaseUrl}${processedUrl}`;
 };
 
 // 文件上传API
@@ -1126,6 +1159,13 @@ export const appointmentApi = {
   // 获取预约统计信息
   getAppointmentStats: async (customerId: number, tenantId: number): Promise<AppointmentStats> => {
     const response = await createRequest(`/api/business/appointments/customer/${customerId}/stats?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+  // 获取单个预约详情
+  getAppointmentById: async (appointmentId: number, tenantId: number): Promise<Appointment> => {
+    const response = await createRequest(`/api/business/appointments/${appointmentId}?tenantId=${tenantId}`, {
       method: 'GET',
     });
     return response;

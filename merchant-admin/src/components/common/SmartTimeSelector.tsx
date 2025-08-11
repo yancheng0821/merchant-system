@@ -46,14 +46,29 @@ const SmartTimeSelector: React.FC<SmartTimeSelectorProps> = ({
     // 生成时间段选项（30分钟间隔）
     const timeSlots = useMemo(() => {
         const slots = [];
+        const now = new Date();
+        const today = new Date().toISOString().split('T')[0];
+        const isToday = selectedDate === today;
+        
         for (let hour = 6; hour <= 23; hour++) {
             for (let minute = 0; minute < 60; minute += 30) {
+                // 如果是今天，过滤掉已经过去的时间
+                if (isToday) {
+                    const currentHour = now.getHours();
+                    const currentMinute = now.getMinutes();
+                    
+                    // 如果时间已经过去，跳过
+                    if (hour < currentHour || (hour === currentHour && minute <= currentMinute)) {
+                        continue;
+                    }
+                }
+                
                 const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 slots.push(timeStr);
             }
         }
         return slots;
-    }, []);
+    }, [selectedDate]);
 
     // 检查资源可用性
     useEffect(() => {
@@ -145,12 +160,35 @@ const SmartTimeSelector: React.FC<SmartTimeSelectorProps> = ({
         checkAvailability();
     }, [resourceId, selectedDate, duration, timeSlots, t]);
 
-    // 如果没有选择资源，显示提示
+    // 如果没有选择资源，仍然允许选择时间，但使用所有时间段（已过滤过去时间）
     if (!resourceId) {
         return (
-            <Alert severity="info" sx={{ borderRadius: 2 }}>
-                {t('appointments.selectResourceFirst')}
-            </Alert>
+            <FormControl fullWidth disabled={disabled}>
+                <InputLabel>{t('appointments.appointmentTime')}</InputLabel>
+                <Select
+                    value={selectedTime}
+                    label={t('appointments.appointmentTime')}
+                    onChange={(e) => onTimeChange(e.target.value)}
+                    sx={{
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#8B5CF6',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#8B5CF6',
+                        },
+                    }}
+                >
+                    {timeSlots.map((timeSlot) => (
+                        <MenuItem key={timeSlot} value={timeSlot}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <TimeIcon sx={{ fontSize: 16, color: '#8B5CF6' }} />
+                                <Typography>{timeSlot}</Typography>
+                            </Box>
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
         );
     }
 

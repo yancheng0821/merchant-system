@@ -100,58 +100,82 @@ select_services() {
     echo "  1) 全部服务 (前端 + 后端 + AI)"
     echo "  2) 仅前端 (merchant-admin)"
     echo "  3) 前端 + 业务服务 (merchant-admin + business-service)"
-    echo "  4) 仅业务服务 (business-service)"
-    echo "  5) 仅后端 (所有Java服务)"
-    echo "  6) 仅AI服务"
-    echo "  7) 自定义选择"
+    echo "  4) 前端 + Auth + 业务服务 (merchant-admin + auth-service + business-service)"
+    echo "  5) 仅业务服务 (business-service)"
+    echo "  6) 仅后端 (所有Java服务)"
+    echo "  7) 仅AI服务"
+    echo "  8) Auth + 文件服务 (auth-service + file-service)"
+    echo "  9) 自定义选择"
     echo ""
-    read -p "请选择 (1-7): " choice
+    read -p "请选择 (1-9): " choice
     
     case $choice in
         1)
             DEPLOY_FRONTEND=true
             DEPLOY_BACKEND=true
             DEPLOY_AI=true
+            DEPLOY_FILE_SERVICE=false
             SELECTED_SERVICES=("auth-service" "merchant-service" "business-service" "analytics-service" "notification-service")
             ;;
         2)
             DEPLOY_FRONTEND=true
             DEPLOY_BACKEND=false
             DEPLOY_AI=false
+            DEPLOY_FILE_SERVICE=false
             SELECTED_SERVICES=()
             ;;
         3)
             DEPLOY_FRONTEND=true
             DEPLOY_BACKEND=true
             DEPLOY_AI=false
+            DEPLOY_FILE_SERVICE=false
             SELECTED_SERVICES=("business-service")
             ;;
         4)
-            DEPLOY_FRONTEND=false
+            DEPLOY_FRONTEND=true
             DEPLOY_BACKEND=true
             DEPLOY_AI=false
-            SELECTED_SERVICES=("business-service")
+            DEPLOY_FILE_SERVICE=false
+            SELECTED_SERVICES=("auth-service" "business-service")
             ;;
         5)
             DEPLOY_FRONTEND=false
             DEPLOY_BACKEND=true
             DEPLOY_AI=false
-            SELECTED_SERVICES=("auth-service" "merchant-service" "business-service" "analytics-service" "notification-service")
+            DEPLOY_FILE_SERVICE=false
+            SELECTED_SERVICES=("business-service")
             ;;
         6)
             DEPLOY_FRONTEND=false
-            DEPLOY_BACKEND=false
-            DEPLOY_AI=true
-            SELECTED_SERVICES=()
+            DEPLOY_BACKEND=true
+            DEPLOY_AI=false
+            DEPLOY_FILE_SERVICE=false
+            SELECTED_SERVICES=("auth-service" "merchant-service" "business-service" "analytics-service" "notification-service")
             ;;
         7)
+            DEPLOY_FRONTEND=false
+            DEPLOY_BACKEND=false
+            DEPLOY_AI=true
+            DEPLOY_FILE_SERVICE=false
+            SELECTED_SERVICES=()
+            ;;
+        8)
+            log_info "部署 Auth + 文件服务"
+            DEPLOY_FRONTEND=false
+            DEPLOY_BACKEND=true
+            DEPLOY_AI=false
+            DEPLOY_FILE_SERVICE=true
+            SELECTED_SERVICES=("auth-service")
+            ;;
+        9)
             echo "请选择要部署的服务（用空格分隔）:"
-            echo "可选: frontend auth-service merchant-service business-service analytics-service notification-service ai-service"
+            echo "可选: frontend auth-service merchant-service business-service analytics-service notification-service ai-service file-service"
             read -a custom_services
             
             DEPLOY_FRONTEND=false
             DEPLOY_BACKEND=false
             DEPLOY_AI=false
+            DEPLOY_FILE_SERVICE=false
             SELECTED_SERVICES=()
             
             for service in "${custom_services[@]}"; do
@@ -161,6 +185,9 @@ select_services() {
                         ;;
                     ai-service)
                         DEPLOY_AI=true
+                        ;;
+                    file-service)
+                        DEPLOY_FILE_SERVICE=true
                         ;;
                     *)
                         DEPLOY_BACKEND=true
@@ -178,6 +205,7 @@ select_services() {
     log_info "将部署以下服务:"
     [ "$DEPLOY_FRONTEND" = true ] && log_info "  - 前端 (merchant-admin)"
     [ "$DEPLOY_AI" = true ] && log_info "  - AI服务 (ai-service-python)"
+    [ "$DEPLOY_FILE_SERVICE" = true ] && log_info "  - 文件服务 (file-service)"
     for service in "${SELECTED_SERVICES[@]}"; do
         log_info "  - $service"
     done
@@ -209,13 +237,17 @@ build_frontend() {
     cd merchant-admin
     rm -rf build  # 清理旧的构建
     npm install
-    npm run build
+    # 使用生产环境变量构建
+    REACT_APP_API_BASE_URL=https://api.swiftmindsystems.com npm run build
     
-    # 验证构建结果包含我们的修改
-    if grep -q "Selected Resources before sending" build/static/js/*.js 2>/dev/null; then
-        log_success "✓ 调试代码已包含在构建中"
+    # 验证构建结果包含正确的API URL
+    if grep -q "https://api.swiftmindsystems.com" build/static/js/*.js 2>/dev/null; then
+        log_success "✓ 构建包含正确的API域名 (api.swiftmindsystems.com)"
     else
-        log_warning "! 调试代码未找到，可能使用了缓存"
+        log_error "✗ 构建未包含正确的API域名！"
+        log_error "  期望: https://api.swiftmindsystems.com"
+        log_error "  请检查环境变量配置"
+        exit 1
     fi
     
     cd ..
@@ -242,6 +274,15 @@ build_backend() {
     local SERVICE=$2
     
     log_step "构建 ${SERVICE}:${VERSION}..."
+    
+    # 保存当前目录
+    local CURRENT_DIR=$(pwd)
+    
+    # 打包Java服务
+    log_info "打包 ${SERVICE}..."
+    cd merchant-server
+    ./mvnw clean package -pl ${SERVICE} -am -DskipTests
+    cd ${CURRENT_DIR}
     
     # 构建Docker镜像（使用--no-cache确保重新构建）
     docker build --no-cache -f docker/Dockerfile.${SERVICE} -t ${SERVICE}:${VERSION} .
@@ -366,8 +407,14 @@ deploy_to_k8s() {
     if [ "$DEPLOY_FRONTEND" = true ]; then
         log_info "部署前端..."
         if kubectl get deployment merchant-admin -n ${NAMESPACE} &> /dev/null; then
-            log_info "更新前端镜像..."
+            log_info "强制更新前端镜像..."
+            # 使用patch确保镜像拉取策略为Always
+            kubectl patch deployment merchant-admin -n ${NAMESPACE} -p \
+                '{"spec":{"template":{"spec":{"containers":[{"name":"merchant-admin","imagePullPolicy":"Always"}]}}}}'
+            # 设置新镜像
             kubectl set image deployment/merchant-admin merchant-admin=${ECR_REGISTRY}/merchant-admin:${VERSION} -n ${NAMESPACE}
+            # 强制重启以确保使用最新镜像
+            kubectl rollout restart deployment/merchant-admin -n ${NAMESPACE}
         else
             log_info "创建前端部署..."
             kubectl apply -f k8s-deployment/merchant-admin.yaml
@@ -404,12 +451,29 @@ deploy_to_k8s() {
         deployments+=("ai-service-python")
     fi
     
+    if [ "$DEPLOY_FILE_SERVICE" = true ]; then
+        log_info "部署文件服务..."
+        # file-service 使用nginx镜像，不需要构建
+        kubectl apply -f k8s-deployment/file-service.yaml
+        deployments+=("file-service")
+    fi
+    
     # 等待部署完成
     log_info "等待部署完成..."
     for deployment in "${deployments[@]}"; do
         kubectl rollout status deployment/${deployment} -n ${NAMESPACE} --timeout=300s
         log_success "${deployment} 部署完成"
     done
+    
+    # 如果部署了auth-service或file-service，修复EFS目录结构
+    if [[ " ${deployments[@]} " =~ " auth-service " ]] || [[ " ${deployments[@]} " =~ " file-service " ]]; then
+        log_info "修复EFS目录结构..."
+        if [ -f "scripts/fix-efs-structure.sh" ]; then
+            bash scripts/fix-efs-structure.sh
+        else
+            log_warning "未找到EFS修复脚本，跳过"
+        fi
+    fi
     
     log_success "Kubernetes 部署完成"
 }

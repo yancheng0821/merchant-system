@@ -10,6 +10,14 @@ import {
     Tooltip,
     TextField,
     Button,
+    Card,
+    CardContent,
+    Chip,
+    Avatar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from '@mui/material';
 import {
     CheckCircle as AvailableIcon,
@@ -18,9 +26,16 @@ import {
     Refresh as RefreshIcon,
     NavigateBefore as PrevIcon,
     NavigateNext as NextIcon,
+    AccessTime as TimeIcon,
+    Person as PersonIcon,
+    Phone as PhoneIcon,
+    Email as EmailIcon,
+    Close as CloseIcon,
+    CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { resourceApi } from '../../services/api';
+import { resourceApi, appointmentApi } from '../../services/api';
+import i18n from '../../i18n/config';
 
 interface DetailedAvailabilityViewProps {
     resourceId: number;
@@ -40,8 +55,11 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     const [availabilityData, setAvailabilityData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [scrollPosition, setScrollPosition] = useState(0);
-    const [shouldRestoreScroll, setShouldRestoreScroll] = useState(false);
+    const scrollPositionRef = React.useRef(0);
+    const shouldPreserveScrollRef = React.useRef(false);
+    const [selectedBooking, setSelectedBooking] = useState<any>(null);
+    const [bookingDetailsOpen, setBookingDetailsOpen] = useState(false);
+    const [loadingBookingDetails, setLoadingBookingDetails] = useState(false);
 
     // 生成时间段（30分钟间隔）
     const timeSlots = React.useMemo(() => {
@@ -63,6 +81,18 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
         try {
             const data = await resourceApi.getResourceDetailedAvailability(resourceId, selectedDate);
             setAvailabilityData(data);
+            
+            // 如果需要保留滚动位置，在数据加载完成后恢复
+            if (shouldPreserveScrollRef.current && scrollPositionRef.current > 0) {
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        top: scrollPositionRef.current,
+                        behavior: 'instant'
+                    });
+                    // 重置标记
+                    shouldPreserveScrollRef.current = false;
+                });
+            }
         } catch (err) {
             console.error('Failed to fetch detailed availability:', err);
             setError(t('resources.loadError'));
@@ -74,22 +104,6 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     useEffect(() => {
         fetchDetailedAvailability();
     }, [resourceId, selectedDate]);
-
-    // 恢复滚动位置
-    useEffect(() => {
-        if (!loading && availabilityData && shouldRestoreScroll && scrollPosition > 0) {
-            // 使用requestAnimationFrame确保DOM已完全更新
-            requestAnimationFrame(() => {
-                window.scrollTo({
-                    top: scrollPosition,
-                    behavior: 'instant' // 使用instant避免动画
-                });
-                // 重置状态
-                setShouldRestoreScroll(false);
-                setScrollPosition(0);
-            });
-        }
-    }, [loading, availabilityData, shouldRestoreScroll, scrollPosition]);
 
     // 检查时间段状态
     const getTimeSlotStatus = (timeSlot: string) => {
@@ -164,16 +178,67 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
         }
     };
 
+    // 获取预约详情
+    const fetchBookingDetails = async (bookingSlot: any) => {
+        setLoadingBookingDetails(true);
+        
+        try {
+            // 如果有appointmentId，尝试从API获取完整信息
+            if (bookingSlot.appointmentId) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const tenantId = user.tenantId || 1;
+                
+                try {
+                    const appointmentDetails = await appointmentApi.getAppointmentById(bookingSlot.appointmentId, tenantId);
+                    setSelectedBooking(appointmentDetails);
+                    setBookingDetailsOpen(true);
+                    return;
+                } catch (error) {
+                    // 如果API调用失败，继续使用本地数据
+                }
+            }
+            
+            const bookingDetails = {
+                appointmentId: bookingSlot.appointmentId,
+                appointmentTime: bookingSlot.startTime,
+                endTime: bookingSlot.endTime,
+                duration: bookingSlot.duration,
+                status: bookingSlot.status || 'CONFIRMED',
+                appointmentDate: selectedDate,
+                totalAmount: bookingSlot.totalAmount,
+                customer: bookingSlot.customerName ? {
+                    firstName: bookingSlot.customerName.split(' ')[0] || bookingSlot.customerName,
+                    lastName: bookingSlot.customerName.split(' ')[1] || '',
+                    phone: bookingSlot.customerPhone,
+                    email: bookingSlot.customerEmail,
+                } : bookingSlot.customer || null,
+                resource: bookingSlot.resource || null,
+                appointmentServices: bookingSlot.appointmentServices || (bookingSlot.serviceName ? [{
+                    serviceName: bookingSlot.serviceName,
+                    duration: bookingSlot.duration,
+                    price: bookingSlot.price,
+                }] : []),
+                notes: bookingSlot.notes,
+            };
+            
+            setSelectedBooking(bookingDetails);
+            setBookingDetailsOpen(true);
+        } finally {
+            setLoadingBookingDetails(false);
+        }
+    };
+
     // 日期导航
     const navigateDate = (direction: 'prev' | 'next') => {
-        // 保存当前滚动位置并标记需要恢复
-        const currentScrollPosition = window.scrollY || document.documentElement.scrollTop;
-        setScrollPosition(currentScrollPosition);
-        setShouldRestoreScroll(true);
-
+        // 保存当前滚动位置到ref
+        scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+        shouldPreserveScrollRef.current = true;
+        
         const currentDate = new Date(selectedDate);
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
+        
+        // 设置新日期，这会触发useEffect重新获取数据
         setSelectedDate(newDate.toISOString().split('T')[0]);
     };
 
@@ -349,95 +414,71 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                 </Box>
             </Paper>
 
-            {/* 日期选择卡片 */}
+            {/* 日期选择卡片 - 美化版 */}
             <Paper
                 elevation={0}
                 sx={{
                     borderRadius: 3,
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                     border: '1px solid rgba(0,0,0,0.04)',
                     mb: 3,
-                    p: 2,
+                    p: 3,
+                    background: `linear-gradient(135deg, white, ${alpha('#8B5CF6', 0.02)})`,
                 }}
             >
-                <Box display="flex" alignItems="center" justifyContent="center" gap={2}>
-                    <IconButton
-                        size="small"
-                        onClick={() => navigateDate('prev')}
-                        sx={{
-                            color: themeColor,
-                            backgroundColor: alpha(themeColor, 0.1),
-                            '&:hover': {
-                                backgroundColor: alpha(themeColor, 0.2),
-                                transform: 'scale(1.05)',
-                            },
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        <PrevIcon fontSize="small" />
-                    </IconButton>
-
-                    <Box
-                        sx={{
-                            px: 2,
-                            py: 1,
-                            borderRadius: 2,
-                            background: `linear-gradient(135deg, ${alpha(themeColor, 0.05)}, ${alpha(themeColor, 0.02)})`,
-                            border: `1px solid ${alpha(themeColor, 0.1)}`,
-                        }}
-                    >
+                <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <IconButton
+                            onClick={() => navigateDate('prev')}
+                            sx={{
+                                backgroundColor: alpha(themeColor, 0.1),
+                                '&:hover': {
+                                    backgroundColor: alpha(themeColor, 0.2),
+                                },
+                            }}
+                        >
+                            <PrevIcon />
+                        </IconButton>
                         <TextField
                             type="date"
                             value={selectedDate}
                             onChange={(e) => {
-                                // 保存当前滚动位置并标记需要恢复
-                                const currentScrollPosition = window.scrollY || document.documentElement.scrollTop;
-                                setScrollPosition(currentScrollPosition);
-                                setShouldRestoreScroll(true);
+                                scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+                                shouldPreserveScrollRef.current = true;
                                 setSelectedDate(e.target.value);
                             }}
                             size="small"
+                            inputProps={{
+                                min: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                                max: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
                                     borderRadius: 2,
-                                    minWidth: 140,
-                                    backgroundColor: 'white',
-                                    border: 'none',
                                     '& fieldset': {
-                                        border: 'none',
+                                        borderColor: alpha(themeColor, 0.3),
                                     },
-                                    '&:hover': {
-                                        backgroundColor: '#f8fafc',
+                                    '&:hover fieldset': {
+                                        borderColor: themeColor,
                                     },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        boxShadow: `0 0 0 2px ${alpha(themeColor, 0.1)}`,
+                                    '&.Mui-focused fieldset': {
+                                        borderColor: themeColor,
                                     },
-                                },
-                                '& .MuiInputBase-input': {
-                                    fontWeight: 500,
-                                    color: themeColor,
-                                    fontSize: '0.875rem',
                                 },
                             }}
                         />
+                        <IconButton
+                            onClick={() => navigateDate('next')}
+                            sx={{
+                                backgroundColor: alpha(themeColor, 0.1),
+                                '&:hover': {
+                                    backgroundColor: alpha(themeColor, 0.2),
+                                },
+                            }}
+                        >
+                            <NextIcon />
+                        </IconButton>
                     </Box>
-
-                    <IconButton
-                        size="small"
-                        onClick={() => navigateDate('next')}
-                        sx={{
-                            color: themeColor,
-                            backgroundColor: alpha(themeColor, 0.1),
-                            '&:hover': {
-                                backgroundColor: alpha(themeColor, 0.2),
-                                transform: 'scale(1.05)',
-                            },
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        <NextIcon fontSize="small" />
-                    </IconButton>
                 </Box>
             </Paper>
 
@@ -546,55 +587,378 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                     </Box>
                 </Paper>
 
-                {/* 预约统计卡片 */}
+                {/* 今日预约统计 - 美化版 */}
                 {availabilityData?.bookingSlots && availabilityData.bookingSlots.length > 0 && (
                     <Paper
                         elevation={0}
                         sx={{
                             borderRadius: 3,
-                            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                             border: '1px solid rgba(0,0,0,0.04)',
-                            p: 2.5,
+                            p: 3,
                             flex: 1,
-                            background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.02)}, white)`,
+                            backgroundColor: 'white',
                         }}
                     >
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#F59E0B', mb: 1.5, fontSize: '0.875rem' }}>
-                            📊 {t('resources.availability.todayBookings')} ({availabilityData.bookingSlots.length})
-                        </Typography>
-                        <Box display="flex" flexWrap="wrap" gap={1}>
-                            {availabilityData.bookingSlots.map((slot: any, index: number) => (
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                            <Box display="flex" alignItems="center" gap={1}>
                                 <Box
-                                    key={index}
                                     sx={{
-                                        px: 1.5,
-                                        py: 0.5,
+                                        width: 32,
+                                        height: 32,
                                         borderRadius: 1.5,
-                                        background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.1)}, ${alpha('#F59E0B', 0.05)})`,
-                                        border: `1px solid ${alpha('#F59E0B', 0.2)}`,
-                                        transition: 'all 0.2s ease',
-                                        '&:hover': {
-                                            transform: 'scale(1.02)',
-                                            boxShadow: `0 1px 4px ${alpha('#F59E0B', 0.3)}`,
-                                        },
+                                        background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.2)}, ${alpha('#F59E0B', 0.1)})`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                     }}
                                 >
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            fontWeight: 600,
-                                            color: '#F59E0B',
-                                            fontSize: '0.75rem',
-                                        }}
-                                    >
-                                        {slot.startTime.slice(0, 5)}-{slot.endTime.slice(0, 5)}
+                                    <BookedIcon sx={{ fontSize: 18, color: '#F59E0B' }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', lineHeight: 1 }}>
+                                        {t('resources.availability.todayBookings')}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {availabilityData.bookingSlots.length} {t('appointments.appointments')}
                                     </Typography>
                                 </Box>
-                            ))}
+                            </Box>
+                            <Chip
+                                size="small"
+                                label={`${availabilityData.bookingSlots.length}`}
+                                sx={{
+                                    backgroundColor: alpha('#F59E0B', 0.1),
+                                    color: '#F59E0B',
+                                    fontWeight: 700,
+                                    minWidth: 32,
+                                }}
+                            />
                         </Box>
+                        
+                        <Grid container spacing={1.5}>
+                            {availabilityData.bookingSlots.map((slot: any, index: number) => (
+                                <Grid item xs={12} sm={6} md={4} key={index}>
+                                    <Card
+                                        sx={{
+                                            cursor: 'pointer',
+                                            borderRadius: 2,
+                                            border: `1px solid ${alpha('#E5E7EB', 0.8)}`,
+                                            backgroundColor: alpha('#F3F4F6', 0.5),
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: `0 4px 12px rgba(0, 0, 0, 0.1)`,
+                                                borderColor: alpha('#3B82F6', 0.3),
+                                                backgroundColor: 'white',
+                                            },
+                                        }}
+                                        onClick={() => fetchBookingDetails(slot)}
+                                    >
+                                        <CardContent sx={{ p: 2 }}>
+                                            <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                                <TimeIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                                    {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                                                </Typography>
+                                            </Box>
+                                            {slot.customerName && (
+                                                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                                    <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                                        {slot.customerName}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+                                            {(slot.appointmentServices && slot.appointmentServices.length > 0) && (
+                                                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                                    <Box sx={{ width: 14, height: 14, borderRadius: '50%', backgroundColor: alpha('#10B981', 0.2) }} />
+                                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                                        {slot.appointmentServices.map((s: any) => s.serviceName).join(', ')}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+                                            {slot.resource && (
+                                                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                                    <PersonIcon sx={{ fontSize: 14, color: '#6366F1' }} />
+                                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                                        {slot.resource.name}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+                                            {(slot.totalAmount !== undefined && slot.totalAmount !== null) && (
+                                                <Box display="flex" alignItems="center" gap={1}>
+                                                    <Box sx={{ width: 14, height: 14, borderRadius: '50%', backgroundColor: alpha('#F59E0B', 0.2) }} />
+                                                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#F59E0B' }} noWrap>
+                                                        ${slot.totalAmount}
+                                                    </Typography>
+                                                </Box>
+                                            )}
+                                            <Box mt={1}>
+                                                <Chip
+                                                    size="small"
+                                                    label={(() => {
+                                                        // Map backend statuses to translation keys
+                                                        const statusMap: { [key: string]: string } = {
+                                                            'BOOKED': 'appointments.appointmentStatuses.confirmed',
+                                                            'CONFIRMED': 'appointments.appointmentStatuses.confirmed',
+                                                            'COMPLETED': 'appointments.appointmentStatuses.completed',
+                                                            'CANCELLED': 'appointments.appointmentStatuses.cancelled',
+                                                            'NO_SHOW': 'appointments.appointmentStatuses.no-show'
+                                                        };
+                                                        const translationKey = statusMap[slot.status];
+                                                        return translationKey ? t(translationKey) : slot.status;
+                                                    })()}
+                                                    sx={{
+                                                        backgroundColor: (() => {
+                                                            // Different colors for different statuses
+                                                            switch(slot.status) {
+                                                                case 'COMPLETED':
+                                                                    return alpha('#10B981', 0.1);
+                                                                case 'CANCELLED':
+                                                                    return alpha('#EF4444', 0.1);
+                                                                case 'NO_SHOW':
+                                                                    return alpha('#F59E0B', 0.1);
+                                                                default: // BOOKED, CONFIRMED
+                                                                    return alpha('#3B82F6', 0.1);
+                                                            }
+                                                        })(),
+                                                        color: (() => {
+                                                            // Different colors for different statuses
+                                                            switch(slot.status) {
+                                                                case 'COMPLETED':
+                                                                    return '#10B981';
+                                                                case 'CANCELLED':
+                                                                    return '#EF4444';
+                                                                case 'NO_SHOW':
+                                                                    return '#F59E0B';
+                                                                default: // BOOKED, CONFIRMED
+                                                                    return '#3B82F6';
+                                                            }
+                                                        })(),
+                                                        fontWeight: 600,
+                                                        fontSize: '0.7rem',
+                                                        height: 20,
+                                                    }}
+                                                />
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            ))}
+                        </Grid>
                     </Paper>
                 )}
             </Box>
+
+            {/* 预约详情对话框 */}
+            <Dialog
+            open={bookingDetailsOpen}
+            onClose={() => setBookingDetailsOpen(false)}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+                sx: {
+                    borderRadius: 3,
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                }
+            }}
+        >
+            <DialogTitle sx={{ pb: 2 }}>
+                <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                            sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 2,
+                                background: `linear-gradient(135deg, ${themeColor}, ${alpha(themeColor, 0.8)})`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                            }}
+                        >
+                            <BookedIcon />
+                        </Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                            {t('appointments.appointmentDetails')}
+                        </Typography>
+                    </Box>
+                    <IconButton onClick={() => setBookingDetailsOpen(false)}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            </DialogTitle>
+            <DialogContent>
+                {loadingBookingDetails ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                        <CircularProgress sx={{ color: themeColor }} />
+                    </Box>
+                ) : selectedBooking ? (
+                    <>
+                        <Grid container spacing={3}>
+                            {/* 客户信息 */}
+                            {selectedBooking.customer && (
+                            <Grid item xs={12} md={6}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 2.5,
+                                        borderRadius: 2,
+                                        background: `linear-gradient(135deg, ${alpha('#8B5CF6', 0.03)}, white)`,
+                                        border: `1px solid ${alpha('#8B5CF6', 0.1)}`,
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#8B5CF6' }}>
+                                        {t('appointments.customerInfo')}
+                                    </Typography>
+                                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                        <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                        <Typography variant="body2">
+                                            {selectedBooking.customer.firstName} {selectedBooking.customer.lastName}
+                                        </Typography>
+                                    </Box>
+                                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                        <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                        <Typography variant="body2">{selectedBooking.customer.phone || '-'}</Typography>
+                                    </Box>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                        <Typography variant="body2">{selectedBooking.customer.email || '-'}</Typography>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        )}
+
+                        {/* 预约信息 */}
+                        <Grid item xs={12} md={6}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2.5,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${alpha('#10B981', 0.03)}, white)`,
+                                    border: `1px solid ${alpha('#10B981', 0.1)}`,
+                                }}
+                            >
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#10B981' }}>
+                                    {t('appointments.appointmentInfo')}
+                                </Typography>
+                                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                    <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                    <Typography variant="body2">{selectedBooking.appointmentDate}</Typography>
+                                </Box>
+                                <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                    <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                    <Typography variant="body2">
+                                        {selectedBooking.appointmentTime} 
+                                        {selectedBooking.duration && ` (${selectedBooking.duration} ${t('appointments.minutesUnit')})`}
+                                    </Typography>
+                                </Box>
+                                {selectedBooking.resource && (
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                        <Typography variant="body2">{selectedBooking.resource.name}</Typography>
+                                    </Box>
+                                )}
+                            </Paper>
+                        </Grid>
+
+                        {/* 服务信息 */}
+                        {selectedBooking.appointmentServices && selectedBooking.appointmentServices.length > 0 && (
+                            <Grid item xs={12}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 2.5,
+                                        borderRadius: 2,
+                                        background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.03)}, white)`,
+                                        border: `1px solid ${alpha('#F59E0B', 0.1)}`,
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#F59E0B' }}>
+                                        {t('appointments.services')}
+                                    </Typography>
+                                    <Box>
+                                        {selectedBooking.appointmentServices.map((service: any, index: number) => (
+                                            <Box key={index} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                                <Typography variant="body2">{service.serviceName}</Typography>
+                                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                    ${service.price} ({service.duration} {t('appointments.minutesUnit')})
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                        {selectedBooking.totalAmount !== undefined && (
+                                            <Box 
+                                                display="flex" 
+                                                justifyContent="space-between" 
+                                                alignItems="center" 
+                                                mt={2} 
+                                                pt={2} 
+                                                sx={{ borderTop: '1px solid', borderColor: 'divider' }}
+                                            >
+                                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                                    {t('appointments.total')}
+                                                </Typography>
+                                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                                    ${selectedBooking.totalAmount}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        )}
+
+                        {/* 备注 */}
+                        {selectedBooking.notes && (
+                            <Grid item xs={12}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 2.5,
+                                        borderRadius: 2,
+                                        background: 'rgba(0,0,0,0.02)',
+                                        border: '1px solid rgba(0,0,0,0.05)',
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                                        {t('appointments.notes')}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {selectedBooking.notes}
+                                    </Typography>
+                                </Paper>
+                            </Grid>
+                        )}
+                    </Grid>
+                    </>
+                ) : (
+                    <Box textAlign="center" py={4}>
+                        <Typography color="text.secondary">
+                            {t('appointments.noDetailsAvailable')}
+                        </Typography>
+                    </Box>
+                )}
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5 }}>
+                <Button
+                    onClick={() => setBookingDetailsOpen(false)}
+                    variant="contained"
+                    sx={{
+                        borderRadius: 2,
+                        px: 3,
+                        background: `linear-gradient(135deg, ${themeColor}, ${alpha(themeColor, 0.8)})`,
+                        '&:hover': {
+                            background: `linear-gradient(135deg, ${alpha(themeColor, 0.9)}, ${themeColor})`,
+                        },
+                    }}
+                >
+                    {t('common.close')}
+                </Button>
+            </DialogActions>
+        </Dialog>
         </Box>
     );
 };

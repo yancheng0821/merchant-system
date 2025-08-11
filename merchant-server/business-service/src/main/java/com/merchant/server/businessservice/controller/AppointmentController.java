@@ -27,6 +27,21 @@ public class AppointmentController {
     }
 
     /**
+     * 根据ID获取单个预约详情
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Appointment> getAppointmentById(
+            @PathVariable Long id,
+            @RequestParam Long tenantId) {
+        Appointment appointment = appointmentService.getAppointmentById(id);
+        // 验证预约是否属于该租户
+        if (!appointment.getTenantId().equals(tenantId)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(appointment);
+    }
+
+    /**
      * 根据客户ID获取预约记录
      */
     @GetMapping("/customer/{customerId}")

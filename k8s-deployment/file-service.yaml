@@ -80,7 +80,19 @@ data:
         
         # 头像文件访问 - 支持租户目录结构
         location ~ ^/api/files/avatars/(tenant_\d+)/(.+)$ {
-            alias /usr/share/nginx/html/files/avatars/$1/$2;
+            root /usr/share/nginx/html/files;
+            try_files /avatars/$1/$2 =404;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
+        }
+        
+        # 房间图标文件访问 - 支持租户目录结构
+        location ~ ^/api/files/room-icons/(tenant_\d+)/(.+)$ {
+            root /usr/share/nginx/html/files;
+            try_files /room-icons/$1/$2 =404;
             expires 1y;
             add_header Cache-Control "public, immutable";
             add_header Access-Control-Allow-Origin *;
@@ -91,6 +103,17 @@ data:
         # 兼容旧的头像路径
         location /api/files/avatars/ {
             alias /usr/share/nginx/html/files/avatars/;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS";
+            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range";
+            try_files $uri =404;
+        }
+        
+        # 房间图标路径
+        location /api/files/room-icons/ {
+            alias /usr/share/nginx/html/files/room-icons/;
             expires 1y;
             add_header Cache-Control "public, immutable";
             add_header Access-Control-Allow-Origin *;

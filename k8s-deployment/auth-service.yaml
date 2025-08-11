@@ -77,7 +77,7 @@ spec:
               name: shared-storage-config
               key: SHARED_AVATAR_URL_PREFIX
         volumeMounts:
-        - name: shared-storage
+        - name: avatars-storage
           mountPath: /usr/share/nginx/html/files
         resources:
           requests:
@@ -101,7 +101,7 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: ip-10-0-1-158.ca-central-1.compute.internal
       volumes:
-      - name: shared-storage
+      - name: avatars-storage
         persistentVolumeClaim:
           claimName: avatars-pvc
 ---

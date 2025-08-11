@@ -21,7 +21,26 @@
       "Bash(kubectl logs:*)",
       "Bash(kubectl get:*)",
       "Bash(kubectl describe:*)",
-      "Bash(kubectl exec:*)"
+      "Bash(kubectl exec:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(find:*)",
+      "Bash(./gradlew:*)",
+      "Bash(./mvnw:*)",
+      "Bash(kubectl apply:*)",
+      "Bash(kubectl rollout restart:*)",
+      "Bash(kubectl rollout status:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl wait:*)",
+      "Bash(kubectl set image:*)",
+      "Bash(kubectl patch:*)",
+      "Bash(curl:*)",
+      "Bash(docker tag:*)",
+      "Bash(docker push:*)",
+      "Bash(./scripts/fix-efs-structure.sh:*)",
+      "Bash(mvn clean:*)",
+      "Bash(docker run:*)",
+      "Bash(./scripts/rapid-deploy.sh:*)",
+      "Bash(echo)"
     ],
     "deny": []
   }

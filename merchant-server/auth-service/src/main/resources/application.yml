@@ -64,7 +64,7 @@ google:
 # 文件上传配置
 file:
   upload:
-    path: /opt/merchant-system  # 文件上传根路径
+    path: /usr/share/nginx/html/files  # 文件上传根路径
 
 logging:
   level:

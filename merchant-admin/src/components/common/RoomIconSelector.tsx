@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import ImageUploader from './ImageUploader';
+import { getFullImageUrl } from '../../services/api';
 
 interface RoomIconSelectorProps {
     value?: string; // 当前选中的图标名称或图片URL
@@ -105,7 +106,27 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
     const [showUploader, setShowUploader] = useState(false);
 
     const categories = Object.entries(iconCategories);
-    const isImageUrl = value && (value.startsWith('http') || value.startsWith('data:') || value.startsWith('blob:'));
+    
+    // 修复错误的路径和域名
+    let fixedValue = value;
+    if (value) {
+        // 1. 如果是avatars路径，改为room-icons
+        if (value.includes('/api/files/avatars/')) {
+            fixedValue = value.replace('/api/files/avatars/', '/api/files/room-icons/');
+        }
+        
+        // 2. 如果是完整URL但域名错误，修正它
+        if (fixedValue && (fixedValue.startsWith('https://swiftmindsystems.com/api/') || 
+                          fixedValue.startsWith('http://swiftmindsystems.com/api/'))) {
+            // 提取路径部分
+            const pathMatch = fixedValue.match(/https?:\/\/[^\/]+(\/.+)/);
+            if (pathMatch) {
+                fixedValue = pathMatch[1]; // 只保留路径部分，让getFullImageUrl处理域名
+            }
+        }
+    }
+    
+    const isImageUrl = fixedValue && (fixedValue.startsWith('http') || fixedValue.startsWith('/api/') || fixedValue.startsWith('data:') || fixedValue.startsWith('blob:'));
 
     const handleIconSelect = (iconName: string) => {
         onChange(iconName);
@@ -156,9 +177,9 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
 
             {/* Tab切换 */}
             <Tabs
-                value={showUploader ? -1 : activeTab}
+                value={showUploader ? categories.length : activeTab}
                 onChange={(_, newValue) => {
-                    if (newValue === -1) {
+                    if (newValue === categories.length) {
                         setShowUploader(true);
                     } else {
                         setActiveTab(newValue);
@@ -203,64 +224,82 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
                 }}
             >
                 {showUploader ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" minHeight={80}>
-                        <ImageUploader
-                            value={isImageUrl ? value : undefined}
-                            onChange={handleImageUpload}
-                            variant="rectangle"
-                            size={80}
-                            placeholder={t('roomIcons.uploadPlaceholder')}
-                            uploadType="room-icon"
-                        />
+                    <Box>
+                        <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
+                            <ImageUploader
+                                value={isImageUrl ? fixedValue : undefined}
+                                onChange={handleImageUpload}
+                                variant="rectangle"
+                                size={120}
+                                placeholder={t('roomIcons.uploadPlaceholder')}
+                                uploadType="room-icon"
+                            />
+                        </Box>
+                        {isImageUrl && value && (
+                            <Box mt={2} display="flex" justifyContent="center">
+                                <Typography variant="caption" color="text.secondary">
+                                    {t('roomIcons.uploadSuccess')}
+                                </Typography>
+                            </Box>
+                        )}
                     </Box>
                 ) : (
                     <Grid container spacing={1}>
-                        {categories[activeTab][1].icons.map((iconData) => {
-                            const isSelected = value === iconData.emoji;
-                            return (
-                                <Grid item key={iconData.name}>
-                                    {renderEmojiButton(iconData, isSelected)}
-                                </Grid>
-                            );
-                        })}
+                        {categories[activeTab] && categories[activeTab][1] && categories[activeTab][1].icons ? (
+                            categories[activeTab][1].icons.map((iconData) => {
+                                const isSelected = fixedValue === iconData.emoji;
+                                return (
+                                    <Grid item key={iconData.name}>
+                                        {renderEmojiButton(iconData, isSelected)}
+                                    </Grid>
+                                );
+                            })
+                        ) : null}
                     </Grid>
                 )}
             </Box>
 
             {/* 当前选择显示 */}
-            {value && (
-                <Box mt={2} display="flex" alignItems="center" gap={1}>
-                    <Typography variant="caption" color="text.secondary">
-                        {t('roomIcons.currentSelection')}:
-                    </Typography>
-                    <Box
-                        sx={{
-                            width: 32,
-                            height: 32,
-                            border: `1px solid ${alpha('#2563EB', 0.3)}`,
-                            borderRadius: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            bgcolor: alpha('#2563EB', 0.05),
-                        }}
-                    >
-                        {isImageUrl ? (
-                            <img 
-                                src={value} 
-                                alt="Selected" 
-                                style={{ 
-                                    width: '100%', 
-                                    height: '100%', 
-                                    objectFit: 'cover',
-                                    borderRadius: 4,
-                                }} 
-                            />
-                        ) : (
-                            <Typography sx={{ fontSize: 20 }}>
-                                {value || '🏠'}
-                            </Typography>
-                        )}
+            {fixedValue && (
+                <Box mt={2} p={2} sx={{ 
+                    bgcolor: alpha('#2563EB', 0.03), 
+                    borderRadius: 2,
+                    border: `1px solid ${alpha('#2563EB', 0.1)}`
+                }}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            {t('roomIcons.currentSelection')}:
+                        </Typography>
+                        <Box
+                            sx={{
+                                width: 40,
+                                height: 40,
+                                border: `2px solid ${alpha('#2563EB', 0.3)}`,
+                                borderRadius: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: 'white',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            }}
+                        >
+                            {isImageUrl ? (
+                                <img 
+                                    src={getFullImageUrl(fixedValue)} 
+                                    alt="Selected Icon" 
+                                    style={{ 
+                                        width: '100%', 
+                                        height: '100%', 
+                                        objectFit: 'cover',
+                                        borderRadius: 6,
+                                    }} 
+                                />
+                            ) : (
+                                <Typography sx={{ fontSize: 24 }}>
+                                    {fixedValue || '🏠'}
+                                </Typography>
+                            )}
+                        </Box>
                     </Box>
                 </Box>
             )}
