@@ -405,7 +405,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           categoryId: service.categoryId
         }))
       };
-
+      
       // 验证必需字段
       if (!customerId || !appointmentDate || !appointmentTime) {
         throw new Error('Missing required fields: customerId, appointmentDate, or appointmentTime');

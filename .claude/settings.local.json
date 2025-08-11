@@ -12,7 +12,16 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(npm start:*)",
-      "Bash(xcrun simctl list:*)"
+      "Bash(xcrun simctl list:*)",
+      "Bash(chmod:*)",
+      "Bash(./test-rapid-deploy.sh:*)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(docker build:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(kubectl exec:*)"
     ],
     "deny": []
   }

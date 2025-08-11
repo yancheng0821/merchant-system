@@ -38,7 +38,7 @@ sql/
 
 # Node.js 相关 - 只排除不必要的文件
 merchant-admin/node_modules/
-merchant-admin/build/
+# merchant-admin/build/  # 需要包含build目录用于本地构建
 merchant-admin/.env.local
 merchant-admin/.env.development
 merchant-admin/.env.test

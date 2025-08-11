@@ -157,17 +157,23 @@ const ResourceSelector: React.FC<ResourceSelectorProps> = ({
   // 获取资源图标
   const getResourceIcon = (resource: any) => {
     if (resource.type === 'STAFF') {
-      if (resource.avatar) {
+      // Only try to show avatar if it's a full URL or path, not just a UUID
+      if (resource.avatar && (resource.avatar.startsWith('http') || resource.avatar.startsWith('/api'))) {
         return (
           <img 
-            src={resource.avatar} 
+            src={getFullImageUrl(resource.avatar)} 
             alt={resource.name}
             style={{ 
               width: '100%', 
               height: '100%', 
               objectFit: 'cover',
               borderRadius: '50%'
-            }} 
+            }}
+            onError={(e) => {
+              // If image fails to load, hide it and show default
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
           />
         );
       }

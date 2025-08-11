@@ -176,11 +176,17 @@ public class AppointmentServiceImpl implements AppointmentService {
                 LocalTime startTime = appointment.getAppointmentTime();
                 LocalTime endTime = startTime.plusMinutes(appointment.getDuration());
                 
+                // 添加详细日志
+                log.info("Processing booking slots - selectedResources: {}, resourceId: {}", 
+                    appointmentDTO.getSelectedResources(), appointment.getResourceId());
+                
                 // 处理多个资源的预约时段创建
                 if (appointmentDTO.getSelectedResources() != null && !appointmentDTO.getSelectedResources().isEmpty()) {
+                    log.info("Creating booking slots for {} selected resources", appointmentDTO.getSelectedResources().size());
                     // 为每个选中的资源创建预约时段
                     for (AppointmentCreateDTO.SelectedResourceDTO selectedResource : appointmentDTO.getSelectedResources()) {
                         try {
+                            log.info("Creating booking slot for resource: {} (type: {})", selectedResource.getId(), selectedResource.getType());
                             resourceService.createBookingSlot(
                                 selectedResource.getId(),
                                 appointment.getId(),
@@ -188,15 +194,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                                 startTime,
                                 endTime
                             );
-                            log.info("Booking slot created for resource: {} in appointment: {}", selectedResource.getId(), appointment.getId());
+                            log.info("Booking slot created for resource: {} (type: {}) in appointment: {}", 
+                                selectedResource.getId(), selectedResource.getType(), appointment.getId());
                         } catch (Exception e) {
-                            log.error("Failed to create booking slot for resource: {} in appointment: {}", selectedResource.getId(), appointment.getId(), e);
+                            log.error("Failed to create booking slot for resource: {} (type: {}) in appointment: {}", 
+                                selectedResource.getId(), selectedResource.getType(), appointment.getId(), e);
                             // 如果创建预约时间段失败，回滚预约创建
                             throw new RuntimeException("Failed to create booking slot for resource " + selectedResource.getId() + ": " + e.getMessage(), e);
                         }
                     }
                 } else if (appointment.getResourceId() != null) {
                     // 兼容旧逻辑：如果只有主要资源ID，创建单个预约时段
+                    log.info("Using fallback logic - creating single booking slot for resourceId: {}", appointment.getResourceId());
                     try {
                         resourceService.createBookingSlot(
                             appointment.getResourceId(),
@@ -211,6 +220,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                         // 如果创建预约时间段失败，回滚预约创建
                         throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
                     }
+                } else {
+                    log.warn("No resources specified for booking slots - selectedResources: {}, resourceId: {}", 
+                        appointmentDTO.getSelectedResources(), appointment.getResourceId());
                 }
             }
             

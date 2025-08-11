@@ -1,257 +1,259 @@
-# 部署脚本使用指南
+# Merchant System 部署脚本
 
-本目录包含了智能化的部署脚本，确保每次部署都使用最新代码并自动进行测试验证。
+## 📁 脚本说明
 
-## 📁 脚本文件
+### 🚀 rapid-deploy.sh - 快速部署脚本
+主要的部署脚本，支持灵活选择要部署的服务，包括：
+- 全部服务部署
+- 仅前端部署
+- 仅后端部署
+- 仅AI服务部署
+- 单个服务部署
+- 自定义服务组合部署
 
-### 🚀 核心部署脚本
-
-#### 1. `smart-deploy.sh` - 智能完整部署
-**用途**: 完整部署所有服务，适用于重要版本发布或首次部署
-
-**特点**:
-- 自动生成版本号（基于时间戳和Git commit）
-- 构建并推送所有服务镜像
-- 自动更新K8s配置文件
-- 按依赖顺序部署服务
-- 自动健康检查和API测试
-- 清理旧镜像
-
-**使用方法**:
+**使用方法：**
 ```bash
-# 使用自动生成的版本号
-./scripts/smart-deploy.sh
+# 赋予执行权限
+chmod +x rapid-deploy.sh
 
-# 使用自定义版本号
-./scripts/smart-deploy.sh v1.3.0
+# 运行部署
+./rapid-deploy.sh
 ```
 
-#### 2. `quick-deploy.sh` - 快速增量部署
-**用途**: 只部署修改过的服务，适用于日常开发和快速更新
+**特性：**
+- 交互式服务选择
+- 并行构建镜像，提高效率
+- 自动版本管理
+- 健康检查
+- 部署耗时统计
+- 可选的本地镜像清理
 
-**特点**:
-- 自动检测代码变更
-- 只构建和部署修改过的服务
-- 智能依赖管理
-- 快速测试验证
-- 大幅减少部署时间
+### 📦 setup-efs-storage.sh - EFS存储设置脚本
+配置AWS EFS共享存储，用于多Pod间共享文件（如用户头像、上传文件等）。
 
-**使用方法**:
+**使用方法：**
 ```bash
-# 使用自动生成的版本号
-./scripts/quick-deploy.sh
-
-# 使用自定义版本号
-./scripts/quick-deploy.sh v1.3.0
+chmod +x setup-efs-storage.sh
+./setup-efs-storage.sh
 ```
 
-#### 3. `check-deployment.sh` - 部署状态检查
-**用途**: 检查当前部署状态和系统健康情况
-
-**特点**:
-- 检查Pod状态
-- 显示镜像版本信息
-- 检查服务状态和端点
-- 验证API健康状态
-- 生成详细部署报告
-
-**使用方法**:
-```bash
-./scripts/check-deployment.sh
-```
-
-### 🏗️ 基础设施脚本
-
-#### 4. `setup-efs-storage.sh` - EFS存储设置脚本
-**用途**: 设置EFS共享存储（基础设施相关）
-
-**特点**:
+**功能：**
 - 安装EFS CSI驱动
-- 配置持久化存储
-- 设置访问点
+- 配置EFS文件系统
+- 创建访问点
+- 设置持久化卷
 - 重启相关服务
 
-**使用方法**:
+### ✅ verify-efs-storage.sh - EFS存储验证脚本
+验证EFS存储是否正确配置和工作。
+
+**使用方法：**
 ```bash
-./scripts/setup-efs-storage.sh
+chmod +x verify-efs-storage.sh
+./verify-efs-storage.sh
 ```
 
-#### 5. `verify-efs-storage.sh` - EFS存储验证脚本
-**用途**: 验证EFS存储配置和功能（基础设施相关）
+**检查项：**
+- 持久化卷状态
+- 持久化卷声明状态
+- EFS CSI驱动状态
+- StorageClass配置
+- 服务挂载状态
+- 文件系统访问测试
 
-**特点**:
-- 检查持久化卷状态
-- 验证存储类配置
-- 测试文件系统访问
-- 生成存储报告
-
-**使用方法**:
-```bash
-./scripts/verify-efs-storage.sh
-```
-
-## 🚀 推荐使用流程
-
-### 日常开发流程
-```bash
-# 1. 检查当前部署状态
-./scripts/check-deployment.sh
-
-# 2. 快速部署修改的服务
-./scripts/quick-deploy.sh
-
-# 3. 验证部署结果
-./scripts/check-deployment.sh
-```
-
-### 重要版本发布流程
-```bash
-# 1. 完整部署所有服务
-./scripts/smart-deploy.sh
-
-# 2. 详细验证部署结果
-./scripts/check-deployment.sh
-```
-
-## 📋 脚本功能对比
-
-| 功能 | smart-deploy | quick-deploy | check-deployment | setup-efs | verify-efs |
-|------|-------------|--------------|------------------|-----------|------------|
-| 自动版本生成 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 代码变更检测 | ❌ | ✅ | ❌ | ❌ | ❌ |
-| 增量部署 | ❌ | ✅ | ❌ | ❌ | ❌ |
-| 完整构建 | ✅ | ❌ | ❌ | ❌ | ❌ |
-| 健康检查 | ✅ | ✅ | ✅ | ❌ | ❌ |
-| API测试 | ✅ | ✅ | ✅ | ❌ | ❌ |
-| 状态报告 | ✅ | ✅ | ✅ | ❌ | ✅ |
-| 镜像清理 | ✅ | ❌ | ❌ | ❌ | ❌ |
-| 存储设置 | ❌ | ❌ | ❌ | ✅ | ❌ |
-| 存储验证 | ❌ | ❌ | ❌ | ❌ | ✅ |
-
-## 🔧 版本号规则
-
-### 自动生成版本号格式
-```
-v{YYYYMMDD}_{HHMMSS}_{GIT_COMMIT}
-```
-
-**示例**:
-- `v20250804_143022_a1b2c3d`
-- `v20250804_143022_unknown` (无Git仓库时)
-
-### 自定义版本号格式
-- 语义化版本: `v1.3.0`
-- 时间戳版本: `v20250804_143022`
-- 任意格式: `release_20250804`
-
-## 🛠️ 环境要求
+## 🔧 环境要求
 
 ### 必需工具
-- `kubectl` - Kubernetes命令行工具
-- `docker` - Docker容器引擎
-- `aws` - AWS命令行工具
-- `curl` - HTTP请求工具
+- kubectl - Kubernetes命令行工具
+- docker - 容器运行时
+- aws cli - AWS命令行工具
+- mvn - Maven构建工具
+- npm - Node.js包管理器
 
-### 权限要求
-- AWS ECR访问权限
-- Kubernetes集群访问权限
-- Docker构建权限
+### AWS配置
+- 配置AWS凭证：`aws configure`
+- 设置正确的区域（默认：ca-central-1）
+- ECR仓库访问权限
 
-## 📊 部署监控
+### Kubernetes配置
+- kubectl上下文已配置
+- 有权限操作merchant-system命名空间
 
-### 自动检查项目
-- ✅ Pod运行状态
-- ✅ 服务健康状态
-- ✅ API可访问性
-- ✅ 镜像版本一致性
-- ✅ 资源使用情况
+## 📝 快速开始
 
-### 测试项目
-- ✅ 前端可访问性
-- ✅ AI服务API
-- ✅ 头像API
-- ✅ 服务启动日志
-
-## 🚨 故障排除
-
-### 常见问题
-
-1. **镜像推送失败**
-   ```bash
-   # 检查AWS ECR登录状态
-   aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-   ```
-
-2. **Pod启动失败**
-   ```bash
-   # 检查Pod日志
-   kubectl logs -n merchant-system deployment/{service-name}
-   
-   # 检查Pod状态
-   kubectl describe pod -n merchant-system {pod-name}
-   ```
-
-3. **服务无法访问**
-   ```bash
-   # 检查Ingress状态
-   kubectl get ingress -n merchant-system
-   
-   # 检查服务端点
-   kubectl get endpoints -n merchant-system
-   ```
-
-### 回滚操作
+### 1. 首次部署
 ```bash
-# 回滚到上一个版本
-kubectl rollout undo deployment/{service-name} -n merchant-system
+# 1. 设置EFS存储（仅首次需要）
+./setup-efs-storage.sh
 
-# 回滚到指定版本
-kubectl rollout undo deployment/{service-name} -n merchant-system --to-revision=2
+# 2. 验证EFS存储
+./verify-efs-storage.sh
+
+# 3. 部署所有服务
+./rapid-deploy.sh
+# 选择 1 - 全部服务
 ```
 
-## 📝 日志和报告
+### 2. 常用部署组合
 
-### 日志位置
-- 脚本执行日志: 控制台输出
-- 服务日志: `kubectl logs -n merchant-system deployment/{service-name}`
-- 集群事件: `kubectl get events -n merchant-system`
-
-### 报告内容
-- 部署版本信息
-- Pod运行状态统计
-- 服务健康状态
-- API测试结果
-- 资源使用情况
-
-## 🔄 持续集成建议
-
-### GitHub Actions示例
-```yaml
-name: Deploy to Production
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Deploy
-        run: |
-          ./scripts/smart-deploy.sh
+#### 仅更新前端
+```bash
+./rapid-deploy.sh
+# 选择 2 - 仅前端 (merchant-admin)
 ```
 
-### 自动化部署流程
-1. 代码提交到主分支
-2. 自动触发构建和测试
-3. 自动部署到生产环境
-4. 自动健康检查和通知
+#### 前端 + 业务服务（最常用）
+```bash
+./rapid-deploy.sh
+# 选择 3 - 前端 + 业务服务
+# 适用于修改了业务逻辑和UI的情况
+```
+
+#### 仅更新业务服务
+```bash
+./rapid-deploy.sh
+# 选择 4 - 仅业务服务 (business-service)
+# 适用于只修改了后端业务逻辑
+```
+
+#### 更新所有后端服务
+```bash
+./rapid-deploy.sh
+# 选择 5 - 仅后端 (所有Java服务)
+```
+
+#### 仅更新AI服务
+```bash
+./rapid-deploy.sh
+# 选择 6 - 仅AI服务
+```
+
+### 3. 自定义部署
+```bash
+./rapid-deploy.sh
+# 选择 7 - 自定义选择
+# 输入需要的服务，例如: frontend business-service ai-service
+```
+
+## 🌐 访问地址
+
+- **前端应用**: https://swiftmindsystems.com
+- **API网关**: https://api.swiftmindsystems.com
+- **健康检查**: https://api.swiftmindsystems.com/health
+
+## 🔍 常用命令
+
+### 查看Pod状态
+```bash
+kubectl get pods -n merchant-system
+```
+
+### 查看服务日志
+```bash
+# Business Service
+kubectl logs -n merchant-system deployment/business-service -f
+
+# AI Service
+kubectl logs -n merchant-system deployment/ai-service-python -f
+
+# Auth Service
+kubectl logs -n merchant-system deployment/auth-service -f
+```
+
+### 查看最近事件
+```bash
+kubectl get events -n merchant-system --sort-by='.lastTimestamp'
+```
+
+### 重启服务
+```bash
+kubectl rollout restart deployment/business-service -n merchant-system
+```
+
+### 进入Pod调试
+```bash
+kubectl exec -it $(kubectl get pod -n merchant-system -l app=business-service -o jsonpath='{.items[0].metadata.name}') -n merchant-system -- /bin/sh
+```
+
+## 🐛 故障排查
+
+### 1. Pod启动失败
+```bash
+# 查看Pod详情
+kubectl describe pod <pod-name> -n merchant-system
+
+# 查看Pod日志
+kubectl logs <pod-name> -n merchant-system --previous
+```
+
+### 2. 镜像拉取失败
+```bash
+# 重新登录ECR
+aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin <ecr-registry>
+
+# 检查ECR仓库
+aws ecr describe-repositories --region ca-central-1
+```
+
+### 3. EFS挂载失败
+```bash
+# 运行EFS验证脚本
+./verify-efs-storage.sh
+
+# 检查EFS CSI驱动
+kubectl get pods -n kube-system -l app=efs-csi-node
+```
+
+### 4. 服务无法访问
+```bash
+# 检查Ingress
+kubectl get ingress -n merchant-system
+
+# 检查Service
+kubectl get svc -n merchant-system
+
+# 检查ALB
+aws elbv2 describe-load-balancers --region ca-central-1
+```
+
+## 📊 监控
+
+### 查看资源使用
+```bash
+kubectl top nodes
+kubectl top pods -n merchant-system
+```
+
+### 查看部署历史
+```bash
+kubectl rollout history deployment/business-service -n merchant-system
+```
+
+### 回滚部署
+```bash
+kubectl rollout undo deployment/business-service -n merchant-system
+```
+
+## 💡 注意事项
+
+1. **版本管理**: 每次部署会自动生成版本号（时间戳+git commit）
+2. **并行构建**: 脚本支持并行构建多个镜像，大幅提升部署速度
+3. **增量部署**: 可以只部署修改的服务，无需全量部署
+4. **EFS存储**: 首次部署需要配置EFS，之后无需重复配置
+5. **清理镜像**: 部署后可选择清理本地Docker镜像，节省磁盘空间
+
+## 🔐 安全建议
+
+1. 定期轮换AWS凭证
+2. 使用IAM角色而非长期凭证
+3. 限制ECR仓库访问权限
+4. 启用镜像扫描
+5. 使用Kubernetes RBAC控制权限
 
 ## 📞 支持
 
 如有问题，请检查：
-1. 脚本执行权限: `chmod +x scripts/*.sh`
-2. 环境变量配置
-3. AWS和Kubernetes权限
-4. 网络连接状态 
+1. AWS凭证是否有效
+2. kubectl上下文是否正确
+3. 所需工具是否已安装
+4. 网络连接是否正常
