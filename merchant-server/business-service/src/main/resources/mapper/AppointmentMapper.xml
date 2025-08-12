@@ -291,7 +291,6 @@
         WHERE appointment_date = #{date}
         AND appointment_time = #{time}
         AND status IN ('PENDING', 'CONFIRMED')
-        AND deleted = 0
     </select>
 
 </mapper>

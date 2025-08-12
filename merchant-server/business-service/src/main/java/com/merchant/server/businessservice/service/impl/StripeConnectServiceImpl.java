@@ -1,0 +1,1199 @@
+package com.merchant.server.businessservice.service.impl;
+
+import com.merchant.server.businessservice.dto.stripe.*;
+import com.merchant.server.businessservice.entity.*;
+import com.merchant.server.businessservice.mapper.*;
+import com.merchant.server.businessservice.service.StripeConnectService;
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.*;
+import com.stripe.model.terminal.Reader;
+import com.stripe.net.RequestOptions;
+import com.stripe.net.Webhook;
+import com.stripe.param.*;
+import com.stripe.param.terminal.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.annotation.PostConstruct;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Stripe Connect 多租户支付服务实现
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class StripeConnectServiceImpl implements StripeConnectService {
+    
+    private final StripeAccountMapper stripeAccountMapper;
+    private final StripeTerminalMapper stripeTerminalMapper;
+    private final StripePaymentIntentMapper stripePaymentIntentMapper;
+    private final OrderMapper orderMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    @Value("${stripe.api.key:sk_test_PLACEHOLDER}")
+    private String stripeApiKey;
+    
+    @Value("${stripe.webhook.secret:whsec_PLACEHOLDER}")
+    private String webhookSecret;
+    
+    @Value("${stripe.platform.fee.percentage:2.5}")
+    private Double platformFeePercentage;
+    
+    @Value("${stripe.connect.client.id:ca_PLACEHOLDER}")
+    private String stripeClientId;
+    
+    @PostConstruct
+    public void init() {
+        Stripe.apiKey = stripeApiKey;
+        log.info("Stripe Connect service initialized");
+    }
+    
+    @Value("${feign.client.config.auth-service.url:http://localhost:8081}")
+    private String authServiceUrl;
+    
+    @Override
+    @Transactional
+    public StripeAccountDTO createConnectAccount(Long tenantId, CreateStripeAccountRequest request) {
+        log.info("Creating Stripe Connect account for tenant: {}", tenantId);
+        
+        // 检查是否已存在账户（包括已删除的）
+        StripeAccount existingAccount = stripeAccountMapper.selectByTenantIdIncludeDeleted(tenantId);
+        if (existingAccount != null) {
+            if (!existingAccount.getDeleted()) {
+                // 如果账户未删除，检查Stripe中是否还存在
+                try {
+                    Account stripeCheck = Account.retrieve(existingAccount.getStripeAccountId());
+                    log.info("Stripe account already exists and is active for tenant: {}", tenantId);
+                    return convertToDTO(existingAccount);
+                } catch (StripeException e) {
+                    // Stripe账户不存在，需要创建新的
+                    log.warn("Database has account but Stripe doesn't, will create new one");
+                }
+            } else {
+                // 如果账户已删除，需要创建新的Stripe账户
+                log.info("Reactivating deleted Stripe account record for tenant: {}", tenantId);
+                // 旧的Stripe账户ID已经无效，需要创建新的
+            }
+        }
+        
+        try {
+            // 创建Stripe Connect账户时预填充商户信息
+            AccountCreateParams.Builder paramsBuilder = AccountCreateParams.builder()
+                .setType(AccountCreateParams.Type.valueOf(request.getAccountType().toUpperCase()))
+                .setCountry(request.getCountry())
+                .setEmail(request.getEmail())
+                .putMetadata("tenant_id", tenantId.toString())
+                .putMetadata("business_name", request.getBusinessName());
+            
+            // 根据业务类型决定填充公司信息还是个人信息
+            // 目前默认使用公司类型，因为大多数商户都是企业
+            paramsBuilder.setBusinessType(AccountCreateParams.BusinessType.COMPANY);
+            
+            // 预填充商户公司信息
+            if (request.getBusinessName() != null) {
+                AccountCreateParams.Company.Builder companyBuilder = AccountCreateParams.Company.builder()
+                    .setName(request.getBusinessName());
+                
+                // 只有当电话号码非空时才设置
+                if (request.getPhone() != null && !request.getPhone().trim().isEmpty()) {
+                    companyBuilder.setPhone(request.getPhone());
+                }
+                
+                // 构建地址信息
+                AccountCreateParams.Company.Address.Builder addressBuilder = AccountCreateParams.Company.Address.builder()
+                    .setCountry(request.getCountry());
+                
+                if (request.getAddress() != null && !request.getAddress().trim().isEmpty()) {
+                    addressBuilder.setLine1(request.getAddress());
+                }
+                if (request.getCity() != null && !request.getCity().trim().isEmpty()) {
+                    addressBuilder.setCity(request.getCity());
+                }
+                if (request.getState() != null && !request.getState().trim().isEmpty()) {
+                    addressBuilder.setState(request.getState());
+                }
+                if (request.getPostalCode() != null && !request.getPostalCode().trim().isEmpty()) {
+                    addressBuilder.setPostalCode(request.getPostalCode());
+                }
+                
+                companyBuilder.setAddress(addressBuilder.build());
+                paramsBuilder.setCompany(companyBuilder.build());
+            }
+            
+            // 注意：individual参数只能用于business_type为'individual'的账户
+            // 对于公司账户，联系人信息应该在company对象中设置或在onboarding流程中填写
+            
+            // 设置业务信息
+            AccountCreateParams.BusinessProfile businessProfile = AccountCreateParams.BusinessProfile.builder()
+                .setName(request.getBusinessName())
+                .setProductDescription(request.getProductDescription())
+                .setMcc(request.getMcc()) // Merchant Category Code
+                .setUrl(request.getWebsite())
+                .build();
+            paramsBuilder.setBusinessProfile(businessProfile);
+            
+            // 注意：银行账户信息通常在onboarding流程中填写，不在创建时设置
+            // 这是为了安全考虑，银行信息应该在Stripe的安全页面上输入
+            
+            Account stripeAccount = Account.create(paramsBuilder.build());
+            
+            // 保存到数据库
+            StripeAccount account;
+            if (existingAccount != null && existingAccount.getDeleted()) {
+                // 重用已删除的账户记录
+                account = existingAccount;
+                account.setStripeAccountId(stripeAccount.getId());
+                account.setAccountType(request.getAccountType());
+                account.setBusinessName(request.getBusinessName());
+                account.setBusinessType(request.getBusinessType());
+                account.setCountry(request.getCountry());
+                account.setDefaultCurrency(request.getDefaultCurrency());
+                account.setOnboardingCompleted(false);
+                account.setChargesEnabled(stripeAccount.getChargesEnabled());
+                account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
+                account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
+                account.setUpdatedAt(LocalDateTime.now());
+                account.setDeleted(false);
+                
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("stripe_created", stripeAccount.getCreated());
+                metadata.put("prefilled", true);
+                metadata.put("reactivated", true);
+                metadata.put("reactivated_at", LocalDateTime.now().toString());
+                account.setMetadata(convertToJson(metadata));
+                
+                stripeAccountMapper.updateById(account);
+            } else {
+                // 创建新记录
+                account = new StripeAccount();
+                account.setTenantId(tenantId);
+                account.setStripeAccountId(stripeAccount.getId());
+                account.setAccountType(request.getAccountType());
+                account.setBusinessName(request.getBusinessName());
+                account.setBusinessType(request.getBusinessType());
+                account.setCountry(request.getCountry());
+                account.setDefaultCurrency(request.getDefaultCurrency());
+                account.setOnboardingCompleted(false);
+                account.setChargesEnabled(stripeAccount.getChargesEnabled());
+                account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
+                account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
+                account.setCreatedAt(LocalDateTime.now());
+                account.setUpdatedAt(LocalDateTime.now());
+                account.setDeleted(false);
+                
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("stripe_created", stripeAccount.getCreated());
+                metadata.put("prefilled", true);
+                account.setMetadata(convertToJson(metadata));
+                
+                stripeAccountMapper.insert(account);
+            }
+            
+            log.info("Successfully created Stripe Connect account with prefilled info: {}", stripeAccount.getId());
+            return convertToDTO(account);
+            
+        } catch (StripeException e) {
+            log.error("Failed to create Stripe Connect account", e);
+            throw new RuntimeException("Failed to create Stripe Connect account: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public AccountLinkDTO createAccountLink(Long tenantId, String returnUrl, String refreshUrl) {
+        log.info("Creating account link for tenant: {}", tenantId);
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            // 先验证账户是否在Stripe中存在
+            try {
+                Account stripeAccount = Account.retrieve(account.getStripeAccountId());
+                log.info("Stripe account {} exists with status - charges: {}, payouts: {}", 
+                    stripeAccount.getId(), stripeAccount.getChargesEnabled(), stripeAccount.getPayoutsEnabled());
+            } catch (StripeException verifyException) {
+                log.error("Stripe account {} not found in Stripe, may need to recreate", account.getStripeAccountId());
+                throw new RuntimeException("Stripe account not found. Please try creating a new account.");
+            }
+            
+            AccountLinkCreateParams params = AccountLinkCreateParams.builder()
+                .setAccount(account.getStripeAccountId())
+                .setReturnUrl(returnUrl)
+                .setRefreshUrl(refreshUrl)
+                .setType(AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING)
+                .build();
+            
+            AccountLink accountLink = AccountLink.create(params);
+            
+            // 更新账户的URL信息
+            account.setOnboardingUrl(accountLink.getUrl());
+            account.setReturnUrl(returnUrl);
+            account.setRefreshUrl(refreshUrl);
+            account.setUpdatedAt(LocalDateTime.now());
+            stripeAccountMapper.updateById(account);
+            
+            return AccountLinkDTO.builder()
+                .url(accountLink.getUrl())
+                .expiresAt(LocalDateTime.ofInstant(
+                    Instant.ofEpochSecond(accountLink.getExpiresAt()), 
+                    ZoneId.systemDefault()))
+                .type("account_onboarding")
+                .build();
+                
+        } catch (StripeException e) {
+            log.error("Failed to create account link", e);
+            throw new RuntimeException("Failed to create account link: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public StripeAccountDTO handleOAuthCallback(Long tenantId, String code) {
+        log.info("Handling OAuth callback for tenant: {} with code: {}", tenantId, code);
+        
+        // OAuth流程通常用于Standard账户类型
+        // 这里简化处理，实际应使用OAuth token exchange
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        // 更新账户状态
+        return syncAccountStatus(tenantId);
+    }
+    
+    @Override
+    public StripeAccountDTO getStripeAccount(Long tenantId) {
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            return null;
+        }
+        return convertToDTO(account);
+    }
+    
+    @Override
+    @Transactional
+    public StripeAccountDTO syncAccountStatus(Long tenantId) {
+        log.info("Syncing Stripe account status for tenant: {}", tenantId);
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            Account stripeAccount = Account.retrieve(account.getStripeAccountId());
+            
+            // 更新账户状态
+            account.setChargesEnabled(stripeAccount.getChargesEnabled());
+            account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
+            account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
+            
+            // 检查是否完成入驻
+            // 只有当可以收款AND可以提现时才算完全完成
+            if (stripeAccount.getChargesEnabled() && stripeAccount.getPayoutsEnabled()) {
+                account.setOnboardingCompleted(true);
+            } else if (stripeAccount.getChargesEnabled() && !stripeAccount.getPayoutsEnabled()) {
+                // 可以收款但不能提现 - 需要身份验证
+                log.info("Account can charge but not payout - identity verification needed");
+            }
+            
+            // 记录验证要求并保存到账户信息中
+            List<String> pendingVerification = null;
+            boolean requiresAction = false;
+            
+            if (stripeAccount.getRequirements() != null) {
+                List<String> currentlyDue = stripeAccount.getRequirements().getCurrentlyDue();
+                if (currentlyDue != null && !currentlyDue.isEmpty()) {
+                    pendingVerification = currentlyDue;
+                    requiresAction = true;
+                    log.info("Account {} has pending requirements: {}", 
+                        account.getStripeAccountId(), String.join(", ", currentlyDue));
+                }
+            }
+            
+            // 保存待验证项到metadata
+            Map<String, Object> metadata = convertFromJson(account.getMetadata(), Map.class);
+            if (metadata == null) {
+                metadata = new HashMap<>();
+            }
+            if (pendingVerification != null) {
+                metadata.put("pending_verification", pendingVerification);
+                metadata.put("requires_action", requiresAction);
+            }
+            account.setMetadata(convertToJson(metadata));
+            
+            // 生成Dashboard URL
+            if (account.getChargesEnabled()) { // 只要能收款就可以访问Dashboard
+                boolean isTestMode = stripeApiKey.startsWith("sk_test");
+                String dashboardUrl = String.format(
+                    "https://dashboard.stripe.com/%s/connect/accounts/%s",
+                    isTestMode ? "test" : "live",
+                    account.getStripeAccountId()
+                );
+                account.setDashboardUrl(dashboardUrl);
+            }
+            
+            account.setUpdatedAt(LocalDateTime.now());
+            stripeAccountMapper.updateById(account);
+            
+            return convertToDTO(account);
+            
+        } catch (StripeException e) {
+            log.error("Failed to sync account status", e);
+            throw new RuntimeException("Failed to sync account status: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public PaymentIntentDTO createPaymentIntent(Long tenantId, CreatePaymentIntentRequest request) {
+        log.info("Creating payment intent for tenant: {}, order: {}", tenantId, request.getOrderId());
+        
+        // 获取租户的Stripe账户
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null || !account.getChargesEnabled()) {
+            throw new RuntimeException("Stripe account not ready for tenant: " + tenantId);
+        }
+        
+        // 获取订单信息
+        Order order = orderMapper.selectById(request.getOrderId());
+        if (order == null) {
+            throw new RuntimeException("Order not found: " + request.getOrderId());
+        }
+        
+        try {
+            // 计算平台费用
+            Long applicationFee = calculateApplicationFee(request.getAmount());
+            
+            // 创建Payment Intent
+            PaymentIntentCreateParams.Builder paramsBuilder = PaymentIntentCreateParams.builder()
+                .setAmount(request.getAmount())
+                .setCurrency(request.getCurrency().toLowerCase())
+                .setDescription(request.getDescription())
+                .setApplicationFeeAmount(applicationFee)
+                .putMetadata("tenant_id", tenantId.toString())
+                .putMetadata("order_id", request.getOrderId().toString());
+            
+            // 设置支付方式类型
+            if ("card_present".equals(request.getPaymentMethodType())) {
+                paramsBuilder.addPaymentMethodType("card_present")
+                    .setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.AUTOMATIC);
+            } else {
+                paramsBuilder.addPaymentMethodType("card");
+            }
+            
+            // 使用Connected Account创建支付
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            PaymentIntent paymentIntent = PaymentIntent.create(paramsBuilder.build(), requestOptions);
+            
+            // 保存到数据库
+            StripePaymentIntent intent = new StripePaymentIntent();
+            intent.setTenantId(tenantId);
+            intent.setOrderId(request.getOrderId());
+            intent.setStripeAccountId(account.getStripeAccountId());
+            intent.setPaymentIntentId(paymentIntent.getId());
+            intent.setClientSecret(paymentIntent.getClientSecret());
+            intent.setAmount(request.getAmount());
+            intent.setCurrency(request.getCurrency());
+            intent.setStatus(paymentIntent.getStatus());
+            intent.setPaymentMethodType(request.getPaymentMethodType());
+            intent.setApplicationFeeAmount(applicationFee);
+            intent.setMetadata(convertToJson(request.getMetadata()));
+            intent.setCreatedAt(LocalDateTime.now());
+            
+            stripePaymentIntentMapper.insert(intent);
+            
+            // 更新订单
+            order.setTransactionId(paymentIntent.getId());
+            order.setPaymentStatus("pending");
+            order.setUpdatedAt(LocalDateTime.now());
+            orderMapper.updateById(order);
+            
+            return convertToPaymentIntentDTO(intent);
+            
+        } catch (StripeException e) {
+            log.error("Failed to create payment intent", e);
+            throw new RuntimeException("Failed to create payment intent: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public PaymentIntentDTO confirmPaymentIntent(Long tenantId, String paymentIntentId) {
+        log.info("Confirming payment intent: {} for tenant: {}", paymentIntentId, tenantId);
+        
+        StripePaymentIntent intent = stripePaymentIntentMapper.selectByPaymentIntentId(paymentIntentId);
+        if (intent == null || !intent.getTenantId().equals(tenantId)) {
+            throw new RuntimeException("Payment intent not found: " + paymentIntentId);
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            PaymentIntent paymentIntent = PaymentIntent.retrieve(paymentIntentId, requestOptions);
+            PaymentIntent confirmedIntent = paymentIntent.confirm(requestOptions);
+            
+            // 更新数据库
+            intent.setStatus(confirmedIntent.getStatus());
+            if ("succeeded".equals(confirmedIntent.getStatus())) {
+                intent.setConfirmedAt(LocalDateTime.now());
+            }
+            stripePaymentIntentMapper.updateById(intent);
+            
+            // 更新订单状态
+            if ("succeeded".equals(confirmedIntent.getStatus())) {
+                Order order = orderMapper.selectById(intent.getOrderId());
+                if (order != null) {
+                    order.setPaymentStatus("paid");
+                    order.setOrderStatus("completed");
+                    order.setCompletedAt(LocalDateTime.now());
+                    order.setUpdatedAt(LocalDateTime.now());
+                    orderMapper.updateById(order);
+                }
+            }
+            
+            return convertToPaymentIntentDTO(intent);
+            
+        } catch (StripeException e) {
+            log.error("Failed to confirm payment intent", e);
+            throw new RuntimeException("Failed to confirm payment intent: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public PaymentIntentDTO cancelPaymentIntent(Long tenantId, String paymentIntentId) {
+        log.info("Canceling payment intent: {} for tenant: {}", paymentIntentId, tenantId);
+        
+        StripePaymentIntent intent = stripePaymentIntentMapper.selectByPaymentIntentId(paymentIntentId);
+        if (intent == null || !intent.getTenantId().equals(tenantId)) {
+            throw new RuntimeException("Payment intent not found: " + paymentIntentId);
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            PaymentIntent paymentIntent = PaymentIntent.retrieve(paymentIntentId, requestOptions);
+            PaymentIntent canceledIntent = paymentIntent.cancel(requestOptions);
+            
+            // 更新数据库
+            intent.setStatus(canceledIntent.getStatus());
+            intent.setCanceledAt(LocalDateTime.now());
+            stripePaymentIntentMapper.updateById(intent);
+            
+            // 更新订单状态
+            Order order = orderMapper.selectById(intent.getOrderId());
+            if (order != null) {
+                order.setPaymentStatus("cancelled");
+                order.setOrderStatus("cancelled");
+                order.setUpdatedAt(LocalDateTime.now());
+                orderMapper.updateById(order);
+            }
+            
+            return convertToPaymentIntentDTO(intent);
+            
+        } catch (StripeException e) {
+            log.error("Failed to cancel payment intent", e);
+            throw new RuntimeException("Failed to cancel payment intent: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public TerminalDTO createTerminal(Long tenantId, CreateTerminalRequest request) {
+        log.info("Creating terminal for tenant: {}", tenantId);
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null || !account.getChargesEnabled()) {
+            throw new RuntimeException("Stripe account not ready for tenant: " + tenantId);
+        }
+        
+        try {
+            // 创建Terminal Reader
+            ReaderCreateParams params = ReaderCreateParams.builder()
+                .setRegistrationCode(request.getRegistrationCode())
+                .setLabel(request.getLabel())
+                .setLocation(request.getLocationId())
+                .putMetadata("tenant_id", tenantId.toString())
+                .build();
+            
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            Reader reader = Reader.create(params, requestOptions);
+            
+            // 保存到数据库
+            StripeTerminal terminal = new StripeTerminal();
+            terminal.setTenantId(tenantId);
+            terminal.setStripeAccountId(account.getStripeAccountId());
+            terminal.setTerminalId(reader.getId());
+            terminal.setLabel(request.getLabel());
+            terminal.setDeviceType(reader.getDeviceType());
+            terminal.setSerialNumber(reader.getSerialNumber());
+            terminal.setLocationId(reader.getLocation());
+            terminal.setStatus(reader.getStatus());
+            terminal.setConfig(null); // Initialize as null for now
+            terminal.setCreatedAt(LocalDateTime.now());
+            terminal.setUpdatedAt(LocalDateTime.now());
+            terminal.setDeleted(false);
+            
+            stripeTerminalMapper.insert(terminal);
+            
+            return convertToTerminalDTO(terminal);
+            
+        } catch (StripeException e) {
+            log.error("Failed to create terminal", e);
+            throw new RuntimeException("Failed to create terminal: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public List<TerminalDTO> listTerminals(Long tenantId) {
+        List<StripeTerminal> terminals = stripeTerminalMapper.selectByTenantId(tenantId);
+        return terminals.stream()
+            .map(this::convertToTerminalDTO)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional
+    public TerminalDTO updateTerminalStatus(Long tenantId, String terminalId) {
+        log.info("Updating terminal status: {} for tenant: {}", terminalId, tenantId);
+        
+        StripeTerminal terminal = stripeTerminalMapper.selectByTerminalId(terminalId);
+        if (terminal == null || !terminal.getTenantId().equals(tenantId)) {
+            throw new RuntimeException("Terminal not found: " + terminalId);
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            Reader reader = Reader.retrieve(terminalId, requestOptions);
+            
+            // 更新状态
+            terminal.setStatus(reader.getStatus());
+            if (reader.getIpAddress() != null) {
+                terminal.setIpAddress(reader.getIpAddress());
+            }
+            terminal.setUpdatedAt(LocalDateTime.now());
+            stripeTerminalMapper.updateById(terminal);
+            
+            return convertToTerminalDTO(terminal);
+            
+        } catch (StripeException e) {
+            log.error("Failed to update terminal status", e);
+            throw new RuntimeException("Failed to update terminal status: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public CollectPaymentResultDTO collectPaymentMethod(Long tenantId, String terminalId, String paymentIntentId) {
+        log.info("Collecting payment method on terminal: {} for payment: {}", terminalId, paymentIntentId);
+        
+        // Terminal API的collect payment method通常通过SDK或Terminal应用处理
+        // 这里提供一个简化的实现
+        try {
+            return CollectPaymentResultDTO.builder()
+                .status("pending")
+                .message("Payment collection initiated on terminal")
+                .build();
+        } catch (Exception e) {
+            log.error("Failed to collect payment method", e);
+            return CollectPaymentResultDTO.builder()
+                .status("failed")
+                .errorMessage(e.getMessage())
+                .build();
+        }
+    }
+    
+    @Override
+    public ProcessPaymentResultDTO processPayment(Long tenantId, String terminalId, String paymentIntentId) {
+        log.info("Processing payment on terminal: {} for payment: {}", terminalId, paymentIntentId);
+        
+        try {
+            // 确认支付
+            PaymentIntentDTO result = confirmPaymentIntent(tenantId, paymentIntentId);
+            
+            return ProcessPaymentResultDTO.builder()
+                .status(result.getStatus())
+                .paymentIntentId(paymentIntentId)
+                .amount(result.getAmount())
+                .currency(result.getCurrency())
+                .message("Payment processed successfully")
+                .processedAt(LocalDateTime.now())
+                .build();
+                
+        } catch (Exception e) {
+            log.error("Failed to process payment", e);
+            return ProcessPaymentResultDTO.builder()
+                .status("failed")
+                .paymentIntentId(paymentIntentId)
+                .errorMessage(e.getMessage())
+                .build();
+        }
+    }
+    
+    @Override
+    @Transactional
+    public RefundDTO createRefund(Long tenantId, CreateRefundRequest request) {
+        log.info("Creating refund for payment: {}", request.getPaymentIntentId());
+        
+        StripePaymentIntent intent = stripePaymentIntentMapper.selectByPaymentIntentId(request.getPaymentIntentId());
+        if (intent == null || !intent.getTenantId().equals(tenantId)) {
+            throw new RuntimeException("Payment intent not found: " + request.getPaymentIntentId());
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            RefundCreateParams.Builder paramsBuilder = RefundCreateParams.builder()
+                .setPaymentIntent(request.getPaymentIntentId());
+            
+            if (request.getAmount() != null) {
+                paramsBuilder.setAmount(request.getAmount());
+            }
+            
+            if (request.getReason() != null) {
+                paramsBuilder.setReason(RefundCreateParams.Reason.valueOf(request.getReason().toUpperCase()));
+            }
+            
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            Refund refund = Refund.create(paramsBuilder.build(), requestOptions);
+            
+            return RefundDTO.builder()
+                .refundId(refund.getId())
+                .paymentIntentId(request.getPaymentIntentId())
+                .amount(refund.getAmount())
+                .currency(refund.getCurrency())
+                .status(refund.getStatus())
+                .reason(refund.getReason())
+                .createdAt(LocalDateTime.now())
+                .build();
+                
+        } catch (StripeException e) {
+            log.error("Failed to create refund", e);
+            throw new RuntimeException("Failed to create refund: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public WebhookResultDTO handleWebhook(String payload, String signature) {
+        log.info("Processing Stripe webhook");
+        
+        try {
+            Event event = Webhook.constructEvent(payload, signature, webhookSecret);
+            
+            // 从event中获取account ID来确定租户
+            String accountId = event.getAccount();
+            StripeAccount account = null;
+            if (accountId != null) {
+                account = stripeAccountMapper.selectByStripeAccountId(accountId);
+            }
+            
+            Long tenantId = account != null ? account.getTenantId() : null;
+            
+            // 处理不同类型的事件
+            switch (event.getType()) {
+                case "payment_intent.succeeded":
+                    handlePaymentIntentSucceeded(event, tenantId);
+                    break;
+                case "payment_intent.payment_failed":
+                    handlePaymentIntentFailed(event, tenantId);
+                    break;
+                case "account.updated":
+                    handleAccountUpdated(event, tenantId);
+                    break;
+                default:
+                    log.info("Unhandled event type: {}", event.getType());
+            }
+            
+            return WebhookResultDTO.builder()
+                .eventId(event.getId())
+                .eventType(event.getType())
+                .status("processed")
+                .tenantId(tenantId)
+                .message("Event processed successfully")
+                .build();
+                
+        } catch (Exception e) {
+            log.error("Failed to process webhook", e);
+            return WebhookResultDTO.builder()
+                .status("failed")
+                .message(e.getMessage())
+                .build();
+        }
+    }
+    
+    @Override
+    public Long calculateApplicationFee(Long amount) {
+        // 计算平台费用（按百分比）
+        return Math.round(amount * platformFeePercentage / 100);
+    }
+    
+    @Override
+    public String getStripeDashboardUrl(Long tenantId) {
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            return null;
+        }
+        
+        if (account.getDashboardUrl() != null) {
+            return account.getDashboardUrl();
+        }
+        
+        // 生成Express Dashboard登录链接
+        try {
+            Map<String, Object> params = new HashMap<>();
+            
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            LoginLink loginLink = LoginLink.createOnAccount(account.getStripeAccountId(), params, requestOptions);
+            return loginLink.getUrl();
+            
+        } catch (StripeException e) {
+            log.error("Failed to create login link", e);
+            return null;
+        }
+    }
+    
+    // 辅助方法
+    
+    private void handlePaymentIntentSucceeded(Event event, Long tenantId) {
+        PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
+            .getObject().orElse(null);
+        
+        if (paymentIntent != null) {
+            StripePaymentIntent intent = stripePaymentIntentMapper.selectByPaymentIntentId(paymentIntent.getId());
+            if (intent != null) {
+                intent.setStatus("succeeded");
+                intent.setConfirmedAt(LocalDateTime.now());
+                stripePaymentIntentMapper.updateById(intent);
+                
+                // 更新订单状态
+                Order order = orderMapper.selectById(intent.getOrderId());
+                if (order != null) {
+                    order.setPaymentStatus("paid");
+                    order.setOrderStatus("completed");
+                    order.setCompletedAt(LocalDateTime.now());
+                    orderMapper.updateById(order);
+                }
+            }
+        }
+    }
+    
+    private void handlePaymentIntentFailed(Event event, Long tenantId) {
+        PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer()
+            .getObject().orElse(null);
+        
+        if (paymentIntent != null) {
+            StripePaymentIntent intent = stripePaymentIntentMapper.selectByPaymentIntentId(paymentIntent.getId());
+            if (intent != null) {
+                intent.setStatus("failed");
+                stripePaymentIntentMapper.updateById(intent);
+                
+                // 更新订单状态
+                Order order = orderMapper.selectById(intent.getOrderId());
+                if (order != null) {
+                    order.setPaymentStatus("failed");
+                    orderMapper.updateById(order);
+                }
+            }
+        }
+    }
+    
+    private void handleAccountUpdated(Event event, Long tenantId) {
+        Account stripeAccount = (Account) event.getDataObjectDeserializer()
+            .getObject().orElse(null);
+        
+        if (stripeAccount != null && tenantId != null) {
+            syncAccountStatus(tenantId);
+        }
+    }
+    
+    private StripeAccountDTO convertToDTO(StripeAccount account) {
+        Map<String, Object> metadata = convertFromJson(account.getMetadata(), Map.class);
+        List<String> pendingVerification = null;
+        Boolean requiresAction = false;
+        
+        if (metadata != null) {
+            if (metadata.containsKey("pending_verification")) {
+                pendingVerification = (List<String>) metadata.get("pending_verification");
+            }
+            if (metadata.containsKey("requires_action")) {
+                requiresAction = (Boolean) metadata.get("requires_action");
+            }
+        }
+        
+        // 判断是否为测试模式
+        boolean isTestMode = stripeApiKey.startsWith("sk_test");
+        
+        return StripeAccountDTO.builder()
+            .id(account.getId())
+            .tenantId(account.getTenantId())
+            .stripeAccountId(account.getStripeAccountId())
+            .stripeUserId(account.getStripeUserId())
+            .accountType(account.getAccountType())
+            .onboardingCompleted(account.getOnboardingCompleted())
+            .chargesEnabled(account.getChargesEnabled())
+            .payoutsEnabled(account.getPayoutsEnabled())
+            .detailsSubmitted(account.getDetailsSubmitted())
+            .isTestMode(isTestMode)
+            .businessName(account.getBusinessName())
+            .businessType(account.getBusinessType())
+            .country(account.getCountry())
+            .defaultCurrency(account.getDefaultCurrency())
+            .dashboardUrl(account.getDashboardUrl())
+            .onboardingUrl(account.getOnboardingUrl())
+            .pendingVerification(pendingVerification)
+            .requiresAction(requiresAction)
+            .metadata(metadata)
+            .createdAt(account.getCreatedAt())
+            .updatedAt(account.getUpdatedAt())
+            .build();
+    }
+    
+    private PaymentIntentDTO convertToPaymentIntentDTO(StripePaymentIntent intent) {
+        return PaymentIntentDTO.builder()
+            .paymentIntentId(intent.getPaymentIntentId())
+            .clientSecret(intent.getClientSecret())
+            .amount(intent.getAmount())
+            .currency(intent.getCurrency())
+            .status(intent.getStatus())
+            .paymentMethodId(intent.getPaymentMethodId())
+            .paymentMethodType(intent.getPaymentMethodType())
+            .applicationFeeAmount(intent.getApplicationFeeAmount())
+            .metadata(convertFromJson(intent.getMetadata(), Map.class))
+            .createdAt(intent.getCreatedAt())
+            .confirmedAt(intent.getConfirmedAt())
+            .canceledAt(intent.getCanceledAt())
+            .build();
+    }
+    
+    private TerminalDTO convertToTerminalDTO(StripeTerminal terminal) {
+        return TerminalDTO.builder()
+            .terminalId(terminal.getTerminalId())
+            .label(terminal.getLabel())
+            .deviceType(terminal.getDeviceType())
+            .serialNumber(terminal.getSerialNumber())
+            .locationId(terminal.getLocationId())
+            .status(terminal.getStatus())
+            .lastSeenAt(terminal.getLastSeenAt())
+            .ipAddress(terminal.getIpAddress())
+            .config(convertFromJson(terminal.getConfig(), Map.class))
+            .createdAt(terminal.getCreatedAt())
+            .updatedAt(terminal.getUpdatedAt())
+            .build();
+    }
+    
+    /**
+     * 转换对象为JSON字符串
+     */
+    private String convertToJson(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            log.error("Failed to convert to JSON", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 从JSON字符串转换为对象
+     */
+    @SuppressWarnings("unchecked")
+    private <T> T convertFromJson(String json, Class<T> clazz) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (Exception e) {
+            log.error("Failed to parse JSON", e);
+            return null;
+        }
+    }
+    
+    @Override
+    @Transactional
+    public StripeAccountDTO forceCompleteOnboarding(Long tenantId) {
+        log.warn("Force completing onboarding for tenant: {} (TEST MODE ONLY)", tenantId);
+        
+        // 仅在测试模式下允许
+        if (!stripeApiKey.startsWith("sk_test")) {
+            throw new RuntimeException("Force complete is only available in test mode");
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        // 强制设置所有状态为已完成
+        account.setOnboardingCompleted(true);
+        account.setChargesEnabled(true);
+        account.setPayoutsEnabled(true);
+        account.setDetailsSubmitted(true);
+        
+        // 生成Dashboard URL
+        String dashboardUrl = String.format(
+            "https://dashboard.stripe.com/test/connect/accounts/%s",
+            account.getStripeAccountId()
+        );
+        account.setDashboardUrl(dashboardUrl);
+        
+        account.setUpdatedAt(LocalDateTime.now());
+        stripeAccountMapper.updateById(account);
+        
+        log.info("Successfully force completed onboarding for account: {}", account.getStripeAccountId());
+        
+        return convertToDTO(account);
+    }
+    
+    @Override
+    @Transactional
+    public StripeAccountDTO simulateAccountVerification(Long tenantId) {
+        log.info("Simulating account verification for tenant: {} (TEST MODE)", tenantId);
+        
+        // 仅在测试模式下允许
+        if (!stripeApiKey.startsWith("sk_test")) {
+            throw new RuntimeException("Account verification simulation is only available in test mode");
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            // 在Stripe测试模式下，可以使用特殊的API调用来模拟审核完成
+            // 这里我们通过更新账户的某些字段来触发审核完成
+            Map<String, Object> params = new HashMap<>();
+            params.put("metadata", Map.of(
+                "test_mode_verification", "completed",
+                "verified_at", LocalDateTime.now().toString()
+            ));
+            
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setApiKey(stripeApiKey)
+                .build();
+            
+            // 更新Stripe账户
+            Account stripeAccount = Account.retrieve(account.getStripeAccountId(), requestOptions);
+            
+            // 在测试模式下，提交商户详情后，可以通过设置特定的测试数据来模拟审核通过
+            // 注意：这需要账户已经提交了详细信息
+            if (!account.getDetailsSubmitted()) {
+                throw new RuntimeException("Please complete the onboarding form first before simulating verification");
+            }
+            
+            // 更新本地数据库状态
+            account.setChargesEnabled(true);
+            account.setPayoutsEnabled(true);
+            account.setOnboardingCompleted(true);
+            
+            // 生成Dashboard URL
+            String dashboardUrl = String.format(
+                "https://dashboard.stripe.com/test/connect/accounts/%s",
+                account.getStripeAccountId()
+            );
+            account.setDashboardUrl(dashboardUrl);
+            
+            account.setUpdatedAt(LocalDateTime.now());
+            stripeAccountMapper.updateById(account);
+            
+            log.info("Successfully simulated account verification for: {}", account.getStripeAccountId());
+            
+            return convertToDTO(account);
+            
+        } catch (StripeException e) {
+            log.error("Failed to simulate account verification", e);
+            throw new RuntimeException("Failed to simulate account verification: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public String triggerAccountUpdateWebhook(Long tenantId) {
+        log.info("Triggering account.updated webhook for tenant: {} (TEST MODE)", tenantId);
+        
+        // 仅在测试模式下允许
+        if (!stripeApiKey.startsWith("sk_test")) {
+            throw new RuntimeException("Webhook trigger is only available in test mode");
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            // 获取最新的Stripe账户状态
+            Account stripeAccount = Account.retrieve(account.getStripeAccountId());
+            
+            // 构造一个模拟的webhook事件
+            Map<String, Object> eventData = new HashMap<>();
+            eventData.put("id", "evt_test_" + System.currentTimeMillis());
+            eventData.put("type", "account.updated");
+            eventData.put("account", account.getStripeAccountId());
+            eventData.put("created", System.currentTimeMillis() / 1000);
+            
+            Map<String, Object> dataObject = new HashMap<>();
+            dataObject.put("id", stripeAccount.getId());
+            dataObject.put("charges_enabled", true);  // 模拟审核通过
+            dataObject.put("payouts_enabled", true);  // 模拟审核通过
+            dataObject.put("details_submitted", true);
+            
+            eventData.put("data", Map.of("object", dataObject));
+            
+            // 调用内部的账户更新处理逻辑
+            handleAccountUpdated(null, tenantId);
+            
+            // 同步账户状态
+            syncAccountStatus(tenantId);
+            
+            return "Successfully triggered account.updated webhook simulation for account: " + account.getStripeAccountId();
+            
+        } catch (StripeException e) {
+            log.error("Failed to trigger webhook", e);
+            throw new RuntimeException("Failed to trigger webhook: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public Boolean disconnectAccount(Long tenantId) {
+        log.info("Processing Stripe account disconnect for tenant: {}", tenantId);
+        
+        // 测试模式：完全删除
+        // 生产模式：只停用，不删除
+        boolean isTestMode = stripeApiKey.startsWith("sk_test");
+        
+        if (!isTestMode) {
+            log.info("Production mode: Deactivating account instead of deleting");
+            return deactivateAccount(tenantId);
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            log.info("No Stripe account found for tenant: {}", tenantId);
+            return true;
+        }
+        
+        try {
+            // 在Stripe中删除账户（测试模式）
+            if (account.getStripeAccountId() != null) {
+                try {
+                    Account stripeAccount = Account.retrieve(account.getStripeAccountId());
+                    stripeAccount.delete();
+                    log.info("Deleted Stripe account: {}", account.getStripeAccountId());
+                } catch (StripeException e) {
+                    // 如果Stripe账户已经不存在，继续删除本地记录
+                    log.warn("Stripe account may already be deleted: {}", e.getMessage());
+                }
+            }
+            
+            // 标记本地账户为已删除
+            account.setDeleted(true);
+            account.setUpdatedAt(LocalDateTime.now());
+            stripeAccountMapper.updateById(account);
+            
+            log.info("Successfully disconnected Stripe account for tenant: {}", tenantId);
+            return true;
+            
+        } catch (Exception e) {
+            log.error("Failed to disconnect account", e);
+            throw new RuntimeException("Failed to disconnect account: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 停用账户（生产环境）
+     * 保留账户数据，但禁用功能
+     */
+    private Boolean deactivateAccount(Long tenantId) {
+        log.info("Deactivating Stripe account for tenant: {} (Production mode)", tenantId);
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            log.info("No Stripe account found for tenant: {}", tenantId);
+            return true;
+        }
+        
+        try {
+            // 在生产环境中，我们不删除Stripe账户
+            // 而是在本地标记为停用状态
+            account.setDeleted(false);  // 不删除，只是停用
+            account.setOnboardingCompleted(false);  // 重置入驻状态
+            account.setChargesEnabled(false);  // 标记为不能收款
+            account.setPayoutsEnabled(false);  // 标记为不能提现
+            
+            // 添加停用记录到metadata
+            Map<String, Object> metadata = convertFromJson(account.getMetadata(), Map.class);
+            if (metadata == null) {
+                metadata = new HashMap<>();
+            }
+            metadata.put("deactivated", true);
+            metadata.put("deactivated_at", LocalDateTime.now().toString());
+            metadata.put("deactivation_reason", "merchant_requested");
+            account.setMetadata(convertToJson(metadata));
+            
+            account.setUpdatedAt(LocalDateTime.now());
+            stripeAccountMapper.updateById(account);
+            
+            log.info("Successfully deactivated Stripe account for tenant: {}. Account data preserved for compliance.", tenantId);
+            return true;
+            
+        } catch (Exception e) {
+            log.error("Failed to deactivate account", e);
+            throw new RuntimeException("Failed to deactivate account: " + e.getMessage());
+        }
+    }
+}

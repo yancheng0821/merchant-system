@@ -18,6 +18,7 @@ import {
   IconButton,
   Chip,
   Alert,
+  AlertTitle,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -42,6 +43,9 @@ import {
   Phone as PhoneIcon,
   Email as EmailIcon,
   Close as CloseIcon,
+  Settings as SettingsIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon,
   // 美容护理类
   ContentCut as HairIcon,
   Spa as SpaIcon,
@@ -112,9 +116,11 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTax } from '../../../contexts/TaxContext';
 import { serviceApi, customerApi, appointmentApi, api, Customer as ApiCustomer } from '../../../services/api';
+import axios from 'axios';
 import { CurrencyUtils, TimeZoneUtils } from '../../../config/constants';
 
 interface Service {
@@ -171,10 +177,17 @@ interface Appointment {
   resourceType?: 'STAFF' | 'ROOM';
 }
 
-const PaymentProcess: React.FC = () => {
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmindsystems.com';
+
+interface PaymentProcessProps {
+  onNavigate?: (item: string) => void;
+}
+
+const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { calculateTax, taxSettings } = useTax();
+  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [serviceSearchTerm, setServiceSearchTerm] = useState('');
@@ -198,6 +211,59 @@ const PaymentProcess: React.FC = () => {
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [walkInCustomer, setWalkInCustomer] = useState<Customer | null>(null);
+  const [stripeAccountStatus, setStripeAccountStatus] = useState<{
+    isActive: boolean;
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    loading: boolean;
+  }>({
+    isActive: false,
+    chargesEnabled: false,
+    payoutsEnabled: false,
+    loading: true
+  });
+  
+  // Stripe设置提示对话框
+  const [stripeSetupDialog, setStripeSetupDialog] = useState(false);
+
+  // 检查Stripe账户状态
+  const checkStripeStatus = useCallback(async () => {
+    if (!user?.tenantId) return;
+    
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}`,
+        {
+          withCredentials: true,
+        }
+      );
+      
+      const accountInfo = response.data?.data;
+      if (accountInfo) {
+        setStripeAccountStatus({
+          isActive: accountInfo.chargesEnabled && accountInfo.payoutsEnabled,
+          chargesEnabled: accountInfo.chargesEnabled || false,
+          payoutsEnabled: accountInfo.payoutsEnabled || false,
+          loading: false
+        });
+      } else {
+        setStripeAccountStatus({
+          isActive: false,
+          chargesEnabled: false,
+          payoutsEnabled: false,
+          loading: false
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch Stripe account status:', error);
+      setStripeAccountStatus({
+        isActive: false,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        loading: false
+      });
+    }
+  }, [user?.tenantId]);
 
   const fetchServices = useCallback(async () => {
     try {
@@ -412,8 +478,9 @@ const PaymentProcess: React.FC = () => {
       fetchCustomers();
       fetchAppointments();
       getOrCreateWalkInCustomer();
+      checkStripeStatus();
     }
-  }, [user, fetchServices, fetchCustomers, fetchAppointments, getOrCreateWalkInCustomer]);
+  }, [user, fetchServices, fetchCustomers, fetchAppointments, getOrCreateWalkInCustomer, checkStripeStatus]);
 
   const handleAddService = (service: Service) => {
     // 当用户手动添加服务时，表示不再基于预约
@@ -520,6 +587,12 @@ const PaymentProcess: React.FC = () => {
       setPaymentError(t('payments.selectServices'));
       return;
     }
+    
+    // 如果选择了卡支付但Stripe未激活，显示提示对话框
+    if ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.chargesEnabled) {
+      setStripeSetupDialog(true);
+      return;
+    }
 
     setPaymentDialog(true);
     setPaymentStatus('idle');
@@ -527,6 +600,26 @@ const PaymentProcess: React.FC = () => {
   };
 
   const handleProcessPayment = async () => {
+    // 检查是否选择了信用卡或借记卡支付
+    if (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') {
+      // 检查Stripe账户状态
+      if (stripeAccountStatus.loading) {
+        setPaymentError(t('payments.checkingStripeStatus', 'Checking payment setup status...'));
+        return;
+      }
+      
+      if (!stripeAccountStatus.chargesEnabled) {
+        // Stripe未激活，显示提示并提供跳转选项
+        setPaymentError(null);
+        setPaymentStatus('failed');
+        setPaymentDialog(false);
+        
+        // 显示Stripe设置对话框
+        setStripeSetupDialog(true);
+        return;
+      }
+    }
+    
     setPaymentStatus('processing');
     setPaymentError(null);
 
@@ -1790,6 +1883,82 @@ const PaymentProcess: React.FC = () => {
                     </MenuItem>
                   </Select>
                 </FormControl>
+                
+                {/* Stripe状态提示 */}
+                {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.loading && (
+                  <>
+                    {!stripeAccountStatus.chargesEnabled ? (
+                      <Box
+                        sx={{
+                          mt: 2,
+                          p: 2.5,
+                          borderRadius: 2,
+                          background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+                          border: '1px solid #F59E0B',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                          <WarningIcon sx={{ color: '#D97706', mt: 0.5 }} />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#92400E', mb: 0.5 }}>
+                              {t('payments.cardPaymentUnavailable', 'Card Payment Unavailable')}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#78350F', mb: 2 }}>
+                              {t('payments.stripeNotActiveMessage', 'Please complete Stripe setup to accept card payments.')}
+                            </Typography>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<SettingsIcon />}
+                              onClick={() => {
+                                if (onNavigate) {
+                                  // 设置要跳转到的tab
+                                  localStorage.setItem('settingsTab', 'payment');
+                                  // 导航到设置页面
+                                  onNavigate('settings');
+                                } else {
+                                  // 如果没有提供 onNavigate，使用旧的方法作为后备
+                                  localStorage.setItem('navigateTo', 'settings');
+                                  localStorage.setItem('settingsTab', 'payment');
+                                  window.location.reload();
+                                }
+                              }}
+                              sx={{
+                                background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                                color: 'white',
+                                fontWeight: 600,
+                                boxShadow: '0 2px 4px rgba(217, 119, 6, 0.2)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                                  boxShadow: '0 4px 8px rgba(217, 119, 6, 0.3)',
+                                },
+                              }}
+                            >
+                              {t('payments.setupStripeNow', '立即设置 Stripe')}
+                            </Button>
+                          </Box>
+                        </Box>
+                      </Box>
+                    ) : stripeAccountStatus.chargesEnabled && !stripeAccountStatus.payoutsEnabled ? (
+                      <Box
+                        sx={{
+                          mt: 2,
+                          p: 2,
+                          borderRadius: 2,
+                          background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
+                          border: '1px solid #3B82F6',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <InfoIcon sx={{ color: '#2563EB' }} />
+                          <Typography variant="body2" sx={{ color: '#1E40AF' }}>
+                            {t('payments.stripePartialActive', 'You can accept payments but payouts are pending verification.')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : null}
+                  </>
+                )}
               </Box>
 
               {/* Notes */}
@@ -1828,7 +1997,10 @@ const PaymentProcess: React.FC = () => {
                 size="large"
                 startIcon={<PaymentIcon />}
                 onClick={handleCreateOrder}
-                disabled={orderItems.length === 0}
+                disabled={
+                  orderItems.length === 0 ||
+                  ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.chargesEnabled)
+                }
                 sx={{
                   py: 2,
                   borderRadius: 2,
@@ -2427,6 +2599,95 @@ const PaymentProcess: React.FC = () => {
               </Button>
             </>
           )}
+        </DialogActions>
+      </Dialog>
+      
+      {/* Stripe设置提示对话框 */}
+      <Dialog
+        open={stripeSetupDialog}
+        onClose={() => setStripeSetupDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <WarningIcon sx={{ color: '#F59E0B' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {t('payments.stripeSetupRequired', 'Stripe 设置提醒')}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Box
+            sx={{
+              p: 2.5,
+              borderRadius: 2,
+              background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+              border: '1px solid #F59E0B',
+              mb: 2.5,
+            }}
+          >
+            <Typography variant="body1" sx={{ color: '#78350F', mb: 1 }}>
+              {t('payments.stripeNotActiveMessage', '您需要先完成Stripe支付设置才能接受信用卡/借记卡支付。')}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#92400E' }}>
+              {t('payments.stripeSetupBenefit', '完成设置后，您将可以接受各种信用卡和借记卡支付，资金将自动转入您的银行账户。')}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircleIcon sx={{ color: '#10B981', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ color: '#374151' }}>
+                {t('payments.stripeFeature1', '低手续费')}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircleIcon sx={{ color: '#10B981', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ color: '#374151' }}>
+                {t('payments.stripeFeature2', '快速到账')}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircleIcon sx={{ color: '#10B981', fontSize: 20 }} />
+              <Typography variant="body2" sx={{ color: '#374151' }}>
+                {t('payments.stripeFeature3', '安全可靠')}
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            onClick={() => setStripeSetupDialog(false)}
+            sx={{ color: '#6B7280' }}
+          >
+            {t('common.later', '稍后再说')}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SettingsIcon />}
+            onClick={() => {
+              setStripeSetupDialog(false);
+              // 使用localStorage传递导航意图
+              localStorage.setItem('navigateTo', 'settings');
+              localStorage.setItem('settingsTab', 'payment');
+              // 触发storage事件
+              window.dispatchEvent(new Event('storage'));
+              // 强制刷新页面以确保导航生效
+              window.location.reload();
+            }}
+            sx={{
+              background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+              color: 'white',
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(217, 119, 6, 0.2)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                boxShadow: '0 4px 8px rgba(217, 119, 6, 0.3)',
+              },
+            }}
+          >
+            {t('payments.goToSetupNow', '立即前往设置')}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

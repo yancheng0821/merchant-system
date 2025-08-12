@@ -70,7 +70,27 @@ business:
 
 # POS支付配置
 pos:
+  client:
+    type: ${POS_CLIENT_TYPE:stripe}  # 可选值: mock, stripe
+  currency: ${POS_CURRENCY:CAD}  # 默认货币，加拿大使用CAD
   mock:
-    enabled: true          # 是否启用mock模式
+    enabled: false         # 是否启用mock模式
     success-rate: 95       # mock模式下的成功率（百分比）
-    processing-delay: 3    # mock处理延迟（秒） 
+    processing-delay: 3    # mock处理延迟（秒）
+
+# Stripe Connect配置
+stripe:
+  api:
+    key: ${STRIPE_API_KEY:sk_test_51OKP1234567890abcdefghijklmnopqrstuvwxyz}  # 替换为实际的Stripe API密钥
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET:whsec_1234567890abcdefghijklmnopqrstuvwxyz}  # 替换为实际的Webhook密钥
+  platform:
+    fee:
+      percentage: 2.5      # 平台费用百分比
+  connect:
+    client:
+      id: ${STRIPE_CLIENT_ID:ca_1234567890abcdefghijklmnop}  # 替换为实际的Connect Client ID
+  terminal:
+    location:
+      id: ${STRIPE_TERMINAL_LOCATION_ID:}  # Stripe Terminal Location ID（可选）
+    use-simulator: ${STRIPE_TERMINAL_USE_SIMULATOR:true}  # 在测试模式下使用模拟器

@@ -4,12 +4,15 @@ import com.merchant.server.businessservice.dto.PaymentRequestDTO;
 import com.merchant.server.businessservice.dto.PaymentResponseDTO;
 import com.merchant.server.businessservice.dto.pos.POSTransactionStatus;
 import com.merchant.server.businessservice.service.POSPaymentService;
+import com.merchant.server.businessservice.enums.RefundReason;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -117,19 +120,34 @@ public class PaymentController {
     
     /**
      * 发起退款
+     * @param reason 退款原因，前端传来的枚举值（如 DUPLICATE_CHARGE）
+     * @param language 语言偏好（可选，默认为zh）
      */
     @PostMapping("/orders/{orderId}/refund")
     public ResponseEntity<Map<String, Object>> initiateRefund(
             @PathVariable Long orderId,
             @RequestParam Double amount,
-            @RequestParam String reason) {
-        log.info("Initiating refund for order: {}, amount: {}", orderId, amount);
+            @RequestParam String reason,
+            @RequestParam(defaultValue = "zh") String language) {
+        log.info("Initiating refund for order: {}, amount: {}, reason: {}, language: {}", orderId, amount, reason, language);
         
         Map<String, Object> response = new HashMap<>();
         try {
-            boolean success = posPaymentService.initiateRefund(orderId, amount, reason);
+            // 验证退款原因是否有效，并获取对应的枚举
+            RefundReason refundReason = RefundReason.fromValue(reason);
+            
+            // 获取Stripe需要的值
+            String stripeReason = refundReason.getStripeValue();
+            
+            // 获取用户友好的显示文本（存储到数据库）
+            String displayText = "zh".equalsIgnoreCase(language) ? 
+                refundReason.getChineseDisplay() : refundReason.getEnglishDisplay();
+            
+            // 调用服务，传递Stripe值和显示文本
+            boolean success = posPaymentService.initiateRefund(orderId, amount, stripeReason, displayText);
             response.put("success", success);
             response.put("message", success ? "Refund initiated successfully" : "Failed to initiate refund");
+            response.put("refundReason", displayText);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Failed to initiate refund", e);
@@ -137,6 +155,23 @@ public class PaymentController {
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
+    }
+    
+    /**
+     * 获取可用的退款原因
+     */
+    @GetMapping("/refund-reasons")
+    public ResponseEntity<List<Map<String, String>>> getRefundReasons() {
+        List<Map<String, String>> reasons = new ArrayList<>();
+        for (RefundReason reason : RefundReason.values()) {
+            Map<String, String> reasonMap = new HashMap<>();
+            reasonMap.put("value", reason.name());
+            reasonMap.put("label_zh", reason.getChineseDisplay());
+            reasonMap.put("label_en", reason.getEnglishDisplay());
+            reasonMap.put("stripe_value", reason.getStripeValue());
+            reasons.add(reasonMap);
+        }
+        return ResponseEntity.ok(reasons);
     }
     
     /**

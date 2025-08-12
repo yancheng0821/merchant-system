@@ -51,10 +51,20 @@ public interface POSPaymentService {
      * 发起退款
      * @param orderId 订单ID
      * @param amount 退款金额
-     * @param reason 退款原因
+     * @param stripeReason Stripe需要的退款原因值
+     * @param displayText 用户友好的退款原因文本（存储到数据库）
      * @return 是否成功
      */
-    boolean initiateRefund(Long orderId, Double amount, String reason);
+    boolean initiateRefund(Long orderId, Double amount, String stripeReason, String displayText);
+    
+    /**
+     * 发起退款（兼容旧版本）
+     * @deprecated 请使用新版本的initiateRefund方法
+     */
+    @Deprecated
+    default boolean initiateRefund(Long orderId, Double amount, String reason) {
+        return initiateRefund(orderId, amount, reason, reason);
+    }
     
     /**
      * 轮询支付状态（用于没有回调的情况）

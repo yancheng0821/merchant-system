@@ -56,7 +56,18 @@ const MainApp: React.FC = () => {
   const { user, logout, loading } = useAuth();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState('dashboard');
+  
+  // 检查localStorage中的导航意图
+  const getInitialSelectedItem = () => {
+    const navigateTo = localStorage.getItem('navigateTo');
+    if (navigateTo) {
+      localStorage.removeItem('navigateTo'); // 清除导航意图
+      return navigateTo;
+    }
+    return 'dashboard';
+  };
+  
+  const [selectedItem, setSelectedItem] = useState(getInitialSelectedItem());
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
   // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
@@ -477,7 +488,7 @@ const MainApp: React.FC = () => {
             <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
               {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
               {selectedItem === 'products' && <ServiceManagement />}
-              {selectedItem === 'payments' && <PaymentManagement />}
+              {selectedItem === 'payments' && <PaymentManagement onNavigate={setSelectedItem} />}
               {selectedItem === 'customers' && <CustomerManagement />}
               {selectedItem === 'appointments' && <AppointmentManagement />}
               {selectedItem === 'resources' && <ResourceManagement />}

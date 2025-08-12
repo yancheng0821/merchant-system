@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Typography,
   Box,
@@ -18,6 +19,7 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Fade,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
@@ -30,12 +32,14 @@ import {
   Person as PersonIcon,
   Public as ProvinceIcon,
   LocationCity as CityIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTax } from '../../contexts/TaxContext';
 import { useSession } from '../../contexts/SessionContext';
 import { merchantConfigApi } from '../../services/api';
+import StripeConnectTab from './StripeConnectTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -46,7 +50,11 @@ interface TabPanelProps {
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   return (
     <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Fade in={value === index} timeout={300}>
+          <Box sx={{ p: 3 }}>{children}</Box>
+        </Fade>
+      )}
     </div>
   );
 };
@@ -78,7 +86,26 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
-  const [selectedTab, setSelectedTab] = useState(0);
+  const location = useLocation();
+  
+  // 初始化时立即读取 localStorage，避免闪烁
+  const initialTab = (() => {
+    const settingsTab = localStorage.getItem('settingsTab');
+    if (settingsTab === 'payment' || settingsTab === 'stripe') {
+      return 3; // 支付设置是第4个tab (index 3)
+    }
+    return 0;
+  })();
+  
+  const [selectedTab, setSelectedTab] = useState(initialTab);
+  
+  // 组件挂载后清理 localStorage
+  useEffect(() => {
+    const settingsTab = localStorage.getItem('settingsTab');
+    if (settingsTab === 'payment' || settingsTab === 'stripe') {
+      localStorage.removeItem('settingsTab');
+    }
+  }, []);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [merchantInfo, setMerchantInfo] = useState<MerchantInfo>({
@@ -193,6 +220,7 @@ const Settings: React.FC = () => {
 
     fetchSettings();
   }, [user?.tenantId]);
+
 
   const handleMerchantInfoChange = (field: keyof MerchantInfo, value: string) => {
     setMerchantInfo(prev => ({
@@ -348,6 +376,7 @@ const Settings: React.FC = () => {
     { label: t('settings.tabs.basic'), icon: <BusinessIcon />, color: '#6366F1' },
     { label: t('settings.tabs.tax'), icon: <TaxIcon />, color: '#F59E0B' },
     { label: t('settings.tabs.system'), icon: <TuneIcon />, color: '#8B5CF6' },
+    { label: t('settings.tabs.payment'), icon: <PaymentIcon />, color: '#10B981' },
   ];
 
   return (
@@ -382,6 +411,7 @@ const Settings: React.FC = () => {
           borderRadius: 3,
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
           overflow: 'hidden',
+          minHeight: '600px', // 设置最小高度避免内容跳动
         }}
       >
         {/* 美化的标签栏 */}
@@ -875,9 +905,15 @@ const Settings: React.FC = () => {
             </Grid>
           </Grid>
         </TabPanel>
+
+        {/* Payment Settings - Stripe Connect */}
+        <TabPanel value={selectedTab} index={3}>
+          <StripeConnectTab />
+        </TabPanel>
       </Card>
 
-      {/* 现代化保存按钮 */}
+      {/* 现代化保存按钮 - 仅在非支付设置页显示 */}
+      {selectedTab !== 3 && (
       <Box mt={4} display="flex" justifyContent="flex-end">
         <Button
           variant="contained"
@@ -909,6 +945,7 @@ const Settings: React.FC = () => {
           {saving ? t('settings.saving') : t('settings.saveSettings')}
         </Button>
       </Box>
+      )}
 
       {/* 美化的通知提示 */}
       <Snackbar

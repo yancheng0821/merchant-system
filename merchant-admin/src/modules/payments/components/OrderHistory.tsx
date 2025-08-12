@@ -79,6 +79,14 @@ interface Order {
   createdAt: string;
   completedAt?: string;
   notes?: string;
+  refundAmount?: number;
+  refundReason?: string;
+}
+
+interface RefundReason {
+  value: string;
+  translationKey: string;
+  stripe_value: string;
 }
 
 const OrderHistory: React.FC = () => {
@@ -98,6 +106,7 @@ const OrderHistory: React.FC = () => {
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
   const [refundLoading, setRefundLoading] = useState(false);
+  const [refundReasons, setRefundReasons] = useState<RefundReason[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuOrder, setMenuOrder] = useState<Order | null>(null);
   const [refundError, setRefundError] = useState<string | null>(null);
@@ -136,6 +145,20 @@ const OrderHistory: React.FC = () => {
       fetchOrders();
     }
   }, [user, page, rowsPerPage, searchTerm, paymentStatusFilter, orderStatusFilter, dateRange, fetchOrders]);
+
+  // 获取退款原因选项
+  useEffect(() => {
+    // 使用国际化的退款原因选项
+    setRefundReasons([
+      { value: 'DUPLICATE_CHARGE', translationKey: 'orders.refundReasons.duplicateCharge', stripe_value: 'duplicate' },
+      { value: 'FRAUDULENT', translationKey: 'orders.refundReasons.fraudulent', stripe_value: 'fraudulent' },
+      { value: 'CUSTOMER_REQUEST', translationKey: 'orders.refundReasons.customerRequest', stripe_value: 'requested_by_customer' },
+      { value: 'PRODUCT_UNACCEPTABLE', translationKey: 'orders.refundReasons.productUnacceptable', stripe_value: 'product_unacceptable' },
+      { value: 'SERVICE_UNSATISFACTORY', translationKey: 'orders.refundReasons.serviceUnsatisfactory', stripe_value: 'service_unsatisfactory' },
+      { value: 'ORDER_CANCELLED', translationKey: 'orders.refundReasons.orderCancelled', stripe_value: 'order_cancelled' },
+      { value: 'OTHER', translationKey: 'orders.refundReasons.other', stripe_value: 'other' }
+    ]);
+  }, []);
 
   const handlePageChange = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -610,7 +633,7 @@ const OrderHistory: React.FC = () => {
                 </Box>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
                   {getPaymentMethodIcon(selectedOrder.paymentMethod)}
-                  <Typography variant="body2">{selectedOrder.paymentMethod}</Typography>
+                  <Typography variant="body2">{t(`orders.${selectedOrder.paymentMethod}`)}</Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -622,6 +645,34 @@ const OrderHistory: React.FC = () => {
                     {t('orders.orderStatus')}: {getOrderStatusChip(selectedOrder.orderStatus)}
                   </Typography>
                 </Box>
+                
+                {/* 显示退款信息 */}
+                {selectedOrder.paymentStatus === 'refunded' && selectedOrder.refundAmount && (
+                  <>
+                    <Divider sx={{ my: 2 }} />
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#EF4444' }}>
+                        {t('orders.refundInfo')}
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {t('orders.refundAmount')}:
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#EF4444', fontWeight: 600 }}>
+                          {CurrencyUtils.formatAmount(selectedOrder.refundAmount)}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {t('orders.refundReason')}:
+                        </Typography>
+                        <Typography variant="body2">
+                          {selectedOrder.refundReason || t('orders.notSpecified')}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </>
+                )}
               </Grid>
 
               {/* 显示预约和资源信息 */}
@@ -775,15 +826,20 @@ const OrderHistory: React.FC = () => {
                 </Grid>
                 
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label={t('orders.refundReason')}
-                    multiline
-                    rows={3}
-                    value={refundReason}
-                    onChange={(e) => setRefundReason(e.target.value)}
-                    placeholder={t('orders.refundReasonPlaceholder')}
-                  />
+                  <FormControl fullWidth>
+                    <InputLabel>{t('orders.refundReason')}</InputLabel>
+                    <Select
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      label={t('orders.refundReason')}
+                    >
+                      {refundReasons.map((reason) => (
+                        <MenuItem key={reason.value} value={reason.value}>
+                          {t(reason.translationKey)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
               </Grid>
             </Box>

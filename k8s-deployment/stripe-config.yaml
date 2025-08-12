@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: stripe-secrets
+  namespace: merchant-system
+type: Opaque
+stringData:
+  # 替换为你的实际Stripe API密钥
+  STRIPE_API_KEY: "sk_test_51Rv9deEAhb22egJiTyFYVLCVzE1R4C3wgKofU02KMjLAqytSwakllGagXlwPvJadfLcv2Eeacro9j6QzJk22R5jx00oLiUVfTs"
+  STRIPE_WEBHOOK_SECRET: "whsec_vLfDmv55WMFl1mBapBiHOo9GVh2mQ3vg"
+  STRIPE_CLIENT_ID: "ca_SqrOJ2kE76kDCQWgjytMGz8xVhgrKL0v"
+  # Stripe Terminal Location ID (可选，如果你有固定的Location可以在这里设置)
+  STRIPE_TERMINAL_LOCATION_ID: "tml_GJeGowJums1qGc"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stripe-config
+  namespace: merchant-system
+data:
+  STRIPE_PLATFORM_FEE_PERCENTAGE: "2.5"

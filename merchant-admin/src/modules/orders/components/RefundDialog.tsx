@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,6 +14,9 @@ import {
   Radio,
   Alert,
   Divider,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   MoneyOff as RefundIcon,
@@ -21,6 +24,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Order } from '../OrderManagement';
 import { CurrencyUtils } from '../../../config/constants';
+
+interface RefundReason {
+  value: string;
+  translationKey: string;
+  stripe_value: string;
+}
 
 interface RefundDialogProps {
   open: boolean;
@@ -35,14 +44,29 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
   order,
   onRefundComplete,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [refundType, setRefundType] = useState<'full' | 'partial'>('full');
   const [refundAmount, setRefundAmount] = useState<number>(0);
   const [refundReason, setRefundReason] = useState('');
+  const [refundReasons, setRefundReasons] = useState<RefundReason[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>('');
 
   const maxRefundAmount = order ? order.totalAmount - (order.refundAmount || 0) : 0;
+
+  // 获取退款原因选项
+  useEffect(() => {
+    // 使用国际化的退款原因选项
+    setRefundReasons([
+      { value: 'DUPLICATE_CHARGE', translationKey: 'orders.refundReasons.duplicateCharge', stripe_value: 'duplicate' },
+      { value: 'FRAUDULENT', translationKey: 'orders.refundReasons.fraudulent', stripe_value: 'fraudulent' },
+      { value: 'CUSTOMER_REQUEST', translationKey: 'orders.refundReasons.customerRequest', stripe_value: 'requested_by_customer' },
+      { value: 'PRODUCT_UNACCEPTABLE', translationKey: 'orders.refundReasons.productUnacceptable', stripe_value: 'product_unacceptable' },
+      { value: 'SERVICE_UNSATISFACTORY', translationKey: 'orders.refundReasons.serviceUnsatisfactory', stripe_value: 'service_unsatisfactory' },
+      { value: 'ORDER_CANCELLED', translationKey: 'orders.refundReasons.orderCancelled', stripe_value: 'order_cancelled' },
+      { value: 'OTHER', translationKey: 'orders.refundReasons.other', stripe_value: 'other' }
+    ]);
+  }, []);
 
   React.useEffect(() => {
     if (open && order) {
@@ -245,15 +269,20 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
         <Typography variant="h6" gutterBottom color="primary">
           {t('orders.refundReason')}
         </Typography>
-        <TextField
-          fullWidth
-          multiline
-          rows={3}
-          placeholder={t('orders.refundReasonPlaceholder')}
-          value={refundReason}
-          onChange={(e) => setRefundReason(e.target.value)}
-          sx={{ mb: 3 }}
-        />
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel>{t('orders.selectRefundReason')}</InputLabel>
+          <Select
+            value={refundReason}
+            onChange={(e) => setRefundReason(e.target.value)}
+            label={t('orders.selectRefundReason')}
+          >
+            {refundReasons.map((reason) => (
+              <MenuItem key={reason.value} value={reason.value}>
+                {t(reason.translationKey)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         {/* Error Alert */}
         {error && (

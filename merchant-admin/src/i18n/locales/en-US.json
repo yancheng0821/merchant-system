@@ -236,7 +236,6 @@
     "resourceTypes": "Resource Types",
     "merchantRegisterSuccess": "Merchant registration successful!"
   },
-
   "session": {
     "expired": "Session Expired",
     "expiredMessage": "Your session has expired. Please log in again to continue.",
@@ -488,7 +487,7 @@
     }
   },
   "appointments": {
-    "appointments":"Appointments",
+    "appointments": "Appointments",
     "title": "Appointment Management",
     "subtitle": "Manage all appointment records and service schedules",
     "searchPlaceholder": "Search by customer name, staff, or service type...",
@@ -674,7 +673,21 @@
     "transactionCompleted": "Transaction Completed",
     "todayAppointmentsOnly": "Today's appointments by default",
     "appointmentLimitInfo": "Max 20 records, search any time",
-    "reviewOrderDetails": "Review Order Details"
+    "reviewOrderDetails": "Review Order Details",
+    "checkingStripeStatus": "Checking payment settings status...",
+    "stripeNotActive": "Credit/Debit card payment is not available",
+    "stripeNotActiveMessage": "You need to complete Stripe payment setup to accept credit/debit card payments.",
+    "goToSettings": "Go to Settings",
+    "setupStripeNow": "Setup Stripe Now",
+    "stripePartialActive": "You can accept payments but payouts are pending verification.",
+    "stripeActive": "Card payments are ready to use.",
+    "cardPaymentUnavailable": "Card Payment Unavailable",
+    "stripeSetupRequired": "Stripe Setup Required",
+    "stripeSetupBenefit": "Once setup is complete, you'll be able to accept various credit and debit card payments with funds automatically transferred to your bank account.",
+    "stripeFeature1": "Low fees",
+    "stripeFeature2": "Fast deposits",
+    "stripeFeature3": "Secure & reliable",
+    "goToSetupNow": "Go to Setup Now"
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",
@@ -714,7 +727,9 @@
     "paymentMethods": {
       "credit_card": "Credit Card",
       "cash": "Cash",
-      "debit_card": "Debit Card"
+      "debit_card": "Debit Card",
+      "mobile_pay": "Mobile Pay",
+      "gift_card": "Gift Card"
     },
     "todayOrders": "Today's Orders",
     "todayRevenue": "Today's Revenue",
@@ -810,7 +825,17 @@
     "newOrder": "New Order",
     "requestRefund": "Request Refund",
     "deleteOrder": "Delete Order",
-    "appointmentInfo": "Appointment Information"
+    "appointmentInfo": "Appointment Information",
+    "selectRefundReason": "Select Refund Reason",
+    "refundReasons": {
+      "duplicateCharge": "Duplicate Charge",
+      "fraudulent": "Fraudulent",
+      "customerRequest": "Customer Request",
+      "productUnacceptable": "Product Unacceptable",
+      "serviceUnsatisfactory": "Service Unsatisfactory",
+      "orderCancelled": "Order Cancelled",
+      "other": "Other"
+    }
   },
   "services": {
     "title": "Service Management",
@@ -1220,7 +1245,8 @@
       "staff": "Staff Management",
       "tax": "Tax Settings",
       "notifications": "Notification Settings",
-      "system": "System Settings"
+      "system": "System Settings",
+      "payment": "Payment Settings"
     },
     "systemNotifications": "Send System Notifications",
     "dataAnalytics": "Allow Data Analytics",
@@ -1297,7 +1323,85 @@
     "username": "Username",
     "tenantInfo": "Tenant Information",
     "email": "Email",
-    "realName": "Real Name"
+    "realName": "Real Name",
+    "stripe": {
+      "welcomeTitle": "Stripe Connect Payment System",
+      "welcomeSubtitle": "Accept credit and debit card payments securely",
+      "feature1": "Low fees, only 2.9% + $0.30",
+      "feature2": "Next-day payouts for fast cash flow",
+      "feature3": "PCI compliant and secure",
+      "creating": "Creating...",
+      "startOnboarding": "Start Stripe Integration",
+      "myBusiness": "My Business",
+      "accountId": "Account ID",
+      "active": "Active",
+      "pending": "Pending Onboarding",
+      "onboardingProgress": "Onboarding Progress",
+      "accountCreated": "Account Created",
+      "completed": "Completed",
+      "detailsSubmitted": "Business Details Submitted",
+      "chargesEnabled": "Can Accept Payments",
+      "payoutsEnabled": "Can Receive Payouts",
+      "continueOnboarding": "Continue Onboarding",
+      "openDashboard": "Open Stripe Dashboard",
+      "syncing": "Syncing...",
+      "syncStatus": "Sync Status",
+      "onboardingTip": "Please complete the Stripe account onboarding process to start accepting payments. The process only takes a few minutes.",
+      "readyTip": "Your Stripe account is active! You can now start accepting customer payments.",
+      "paymentFeatures": "Payment Features",
+      "cardPayments": "Card Payments",
+      "cardPaymentsDesc": "Accept Visa, MasterCard, American Express and other major credit cards",
+      "posPayments": "POS Terminal Payments",
+      "posPaymentsDesc": "Support Stripe Terminal devices for in-person card payments",
+      "payouts": "Automatic Payouts",
+      "payoutsDesc": "Funds automatically transfer to your bank account, typically within 1-2 business days",
+      "underReview": "Under Review",
+      "reviewingTip": "Your account information has been submitted and is under review. Stripe typically completes the review within 1-2 business days.",
+      "autoSync": "System automatically syncs status every minute",
+      "lastSync": "Last sync",
+      "partialActive": "Partially Active",
+      "reviewing": "Reviewing",
+      "verificationRequired": "Verification Required",
+      "completeVerification": "Complete Verification",
+      "identityVerificationRequired": "Identity Verification Required",
+      "canChargeButNotPayout": "You can now accept customer payments, but identity verification is required to withdraw funds to your bank account. Please click 'Complete Verification' to upload required documents.",
+      "pendingItems": "Pending Items",
+      "readyTipFull": "Your Stripe account is fully activated! You can accept payments and withdraw to your bank account.",
+      "disconnect": "Disconnect Account (Test)",
+      "confirmDeleteTitle": "Confirm Disconnect Stripe Account",
+      "confirmDisconnectTest": "Are you sure you want to disconnect your Stripe account? This will delete all test data so you can test the onboarding process again.",
+      "confirmDisconnectProd": "Are you sure you want to deactivate your Stripe account? This will pause all payment functions but preserve historical data.",
+      "disconnectSuccess": "Account successfully disconnected",
+      "disconnectError": "Failed to disconnect, please try again",
+      "defaultBusinessName": "My Business",
+      "defaultEmail": "contact@example.com",
+      "defaultCity": "Vancouver",
+      "defaultProductDesc": "Beauty and wellness services",
+      "progressTip1": "Continue to complete business information submission",
+      "progressTip2": "Waiting for Stripe review approval",
+      "progressTip3": "Complete identity verification to fully activate",
+      "quickActions": "Quick Actions",
+      "fullyActivated": "Account Fully Activated",
+      "readyToAcceptPayments": "Ready to accept payments and payouts",
+      "featuresSubtitle": "You've unlocked all payment features",
+      "instantPayment": "Instant Payment",
+      "pciCompliant": "PCI Compliant",
+      "globalPayment": "Global Payment",
+      "offlinePayment": "Offline Payment",
+      "mobilePayment": "Mobile Payment",
+      "contactlessPayment": "Contactless Payment",
+      "fastPayout": "1-2 Day Payout",
+      "autoSettle": "Auto Settlement",
+      "bankDirect": "Direct Banking",
+      "securityTitle": "Enterprise Security",
+      "securityDesc": "PCI DSS Level 1 certified, bank-level encryption, global compliance standards",
+      "learnMore": "Learn More"
+    }
+  },
+  "individual": {
+    "verification": {
+      "proof_of_liveness": "Identity Verification"
+    }
   },
   "dashboard": {
     "subtitle": "Real-time Data Overview & Analytics",
@@ -1352,7 +1456,6 @@
     "offline": "Offline",
     "until": "Until",
     "noResourceData": "No resource data",
-    "noStaffData": "No staff data",
     "inService": "In Service",
     "last7Days": "Last 7 Days",
     "last30Days": "Last 30 Days",
@@ -1388,7 +1491,6 @@
     "refresh": "Refresh",
     "customer": "Customer",
     "staff": "Staff",
-    "room": "Room",
     "resource": "Resource",
     "unassigned": "Unassigned"
   },
@@ -1623,8 +1725,8 @@
     "building": "Building",
     "location": "Location",
     "beauty": "Beauty",
-    "nail":"Nail Care",
-    "makeup":"Makeup",
+    "nail": "Nail Care",
+    "makeup": "Makeup",
     "haircut": "Haircut",
     "pharmacy": "pharmacy",
     "dental": "Dental",
@@ -1645,7 +1747,6 @@
     "conference": "Conference",
     "group": "Group",
     "uploadSuccess": "Upload Success"
-
   },
   "categories": {
     "haircare": "Hair Care",
@@ -1823,7 +1924,6 @@
     "repeatCustomerRate": "Repeat Customer Rate",
     "activeStaff": "Active Resources",
     "avgRating": "Avg Rating",
-
     "charts": {
       "revenueOrderTrend": "Revenue & Order Trend",
       "serviceRevenueDistribution": "Service Revenue Distribution",

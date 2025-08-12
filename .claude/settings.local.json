@@ -41,7 +41,10 @@
       "Bash(docker run:*)",
       "Bash(./scripts/rapid-deploy.sh:*)",
       "Bash(echo)",
-      "Bash(mvn:*)"
+      "Bash(mvn:*)",
+      "Bash(sed:*)",
+      "Bash(jar tf:*)",
+      "Bash(echo:*)"
     ],
     "deny": []
   }

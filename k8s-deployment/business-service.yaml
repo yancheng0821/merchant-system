@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: business-service
-        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:v1.2.1
+        image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/business-service:v20250811_225805_local
         ports:
         - containerPort: 8083
         envFrom:
@@ -28,6 +28,29 @@ spec:
         env:
         - name: TZ
           value: America/Vancouver
+        - name: STRIPE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: stripe-secrets
+              key: STRIPE_API_KEY
+        - name: STRIPE_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: stripe-secrets
+              key: STRIPE_WEBHOOK_SECRET
+        - name: STRIPE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: stripe-secrets
+              key: STRIPE_CLIENT_ID
+        - name: POS_CLIENT_TYPE
+          value: "stripe"  # 使用真实的Stripe Terminal，如需测试可改为"mock"
+        - name: STRIPE_TERMINAL_LOCATION_ID
+          valueFrom:
+            secretKeyRef:
+              name: stripe-secrets
+              key: STRIPE_TERMINAL_LOCATION_ID
+              optional: true  # 这是可选的，如果没有设置也不会导致pod启动失败
         - name: APP_UPLOAD_PATH
           valueFrom:
             configMapKeyRef:

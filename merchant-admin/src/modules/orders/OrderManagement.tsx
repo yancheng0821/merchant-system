@@ -488,7 +488,16 @@ const OrderManagement: React.FC = () => {
                   <MoneyIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  {CurrencyUtils.formatAmountWithCommas(orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length) : 0)}
+                  {(() => {
+                    const paidOrders = orders.filter(order => 
+                      order.paymentStatus === 'paid' || order.orderStatus === 'completed'
+                    );
+                    return CurrencyUtils.formatAmountWithCommas(
+                      paidOrders.length > 0 
+                        ? Math.round(paidOrders.reduce((sum, order) => sum + order.totalAmount, 0) / paidOrders.length) 
+                        : 0
+                    );
+                  })()}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -696,9 +705,7 @@ const OrderManagement: React.FC = () => {
                       <Box display="flex" alignItems="center" gap={1}>
                         {getPaymentMethodIcon(order.paymentMethod)}
                         <Typography variant="body2">
-                                                  {order.paymentMethod === 'credit_card' && t('orders.paymentMethods.credit_card')}
-                        {order.paymentMethod === 'cash' && t('orders.paymentMethods.cash')}
-                        {order.paymentMethod === 'mobile_pay' && t('orders.paymentMethods.mobile_pay')}
+                          {t(`orders.${order.paymentMethod}`)}
                         </Typography>
                       </Box>
                     </TableCell>

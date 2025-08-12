@@ -53,6 +53,9 @@ file:
 
 # POS支付配置 - 生产环境
 pos:
+  client:
+    type: ${POS_CLIENT_TYPE:stripe}  # 可选值: mock, stripe (生产环境默认使用stripe)
+  currency: ${POS_CURRENCY:CAD}  # 默认货币，加拿大使用CAD
   mock:
     enabled: false         # 生产环境关闭mock模式
     success-rate: 100      # 生产环境不使用随机成功率
@@ -63,3 +66,20 @@ pos:
     api-url: "${POS_API_URL}"
     api-key: "${POS_API_KEY}"
     terminal-id: "${POS_TERMINAL_ID}"
+
+# Stripe Connect配置 - 生产环境
+stripe:
+  api:
+    key: ${STRIPE_API_KEY}  # 生产环境必须设置
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET}  # 生产环境必须设置
+  platform:
+    fee:
+      percentage: 2.5      # 平台费用百分比
+  connect:
+    client:
+      id: ${STRIPE_CLIENT_ID}  # 生产环境必须设置
+  terminal:
+    location:
+      id: ${STRIPE_TERMINAL_LOCATION_ID:}  # Stripe Terminal Location ID（可选）
+    use-simulator: ${STRIPE_TERMINAL_USE_SIMULATOR:true}  # 在测试模式下使用模拟器

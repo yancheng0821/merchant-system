@@ -7,11 +7,13 @@ import com.merchant.server.businessservice.dto.pos.*;
 import com.merchant.server.businessservice.entity.*;
 import com.merchant.server.businessservice.enums.CallbackStatus;
 import com.merchant.server.businessservice.mapper.*;
+import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.service.POSPaymentService;
 import com.merchant.server.common.util.CurrencyUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +27,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
 
 /**
  * POS支付服务实现
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class POSPaymentServiceImpl implements POSPaymentService {
     
     private final OrderMapper orderMapper;
@@ -39,9 +41,59 @@ public class POSPaymentServiceImpl implements POSPaymentService {
     private final POSTransactionMapper posTransactionMapper;
     private final PaymentCallbackMapper paymentCallbackMapper;
     private final AppointmentMapper appointmentMapper;
+    private final CustomerMapper customerMapper;
     
+    @Value("${pos.client.type:mock}")
+    private String posClientType;
+    
+    @Value("${pos.currency:CAD}")
+    private String defaultCurrency;
+    
+    @Autowired(required = false)
     @Qualifier("mockPOSClient")
-    private final POSClient posClient;
+    private POSClient mockPOSClient;
+    
+    @Autowired(required = false)
+    @Qualifier("stripeTerminalClient")
+    private POSClient stripeTerminalClient;
+    
+    private POSClient posClient;
+    
+    public POSPaymentServiceImpl(OrderMapper orderMapper,
+                                 POSTerminalMapper posTerminalMapper,
+                                 POSTransactionMapper posTransactionMapper,
+                                 PaymentCallbackMapper paymentCallbackMapper,
+                                 AppointmentMapper appointmentMapper,
+                                 CustomerMapper customerMapper) {
+        this.orderMapper = orderMapper;
+        this.posTerminalMapper = posTerminalMapper;
+        this.posTransactionMapper = posTransactionMapper;
+        this.paymentCallbackMapper = paymentCallbackMapper;
+        this.appointmentMapper = appointmentMapper;
+        this.customerMapper = customerMapper;
+    }
+    
+    @PostConstruct
+    public void init() {
+        // 根据配置选择使用哪个POS客户端
+        if ("stripe".equalsIgnoreCase(posClientType)) {
+            if (stripeTerminalClient != null) {
+                this.posClient = stripeTerminalClient;
+                log.info("Using Stripe Terminal client for POS payments");
+            } else {
+                log.warn("Stripe Terminal client not available, falling back to mock client");
+                this.posClient = mockPOSClient;
+            }
+        } else {
+            this.posClient = mockPOSClient;
+            log.info("Using Mock POS client for payments");
+        }
+        
+        if (this.posClient == null) {
+            log.error("No POS client available!");
+            throw new RuntimeException("No POS client available. Check your configuration.");
+        }
+    }
     
     // 用于异步任务的线程池
     private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(5);
@@ -102,16 +154,20 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             CurrencyUtils.normalizeAmount(paymentRequest.getTipAmount()) : null;
         
         // 构建POS支付请求
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("tenant_id", order.getTenantId().toString());
+        
         POSPaymentRequest posRequest = POSPaymentRequest.builder()
             .orderId(orderId.toString())
             .terminalId(terminal.getTerminalId())
             .amount(BigDecimal.valueOf(normalizedTotalAmount))
-            .currency("USD")
+            .currency(defaultCurrency)  // 使用配置的货币
             .paymentMethod(paymentRequest.getPaymentMethod())
             .description("Order #" + order.getOrderNumber())
             .tipAmount(normalizedTipAmount)
             .customerEmail(paymentRequest.getCustomerEmail())
             .customerPhone(paymentRequest.getCustomerPhone())
+            .metadata(metadata)
             .build();
             
         // 创建POS交易记录
@@ -235,6 +291,11 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             updateAppointmentStatusAfterPayment(order.getAppointmentId(), "COMPLETED");
         }
         
+        // 更新客户累计消费和积分
+        if (order.getCustomerId() != null && order.getSubtotal() != null) {
+            updateCustomerAfterPayment(order.getCustomerId(), order.getSubtotal());
+        }
+        
         return PaymentResponseDTO.builder()
             .orderId(orderId.toString())
             .status("success")
@@ -325,6 +386,11 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                     if (order.getAppointmentId() != null) {
                         updateAppointmentStatusAfterPayment(order.getAppointmentId(), "COMPLETED");
                     }
+                    
+                    // 更新客户累计消费和积分
+                    if (order.getCustomerId() != null && order.getSubtotal() != null) {
+                        updateCustomerAfterPayment(order.getCustomerId(), order.getSubtotal());
+                    }
                 } else if (status.isFinal()) {
                     log.info("Payment failed for order {}, updating to failed", order.getId());
                     order.setPaymentStatus("failed");
@@ -398,8 +464,9 @@ public class POSPaymentServiceImpl implements POSPaymentService {
     
     @Override
     @Transactional
-    public boolean initiateRefund(Long orderId, Double amount, String reason) {
-        log.info("Initiating refund for order: {}, amount: {}", orderId, amount);
+    public boolean initiateRefund(Long orderId, Double amount, String stripeReason, String displayText) {
+        log.info("Initiating refund for order: {}, amount: {}, stripeReason: {}, displayText: {}", 
+                 orderId, amount, stripeReason, displayText);
         
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
@@ -412,26 +479,52 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             throw new RuntimeException("Order is not in paid status: " + order.getPaymentStatus());
         }
         
-        // 获取原始交易
-        POSTransaction originalTransaction = null;
-        if (order.getTransactionId() != null) {
-            originalTransaction = posTransactionMapper.selectByTransactionId(order.getTransactionId());
-        }
+        // 标准化退款金额，处理前端浮点数精度问题
+        Double normalizedRefundAmount = CurrencyUtils.normalizeAmount(amount);
         
-        if (originalTransaction == null) {
-            log.error("Original transaction not found for order: {}, transactionId: {}", orderId, order.getTransactionId());
-            throw new RuntimeException("Original transaction not found for order: " + orderId);
+        // 检查退款金额是否超过原始金额
+        if (normalizedRefundAmount > order.getTotalAmount()) {
+            throw new RuntimeException("Refund amount cannot exceed original payment amount");
         }
         
         try {
-            // 标准化退款金额，处理前端浮点数精度问题
-            Double normalizedRefundAmount = CurrencyUtils.normalizeAmount(amount);
+            // 处理现金退款（现金支付没有transactionId）
+            if ("cash".equalsIgnoreCase(order.getPaymentMethod())) {
+                log.info("Processing cash refund for order: {}", orderId);
+                
+                // 更新订单退款信息，存储用户友好的显示文本
+                order.setRefundAmount(normalizedRefundAmount);
+                order.setRefundReason(displayText);
+                order.setPaymentStatus("refunded");
+                order.setUpdatedAt(LocalDateTime.now());
+                orderMapper.updateById(order);
+                
+                // 退款成功后，扣除客户的累计消费金额和积分
+                if (order.getCustomerId() != null) {
+                    updateCustomerAfterRefund(order.getCustomerId(), normalizedRefundAmount);
+                }
+                
+                log.info("Cash refund completed for order: {}", orderId);
+                return true;
+            }
+            
+            // 处理电子支付退款（信用卡/借记卡）
+            // 获取原始交易
+            POSTransaction originalTransaction = null;
+            if (order.getTransactionId() != null) {
+                originalTransaction = posTransactionMapper.selectByTransactionId(order.getTransactionId());
+            }
+            
+            if (originalTransaction == null) {
+                log.error("Original transaction not found for order: {}, transactionId: {}", orderId, order.getTransactionId());
+                throw new RuntimeException("Original transaction not found for order: " + orderId);
+            }
             
             POSRefundRequest refundRequest = POSRefundRequest.builder()
                 .originalTransactionId(order.getTransactionId())
                 .orderId(orderId.toString())
                 .refundAmount(BigDecimal.valueOf(normalizedRefundAmount))
-                .reason(reason)
+                .reason(stripeReason)  // 使用Stripe要求的值
                 .terminalId(order.getPosTerminalId())
                 .build();
                 
@@ -459,12 +552,17 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 refundTransaction.setUpdatedAt(now);
                 posTransactionMapper.insert(refundTransaction);
                 
-                // 更新订单退款信息
+                // 更新订单退款信息，存储用户友好的显示文本
                 order.setRefundAmount(normalizedRefundAmount);
-                order.setRefundReason(reason);
+                order.setRefundReason(displayText);
                 order.setPaymentStatus("refunded");
                 order.setUpdatedAt(LocalDateTime.now());
                 orderMapper.updateById(order);
+                
+                // 退款成功后，扣除客户的累计消费金额和积分
+                if (order.getCustomerId() != null) {
+                    updateCustomerAfterRefund(order.getCustomerId(), normalizedRefundAmount);
+                }
                 
                 return true;
             } else {
@@ -547,6 +645,112 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 log.warn("Payment polling timeout for transaction: {}", transactionId);
             }
         }, 0, TimeUnit.SECONDS);
+    }
+    
+    /**
+     * 支付成功后更新客户累计消费和积分
+     * @param customerId 客户ID
+     * @param subtotal 订单原始金额（不含税）
+     */
+    private void updateCustomerAfterPayment(Long customerId, Double subtotal) {
+        if (customerId == null || subtotal == null || subtotal <= 0) {
+            log.warn("Invalid customerId or subtotal for customer update: customerId={}, subtotal={}", 
+                customerId, subtotal);
+            return;
+        }
+        
+        try {
+            Customer customer = customerMapper.selectById(customerId);
+            if (customer == null) {
+                log.warn("Customer not found with ID: {}", customerId);
+                return;
+            }
+            
+            // 更新累计消费金额
+            BigDecimal currentTotalSpent = customer.getTotalSpent() != null ? 
+                customer.getTotalSpent() : BigDecimal.ZERO;
+            BigDecimal newTotalSpent = currentTotalSpent.add(BigDecimal.valueOf(subtotal));
+            customer.setTotalSpent(newTotalSpent);
+            
+            // 计算积分（10元=1积分）
+            int earnedPoints = (int)(subtotal / 10);
+            if (earnedPoints > 0) {
+                Integer currentPoints = customer.getPoints() != null ? customer.getPoints() : 0;
+                customer.setPoints(currentPoints + earnedPoints);
+                log.info("Customer {} earned {} points from purchase of ${}", 
+                    customerId, earnedPoints, subtotal);
+            }
+            
+            // 更新最后访问日期
+            customer.setLastVisitDate(LocalDateTime.now());
+            customer.setUpdatedAt(LocalDateTime.now());
+            
+            customerMapper.update(customer);
+            log.info("Successfully updated customer {} - totalSpent: ${}, points: {}", 
+                customerId, newTotalSpent, customer.getPoints());
+                
+        } catch (Exception e) {
+            log.error("Failed to update customer information after payment for customer ID: {}", 
+                customerId, e);
+            // 不抛出异常，避免影响支付流程
+        }
+    }
+    
+    /**
+     * 退款成功后扣除客户累计消费和积分
+     * @param customerId 客户ID
+     * @param refundAmount 退款金额
+     */
+    private void updateCustomerAfterRefund(Long customerId, Double refundAmount) {
+        if (customerId == null || refundAmount == null || refundAmount <= 0) {
+            log.warn("Invalid customerId or refundAmount for customer refund update: customerId={}, refundAmount={}", 
+                customerId, refundAmount);
+            return;
+        }
+        
+        try {
+            Customer customer = customerMapper.selectById(customerId);
+            if (customer == null) {
+                log.warn("Customer not found with ID: {}", customerId);
+                return;
+            }
+            
+            // 扣除累计消费金额
+            BigDecimal currentTotalSpent = customer.getTotalSpent() != null ? 
+                customer.getTotalSpent() : BigDecimal.ZERO;
+            BigDecimal newTotalSpent = currentTotalSpent.subtract(BigDecimal.valueOf(refundAmount));
+            // 确保不会变成负数
+            if (newTotalSpent.compareTo(BigDecimal.ZERO) < 0) {
+                newTotalSpent = BigDecimal.ZERO;
+            }
+            customer.setTotalSpent(newTotalSpent);
+            
+            // 扣除积分（10元=1积分）
+            int deductPoints = (int)(refundAmount / 10);
+            if (deductPoints > 0) {
+                Integer currentPoints = customer.getPoints() != null ? customer.getPoints() : 0;
+                int newPoints = currentPoints - deductPoints;
+                // 确保积分不会变成负数
+                if (newPoints < 0) {
+                    newPoints = 0;
+                }
+                customer.setPoints(newPoints);
+                log.info("Customer {} deducted {} points due to refund of ${}", 
+                    customerId, deductPoints, refundAmount);
+            }
+            
+            // 更新修改时间
+            customer.setUpdatedAt(LocalDateTime.now());
+            
+            customerMapper.update(customer);
+            log.info("Successfully updated customer {} after refund - totalSpent: ${}, points: {}", 
+                customerId, newTotalSpent, customer.getPoints());
+                
+        } catch (Exception e) {
+            log.error("Failed to update customer information after refund for customer ID: {}", 
+                customerId, e);
+            // 不抛出异常，避免影响退款流程
+        }
     }
     
     /**

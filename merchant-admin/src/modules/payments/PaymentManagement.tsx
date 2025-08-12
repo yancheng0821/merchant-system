@@ -44,7 +44,11 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const PaymentManagement: React.FC = () => {
+interface PaymentManagementProps {
+  onNavigate?: (item: string) => void;
+}
+
+const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
@@ -65,11 +69,16 @@ const PaymentManagement: React.FC = () => {
         const { api } = await import('../../services/api');
         const data = await api.getOrderStats(user.tenantId);
         
+        // 计算平均订单金额时，只考虑已支付的订单
+        // 如果后端返回了paidRevenue和paidOrders，使用它们；否则使用总数据
+        const paidRevenue = data.paidRevenue || data.todayRevenue || 0;
+        const paidOrders = data.paidOrders || data.todayOrders || 0;
+        
         setStats({
           todayRevenue: data.todayRevenue || 0,
           todayOrders: data.todayOrders || 0,
           pendingPayments: data.pendingOrders || 0,
-          avgOrderValue: data.todayOrders > 0 ? data.todayRevenue / data.todayOrders : 0,
+          avgOrderValue: paidOrders > 0 ? paidRevenue / paidOrders : 0,
         });
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -321,7 +330,7 @@ const PaymentManagement: React.FC = () => {
         </Box>
 
         <TabPanel value={tabValue} index={0}>
-          <PaymentProcess />
+          <PaymentProcess onNavigate={onNavigate} />
         </TabPanel>
         <TabPanel value={tabValue} index={1}>
           <OrderHistory />

@@ -757,6 +757,188 @@ CREATE TABLE IF NOT EXISTS business_notifications (
     INDEX idx_business_id (business_id),
     INDEX idx_deleted (deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务通知表';
+
+
+
+-- Stripe Connect 多租户支付表
+-- 用于存储租户的Stripe Connect账户信息
+
+CREATE TABLE IF NOT EXISTS stripe_accounts (
+                                               id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+                                               tenant_id BIGINT NOT NULL COMMENT '租户ID',
+                                               stripe_account_id VARCHAR(255) NOT NULL COMMENT 'Stripe Connect账户ID (acct_xxx)',
+                                               stripe_user_id VARCHAR(255) COMMENT 'Stripe用户ID',
+                                               account_type VARCHAR(50) DEFAULT 'express' COMMENT '账户类型: express, standard, custom',
+
+    -- 账户状态
+                                               onboarding_completed BOOLEAN DEFAULT FALSE COMMENT '是否完成入驻流程',
+                                               charges_enabled BOOLEAN DEFAULT FALSE COMMENT '是否可以收款',
+                                               payouts_enabled BOOLEAN DEFAULT FALSE COMMENT '是否可以提现',
+                                               details_submitted BOOLEAN DEFAULT FALSE COMMENT '是否提交了详细信息',
+
+    -- 业务信息
+                                               business_name VARCHAR(255) COMMENT '商户名称',
+                                               business_type VARCHAR(100) COMMENT '业务类型',
+                                               country VARCHAR(10) DEFAULT 'CA' COMMENT '国家代码',
+                                               default_currency VARCHAR(10) DEFAULT 'CAD' COMMENT '默认货币',
+
+    -- Stripe Dashboard URLs
+                                               dashboard_url VARCHAR(500) COMMENT 'Stripe Dashboard URL',
+                                               onboarding_url VARCHAR(500) COMMENT '入驻流程URL',
+                                               return_url VARCHAR(500) COMMENT '返回URL',
+                                               refresh_url VARCHAR(500) COMMENT '刷新URL',
+
+    -- 元数据
+                                               metadata JSON COMMENT '其他元数据',
+
+    -- 审计字段
+                                               created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                               updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                               created_by BIGINT COMMENT '创建人ID',
+                                               updated_by BIGINT COMMENT '更新人ID',
+                                               deleted BOOLEAN DEFAULT FALSE COMMENT '逻辑删除标记',
+
+                                               UNIQUE KEY uk_tenant_id (tenant_id),
+                                               UNIQUE KEY uk_stripe_account_id (stripe_account_id),
+                                               INDEX idx_stripe_user_id (stripe_user_id),
+                                               INDEX idx_onboarding_status (onboarding_completed, charges_enabled),
+                                               FOREIGN KEY (tenant_id) REFERENCES merchant_auth.tenants(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe Connect账户表';
+
+-- Stripe Terminal读卡器表
+CREATE TABLE IF NOT EXISTS stripe_terminals (
+                                                id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+                                                tenant_id BIGINT NOT NULL COMMENT '租户ID',
+                                                stripe_account_id VARCHAR(255) NOT NULL COMMENT 'Stripe Connect账户ID',
+                                                terminal_id VARCHAR(255) NOT NULL COMMENT 'Stripe Terminal ID (tmr_xxx)',
+
+    -- 终端信息
+                                                label VARCHAR(255) COMMENT '终端标签/名称',
+                                                device_type VARCHAR(50) COMMENT '设备类型: verifone_P400, bbpos_wisepos_e',
+                                                serial_number VARCHAR(255) COMMENT '序列号',
+                                                location_id VARCHAR(255) COMMENT 'Stripe Location ID',
+
+    -- 状态
+                                                status VARCHAR(50) DEFAULT 'offline' COMMENT '状态: online, offline',
+                                                last_seen_at DATETIME COMMENT '最后在线时间',
+                                                ip_address VARCHAR(50) COMMENT 'IP地址',
+
+    -- 配置
+                                                config JSON COMMENT '终端配置',
+
+    -- 审计字段
+                                                created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                                deleted BOOLEAN DEFAULT FALSE COMMENT '逻辑删除标记',
+
+                                                UNIQUE KEY uk_terminal_id (terminal_id),
+                                                INDEX idx_tenant_terminal (tenant_id, status),
+                                                INDEX idx_stripe_account (stripe_account_id),
+                                                FOREIGN KEY (tenant_id) REFERENCES merchant_auth.tenants(id),
+                                                FOREIGN KEY (stripe_account_id) REFERENCES stripe_accounts(stripe_account_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe Terminal设备表';
+
+-- Stripe支付意图表
+CREATE TABLE IF NOT EXISTS stripe_payment_intents (
+                                                      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+                                                      tenant_id BIGINT NOT NULL COMMENT '租户ID',
+                                                      order_id BIGINT NOT NULL COMMENT '订单ID',
+                                                      stripe_account_id VARCHAR(255) NOT NULL COMMENT 'Stripe Connect账户ID',
+
+    -- 支付意图信息
+                                                      payment_intent_id VARCHAR(255) NOT NULL COMMENT 'Stripe Payment Intent ID (pi_xxx)',
+                                                      client_secret VARCHAR(500) COMMENT '客户端密钥',
+                                                      amount BIGINT NOT NULL COMMENT '金额（分）',
+                                                      currency VARCHAR(10) DEFAULT 'CAD' COMMENT '货币',
+
+    -- 状态
+                                                      status VARCHAR(50) COMMENT '状态: requires_payment_method, succeeded, canceled等',
+                                                      payment_method_id VARCHAR(255) COMMENT '支付方式ID',
+                                                      payment_method_type VARCHAR(50) COMMENT '支付方式类型: card_present, card等',
+
+    -- 费用分配
+                                                      application_fee_amount BIGINT COMMENT '平台费用（分）',
+                                                      transfer_data JSON COMMENT '转账数据',
+
+    -- 元数据
+                                                      metadata JSON COMMENT '元数据',
+                                                      last_error JSON COMMENT '最后错误信息',
+
+    -- 时间戳
+                                                      created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                                      confirmed_at DATETIME COMMENT '确认时间',
+                                                      canceled_at DATETIME COMMENT '取消时间',
+
+                                                      UNIQUE KEY uk_payment_intent_id (payment_intent_id),
+                                                      INDEX idx_tenant_order (tenant_id, order_id),
+                                                      INDEX idx_stripe_account (stripe_account_id),
+                                                      INDEX idx_status (status),
+                                                      FOREIGN KEY (tenant_id) REFERENCES merchant_auth.tenants(id),
+                                                      FOREIGN KEY (order_id) REFERENCES orders(id),
+                                                      FOREIGN KEY (stripe_account_id) REFERENCES stripe_accounts(stripe_account_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe支付意图表';
+
+-- Stripe Webhook事件表
+CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+                                                     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+                                                     tenant_id BIGINT COMMENT '租户ID（通过account字段匹配）',
+
+    -- 事件信息
+                                                     event_id VARCHAR(255) NOT NULL COMMENT 'Stripe Event ID (evt_xxx)',
+                                                     event_type VARCHAR(100) NOT NULL COMMENT '事件类型',
+                                                     stripe_account_id VARCHAR(255) COMMENT 'Stripe Connect账户ID',
+
+    -- 事件数据
+                                                     data JSON NOT NULL COMMENT '事件数据',
+                                                     previous_attributes JSON COMMENT '变更前的属性',
+
+    -- 处理状态
+                                                     status VARCHAR(50) DEFAULT 'pending' COMMENT '处理状态: pending, processing, completed, failed',
+                                                     processed_at DATETIME COMMENT '处理时间',
+                                                     error_message TEXT COMMENT '错误信息',
+                                                     retry_count INT DEFAULT 0 COMMENT '重试次数',
+
+    -- 时间戳
+                                                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+
+                                                     UNIQUE KEY uk_event_id (event_id),
+                                                     INDEX idx_tenant_status (tenant_id, status),
+                                                     INDEX idx_event_type (event_type),
+                                                     INDEX idx_stripe_account (stripe_account_id),
+                                                     INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe Webhook事件表';
+
+-- Stripe退款表
+CREATE TABLE IF NOT EXISTS stripe_refunds (
+                                              id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+                                              tenant_id BIGINT NOT NULL COMMENT '租户ID',
+                                              order_id BIGINT NOT NULL COMMENT '订单ID',
+                                              payment_intent_id VARCHAR(255) NOT NULL COMMENT '原支付意图ID',
+
+    -- 退款信息
+                                              refund_id VARCHAR(255) NOT NULL COMMENT 'Stripe Refund ID (re_xxx)',
+                                              amount BIGINT NOT NULL COMMENT '退款金额（分）',
+                                              currency VARCHAR(10) DEFAULT 'CAD' COMMENT '货币',
+                                              reason VARCHAR(100) COMMENT '退款原因: duplicate, fraudulent, requested_by_customer',
+
+    -- 状态
+                                              status VARCHAR(50) COMMENT '状态: pending, succeeded, failed, canceled',
+                                              failure_reason VARCHAR(255) COMMENT '失败原因',
+
+    -- 元数据
+                                              metadata JSON COMMENT '元数据',
+
+    -- 审计字段
+                                              created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                              created_by BIGINT COMMENT '创建人ID',
+
+                                              UNIQUE KEY uk_refund_id (refund_id),
+                                              INDEX idx_tenant_order (tenant_id, order_id),
+                                              INDEX idx_payment_intent (payment_intent_id),
+                                              INDEX idx_status (status),
+                                              FOREIGN KEY (tenant_id) REFERENCES merchant_auth.tenants(id),
+                                              FOREIGN KEY (order_id) REFERENCES orders(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe退款表';
 =====================================================
 -- 5. 数据分析数据库 (merchant_analytics)
 -- =====================================================

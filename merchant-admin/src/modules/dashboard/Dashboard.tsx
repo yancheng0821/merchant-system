@@ -1566,21 +1566,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 />
                               )}
                             </Box>
-                            <Box display="flex" alignItems="center" gap={0.5}>
-                              <Typography variant="caption">{statusConfig.icon}</Typography>
-                              <Typography 
-                                variant="caption" 
-                                sx={{ 
-                                  color: statusConfig.color,
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {statusConfig.label}
-                              </Typography>
-                              {resource.type === 'room' && resource.capacity && (
-                                <Typography variant="caption" color="text.secondary">
-                                  • {t('dashboard.capacity')}: {resource.capacity}
+                            <Box>
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <Typography variant="caption">{statusConfig.icon}</Typography>
+                                <Typography 
+                                  variant="caption" 
+                                  sx={{ 
+                                    color: statusConfig.color,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {statusConfig.label}
                                 </Typography>
+                              </Box>
+                              {resource.type === 'room' && resource.capacity && (
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {t('dashboard.capacity')}: {resource.capacity}
+                                  </Typography>
+                                </Box>
                               )}
                             </Box>
                           </Box>
