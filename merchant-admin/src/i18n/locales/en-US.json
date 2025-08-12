@@ -687,7 +687,8 @@
     "stripeFeature1": "Low fees",
     "stripeFeature2": "Fast deposits",
     "stripeFeature3": "Secure & reliable",
-    "goToSetupNow": "Go to Setup Now"
+    "goToSetupNow": "Go to Setup Now",
+    "transactionFailed": "Transaction Failed"
   },
   "orders": {
     "searchPlaceholder": "Search by order number, customer name, or staff...",

@@ -941,7 +941,8 @@
     "stripeFeature1": "低手续费",
     "stripeFeature2": "快速到账",
     "stripeFeature3": "安全可靠",
-    "goToSetupNow": "立即前往设置"
+    "goToSetupNow": "立即前往设置",
+    "transactionFailed": "交易失败"
   },
   "orders": {
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",

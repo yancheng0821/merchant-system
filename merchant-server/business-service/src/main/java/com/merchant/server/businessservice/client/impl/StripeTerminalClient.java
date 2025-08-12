@@ -198,7 +198,36 @@ public class StripeTerminalClient extends AbstractPOSClient {
                     .build();
             }
             
-            return mapStripeStatusToPOSStatus(paymentIntent.getStatus());
+            // 检查是否有支付错误（被拒绝的支付）
+            if (paymentIntent.getLastPaymentError() != null) {
+                log.info("PaymentIntent {} has payment error: {}", 
+                    transactionId, paymentIntent.getLastPaymentError().getMessage());
+                
+                // 如果有支付错误，返回failed状态
+                return POSTransactionStatus.builder()
+                    .transactionId(transactionId)
+                    .status("failed")
+                    .errorMessage(paymentIntent.getLastPaymentError().getMessage())
+                    .errorCode(paymentIntent.getLastPaymentError().getCode())
+                    .build();
+            }
+            
+            // 没有错误时，正常映射状态
+            POSTransactionStatus status = mapStripeStatusToPOSStatus(paymentIntent.getStatus());
+            status.setTransactionId(transactionId);
+            
+            // 如果状态是requires_payment_method但之前有支付方法历史，可能是被拒绝了
+            // 注意：Stripe Java SDK中PaymentIntent的charges属性需要通过展开参数获取
+            // 这里简化处理，直接检查是否有之前的支付方法
+            if ("requires_payment_method".equals(paymentIntent.getStatus()) && 
+                paymentIntent.getPaymentMethod() != null) {
+                // 如果状态是requires_payment_method但有payment_method，通常表示之前的支付失败了
+                log.info("PaymentIntent {} requires new payment method after failed attempt", transactionId);
+                status.setStatus("failed");
+                status.setErrorMessage("Payment declined, please try another payment method");
+            }
+            
+            return status;
         } catch (Exception e) {
             log.error("Failed to query payment status", e);
             return POSTransactionStatus.builder()
@@ -504,9 +533,14 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 mappedStatus = "approved";
                 break;
             case "canceled":
+            case "cancelled":  // Stripe可能返回两种拼写
                 mappedStatus = "cancelled";
                 break;
+            case "requires_capture":  // 需要捕获的支付
+                mappedStatus = "processing";
+                break;
             default:
+                log.warn("Unknown Stripe payment status: {}, mapping to failed", stripeStatus);
                 mappedStatus = "failed";
                 break;
         }
