@@ -20,6 +20,9 @@ spec:
         image: 168787218791.dkr.ecr.ca-central-1.amazonaws.com/merchant-service:v1.2.0
         ports:
         - containerPort: 8082
+        env:
+        - name: TZ
+          value: America/Vancouver
         envFrom:
         - configMapRef:
             name: merchant-config

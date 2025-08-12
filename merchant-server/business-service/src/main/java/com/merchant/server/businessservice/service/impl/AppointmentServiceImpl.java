@@ -1,7 +1,10 @@
 package com.merchant.server.businessservice.service.impl;
 
 import com.merchant.server.businessservice.entity.Appointment;
+import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
+import com.merchant.server.businessservice.mapper.CustomerMapper;
+import com.merchant.server.businessservice.mapper.ServiceMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
 import com.merchant.server.businessservice.service.AppointmentNotificationService;
 import com.merchant.server.businessservice.service.ResourceService;
@@ -27,6 +30,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentMapper appointmentMapper;
     private final AppointmentNotificationService notificationService;
     private final ResourceService resourceService;
+    private final CustomerMapper customerMapper;
+    private final ServiceMapper serviceMapper;
 
     @Override
     public List<Appointment> getAllAppointmentsByTenantId(Long tenantId) {
@@ -330,5 +335,25 @@ public class AppointmentServiceImpl implements AppointmentService {
     public Appointment getAppointmentById(Long id) {
         log.info("Getting appointment by id: {}", id);
         return appointmentMapper.findById(id);
+    }
+    
+    @Override
+    public List<Appointment> getUpcomingAppointments(String date, String time) {
+        log.info("Getting upcoming appointments for date: {} and time: {}", date, time);
+        // 获取指定日期和时间的预约
+        return appointmentMapper.findUpcomingAppointments(date, time);
+    }
+    
+    @Override
+    public Customer getCustomerById(Long customerId) {
+        log.info("Getting customer by id: {}", customerId);
+        return customerMapper.selectById(customerId);
+    }
+    
+    @Override
+    public String getServiceName(Long serviceId) {
+        log.info("Getting service name for id: {}", serviceId);
+        com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceId);
+        return service != null ? service.getName() : "Unknown Service";
     }
 }

@@ -47,8 +47,14 @@ const SmartTimeSelector: React.FC<SmartTimeSelectorProps> = ({
     const timeSlots = useMemo(() => {
         const slots = [];
         const now = new Date();
-        const today = new Date().toISOString().split('T')[0];
+        // 获取本地日期，而不是UTC日期
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         const isToday = selectedDate === today;
+        
+        
         
         for (let hour = 6; hour <= 23; hour++) {
             for (let minute = 0; minute < 60; minute += 30) {

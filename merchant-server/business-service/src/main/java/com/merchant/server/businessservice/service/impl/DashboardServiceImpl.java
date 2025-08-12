@@ -135,11 +135,13 @@ public class DashboardServiceImpl implements DashboardService {
             // 获取真实的服务分类统计
             List<Map<String, Object>> categoryStats = serviceMapper.getServiceCategoryStats(tenantId, startDate.toString(), endDate.toString());
             
-            // 计算总数用于百分比计算
-            int totalCount = categoryStats.stream()
-                .mapToInt(stat -> {
-                    Object count = stat.get("order_count");
-                    return count instanceof Number ? ((Number) count).intValue() : 0;
+            log.debug("Category stats for tenant {}: {}", tenantId, categoryStats);
+            
+            // 使用revenue作为主要指标而不是order_count
+            double totalRevenue = categoryStats.stream()
+                .mapToDouble(stat -> {
+                    Object revenue = stat.get("total_revenue");
+                    return revenue instanceof Number ? ((Number) revenue).doubleValue() : 0.0;
                 })
                 .sum();
             
@@ -149,16 +151,34 @@ public class DashboardServiceImpl implements DashboardService {
                 String categoryName = (String) stat.get("category_name");
                 category.put("name", categoryName != null ? categoryName : "Uncategorized");
                 
+                double revenue = stat.get("total_revenue") instanceof Number ? 
+                    ((Number) stat.get("total_revenue")).doubleValue() : 0.0;
+                
                 int count = stat.get("order_count") instanceof Number ? 
                     ((Number) stat.get("order_count")).intValue() : 0;
                 
-                // 如果没有订单数据，显示分类但设置为0
-                double percentage = totalCount > 0 ? (double) count / totalCount * 100 : 
-                    (categoryStats.size() > 0 ? 100.0 / categoryStats.size() : 100.0);
-                category.put("value", Math.round(percentage * 10) / 10.0); // 保留一位小数
-                category.put("count", count);
+                // 基于收入计算百分比，如果没有收入则跳过该分类（除非所有分类都没有收入）
+                double percentage = 0.0;
+                if (totalRevenue > 0) {
+                    percentage = revenue / totalRevenue * 100;
+                } else if (count > 0) {
+                    // 如果没有收入但有订单，按订单数量分配
+                    int totalCount = categoryStats.stream()
+                        .mapToInt(s -> {
+                            Object c = s.get("order_count");
+                            return c instanceof Number ? ((Number) c).intValue() : 0;
+                        })
+                        .sum();
+                    percentage = totalCount > 0 ? (double) count / totalCount * 100 : 0;
+                }
                 
-                categoryData.add(category);
+                // 只添加有数据的分类
+                if (revenue > 0 || count > 0) {
+                    category.put("value", Math.round(percentage * 10) / 10.0); // 保留一位小数
+                    category.put("count", count);
+                    category.put("revenue", revenue);
+                    categoryData.add(category);
+                }
             }
             
             // 如果没有分类数据，添加默认分类
@@ -311,18 +331,27 @@ public class DashboardServiceImpl implements DashboardService {
     private Map<String, Object> getAppointmentStatistics(Long tenantId, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> stats = new HashMap<>();
         
-        // 获取真实的预约数据
+        // 获取今天的日期
+        LocalDate today = TimeZoneUtils.getCurrentVancouverDate();
+        LocalDate yesterday = today.minusDays(1);
+        
+        // 获取今天的预约数据
+        int todayAppointments = appointmentMapper.countAppointmentsByDate(tenantId, today.toString());
+        
+        // 获取昨天的预约数据
+        int yesterdayAppointments = appointmentMapper.countAppointmentsByDate(tenantId, yesterday.toString());
+        
+        // 计算今天vs昨天的增长率
+        double appointmentGrowth = yesterdayAppointments > 0 ? 
+            ((double) todayAppointments - yesterdayAppointments) / yesterdayAppointments * 100 : 
+            (todayAppointments > 0 ? 100.0 : 0.0);
+        
+        // 获取期间内的总预约数（用于其他统计）
         int totalAppointments = appointmentMapper.countAppointmentsByDateRange(tenantId, startDate.toString(), endDate.toString());
         
-        // 计算预约增长率
-        int prevAppointments = appointmentMapper.countAppointmentsByDateRange(tenantId,
-            startDate.minusDays(endDate.toEpochDay() - startDate.toEpochDay() + 1).toString(),
-            startDate.minusDays(1).toString());
-        
-        double appointmentGrowth = prevAppointments > 0 ? ((double) totalAppointments - prevAppointments) / prevAppointments * 100 : 0.0;
-        
-        stats.put("totalAppointments", totalAppointments);
-        stats.put("appointmentGrowth", Math.round(appointmentGrowth * 10) / 10.0);
+        stats.put("totalAppointments", todayAppointments); // 显示今天的预约数
+        stats.put("appointmentGrowth", Math.round(appointmentGrowth * 10) / 10.0); // 今天vs昨天的增长率
+        stats.put("periodTotalAppointments", totalAppointments); // 期间总数
         
         return stats;
     }

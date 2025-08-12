@@ -20,6 +20,9 @@ spec:
         image: nginx:alpine
         ports:
         - containerPort: 80
+        env:
+        - name: TZ
+          value: America/Vancouver
         volumeMounts:
         - name: shared-storage
           mountPath: /usr/share/nginx/html/files/uploads

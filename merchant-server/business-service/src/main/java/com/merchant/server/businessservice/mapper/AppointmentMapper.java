@@ -125,4 +125,9 @@ public interface AppointmentMapper {
      */
     int countAppointmentsByDate(@Param("tenantId") Long tenantId, @Param("date") String date);
     int countAppointmentsByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+    
+    /**
+     * 查询即将开始的预约（用于提醒）
+     */
+    List<Appointment> findUpcomingAppointments(@Param("date") String date, @Param("time") String time);
 }

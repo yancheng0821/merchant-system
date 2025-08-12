@@ -98,6 +98,51 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 startDate: staff.startDate || '',
                 avatar: staff.avatar || '',
             });
+            
+            // 编辑员工时，获取其可用性数据
+            const fetchAvailability = async () => {
+                try {
+                    const { resourceApi } = await import('../../../services/api');
+                    const availabilityData = await resourceApi.getResourceAvailability(staff.id);
+                    
+                    // 初始化所有天的默认值
+                    const availabilityMap: Record<number, { isAvailable: boolean; startTime: string; endTime: string }> = {};
+                    for (let i = 1; i <= 7; i++) {
+                        availabilityMap[i] = {
+                            isAvailable: false,
+                            startTime: '09:00',
+                            endTime: '22:00'
+                        };
+                    }
+                    
+                    // 用实际数据覆盖默认值
+                    availabilityData.forEach(item => {
+                        availabilityMap[item.dayOfWeek] = {
+                            isAvailable: item.isAvailable,
+                            startTime: item.startTime,
+                            endTime: item.endTime
+                        };
+                    });
+                    
+                    setAvailabilities(availabilityMap);
+                } catch (err) {
+                    console.error('获取员工可用性失败:', err);
+                    // 如果获取失败，使用默认值
+                    const defaultAvailabilities: Record<number, { isAvailable: boolean; startTime: string; endTime: string }> = {};
+                    for (let i = 1; i <= 7; i++) {
+                        defaultAvailabilities[i] = {
+                            isAvailable: i <= 5, // 周一到周五默认可用
+                            startTime: '09:00',
+                            endTime: '22:00'
+                        };
+                    }
+                    setAvailabilities(defaultAvailabilities);
+                }
+            };
+            
+            if (open && staff.id) {
+                fetchAvailability();
+            }
         } else {
             setFormData({
                 name: '',
@@ -229,6 +274,18 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     type: 'STAFF',
                 };
                 await onSave(staffData);
+                
+                // 更新可用性数据
+                const { resourceApi } = await import('../../../services/api');
+                const availabilityUpdates = Object.entries(availabilities).map(([dayOfWeek, availability]) => ({
+                    resourceId: staff.id,
+                    dayOfWeek: parseInt(dayOfWeek),
+                    startTime: availability.startTime,
+                    endTime: availability.endTime,
+                    isAvailable: availability.isAvailable
+                }));
+                
+                await resourceApi.setResourceAvailability(staff.id, availabilityUpdates);
             }
             onClose();
         } catch (err: any) {

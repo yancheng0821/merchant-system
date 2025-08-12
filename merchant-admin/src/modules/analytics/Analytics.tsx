@@ -31,10 +31,12 @@ import {
   People as PeopleIcon,
   ShoppingCart as OrdersIcon,
   Business as AiIcon,
+  CalendarMonth as CalendarIcon,
+  AccessTime as TimeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { analyticsApi } from '../../services/api';
+import { analyticsApi, appointmentApi } from '../../services/api';
 import {
   AreaChart,
   Area,
@@ -78,9 +80,15 @@ const Analytics: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [heatmapData, setHeatmapData] = useState<any>({});
+  const [heatmapView, setHeatmapView] = useState<'week' | 'month'>('week');
 
   const handleTimeRangeChange = (event: any) => {
     setTimeRange(event.target.value);
+  };
+
+  const handleHeatmapViewChange = (event: any) => {
+    setHeatmapView(event.target.value);
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -95,8 +103,33 @@ const Analytics: React.FC = () => {
     setError(null);
 
     try {
-      const data = await analyticsApi.getOverview(user.tenantId, timeRange);
+      const [data, appointments] = await Promise.all([
+        analyticsApi.getOverview(user.tenantId, timeRange),
+        appointmentApi.getAllAppointments(user.tenantId).catch(() => [])
+      ]);
+      
       setAnalyticsData(data);
+      
+      // Process appointments for heatmap
+      const weekHeatmap: any = {};
+      const monthHeatmap: any = {};
+      
+      appointments.forEach((apt: any) => {
+        const date = new Date(apt.appointmentDate);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const dayOfMonth = date.getDate();
+        const hour = parseInt(apt.appointmentTime.split(':')[0]);
+        
+        // Week view data
+        const weekKey = `${dayOfWeek}-${hour}`;
+        weekHeatmap[weekKey] = (weekHeatmap[weekKey] || 0) + 1;
+        
+        // Month view data
+        const monthKey = `${dayOfMonth}`;
+        monthHeatmap[monthKey] = (monthHeatmap[monthKey] || 0) + 1;
+      });
+      
+      setHeatmapData({ week: weekHeatmap, month: monthHeatmap });
     } catch (err: any) {
       console.error('Failed to fetch analytics data:', err);
       setError(err.message || 'Failed to load analytics data');
@@ -462,6 +495,7 @@ const Analytics: React.FC = () => {
             <Tab icon={<TrendingUpIcon />} iconPosition="start" label={t('analytics.tabs.revenueTrend')} />
             <Tab icon={<AssessmentIcon />} iconPosition="start" label={t('analytics.tabs.serviceAnalysis')} />
             <Tab icon={<PeopleIcon />} iconPosition="start" label={t('analytics.tabs.staffPerformance')} />
+            <Tab icon={<CalendarIcon />} iconPosition="start" label={t('analytics.tabs.appointmentHeatmap')} />
             <Tab icon={<AiIcon />} iconPosition="start" label={t('analytics.tabs.aiBusinessInsights')} />
           </Tabs>
         </Box>
@@ -718,8 +752,282 @@ const Analytics: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        {/* AI 业务洞察 */}
+        {/* 预约热力图 */}
         <TabPanel value={selectedTab} index={3}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Card
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                        {t('analytics.appointmentHeatmap.title')}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t('analytics.appointmentHeatmap.subtitle')}
+                      </Typography>
+                    </Box>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                      <Select
+                        value={heatmapView}
+                        onChange={handleHeatmapViewChange}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        <MenuItem value="week">{t('analytics.appointmentHeatmap.weekly')}</MenuItem>
+                        <MenuItem value="month">{t('analytics.appointmentHeatmap.monthly')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+
+                  {/* 热力图主体 */}
+                  <Box sx={{ overflowX: 'auto' }}>
+                    {heatmapView === 'week' ? (
+                      // 周视图
+                      <Box sx={{ minWidth: 900, display: 'grid', gridTemplateColumns: 'auto repeat(7, 1fr)', gap: 1 }}>
+                        {/* 星期标题 */}
+                        <Box />
+                        {[
+                          t('staff.weekdays.monday'),
+                          t('staff.weekdays.tuesday'),
+                          t('staff.weekdays.wednesday'),
+                          t('staff.weekdays.thursday'),
+                          t('staff.weekdays.friday'),
+                          t('staff.weekdays.saturday'),
+                          t('staff.weekdays.sunday'),
+                        ].map((day, index) => (
+                          <Box key={index} sx={{ textAlign: 'center', py: 1 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                              {day}
+                            </Typography>
+                          </Box>
+                        ))}
+                      
+                      {/* 时段热力图 */}
+                      {Array.from({ length: 14 }, (_, hour) => hour + 8).map((hour) => (
+                        <React.Fragment key={hour}>
+                          <Box sx={{ pr: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                            <Typography variant="caption" color="text.secondary">
+                              {`${hour}:00`}
+                            </Typography>
+                          </Box>
+                          {Array.from({ length: 7 }, (_, day) => {
+                            // Monday = 1, Tuesday = 2, ... Sunday = 0
+                            // Reorder to match our display (Monday first)
+                            const dayIndex = day === 6 ? 0 : day + 1;
+                            const key = `${dayIndex}-${hour}`;
+                            const appointments = heatmapData.week?.[key] || 0;
+                            const maxAppointments = Math.max(...Object.values(heatmapData.week || {}).map((v: any) => Number(v) || 0), 15);
+                            const intensity = appointments / maxAppointments;
+                            const getColor = (intensity: number) => {
+                              if (intensity > 0.8) return '#DC2626';
+                              if (intensity > 0.6) return '#EA580C';
+                              if (intensity > 0.4) return '#F59E0B';
+                              if (intensity > 0.2) return '#84CC16';
+                              if (intensity > 0) return '#10B981';
+                              return '#E5E7EB';
+                            };
+                            
+                            return (
+                              <Box
+                                key={`${day}-${hour}`}
+                                sx={{
+                                  height: 40,
+                                  backgroundColor: getColor(intensity),
+                                  borderRadius: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: intensity > 0 ? 0.9 : 0.3,
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer',
+                                  position: 'relative',
+                                  '&:hover': {
+                                    opacity: 1,
+                                    transform: 'scale(1.05)',
+                                    zIndex: 1,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                  },
+                                }}
+                              >
+                                {appointments > 0 && (
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{ 
+                                      color: intensity > 0.4 ? 'white' : 'text.primary',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {appointments}
+                                  </Typography>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </React.Fragment>
+                      ))}
+                    </Box>
+                    ) : (
+                      // 月视图
+                      <Box>
+                        <Typography variant="h6" sx={{ mb: 3, textAlign: 'center' }}>
+                          {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
+                        </Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
+                          {/* 星期标题 */}
+                          {[
+                            t('staff.weekdays.sunday'),
+                            t('staff.weekdays.monday'),
+                            t('staff.weekdays.tuesday'),
+                            t('staff.weekdays.wednesday'),
+                            t('staff.weekdays.thursday'),
+                            t('staff.weekdays.friday'),
+                            t('staff.weekdays.saturday'),
+                          ].map((day, index) => (
+                            <Box key={index} sx={{ textAlign: 'center', py: 1 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                {day.substring(0, 2)}
+                              </Typography>
+                            </Box>
+                          ))}
+                          
+                          {/* 生成月份日历 */}
+                          {(() => {
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = now.getMonth();
+                            const firstDay = new Date(year, month, 1);
+                            const lastDay = new Date(year, month + 1, 0);
+                            const startPadding = firstDay.getDay();
+                            const daysInMonth = lastDay.getDate();
+                            
+                            const days = [];
+                            
+                            // 添加月初的空白天
+                            for (let i = 0; i < startPadding; i++) {
+                              days.push(
+                                <Box key={`empty-${i}`} sx={{ height: 60 }} />
+                              );
+                            }
+                            
+                            // 添加月份的每一天
+                            for (let day = 1; day <= daysInMonth; day++) {
+                              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                              // 使用真实的预约数据
+                              const appointments = heatmapData.month?.[day] || 0;
+                              const maxAppointments = Math.max(...Object.values(heatmapData.month || {}).map((v: any) => Number(v) || 0), 10);
+                              const intensity = maxAppointments > 0 ? appointments / maxAppointments : 0;
+                              
+                              const getColor = (intensity: number) => {
+                                if (intensity > 0.8) return '#DC2626';
+                                if (intensity > 0.6) return '#EA580C';
+                                if (intensity > 0.4) return '#F59E0B';
+                                if (intensity > 0.2) return '#84CC16';
+                                if (intensity > 0) return '#10B981';
+                                return '#F3F4F6';
+                              };
+                              
+                              days.push(
+                                <Box
+                                  key={day}
+                                  sx={{
+                                    height: 60,
+                                    backgroundColor: getColor(intensity),
+                                    borderRadius: 1,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    position: 'relative',
+                                    '&:hover': {
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                    },
+                                  }}
+                                >
+                                  <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                    {day}
+                                  </Typography>
+                                  {appointments > 0 && (
+                                    <Typography 
+                                      variant="caption" 
+                                      sx={{ 
+                                        fontSize: '0.65rem',
+                                        color: intensity > 0.4 ? 'white' : 'text.secondary'
+                                      }}
+                                    >
+                                      {appointments}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              );
+                            }
+                            
+                            return days;
+                          })()}
+                        </Box>
+                      </Box>
+                    )}
+                    
+                    {/* 图例和统计 */}
+                    <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                            {t('analytics.appointmentHeatmap.legend')}
+                          </Typography>
+                          <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Box sx={{ width: 20, height: 20, bgcolor: '#E5E7EB', borderRadius: 0.5 }} />
+                              <Typography variant="caption">{t('analytics.appointmentHeatmap.empty')}</Typography>
+                            </Box>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Box sx={{ width: 20, height: 20, bgcolor: '#10B981', borderRadius: 0.5 }} />
+                              <Typography variant="caption">{t('analytics.appointmentHeatmap.low')}</Typography>
+                            </Box>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Box sx={{ width: 20, height: 20, bgcolor: '#F59E0B', borderRadius: 0.5 }} />
+                              <Typography variant="caption">{t('analytics.appointmentHeatmap.medium')}</Typography>
+                            </Box>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Box sx={{ width: 20, height: 20, bgcolor: '#DC2626', borderRadius: 0.5 }} />
+                              <Typography variant="caption">{t('analytics.appointmentHeatmap.high')}</Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                            {t('analytics.appointmentHeatmap.insights')}
+                          </Typography>
+                          <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              • {t('analytics.appointmentHeatmap.peakTime')}: <strong>14:00-16:00</strong>
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              • {t('analytics.appointmentHeatmap.quietTime')}: <strong>8:00-10:00</strong>
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              • {t('analytics.appointmentHeatmap.busiestDay')}: <strong>{t('staff.weekdays.saturday')}</strong>
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* AI 业务洞察 */}
+        <TabPanel value={selectedTab} index={4}>
           <AiBusinessInsights />
         </TabPanel>
       </Card>

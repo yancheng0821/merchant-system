@@ -26,6 +26,8 @@ spec:
         - secretRef:
             name: merchant-secrets
         env:
+        - name: TZ
+          value: America/Vancouver
         - name: APP_UPLOAD_PATH
           valueFrom:
             configMapKeyRef:

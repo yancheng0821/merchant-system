@@ -1,21 +1,29 @@
 package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.entity.Appointment;
+import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.service.AppointmentService;
+import com.merchant.server.businessservice.service.BusinessNotificationService;
+import com.merchant.server.businessservice.service.CustomerService;
 import com.merchant.server.businessservice.dto.AppointmentCreateDTO;
+import com.merchant.server.businessservice.dto.CustomerDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/business/appointments")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final BusinessNotificationService notificationService;
+    private final CustomerService customerService;
 
     /**
      * 获取租户的所有预约记录
@@ -69,6 +77,27 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<Appointment> createAppointment(@RequestBody AppointmentCreateDTO appointmentDTO) {
         Appointment created = appointmentService.createAppointmentWithServices(appointmentDTO);
+        
+        // 创建业务通知
+        try {
+            CustomerDTO customerDTO = customerService.getCustomerById(created.getCustomerId());
+            // 转换CustomerDTO为Customer实体
+            Customer customer = new Customer();
+            customer.setId(customerDTO.getId());
+            customer.setFirstName(customerDTO.getFirstName());
+            customer.setLastName(customerDTO.getLastName());
+            customer.setPhone(customerDTO.getPhone());
+            customer.setEmail(customerDTO.getEmail());
+            
+            // 获取第一个服务的ID（预约可能包含多个服务）
+            Long serviceId = created.getAppointmentServices() != null && !created.getAppointmentServices().isEmpty() 
+                ? created.getAppointmentServices().get(0).getServiceId() : null;
+            String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
+            notificationService.createNewAppointmentNotification(created, customer, serviceName);
+        } catch (Exception e) {
+            log.error("Failed to create notification for appointment: {}", created.getId(), e);
+        }
+        
         return ResponseEntity.ok(created);
     }
 
@@ -81,6 +110,32 @@ public class AppointmentController {
             @RequestBody Map<String, String> statusUpdate) {
         String status = statusUpdate.get("status");
         Appointment updated = appointmentService.updateAppointmentStatus(id, status);
+        
+        // 根据状态变化创建相应的通知
+        try {
+            CustomerDTO customerDTO = customerService.getCustomerById(updated.getCustomerId());
+            // 转换CustomerDTO为Customer实体
+            Customer customer = new Customer();
+            customer.setId(customerDTO.getId());
+            customer.setFirstName(customerDTO.getFirstName());
+            customer.setLastName(customerDTO.getLastName());
+            customer.setPhone(customerDTO.getPhone());
+            customer.setEmail(customerDTO.getEmail());
+            
+            // 获取第一个服务的ID（预约可能包含多个服务）
+            Long serviceId = updated.getAppointmentServices() != null && !updated.getAppointmentServices().isEmpty() 
+                ? updated.getAppointmentServices().get(0).getServiceId() : null;
+            String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
+            
+            if ("CONFIRMED".equals(status)) {
+                notificationService.createAppointmentConfirmedNotification(updated, customer, serviceName);
+            } else if ("CANCELLED".equals(status)) {
+                notificationService.createAppointmentCancelledNotification(updated, customer, serviceName);
+            }
+        } catch (Exception e) {
+            log.error("Failed to create notification for appointment status update: {}", id, e);
+        }
+        
         return ResponseEntity.ok(updated);
     }
 

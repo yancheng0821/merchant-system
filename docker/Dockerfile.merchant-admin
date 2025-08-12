@@ -21,6 +21,17 @@ RUN npm run build
 # 生产阶段
 FROM nginx:alpine
 
+# Set timezone argument (can be overridden at build time)
+ARG TIMEZONE=America/Vancouver
+
+# Set timezone
+RUN apk add --no-cache tzdata \
+    && cp /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
+    && echo "${TIMEZONE}" > /etc/timezone \
+    && apk del tzdata
+
+ENV TZ=${TIMEZONE}
+
 # 复制构建结果
 COPY --from=build /app/build /usr/share/nginx/html
 

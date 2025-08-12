@@ -475,7 +475,7 @@ const MainApp: React.FC = () => {
           >
             <Toolbar />
             <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
-              {selectedItem === 'dashboard' && <Dashboard />}
+              {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
               {selectedItem === 'products' && <ServiceManagement />}
               {selectedItem === 'payments' && <PaymentManagement />}
               {selectedItem === 'customers' && <CustomerManagement />}

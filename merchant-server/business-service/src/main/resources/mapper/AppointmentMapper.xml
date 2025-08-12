@@ -284,5 +284,14 @@
         WHERE tenant_id = #{tenantId} 
         AND DATE(appointment_date) BETWEEN #{startDate} AND #{endDate}
     </select>
+    
+    <!-- 查询即将开始的预约 -->
+    <select id="findUpcomingAppointments" resultMap="AppointmentResultMap">
+        SELECT * FROM appointments
+        WHERE appointment_date = #{date}
+        AND appointment_time = #{time}
+        AND status IN ('PENDING', 'CONFIRMED')
+        AND deleted = 0
+    </select>
 
 </mapper>

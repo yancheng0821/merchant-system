@@ -94,6 +94,51 @@ const RoomDialog: React.FC<RoomDialogProps> = ({
                 status: room.status || 'ACTIVE',
                 icon: room.icon || '',
             });
+            
+            // 编辑房间时，获取其可用性数据
+            const fetchAvailability = async () => {
+                try {
+                    const { resourceApi } = await import('../../../services/api');
+                    const availabilityData = await resourceApi.getResourceAvailability(room.id);
+                    
+                    // 初始化所有天的默认值
+                    const availabilityMap: Record<number, { isAvailable: boolean; startTime: string; endTime: string }> = {};
+                    for (let i = 1; i <= 7; i++) {
+                        availabilityMap[i] = {
+                            isAvailable: false,
+                            startTime: '09:00',
+                            endTime: '22:00'
+                        };
+                    }
+                    
+                    // 用实际数据覆盖默认值
+                    availabilityData.forEach(item => {
+                        availabilityMap[item.dayOfWeek] = {
+                            isAvailable: item.isAvailable,
+                            startTime: item.startTime,
+                            endTime: item.endTime
+                        };
+                    });
+                    
+                    setAvailabilities(availabilityMap);
+                } catch (err) {
+                    console.error('获取房间可用性失败:', err);
+                    // 如果获取失败，使用默认值
+                    const defaultAvailabilities: Record<number, { isAvailable: boolean; startTime: string; endTime: string }> = {};
+                    for (let i = 1; i <= 7; i++) {
+                        defaultAvailabilities[i] = {
+                            isAvailable: true, // 房间默认全周可用
+                            startTime: '09:00',
+                            endTime: '22:00'
+                        };
+                    }
+                    setAvailabilities(defaultAvailabilities);
+                }
+            };
+            
+            if (open && room.id) {
+                fetchAvailability();
+            }
         } else {
             setFormData({
                 name: '',
@@ -190,6 +235,18 @@ const RoomDialog: React.FC<RoomDialogProps> = ({
                     type: 'ROOM',
                 };
                 await onSave(roomData);
+                
+                // 更新可用性数据
+                const { resourceApi } = await import('../../../services/api');
+                const availabilityUpdates = Object.entries(availabilities).map(([dayOfWeek, availability]) => ({
+                    resourceId: room.id,
+                    dayOfWeek: parseInt(dayOfWeek),
+                    startTime: availability.startTime,
+                    endTime: availability.endTime,
+                    isAvailable: availability.isAvailable
+                }));
+                
+                await resourceApi.setResourceAvailability(room.id, availabilityUpdates);
             }
             onClose();
         } catch (err: any) {

@@ -549,11 +549,9 @@ export const userApi = {
 
 // 错误处理工具
 export const handleApiError = (error: any): string => {
-  console.log('Handling API error:', error);
 
   // 检查是否有详细的验证错误
   if (error.responseData?.details) {
-    console.log('Validation errors:', error.responseData.details);
     const details = Object.entries(error.responseData.details)
       .map(([field, message]) => `${field}: ${message}`)
       .join(', ');
@@ -1503,25 +1501,26 @@ export const resourceApi = {
 
 // 员工管理API (保持向后兼容)
 export const staffApi = {
-  // 获取所有员工
+  // 获取所有员工 - 现在使用资源API
   getAllStaff: async (tenantId: number): Promise<Staff[]> => {
-    const response = await createRequest(`/api/business/staff?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/resources/tenant/${tenantId}/type/STAFF`, {
       method: 'GET',
     });
     return response;
   },
 
-  // 获取活跃员工
+  // 获取活跃员工 - 现在使用资源API，过滤出ACTIVE状态的
   getActiveStaff: async (tenantId: number): Promise<Staff[]> => {
-    const response = await createRequest(`/api/business/staff/active?tenantId=${tenantId}`, {
+    const response = await createRequest(`/api/business/resources/tenant/${tenantId}/type/STAFF`, {
       method: 'GET',
     });
-    return response;
+    // 过滤出活跃状态的员工
+    return response.filter((staff: any) => staff.status === 'ACTIVE');
   },
 
   // 根据ID获取员工
   getStaffById: async (id: number): Promise<Staff> => {
-    const response = await createRequest(`/api/business/staff/${id}`, {
+    const response = await createRequest(`/api/merchant/staff/${id}`, {
       method: 'GET',
     });
     return response;
@@ -1529,7 +1528,7 @@ export const staffApi = {
 
   // 创建员工
   createStaff: async (staff: Partial<Staff>): Promise<Staff> => {
-    const response = await createRequest('/api/business/staff', {
+    const response = await createRequest('/api/merchant/staff', {
       method: 'POST',
       body: JSON.stringify(staff),
     });
@@ -1538,7 +1537,7 @@ export const staffApi = {
 
   // 更新员工
   updateStaff: async (id: number, staff: Partial<Staff>): Promise<Staff> => {
-    const response = await createRequest(`/api/business/staff/${id}`, {
+    const response = await createRequest(`/api/merchant/staff/${id}`, {
       method: 'PUT',
       body: JSON.stringify(staff),
     });
@@ -1547,7 +1546,7 @@ export const staffApi = {
 
   // 删除员工
   deleteStaff: async (id: number): Promise<void> => {
-    await createRequest(`/api/business/staff/${id}`, {
+    await createRequest(`/api/merchant/staff/${id}`, {
       method: 'DELETE',
     });
   },
@@ -1689,8 +1688,8 @@ export const notificationApi = {
   },
 
   // 初始化默认模板
-  initDefaultTemplates: async (tenantId: number): Promise<void> => {
-    await createRequest(`/api/notification/templates/init-default?tenantId=${tenantId}`, {
+  initDefaultTemplates: async (tenantId: number, language: string = 'zh'): Promise<void> => {
+    await createRequest(`/api/notification/templates/init-default?tenantId=${tenantId}&language=${language}`, {
       method: 'POST',
     });
   },

@@ -40,7 +40,8 @@
       "Bash(mvn clean:*)",
       "Bash(docker run:*)",
       "Bash(./scripts/rapid-deploy.sh:*)",
-      "Bash(echo)"
+      "Bash(echo)",
+      "Bash(mvn:*)"
     ],
     "deny": []
   }

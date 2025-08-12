@@ -115,6 +115,11 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public void initDefaultTemplates(Long tenantId) {
+        initDefaultTemplates(tenantId, "zh");
+    }
+    
+    @Override
+    public void initDefaultTemplates(Long tenantId, String language) {
         // 检查是否已经存在默认模板
         List<NotificationTemplate> existingTemplates = templateMapper.findByTenantId(tenantId);
         if (!existingTemplates.isEmpty()) {
@@ -122,9 +127,20 @@ public class TemplateServiceImpl implements TemplateService {
             return;
         }
         
-        log.info("为租户 {} 初始化默认通知模板", tenantId);
+        log.info("为租户 {} 初始化默认通知模板，语言: {}", tenantId, language);
         
-        // 创建默认模板
+        // 根据语言选择模板内容
+        if ("en".equalsIgnoreCase(language) || "en-US".equalsIgnoreCase(language)) {
+            log.info("初始化英文模板");
+            initEnglishTemplates(tenantId);
+        } else {
+            log.info("初始化中文模板");
+            initChineseTemplates(tenantId);
+        }
+    }
+    
+    private void initChineseTemplates(Long tenantId) {
+        // 创建中文默认模板
         createDefaultTemplate(tenantId, "APPOINTMENT_CONFIRMED", "预约确认短信模板", NotificationTemplate.NotificationType.SMS,
             null, "【${businessName}】尊敬的${customerName}，您的预约已确认！预约时间：${appointmentDate} ${appointmentTime}，服务项目：${serviceName}，服务人员：${staffName}。如需取消或修改，请致电${businessPhone}。");
         
@@ -168,5 +184,36 @@ public class TemplateServiceImpl implements TemplateService {
         template.setUpdatedAt(LocalDateTime.now());
         
         templateMapper.insert(template);
+    }
+    
+    private void initEnglishTemplates(Long tenantId) {
+        // Create English templates
+        createDefaultTemplate(tenantId, "APPOINTMENT_CONFIRMED", "Appointment Confirmation SMS Template", NotificationTemplate.NotificationType.SMS,
+            null, "【${businessName}】Dear ${customerName}, your appointment is confirmed! Date: ${appointmentDate} ${appointmentTime}, Service: ${serviceName}, Staff: ${staffName}. To cancel or modify, please call ${businessPhone}.");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_CONFIRMED", "Appointment Confirmation Email Template", NotificationTemplate.NotificationType.EMAIL,
+            "Appointment Confirmation - ${businessName}", 
+            "<html><body><h2>Appointment Confirmation</h2><p>Dear ${customerName},</p><p>Your appointment has been successfully confirmed. Details below:</p><table border=\"1\" style=\"border-collapse: collapse; width: 100%;\"><tr><td><strong>Appointment Time</strong></td><td>${appointmentDate} ${appointmentTime}</td></tr><tr><td><strong>Service</strong></td><td>${serviceName}</td></tr><tr><td><strong>Staff</strong></td><td>${staffName}</td></tr><tr><td><strong>Duration</strong></td><td>${duration}</td></tr><tr><td><strong>Amount</strong></td><td>${totalAmount}</td></tr></table><p><strong>Business Information:</strong></p><p>Name: ${businessName}<br/>Address: ${businessAddress}<br/>Phone: ${businessPhone}</p><p>To cancel or modify your appointment, please contact us.</p><p>Thank you for your trust!</p></body></html>");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_CANCELLED", "Appointment Cancellation SMS Template", NotificationTemplate.NotificationType.SMS,
+            null, "【${businessName}】Dear ${customerName}, your appointment has been cancelled. Original time: ${appointmentDate} ${appointmentTime}, Service: ${serviceName}. For questions, call ${businessPhone}. We look forward to serving you again!");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_CANCELLED", "Appointment Cancellation Email Template", NotificationTemplate.NotificationType.EMAIL,
+            "Appointment Cancellation - ${businessName}",
+            "<html><body><h2>Appointment Cancellation Notice</h2><p>Dear ${customerName},</p><p>Your appointment has been cancelled. Details below:</p><table border=\"1\" style=\"border-collapse: collapse; width: 100%;\"><tr><td><strong>Original Time</strong></td><td>${appointmentDate} ${appointmentTime}</td></tr><tr><td><strong>Service</strong></td><td>${serviceName}</td></tr><tr><td><strong>Staff</strong></td><td>${staffName}</td></tr></table><p><strong>Business Information:</strong></p><p>Name: ${businessName}<br/>Address: ${businessAddress}<br/>Phone: ${businessPhone}</p><p>If you have any questions, please contact us. We look forward to serving you again!</p></body></html>");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_COMPLETED", "Appointment Completion SMS Template", NotificationTemplate.NotificationType.SMS,
+            null, "【${businessName}】Dear ${customerName}, your appointment is complete! Time: ${appointmentDate} ${appointmentTime}, Service: ${serviceName}, Staff: ${staffName}. Thank you for visiting, we look forward to serving you again!");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_COMPLETED", "Appointment Completion Email Template", NotificationTemplate.NotificationType.EMAIL,
+            "Service Completion - ${businessName}",
+            "<html><body><h2>Service Completion Notice</h2><p>Dear ${customerName},</p><p>Your service has been completed. Details below:</p><table border=\"1\" style=\"border-collapse: collapse; width: 100%;\"><tr><td><strong>Service Time</strong></td><td>${appointmentDate} ${appointmentTime}</td></tr><tr><td><strong>Service</strong></td><td>${serviceName}</td></tr><tr><td><strong>Staff</strong></td><td>${staffName}</td></tr><tr><td><strong>Duration</strong></td><td>${duration}</td></tr><tr><td><strong>Amount</strong></td><td>${totalAmount}</td></tr></table><p><strong>Business Information:</strong></p><p>Name: ${businessName}<br/>Address: ${businessAddress}<br/>Phone: ${businessPhone}</p><p>Thank you for choosing our service! We look forward to serving you again!</p></body></html>");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_REMINDER", "Appointment Reminder SMS Template", NotificationTemplate.NotificationType.SMS,
+            null, "【${businessName}】Reminder: ${customerName}, you have an upcoming appointment. Time: ${appointmentDate} ${appointmentTime}, Service: ${serviceName}, Staff: ${staffName}. Please arrive on time. To reschedule, call ${businessPhone}.");
+        
+        createDefaultTemplate(tenantId, "APPOINTMENT_REMINDER", "Appointment Reminder Email Template", NotificationTemplate.NotificationType.EMAIL,
+            "Appointment Reminder - ${businessName}",
+            "<html><body><h2>Appointment Reminder</h2><p>Dear ${customerName},</p><p>This is a reminder of your upcoming appointment:</p><table border=\"1\" style=\"border-collapse: collapse; width: 100%;\"><tr><td><strong>Appointment Time</strong></td><td>${appointmentDate} ${appointmentTime}</td></tr><tr><td><strong>Service</strong></td><td>${serviceName}</td></tr><tr><td><strong>Staff</strong></td><td>${staffName}</td></tr><tr><td><strong>Duration</strong></td><td>${duration}</td></tr></table><p><strong>Business Information:</strong></p><p>Name: ${businessName}<br/>Address: ${businessAddress}<br/>Phone: ${businessPhone}</p><p>Please arrive on time. To reschedule, please contact us in advance.</p><p>We look forward to serving you!</p></body></html>");
     }
 }

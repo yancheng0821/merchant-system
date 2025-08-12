@@ -14,6 +14,9 @@ import {
   alpha,
   CircularProgress,
   Backdrop,
+  Chip,
+  Button,
+  Avatar,
 } from '@mui/material';
 import {
   LineChart,
@@ -37,11 +40,26 @@ import {
   ShoppingCart as ShoppingCartIcon,
   AttachMoney as MoneyIcon,
   Visibility as VisibilityIcon,
+  Notifications as NotificationsIcon,
+  Schedule as ScheduleIcon,
+  Warning as WarningIcon,
+  CheckCircle as CheckCircleIcon,
+  PersonPin as PersonPinIcon,
+  Groups as GroupsIcon,
+  AddCircle as AddCircleIcon,
+  CalendarToday as CalendarTodayIcon,
+  Info as InfoIcon,
+  ListAlt as ListAltIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Refresh as RefreshIcon,
+  Room as RoomIcon,
 } from '@mui/icons-material';
+import IconButton from '@mui/material/IconButton';
 import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
-import { dashboardApi } from '../../services/api';
+import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, getFullImageUrl } from '../../services/api';
 
 // 时间范围类型
 type TimeRange = '7days' | '30days' | '6months' | '1year';
@@ -86,7 +104,11 @@ const GRADIENTS = [
   'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
 ];
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onNavigate?: (page: string) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { user } = useAuth();
@@ -96,6 +118,14 @@ const Dashboard: React.FC = () => {
   const [salesTrendData, setSalesTrendData] = useState<SalesData[]>([]);
   const [categoryData, setCategoryData] = useState<ProductCategoryData[]>([]);
   const [topServicesData, setTopServicesData] = useState<TopProductData[]>([]);
+  const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [staffStatusList, setStaffStatusList] = useState<any[]>([]);
+  const [resourceStatusList, setResourceStatusList] = useState<any[]>([]);
+  const [merchantResourceType, setMerchantResourceType] = useState<'STAFF' | 'ROOM' | 'BOTH'>('STAFF');
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [lastNotificationTime, setLastNotificationTime] = useState<Date | null>(null);
+  const [isNotificationExpanded, setIsNotificationExpanded] = useState(false);
 
   const handleTimeRangeChange = (event: SelectChangeEvent<TimeRange>) => {
     setTimeRange(event.target.value as TimeRange);
@@ -112,6 +142,78 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // 请求浏览器通知权限
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
+
+  // 显示浏览器通知
+  const showBrowserNotification = (title: string, body: string, icon?: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: icon || '/favicon.ico',
+        tag: 'merchant-notification',
+        requireInteraction: false,
+      });
+    }
+  };
+
+  // 获取新通知（用于轮询）
+  const fetchNewNotifications = async () => {
+    if (!user?.tenantId) return;
+
+    try {
+      // 获取业务通知
+      const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiUrl}/api/business/notifications/dashboard?tenantId=${user.tenantId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      const data = await response.json();
+      
+      const { notifications: businessNotifications, unreadCount } = data || { notifications: [], unreadCount: 0 };
+
+      if (businessNotifications.length > 0) {
+        // 找出新通知
+        const newNotifications = lastNotificationTime 
+          ? businessNotifications.filter((notification: any) => new Date(notification.createdAt) > lastNotificationTime)
+          : [];
+
+        if (newNotifications.length > 0) {
+          // 更新未读计数
+          setUnreadNotificationCount(unreadCount);
+          
+          // 显示浏览器通知（只显示最新的一条）
+          const latestNotification = newNotifications[0];
+          let notificationTitle = t('dashboard.newNotifications');
+          let notificationBody = latestNotification.recipient || latestNotification.content?.substring(0, 100);
+          
+          if (latestNotification.templateCode?.includes('appointment_created')) {
+            notificationTitle = t('dashboard.newAppointmentAlert');
+          } else if (latestNotification.templateCode?.includes('reminder')) {
+            notificationTitle = t('dashboard.upcomingAppointmentAlert');
+          }
+          
+          showBrowserNotification(notificationTitle, notificationBody);
+        }
+
+        // 更新通知列表和最后通知时间 - 限制最多50条
+        setNotifications(businessNotifications.slice(0, 50));
+        if (businessNotifications.length > 0) {
+          setLastNotificationTime(new Date(businessNotifications[0].createdAt));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch new notifications:', error);
+    }
+  };
+
   // 加载 Dashboard 数据
   const loadDashboardData = async () => {
     if (!user?.tenantId) return;
@@ -120,15 +222,114 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       const days = getDaysFromTimeRange(timeRange);
 
+      // 先获取商户资源类型配置
+      let resourceType: 'STAFF' | 'ROOM' | 'BOTH' = 'STAFF';
+      try {
+        const config = await merchantConfigApi.getMerchantConfig(user.tenantId);
+        
+        // 尝试从多个可能的字段获取资源类型
+        // merchant_settings表中的key是resource_types，值是数组如["STAFF","ROOM"]
+        const resourceTypesArray = config.resource_types || 
+                                  config.resourceTypes || 
+                                  config.resourceType;
+        
+        // 处理数组格式的资源类型
+        if (Array.isArray(resourceTypesArray)) {
+          if (resourceTypesArray.includes('STAFF') && resourceTypesArray.includes('ROOM')) {
+            resourceType = 'BOTH';
+          } else if (resourceTypesArray.includes('ROOM')) {
+            resourceType = 'ROOM';
+          } else {
+            resourceType = 'STAFF';
+          }
+        } else if (typeof resourceTypesArray === 'string') {
+          resourceType = resourceTypesArray as 'STAFF' | 'ROOM' | 'BOTH';
+        } else {
+          resourceType = 'STAFF'; // 默认值
+        }
+        
+        setMerchantResourceType(resourceType);
+      } catch (error) {
+        // 默认显示两者
+        resourceType = 'BOTH';
+        setMerchantResourceType(resourceType);
+      }
+      
       // 并行获取所有数据
-      const [stats, salesTrend, serviceCategories, topServices] = await Promise.all([
+      const [stats, salesTrend, serviceCategories, topServices, appointments, notificationLogs, staffList, roomList] = await Promise.all([
         dashboardApi.getDashboardStats(user.tenantId, days),
         dashboardApi.getSalesTrend(user.tenantId, days),
         dashboardApi.getServiceCategoryStats(user.tenantId, days),
-        dashboardApi.getTopServices(user.tenantId, days, 5)
+        dashboardApi.getTopServices(user.tenantId, days, 5),
+        // 获取今日预约数据
+        appointmentApi.getAllAppointments(user.tenantId).then((allAppointments: any[]) => {
+          // 使用本地日期而不是UTC日期
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const today = `${year}-${month}-${day}`;
+          const todayAppointments = allAppointments.filter((appointment: any) => 
+            appointment.appointmentDate === today
+          );
+          return todayAppointments;
+        }).catch((error) => {
+          console.error('Failed to fetch appointments:', error);
+          return [];
+        }),
+        // 获取最近的业务通知
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080'}/api/business/notifications/dashboard?tenantId=${user.tenantId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        }).then(res => res.json())
+          .then((data: any) => {
+            return data?.notifications || [];
+          })
+          .catch((error) => {
+            console.error('Failed to fetch initial notifications:', error);
+            return [];
+          }),
+        // 根据资源类型获取员工状态 - 使用资源API
+        (resourceType === 'STAFF' || resourceType === 'BOTH') 
+          ? resourceApi.getResourcesByType(user.tenantId, 'STAFF').then((response: any) => {
+              const data = response.data || response || [];
+              return data;
+            }).catch((error) => {
+              console.error('Failed to fetch staff resources:', error);
+              return [];
+            })
+          : Promise.resolve([]),
+        // 根据资源类型获取房间资源
+        (resourceType === 'ROOM' || resourceType === 'BOTH')
+          ? resourceApi.getResourcesByType(user.tenantId, 'ROOM').then((response: any) => {
+              const data = response.data || response || [];
+              return data;
+            }).catch((error) => {
+              console.error('Failed to fetch room resources:', error);
+              return [];
+            })
+          : Promise.resolve([])
       ]);
 
-      setDashboardStats(stats);
+      // 计算预约统计数据
+      const completedCount = appointments.filter((apt: any) => apt.status === 'COMPLETED').length;
+      const inProgressCount = appointments.filter((apt: any) => apt.status === 'IN_PROGRESS').length;
+      const pendingCount = appointments.filter((apt: any) => 
+        apt.status === 'PENDING' || apt.status === 'CONFIRMED'
+      ).length;
+      
+      setDashboardStats({
+        ...stats,
+        completedAppointments: completedCount,
+        inProgressAppointments: inProgressCount,
+        pendingAppointments: pendingCount,
+        utilizationRate: staffList.length > 0 
+          ? Math.round((inProgressCount / staffList.length) * 100) 
+          : 0
+      });
       
       // 处理销售趋势数据
       if (salesTrend.success && salesTrend.data) {
@@ -155,6 +356,134 @@ const Dashboard: React.FC = () => {
         }));
         setTopServicesData(formattedServices);
       }
+      
+      // 设置今日预约数据
+      if (appointments.length > 0) {
+      }
+      setTodayAppointments(appointments);
+      
+      // 设置通知数据 - 限制最多50条
+      setNotifications(notificationLogs.slice(0, 50));
+      if (notificationLogs && notificationLogs.length > 0) {
+        setLastNotificationTime(new Date(notificationLogs[0].createdAt));
+      }
+      
+      // 处理员工状态数据（仅在资源类型包含员工时）
+      if ((resourceType === 'STAFF' || resourceType === 'BOTH') && staffList && staffList.length > 0) {
+        const staffWithStatus = staffList.map((staff: any) => {
+          // 根据员工的当前预约情况判断状态
+          const now = new Date();
+          const today = now.toISOString().split('T')[0];
+          const currentTime = now.toTimeString().slice(0, 5); // HH:mm
+          
+          // 查找当前的预约
+          const currentAppointments = appointments.filter((apt: any) => {
+            if (apt.appointmentDate !== today) return false;
+            const aptTime = apt.appointmentTime;
+            const duration = apt.duration || 60; // 默认60分钟
+            const aptEndTime = new Date(`${today} ${aptTime}`);
+            aptEndTime.setMinutes(aptEndTime.getMinutes() + duration);
+            const aptEndTimeStr = aptEndTime.toTimeString().slice(0, 5);
+            
+            // 检查是否有员工分配 - 使用resourceId作为员工ID
+            const hasStaff = apt.appointmentServices?.some((svc: any) => 
+              svc.staffId === staff.id || svc.resourceId === staff.id
+            ) || apt.staffId === staff.id || apt.resourceId === staff.id;
+            
+            return hasStaff && aptTime <= currentTime && aptEndTimeStr > currentTime;
+          });
+          
+          let status = 'offline';
+          let currentService = null;
+          let endTime = null;
+          
+          // 资源对象的status字段
+          if (staff.status === 'ACTIVE') {
+            if (currentAppointments.length > 0) {
+              status = 'busy';
+              const apt = currentAppointments[0];
+              currentService = apt.appointmentServices?.[0]?.serviceName || apt.serviceName || t('dashboard.inService');
+              const duration = apt.duration || 60;
+              const aptEndTime = new Date(`${today} ${apt.appointmentTime}`);
+              aptEndTime.setMinutes(aptEndTime.getMinutes() + duration);
+              endTime = aptEndTime.toTimeString().slice(0, 5);
+            } else {
+              status = 'available';
+            }
+          } else if (staff.status === 'MAINTENANCE') {
+            status = 'maintenance';
+          }
+          
+          return {
+            name: staff.name || staff.resourceName,
+            avatar: staff.images?.[0] || staff.avatar || staff.photo,
+            status,
+            currentService,
+            endTime,
+            type: 'staff'
+          };
+        });
+        setStaffStatusList(staffWithStatus.slice(0, 8)); // 只显示前8个员工
+      } else {
+      }
+      
+      // 处理房间状态数据（仅在资源类型包含房间时）
+      if ((resourceType === 'ROOM' || resourceType === 'BOTH') && roomList && roomList.length > 0) {
+        const roomWithStatus = roomList.map((room: any) => {
+          // 根据房间的当前预约情况判断状态
+          const now = new Date();
+          const today = now.toISOString().split('T')[0];
+          const currentTime = now.toTimeString().slice(0, 5); // HH:mm
+          
+          // 查找当前的预约
+          const currentAppointments = appointments.filter((apt: any) => {
+            if (apt.appointmentDate !== today) return false;
+            const aptTime = apt.appointmentTime;
+            const duration = apt.duration || 60; // 默认60分钟
+            const aptEndTime = new Date(`${today} ${aptTime}`);
+            aptEndTime.setMinutes(aptEndTime.getMinutes() + duration);
+            const aptEndTimeStr = aptEndTime.toTimeString().slice(0, 5);
+            
+            // 检查是否使用这个房间
+            const hasRoom = apt.roomId === room.id || apt.resourceId === room.id;
+            
+            return hasRoom && aptTime <= currentTime && aptEndTimeStr > currentTime;
+          });
+          
+          let status = 'offline';
+          let currentService = null;
+          let endTime = null;
+          
+          if (room.status === 'ACTIVE') {
+            if (currentAppointments.length > 0) {
+              status = 'busy';
+              const apt = currentAppointments[0];
+              currentService = apt.appointmentServices?.[0]?.serviceName || apt.serviceName || t('dashboard.occupied');
+              const duration = apt.duration || 60;
+              const aptEndTime = new Date(`${today} ${apt.appointmentTime}`);
+              aptEndTime.setMinutes(aptEndTime.getMinutes() + duration);
+              endTime = aptEndTime.toTimeString().slice(0, 5);
+            } else {
+              status = 'available';
+            }
+          } else if (room.status === 'MAINTENANCE') {
+            status = 'maintenance';
+          }
+          
+          return {
+            name: room.name || room.resourceName,
+            avatar: room.images?.[0] || room.photo,
+            status,
+            currentService,
+            endTime,
+            type: 'room',
+            capacity: room.capacity,
+            location: room.location
+          };
+        });
+        setResourceStatusList(roomWithStatus.slice(0, 8)); // 只显示前8个房间
+      } else {
+      }
 
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -180,7 +509,29 @@ const Dashboard: React.FC = () => {
   // 当组件挂载或时间范围改变时加载数据
   useEffect(() => {
     loadDashboardData();
+    // 首次加载时也获取通知
+    fetchNewNotifications();
   }, [user?.tenantId, timeRange]);
+
+  // 请求通知权限
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  // 设置轮询获取新通知（每30秒）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchNewNotifications();
+    }, 30000); // 30秒轮询一次
+
+    return () => clearInterval(interval);
+  }, [user?.tenantId, lastNotificationTime]);
+
+  // 标记通知为已读
+  const markNotificationsAsRead = () => {
+    setUnreadNotificationCount(0);
+    setIsNotificationExpanded(!isNotificationExpanded);
+  };
 
   // 计算关键指标
   const totalSales = dashboardStats?.totalRevenue || 0;
@@ -388,6 +739,306 @@ const Dashboard: React.FC = () => {
             </Card>
           </Grid>
         ))}
+      </Grid>
+
+      {/* 实时通知提醒和快捷操作 */}
+      <Grid container spacing={3} mb={3}>
+        {/* 实时通知提醒 */}
+        <Grid item xs={12} md={8}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center">
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 24,
+                      background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                      borderRadius: 1,
+                      mr: 2,
+                    }}
+                  />
+                  <Typography 
+                    variant="h6"
+                    sx={{ 
+                      fontWeight: 600,
+                      color: 'text.primary',
+                      cursor: 'pointer',
+                    }}
+                    onClick={markNotificationsAsRead}
+                  >
+                    {t('dashboard.notifications')}
+                  </Typography>
+                  {unreadNotificationCount > 0 && (
+                    <Box
+                      sx={{
+                        ml: 1,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#EF4444',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        animation: 'pulse 2s infinite',
+                        '@keyframes pulse': {
+                          '0%': { transform: 'scale(1)' },
+                          '50%': { transform: 'scale(1.1)' },
+                          '100%': { transform: 'scale(1)' },
+                        },
+                      }}
+                    >
+                      {unreadNotificationCount}
+                    </Box>
+                  )}
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Chip 
+                    icon={<NotificationsIcon sx={{ fontSize: 16 }} />}
+                    label={`${notifications.length} ${t('dashboard.total')}`}
+                    size="small"
+                    sx={{ 
+                      bgcolor: alpha('#6B7280', 0.1),
+                      color: '#6B7280',
+                      fontWeight: 600,
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={fetchNewNotifications}
+                    title={t('dashboard.refresh')}
+                    sx={{ 
+                      color: '#6B7280',
+                      '&:hover': {
+                        animation: 'spin 1s ease-in-out',
+                      },
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' },
+                      },
+                    }}
+                  >
+                    <RefreshIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={markNotificationsAsRead}
+                    sx={{ color: '#6B7280' }}
+                  >
+                    {isNotificationExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {/* 通知列表 */}
+              <Box sx={{ 
+                maxHeight: isNotificationExpanded ? 400 : 200, 
+                overflowY: 'auto',
+                transition: 'max-height 0.3s ease',
+              }}>
+                {notifications.length > 0 ? notifications
+                  .slice(0, isNotificationExpanded ? 50 : 3)
+                  .map((notification: any, index: number) => {
+                  // 根据通知类型设置图标和颜色
+                  let icon, color, title;
+                  
+                  // 使用业务通知类型
+                  if (notification.notificationType === 'NEW_APPOINTMENT') {
+                    icon = <AddCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
+                    color = '#10B981';
+                    title = notification.title || t('dashboard.newAppointmentAlert');
+                  } else if (notification.notificationType === 'APPOINTMENT_REMINDER') {
+                    icon = <ScheduleIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
+                    color = '#F59E0B';
+                    title = notification.title || t('dashboard.upcomingAppointmentAlert');
+                  } else if (notification.notificationType === 'APPOINTMENT_CANCELLED') {
+                    icon = <WarningIcon sx={{ fontSize: 18, color: '#EF4444' }} />;
+                    color = '#EF4444';
+                    title = notification.title || t('dashboard.appointmentCancelledAlert');
+                  } else if (notification.notificationType === 'APPOINTMENT_CONFIRMED') {
+                    icon = <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
+                    color = '#10B981';
+                    title = notification.title || t('dashboard.appointmentConfirmedAlert');
+                  } else if (notification.notificationType === 'PENDING_CONFIRMATION') {
+                    icon = <ScheduleIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
+                    color = '#F59E0B';
+                    title = notification.title || t('dashboard.pendingConfirmation');
+                  } else if (notification.level === 'ERROR') {
+                    icon = <WarningIcon sx={{ fontSize: 18, color: '#EF4444' }} />;
+                    color = '#EF4444';
+                    title = notification.title || t('dashboard.error');
+                  } else if (notification.level === 'WARNING') {
+                    icon = <WarningIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
+                    color = '#F59E0B';
+                    title = notification.title || t('dashboard.warning');
+                  } else if (notification.level === 'SUCCESS') {
+                    icon = <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
+                    color = '#10B981';
+                    title = notification.title || t('dashboard.success');
+                  } else {
+                    icon = <InfoIcon sx={{ fontSize: 18, color: '#6366F1' }} />;
+                    color = '#6366F1';
+                    title = notification.title || t('dashboard.notification');
+                  }
+                  
+                  // 计算时间差
+                  const createdTime = new Date(notification.createdAt);
+                  const now = new Date();
+                  const diffMinutes = Math.floor((now.getTime() - createdTime.getTime()) / (1000 * 60));
+                  let timeAgo = '';
+                  if (diffMinutes < 60) {
+                    timeAgo = `${diffMinutes}${t('dashboard.minutesAgo')}`;
+                  } else if (diffMinutes < 1440) {
+                    timeAgo = `${Math.floor(diffMinutes / 60)}${t('dashboard.hoursAgo')}`;
+                  } else {
+                    timeAgo = `${Math.floor(diffMinutes / 1440)}${t('dashboard.daysAgo')}`;
+                  }
+                  
+                  return (
+                    <Box 
+                      key={index}
+                      sx={{ 
+                        p: 2, 
+                        mb: 1,
+                        borderRadius: 2,
+                        bgcolor: alpha(color, 0.05),
+                        border: `1px solid ${alpha(color, 0.2)}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: alpha(color, 0.1),
+                          transform: 'translateX(4px)',
+                        }
+                      }}
+                    >
+                      <Box display="flex" alignItems="flex-start" gap={2}>
+                        <Box sx={{ mt: 0.5 }}>{icon}</Box>
+                        <Box flex={1}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                            {title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            {notification.content || t('dashboard.notificationContent')}
+                          </Typography>
+                          <Typography variant="caption" color="text.disabled">
+                            {timeAgo}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  );
+                }) : (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('dashboard.noNotifications')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 快捷操作入口 */}
+        <Grid item xs={12} md={4}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" mb={2}>
+                <Box
+                  sx={{
+                    width: 6,
+                    height: 24,
+                    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+                    borderRadius: 1,
+                    mr: 2,
+                  }}
+                />
+                <Typography 
+                  variant="h6"
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                  }}
+                >
+                  {t('dashboard.quickActions')}
+                </Typography>
+              </Box>
+
+              {/* 快捷操作按钮 */}
+              <Grid container spacing={2}>
+                {[
+                  { 
+                    icon: <AddCircleIcon />, 
+                    label: t('dashboard.createAppointment'), 
+                    color: '#8B5CF6', // Purple - Appointments theme
+                    onClick: () => onNavigate?.('appointments')
+                  },
+                  { 
+                    icon: <CalendarTodayIcon />, 
+                    label: t('dashboard.todaySchedule'), 
+                    color: '#8B5CF6', // Purple - Appointments theme
+                    onClick: () => onNavigate?.('appointments')
+                  },
+                  { 
+                    icon: <PersonPinIcon />, 
+                    label: t('dashboard.addCustomer'), 
+                    color: '#EC4899', // Pink - Customers theme
+                    onClick: () => onNavigate?.('customers')
+                  },
+                  { 
+                    icon: <ListAltIcon />, 
+                    label: t('dashboard.viewOrders'), 
+                    color: '#10B981', // Green - Orders theme
+                    onClick: () => onNavigate?.('payments')
+                  },
+                ].map((action, index) => (
+                  <Grid item xs={6} key={index}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={action.onClick}
+                      sx={{
+                        py: 2,
+                        borderRadius: 2,
+                        flexDirection: 'column',
+                        borderColor: alpha(action.color, 0.3),
+                        color: action.color,
+                        bgcolor: alpha(action.color, 0.05),
+                        '&:hover': {
+                          borderColor: action.color,
+                          bgcolor: alpha(action.color, 0.1),
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {React.cloneElement(action.icon, { 
+                        sx: { fontSize: 28, mb: 1, color: action.color } 
+                      })}
+                      <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                        {action.label}
+                      </Typography>
+                    </Button>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {/* 美化的图表区域 */}
@@ -626,68 +1277,366 @@ const Dashboard: React.FC = () => {
             }}
           >
             <CardContent sx={{ p: 3, height: '100%' }}>
-              <Box display="flex" alignItems="center" mb={3}>
-                <Box
-                  sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
-                    borderRadius: 1,
-                    mr: 2,
-                  }}
-                />
-                <Typography 
-                  variant="h6"
-                  sx={{ 
-                    fontWeight: 600,
-                    color: 'text.primary',
-                  }}
-                >
-                  {t('dashboard.topServices')}
-                </Typography>
-              </Box>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={topServicesData} layout="horizontal" margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
-                  <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#EC4899" stopOpacity={0.8}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                  <XAxis 
-                    type="number" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                  />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    width={80} 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                  />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [
-                      value.toLocaleString(),
-                      t('dashboard.sales')
-                    ]}
-                    contentStyle={{
-                      backgroundColor: 'rgba(255,255,255,0.95)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+                <Box display="flex" alignItems="center">
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 24,
+                      background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
+                      borderRadius: 1,
+                      mr: 2,
                     }}
                   />
-                  <Bar 
-                    dataKey="sales" 
-                    fill="url(#barGradient)"
-                    radius={[0, 4, 4, 0]}
+                  <Typography 
+                    variant="h6"
+                    sx={{ 
+                      fontWeight: 600,
+                      color: 'text.primary',
+                    }}
+                  >
+                    {t('dashboard.topServices')}
+                  </Typography>
+                </Box>
+                <Chip 
+                  label={`Top ${topServicesData.length}`} 
+                  size="small"
+                  sx={{ 
+                    bgcolor: alpha('#8B5CF6', 0.1),
+                    color: '#8B5CF6',
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+              
+              {/* 改用列表展示，更清晰 */}
+              <Box sx={{ mt: 2, maxHeight: 350, overflowY: 'auto' }}>
+                {topServicesData.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('dashboard.noData')}
+                    </Typography>
+                  </Box>
+                ) : (
+                  topServicesData.map((service, index) => {
+                    const maxSales = Math.max(...topServicesData.map(s => s.sales));
+                    const percentage = maxSales > 0 ? (service.sales / maxSales) * 100 : 0;
+                    const rankColors = ['#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1'];
+                    
+                    return (
+                      <Box key={index} sx={{ mb: 3 }}>
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                          <Box display="flex" alignItems="center" gap={2}>
+                            {/* 排名徽章 */}
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(rankColors[index % rankColors.length], 0.1),
+                                color: rankColors[index % rankColors.length],
+                                fontWeight: 700,
+                                fontSize: 14,
+                              }}
+                            >
+                              #{index + 1}
+                            </Box>
+                            {/* 服务名称 */}
+                            <Box flex={1}>
+                              <Typography 
+                                variant="body1" 
+                                sx={{ 
+                                  fontWeight: 600,
+                                  color: 'text.primary',
+                                  mb: 0.5,
+                                }}
+                              >
+                                {service.name}
+                              </Typography>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Typography 
+                                  variant="caption" 
+                                  sx={{ 
+                                    color: 'text.secondary',
+                                  }}
+                                >
+                                  {t('dashboard.revenue')}:
+                                </Typography>
+                                <Typography 
+                                  variant="body2" 
+                                  sx={{ 
+                                    color: rankColors[index % rankColors.length],
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {CurrencyUtils.formatAmountWithCommas(service.sales)}
+                                </Typography>
+                                {service.growth !== 0 && (
+                                  <Chip
+                                    label={`${service.growth > 0 ? '↑' : '↓'} ${Math.abs(service.growth)}%`}
+                                    size="small"
+                                    sx={{
+                                      height: 20,
+                                      fontSize: '0.75rem',
+                                      bgcolor: service.growth > 0 ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
+                                      color: service.growth > 0 ? '#10B981' : '#EF4444',
+                                      fontWeight: 600,
+                                      '& .MuiChip-label': {
+                                        px: 1,
+                                      },
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                            </Box>
+                          </Box>
+                        </Box>
+                        
+                        {/* 进度条 */}
+                        <Box sx={{ ml: 7 }}>
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: 10,
+                              bgcolor: alpha(rankColors[index % rankColors.length], 0.08),
+                              borderRadius: 1.5,
+                              overflow: 'hidden',
+                              position: 'relative',
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: `${percentage}%`,
+                                height: '100%',
+                                background: `linear-gradient(90deg, ${rankColors[index % rankColors.length]}, ${alpha(rankColors[index % rankColors.length], 0.6)})`,
+                                borderRadius: 1.5,
+                                transition: 'width 0.8s ease',
+                                boxShadow: `0 2px 8px ${alpha(rankColors[index % rankColors.length], 0.3)}`,
+                              }}
+                            />
+                            {/* 百分比标签 */}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                position: 'absolute',
+                                right: 8,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                color: percentage > 70 ? 'white' : 'text.secondary',
+                              }}
+                            >
+                              {Math.round(percentage)}%
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  })
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 员工忙闲状态 */}
+        <Grid item xs={12}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+                <Box display="flex" alignItems="center">
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 24,
+                      background: 'linear-gradient(135deg, #14B8A6, #059669)',
+                      borderRadius: 1,
+                      mr: 2,
+                    }}
                   />
-                </BarChart>
-              </ResponsiveContainer>
+                  <Typography 
+                    variant="h6"
+                    sx={{ 
+                      fontWeight: 600,
+                      color: 'text.primary',
+                    }}
+                  >
+                    {t('dashboard.resourceStatus')}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={2}>
+                  {(merchantResourceType === 'STAFF' || merchantResourceType === 'BOTH') && staffStatusList.length > 0 && (
+                    <Chip 
+                      icon={<GroupsIcon sx={{ fontSize: 16 }} />}
+                      label={`${t('dashboard.totalStaff')}: ${staffStatusList.length}`}
+                      size="small"
+                      sx={{ 
+                        bgcolor: alpha('#6B7280', 0.1),
+                        color: '#6B7280',
+                        fontWeight: 600,
+                      }}
+                    />
+                  )}
+                  {(merchantResourceType === 'ROOM' || merchantResourceType === 'BOTH') && resourceStatusList.length > 0 && (
+                    <Chip 
+                      icon={<RoomIcon sx={{ fontSize: 16 }} />}
+                      label={`${t('dashboard.totalRooms')}: ${resourceStatusList.length}`}
+                      size="small"
+                      sx={{ 
+                        bgcolor: alpha('#6B7280', 0.1),
+                        color: '#6B7280',
+                        fontWeight: 600,
+                      }}
+                    />
+                  )}
+                </Box>
+              </Box>
+
+              {/* 资源状态网格 */}
+              <Grid container spacing={2}>
+                {/* 合并员工和房间列表 */}
+                {([...staffStatusList, ...resourceStatusList].length > 0 ? 
+                  [...staffStatusList, ...resourceStatusList] : [
+                  { name: t('dashboard.noResourceData'), avatar: '', status: 'offline', currentService: null, endTime: null, type: 'staff' },
+                ]).map((resource, index) => {
+                  const statusConfig = {
+                    busy: { color: '#EF4444', label: t('dashboard.busy'), icon: '🔴' },
+                    available: { color: '#10B981', label: t('dashboard.available'), icon: '🟢' },
+                    break: { color: '#F59E0B', label: t('dashboard.onBreak'), icon: '🟡' },
+                    maintenance: { color: '#F59E0B', label: t('dashboard.maintenance'), icon: '🔧' },
+                    offline: { color: '#6B7280', label: t('dashboard.offline'), icon: '⚫' },
+                  }[resource.status as 'busy' | 'available' | 'break' | 'maintenance' | 'offline'] || 
+                  { color: '#6B7280', label: t('dashboard.offline'), icon: '⚫' };
+
+                  return (
+                    <Grid item xs={12} sm={6} md={3} key={index}>
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          border: `1px solid ${alpha(statusConfig.color, 0.2)}`,
+                          bgcolor: alpha(statusConfig.color, 0.05),
+                          transition: 'all 0.2s',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: alpha(statusConfig.color, 0.1),
+                            transform: 'translateY(-2px)',
+                            boxShadow: `0 4px 12px ${alpha(statusConfig.color, 0.2)}`,
+                          },
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={2} mb={1}>
+                          <Avatar 
+                            src={getFullImageUrl(resource.avatar)}
+                            sx={{ 
+                              width: 40, 
+                              height: 40,
+                              bgcolor: alpha(statusConfig.color, 0.2),
+                              color: statusConfig.color,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {resource.type === 'room' ? <RoomIcon /> : (resource.name?.[0] || '?')}
+                          </Avatar>
+                          <Box flex={1}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                {resource.name}
+                              </Typography>
+                              {resource.type === 'room' && (
+                                <Chip
+                                  label={t('dashboard.room')}
+                                  size="small"
+                                  sx={{
+                                    height: 18,
+                                    fontSize: '0.7rem',
+                                    bgcolor: alpha('#8B5CF6', 0.1),
+                                    color: '#8B5CF6',
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              )}
+                            </Box>
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                              <Typography variant="caption">{statusConfig.icon}</Typography>
+                              <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                  color: statusConfig.color,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {statusConfig.label}
+                              </Typography>
+                              {resource.type === 'room' && resource.capacity && (
+                                <Typography variant="caption" color="text.secondary">
+                                  • {t('dashboard.capacity')}: {resource.capacity}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </Box>
+                        {resource.currentService && (
+                          <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${alpha(statusConfig.color, 0.1)}` }}>
+                            <Typography variant="caption" color="text.secondary">
+                              {resource.currentService}
+                            </Typography>
+                            <Typography variant="caption" display="block" sx={{ color: statusConfig.color, fontWeight: 500 }}>
+                              {t('dashboard.until')} {resource.endTime}
+                            </Typography>
+                          </Box>
+                        )}
+                        {resource.type === 'room' && resource.location && (
+                          <Box sx={{ mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              📍 {resource.location}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+
+              {/* 状态统计 */}
+              <Box display="flex" justifyContent="center" gap={3} mt={3} pt={3} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10B981' }} />
+                  <Typography variant="caption">
+                    {t('dashboard.available')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'available').length}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#EF4444' }} />
+                  <Typography variant="caption">
+                    {t('dashboard.busy')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'busy').length}
+                  </Typography>
+                </Box>
+                {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'maintenance').length > 0 && (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#F59E0B' }} />
+                    <Typography variant="caption">
+                      {t('dashboard.maintenance')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'maintenance').length}
+                    </Typography>
+                  </Box>
+                )}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#6B7280' }} />
+                  <Typography variant="caption">
+                    {t('dashboard.offline')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'offline').length}
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -742,7 +1691,7 @@ const Dashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* 客户满意度 */}
+        {/* 运营状态实时监控 */}
         <Grid item xs={12} md={6}>
           <Card
             sx={{
@@ -768,31 +1717,283 @@ const Dashboard: React.FC = () => {
                     color: 'text.primary',
                   }}
                 >
-                  {t('dashboard.customerSatisfaction')}
+                  {t('dashboard.operationStatus')}
                 </Typography>
               </Box>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#f5576c' }}>
-                  4.8
-                </Typography>
+              
+              {/* 运营状态指标 */}
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    background: alpha('#10B981', 0.1),
+                    border: `1px solid ${alpha('#10B981', 0.2)}`
+                  }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('dashboard.completedToday')}
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#10B981', mt: 0.5 }}>
+                      {dashboardStats?.completedAppointments || 0}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    background: alpha('#F59E0B', 0.1),
+                    border: `1px solid ${alpha('#F59E0B', 0.2)}`
+                  }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('dashboard.inProgress')}
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#F59E0B', mt: 0.5 }}>
+                      {dashboardStats?.inProgressAppointments || 0}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    background: alpha('#3B82F6', 0.1),
+                    border: `1px solid ${alpha('#3B82F6', 0.2)}`
+                  }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('dashboard.pending')}
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#3B82F6', mt: 0.5 }}>
+                      {dashboardStats?.pendingAppointments || 0}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box sx={{ 
+                    p: 2, 
+                    borderRadius: 2, 
+                    background: alpha('#8B5CF6', 0.1),
+                    border: `1px solid ${alpha('#8B5CF6', 0.2)}`
+                  }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('dashboard.utilizationRate')}
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#8B5CF6', mt: 0.5 }}>
+                      {dashboardStats?.utilizationRate || 0}%
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+        {/* 今日预约时间轴 */}
+        <Grid item xs={12}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              mt: 3,
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
                 <Box display="flex" alignItems="center">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Box
-                      key={star}
-                      sx={{
-                        color: star <= 4.8 ? '#FFD700' : '#E0E0E0',
-                        fontSize: 20,
-                        mr: 0.5,
-                      }}
-                    >
-                      ★
-                    </Box>
-                  ))}
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 24,
+                      background: 'linear-gradient(135deg, #06B6D4, #0891B2)',
+                      borderRadius: 1,
+                      mr: 2,
+                    }}
+                  />
+                  <Typography 
+                    variant="h6"
+                    sx={{ 
+                      fontWeight: 600,
+                      color: 'text.primary',
+                    }}
+                  >
+                    {t('dashboard.todayTimeline')}
+                  </Typography>
                 </Box>
+                <Chip 
+                  label={new Date().toLocaleDateString()} 
+                  size="small"
+                  sx={{ 
+                    bgcolor: alpha('#06B6D4', 0.1),
+                    color: '#06B6D4',
+                    fontWeight: 600,
+                  }}
+                />
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                {t('dashboard.basedOnReviews')}
-              </Typography>
+              
+              {/* 时间轴 */}
+              <Box sx={{ position: 'relative', pl: 4, maxHeight: 500, overflowY: 'auto' }}>
+                {/* 垂直线 */}
+                <Box sx={{
+                  position: 'absolute',
+                  left: 20,
+                  top: 0,
+                  bottom: 0,
+                  width: 2,
+                  bgcolor: 'divider',
+                }} />
+                
+                {/* 时间节点 - 显示真实预约数据 */}
+                {todayAppointments.length > 0 ? (
+                  todayAppointments
+                    .sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime))
+                    .slice(0, 10) // 最多显示10个预约
+                    .map((appointment, index) => {
+                      const now = new Date();
+                      const appointmentDateTime = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
+                      const isCompleted = appointment.status === 'COMPLETED';
+                      const isCurrent = appointment.status === 'IN_PROGRESS';
+                      const isPending = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
+                      
+                      return (
+                        <Box key={appointment.id} sx={{ position: 'relative', mb: 3 }}>
+                          {/* 时间点 */}
+                          <Box sx={{
+                            position: 'absolute',
+                            left: -25,
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            bgcolor: isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : '#E5E7EB',
+                            border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 'none',
+                          }} />
+                          
+                          {/* 预约信息 */}
+                          <Box sx={{
+                            ml: 2,
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: isCompleted ? alpha('#10B981', 0.05) : 
+                                    isCurrent ? alpha('#F59E0B', 0.05) : 
+                                    alpha('#6B7280', 0.05),
+                            border: `1px solid ${
+                              isCompleted ? alpha('#10B981', 0.2) : 
+                              isCurrent ? alpha('#F59E0B', 0.2) : 
+                              alpha('#6B7280', 0.1)
+                            }`,
+                          }}>
+                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                {appointment.appointmentTime}
+                              </Typography>
+                              <Chip
+                                label={
+                                  appointment.status === 'COMPLETED' ? t('dashboard.completed') : 
+                                  appointment.status === 'IN_PROGRESS' ? t('dashboard.inProgress') : 
+                                  appointment.status === 'CANCELLED' ? t('status.cancelled') :
+                                  t('dashboard.pending')
+                                }
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.7rem',
+                                  bgcolor: isCompleted ? alpha('#10B981', 0.1) : 
+                                          isCurrent ? alpha('#F59E0B', 0.1) : 
+                                          alpha('#6B7280', 0.1),
+                                  color: isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : '#6B7280',
+                                }}
+                              />
+                            </Box>
+                            <Typography variant="body2" color="text.primary">
+                              {/* 尝试多种方式获取服务名称 */}
+                              {appointment.services?.map((s: any) => s.serviceName).join(', ') || 
+                               appointment.appointmentServices?.map((s: any) => s.serviceName).join(', ') ||
+                               appointment.serviceName ||
+                               '服务'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {/* 显示客户和资源（员工或房间） */}
+                              {(() => {
+                                // 调试：打印第一个预约的详细信息
+                                if (index === 0) {
+                                }
+                                
+                                // 初始化变量
+                                let customerDisplay = t('dashboard.customer');
+                                let resourceDisplay = t('dashboard.unassigned');
+                                let resourceTypeLabel = '';
+                                
+                                // 获取资源名称（优先检查appointmentServices中的资源信息）
+                                if (appointment.appointmentServices && appointment.appointmentServices.length > 0) {
+                                  const service = appointment.appointmentServices[0];
+                                  if (service.staffName) {
+                                    resourceDisplay = service.staffName;
+                                    resourceTypeLabel = t('dashboard.staff');
+                                  } else if (service.resourceName) {
+                                    resourceDisplay = service.resourceName;
+                                    resourceTypeLabel = service.resourceType === 'ROOM' ? t('dashboard.room') : t('dashboard.resource');
+                                  }
+                                } 
+                                
+                                // 如果appointmentServices中没有，检查其他字段
+                                if (resourceDisplay === t('dashboard.unassigned')) {
+                                  if (appointment.staffName) {
+                                    resourceDisplay = appointment.staffName;
+                                    resourceTypeLabel = t('dashboard.staff');
+                                  } else if (appointment.staff?.name) {
+                                    resourceDisplay = appointment.staff.name;
+                                    resourceTypeLabel = t('dashboard.staff');
+                                  } else if (appointment.resourceName) {
+                                    resourceDisplay = appointment.resourceName;
+                                    resourceTypeLabel = appointment.resourceType === 'ROOM' ? t('dashboard.room') : t('dashboard.resource');
+                                  } else if (appointment.resource?.name) {
+                                    resourceDisplay = appointment.resource.name;
+                                    resourceTypeLabel = appointment.resource.type === 'ROOM' ? t('dashboard.room') : t('dashboard.resource');
+                                  } else if (appointment.roomName) {
+                                    resourceDisplay = appointment.roomName;
+                                    resourceTypeLabel = t('dashboard.room');
+                                  } else if (appointment.room?.name) {
+                                    resourceDisplay = appointment.room.name;
+                                    resourceTypeLabel = t('dashboard.room');
+                                  }
+                                }
+                                
+                                // 获取客户名称 - 使用与AppointmentManagement相同的字段
+                                if (appointment.customer) {
+                                  const firstName = appointment.customer.firstName || '';
+                                  const lastName = appointment.customer.lastName || '';
+                                  customerDisplay = `${firstName} ${lastName}`.trim() || t('dashboard.customer');
+                                } else {
+                                  // 如果没有customer对象，尝试其他字段
+                                  customerDisplay = appointment.customerName || t('dashboard.customer');
+                                  
+                                  // 检查customerName是否实际包含资源名（兼容旧数据）
+                                  if (customerDisplay && (customerDisplay.includes('every') || customerDisplay.includes('Room') || customerDisplay.includes('Staff'))) {
+                                    // customerName实际包含的是资源名
+                                    if (resourceDisplay === t('dashboard.unassigned')) {
+                                      resourceDisplay = customerDisplay;
+                                      resourceTypeLabel = customerDisplay.includes('Room') ? t('dashboard.room') : t('dashboard.staff');
+                                    }
+                                    customerDisplay = t('dashboard.customer');
+                                  }
+                                }
+                                
+                                // 格式化显示
+                                const resourceInfo = resourceTypeLabel ? `${resourceTypeLabel}: ${resourceDisplay}` : resourceDisplay;
+                                return `${customerDisplay} - ${resourceInfo}`;
+                              })()}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })
+                ) : (
+                  // 无预约时显示提示
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('dashboard.noAppointmentsToday')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </CardContent>
           </Card>
         </Grid>

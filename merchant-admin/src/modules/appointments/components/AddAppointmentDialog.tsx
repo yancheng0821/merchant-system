@@ -819,10 +819,22 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       </InputAdornment>
                     ),
                     inputProps: {
-                      // 设置最小日期为今天
-                      min: new Date().toISOString().split('T')[0],
+                      // 设置最小日期为今天（使用本地日期而不是UTC）
+                      min: (() => {
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = String(now.getMonth() + 1).padStart(2, '0');
+                        const day = String(now.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                      })(),
                       // 可选：设置最大日期（例如：未来3个月）
-                      max: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                      max: (() => {
+                        const future = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+                        const year = future.getFullYear();
+                        const month = String(future.getMonth() + 1).padStart(2, '0');
+                        const day = String(future.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                      })()
                     }
                   }}
                   sx={{

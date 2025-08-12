@@ -211,7 +211,11 @@ const NotificationTemplateManagement: React.FC = () => {
 
   const handleConfirmInit = async () => {
     try {
-      await notificationApi.initDefaultTemplates(tenantId);
+      // 获取当前用户的语言设置
+      const currentLanguage = localStorage.getItem('language') || 'zh-CN';
+      // 转换为简单的语言代码 (en-US -> en, zh-CN -> zh)
+      const languageCode = currentLanguage.split('-')[0];
+      await notificationApi.initDefaultTemplates(tenantId, languageCode);
       await fetchTemplates();
       setOpenInitDialog(false);
     } catch (err) {

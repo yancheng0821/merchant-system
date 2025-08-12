@@ -140,26 +140,26 @@
         LEFT JOIN (
             SELECT 
                 s.category_id,
-                COUNT(os.id) as order_count,
-                SUM(os.price * os.quantity) as total_revenue
+                COUNT(DISTINCT o.id) as order_count,
+                COALESCE(SUM(os.price * os.quantity), 0) as total_revenue
             FROM services s
-            LEFT JOIN order_services os ON s.id = os.service_id
-            LEFT JOIN orders o ON os.order_id = o.id
+            INNER JOIN order_services os ON s.id = os.service_id
+            INNER JOIN orders o ON os.order_id = o.id
+                AND o.tenant_id = #{tenantId}
+                AND o.payment_status = 'paid'
+                AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
             WHERE s.tenant_id = #{tenantId}
-            AND o.tenant_id = #{tenantId}
-            AND o.payment_status = 'paid'
-            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
             GROUP BY s.category_id
         ) stats ON sc.id = stats.category_id
         WHERE sc.tenant_id = #{tenantId} AND sc.status = 'ACTIVE'
-        ORDER BY COALESCE(stats.order_count, 0) DESC, sc.name
+        ORDER BY COALESCE(stats.total_revenue, 0) DESC, sc.name
     </select>
 
     <select id="getTopServices" resultType="map">
         SELECT 
             s.name as service_name,
-            COUNT(os.id) as order_count,
-            SUM(COALESCE(os.price * os.quantity, 0)) as total_revenue
+            COUNT(DISTINCT CASE WHEN o.id IS NOT NULL THEN os.id END) as order_count,
+            COALESCE(SUM(CASE WHEN o.id IS NOT NULL THEN os.price * os.quantity ELSE 0 END), 0) as total_revenue
         FROM services s
         LEFT JOIN order_services os ON s.id = os.service_id
         LEFT JOIN orders o ON os.order_id = o.id 
@@ -168,7 +168,8 @@
             AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
         WHERE s.tenant_id = #{tenantId} AND s.status = 'ACTIVE'
         GROUP BY s.id, s.name
-        ORDER BY SUM(COALESCE(os.price * os.quantity, 0)) DESC, s.name
+        HAVING COUNT(DISTINCT CASE WHEN o.id IS NOT NULL THEN os.id END) > 0
+        ORDER BY total_revenue DESC, s.name
         LIMIT #{limit}
     </select>
 

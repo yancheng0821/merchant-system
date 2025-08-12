@@ -730,6 +730,33 @@ CREATE TABLE IF NOT EXISTS `customer_import_temp` (
   KEY `idx_status` (`status`),
   KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;-- 
+
+
+-- 创建业务通知表
+CREATE TABLE IF NOT EXISTS business_notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL COMMENT '租户ID',
+    notification_type VARCHAR(50) NOT NULL COMMENT '通知类型',
+    title VARCHAR(200) NOT NULL COMMENT '通知标题',
+    content TEXT COMMENT '通知内容',
+    level VARCHAR(20) DEFAULT 'INFO' COMMENT '通知级别：INFO/WARNING/SUCCESS/ERROR',
+    business_id VARCHAR(100) COMMENT '关联业务ID',
+    business_type VARCHAR(50) COMMENT '关联业务类型',
+    related_person VARCHAR(100) COMMENT '相关人员姓名',
+    related_service VARCHAR(200) COMMENT '相关服务名称',
+    related_time DATETIME COMMENT '相关时间（如预约时间）',
+    is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted BOOLEAN DEFAULT FALSE COMMENT '逻辑删除',
+    
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_notification_type (notification_type),
+    INDEX idx_created_at (created_at),
+    INDEX idx_is_read (is_read),
+    INDEX idx_business_id (business_id),
+    INDEX idx_deleted (deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务通知表';
 =====================================================
 -- 5. 数据分析数据库 (merchant_analytics)
 -- =====================================================

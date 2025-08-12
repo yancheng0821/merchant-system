@@ -57,4 +57,9 @@ public interface TemplateService {
      * 初始化默认模板
      */
     void initDefaultTemplates(Long tenantId);
+    
+    /**
+     * 初始化默认模板（带语言参数）
+     */
+    void initDefaultTemplates(Long tenantId, String language);
 }

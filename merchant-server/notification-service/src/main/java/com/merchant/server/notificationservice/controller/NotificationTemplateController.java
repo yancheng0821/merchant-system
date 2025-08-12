@@ -91,9 +91,11 @@ public class NotificationTemplateController {
      * 初始化默认模板
      */
     @PostMapping("/init-default")
-    public ResponseEntity<String> initDefaultTemplates(@RequestParam Long tenantId) {
-        log.info("Initializing default templates for tenant: {}", tenantId);
-        templateService.initDefaultTemplates(tenantId);
+    public ResponseEntity<String> initDefaultTemplates(
+            @RequestParam Long tenantId,
+            @RequestParam(defaultValue = "zh") String language) {
+        log.info("Initializing default templates for tenant: {} with language: {}", tenantId, language);
+        templateService.initDefaultTemplates(tenantId, language);
         return ResponseEntity.ok("Default templates initialized successfully");
     }
 }

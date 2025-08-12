@@ -52,4 +52,19 @@ public interface AppointmentService {
      * 根据ID获取预约
      */
     Appointment getAppointmentById(Long id);
+    
+    /**
+     * 获取即将开始的预约（用于提醒通知）
+     */
+    List<Appointment> getUpcomingAppointments(String date, String time);
+    
+    /**
+     * 根据客户ID获取客户信息
+     */
+    com.merchant.server.businessservice.entity.Customer getCustomerById(Long customerId);
+    
+    /**
+     * 获取服务名称
+     */
+    String getServiceName(Long serviceId);
 }
