@@ -79,6 +79,21 @@ public interface StripeConnectService {
     PaymentIntentDTO cancelPaymentIntent(Long tenantId, String paymentIntentId);
     
     /**
+     * 创建Location
+     * @param tenantId 租户ID
+     * @param request 创建请求
+     * @return Location信息
+     */
+    LocationDTO createLocation(Long tenantId, CreateLocationRequest request);
+    
+    /**
+     * 获取租户的所有Location
+     * @param tenantId 租户ID
+     * @return Location列表
+     */
+    List<LocationDTO> listLocations(Long tenantId);
+    
+    /**
      * 创建Terminal读卡器
      * @param tenantId 租户ID
      * @param request 创建请求

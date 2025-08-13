@@ -104,6 +104,22 @@ public class StripeConnectController {
         return ApiResponse.success(paymentIntent);
     }
     
+    @PostMapping("/location/create")
+    public ApiResponse<LocationDTO> createLocation(
+            @RequestParam Long tenantId,
+            @RequestBody CreateLocationRequest request) {
+        log.info("Creating location for tenant: {}", tenantId);
+        LocationDTO location = stripeConnectService.createLocation(tenantId, request);
+        return ApiResponse.success(location);
+    }
+    
+    @GetMapping("/location/list")
+    public ApiResponse<List<LocationDTO>> listLocations(@RequestParam Long tenantId) {
+        log.info("Listing locations for tenant: {}", tenantId);
+        List<LocationDTO> locations = stripeConnectService.listLocations(tenantId);
+        return ApiResponse.success(locations);
+    }
+    
     @PostMapping("/terminal/create")
     public ApiResponse<TerminalDTO> createTerminal(
             @RequestParam Long tenantId,

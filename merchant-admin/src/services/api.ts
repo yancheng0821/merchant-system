@@ -298,6 +298,25 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
     
     clearTimeout(timeoutId);
 
+    // 检查是否是401未授权响应（session过期）
+    if (response.status === 401) {
+      console.log('Session expired - 401 response received');
+      // 清除本地存储的认证信息
+      tokenManager.clearAll();
+      localStorage.removeItem('user');
+      
+      // 触发session过期事件
+      const event = new CustomEvent('sessionExpired', { 
+        detail: { reason: 'Unauthorized API response' } 
+      });
+      window.dispatchEvent(event);
+      
+      // 抛出错误以停止后续处理
+      const error = new Error('Session expired');
+      (error as any).status = 401;
+      throw error;
+    }
+
     // 尝试解析响应数据
     let responseData;
     try {

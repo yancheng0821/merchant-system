@@ -36,6 +36,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
     
     private final StripeAccountMapper stripeAccountMapper;
     private final StripeTerminalMapper stripeTerminalMapper;
+    private final StripeLocationMapper stripeLocationMapper;
     private final StripePaymentIntentMapper stripePaymentIntentMapper;
     private final OrderMapper orderMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -66,24 +67,25 @@ public class StripeConnectServiceImpl implements StripeConnectService {
     public StripeAccountDTO createConnectAccount(Long tenantId, CreateStripeAccountRequest request) {
         log.info("Creating Stripe Connect account for tenant: {}", tenantId);
         
-        // 检查是否已存在账户（包括已删除的）
-        StripeAccount existingAccount = stripeAccountMapper.selectByTenantIdIncludeDeleted(tenantId);
+        // 只检查未删除的账户
+        StripeAccount existingAccount = stripeAccountMapper.selectByTenantId(tenantId);
         if (existingAccount != null) {
-            if (!existingAccount.getDeleted()) {
-                // 如果账户未删除，检查Stripe中是否还存在
-                try {
-                    Account stripeCheck = Account.retrieve(existingAccount.getStripeAccountId());
-                    log.info("Stripe account already exists and is active for tenant: {}", tenantId);
-                    return convertToDTO(existingAccount);
-                } catch (StripeException e) {
-                    // Stripe账户不存在，需要创建新的
-                    log.warn("Database has account but Stripe doesn't, will create new one");
-                }
-            } else {
-                // 如果账户已删除，需要创建新的Stripe账户
-                log.info("Reactivating deleted Stripe account record for tenant: {}", tenantId);
-                // 旧的Stripe账户ID已经无效，需要创建新的
+            // 如果账户未删除，检查Stripe中是否还存在
+            try {
+                Account stripeCheck = Account.retrieve(existingAccount.getStripeAccountId());
+                log.info("Stripe account already exists and is active for tenant: {}", tenantId);
+                return convertToDTO(existingAccount);
+            } catch (StripeException e) {
+                // Stripe账户不存在，但数据库有记录，这是异常情况
+                log.error("Database has account but Stripe doesn't, this is an inconsistent state: {}", e.getMessage());
+                throw new RuntimeException("Stripe account is in inconsistent state. Please contact support.");
             }
+        }
+        
+        // 检查是否有已删除的账户记录（仅用于日志记录）
+        StripeAccount deletedAccount = stripeAccountMapper.selectByTenantIdIncludeDeleted(tenantId);
+        if (deletedAccount != null && deletedAccount.getDeleted()) {
+            log.info("Found deleted Stripe account record for tenant: {}, will create a new one", tenantId);
         }
         
         try {
@@ -147,57 +149,34 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             
             Account stripeAccount = Account.create(paramsBuilder.build());
             
-            // 保存到数据库
-            StripeAccount account;
-            if (existingAccount != null && existingAccount.getDeleted()) {
-                // 重用已删除的账户记录
-                account = existingAccount;
-                account.setStripeAccountId(stripeAccount.getId());
-                account.setAccountType(request.getAccountType());
-                account.setBusinessName(request.getBusinessName());
-                account.setBusinessType(request.getBusinessType());
-                account.setCountry(request.getCountry());
-                account.setDefaultCurrency(request.getDefaultCurrency());
-                account.setOnboardingCompleted(false);
-                account.setChargesEnabled(stripeAccount.getChargesEnabled());
-                account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
-                account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
-                account.setUpdatedAt(LocalDateTime.now());
-                account.setDeleted(false);
-                
-                Map<String, Object> metadata = new HashMap<>();
-                metadata.put("stripe_created", stripeAccount.getCreated());
-                metadata.put("prefilled", true);
+            // 总是创建新记录（避免外键约束问题）
+            StripeAccount account = new StripeAccount();
+            account.setTenantId(tenantId);
+            account.setStripeAccountId(stripeAccount.getId());
+            account.setAccountType(request.getAccountType());
+            account.setBusinessName(request.getBusinessName());
+            account.setBusinessType(request.getBusinessType());
+            account.setCountry(request.getCountry());
+            account.setDefaultCurrency(request.getDefaultCurrency());
+            account.setOnboardingCompleted(false);
+            account.setChargesEnabled(stripeAccount.getChargesEnabled());
+            account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
+            account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
+            account.setCreatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now());
+            account.setDeleted(false);
+            
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("stripe_created", stripeAccount.getCreated());
+            metadata.put("prefilled", true);
+            // 如果有已删除的旧账户，记录重新激活信息
+            if (deletedAccount != null) {
                 metadata.put("reactivated", true);
-                metadata.put("reactivated_at", LocalDateTime.now().toString());
-                account.setMetadata(convertToJson(metadata));
-                
-                stripeAccountMapper.updateById(account);
-            } else {
-                // 创建新记录
-                account = new StripeAccount();
-                account.setTenantId(tenantId);
-                account.setStripeAccountId(stripeAccount.getId());
-                account.setAccountType(request.getAccountType());
-                account.setBusinessName(request.getBusinessName());
-                account.setBusinessType(request.getBusinessType());
-                account.setCountry(request.getCountry());
-                account.setDefaultCurrency(request.getDefaultCurrency());
-                account.setOnboardingCompleted(false);
-                account.setChargesEnabled(stripeAccount.getChargesEnabled());
-                account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
-                account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
-                account.setCreatedAt(LocalDateTime.now());
-                account.setUpdatedAt(LocalDateTime.now());
-                account.setDeleted(false);
-                
-                Map<String, Object> metadata = new HashMap<>();
-                metadata.put("stripe_created", stripeAccount.getCreated());
-                metadata.put("prefilled", true);
-                account.setMetadata(convertToJson(metadata));
-                
-                stripeAccountMapper.insert(account);
+                metadata.put("previous_account_id", deletedAccount.getStripeAccountId());
             }
+            account.setMetadata(convertToJson(metadata));
+            
+            stripeAccountMapper.insert(account);
             
             log.info("Successfully created Stripe Connect account with prefilled info: {}", stripeAccount.getId());
             return convertToDTO(account);
@@ -525,6 +504,156 @@ public class StripeConnectServiceImpl implements StripeConnectService {
         } catch (StripeException e) {
             log.error("Failed to cancel payment intent", e);
             throw new RuntimeException("Failed to cancel payment intent: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public LocationDTO createLocation(Long tenantId, CreateLocationRequest request) {
+        log.info("Creating location for tenant: {}", tenantId);
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null || !account.getChargesEnabled()) {
+            throw new RuntimeException("Stripe account not ready for tenant: " + tenantId);
+        }
+        
+        try {
+            // 创建Location
+            com.stripe.param.terminal.LocationCreateParams params = com.stripe.param.terminal.LocationCreateParams.builder()
+                .setDisplayName(request.getDisplayName())
+                .setAddress(com.stripe.param.terminal.LocationCreateParams.Address.builder()
+                    .setLine1(request.getAddress().getLine1())
+                    .setLine2(request.getAddress().getLine2())
+                    .setCity(request.getAddress().getCity())
+                    .setState(request.getAddress().getState())
+                    .setCountry(request.getAddress().getCountry())
+                    .setPostalCode(request.getAddress().getPostalCode())
+                    .build())
+                .putMetadata("tenant_id", tenantId.toString())
+                .build();
+            
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            com.stripe.model.terminal.Location location = com.stripe.model.terminal.Location.create(params, requestOptions);
+            
+            // 保存到数据库
+            StripeLocation stripeLocation = new StripeLocation();
+            stripeLocation.setTenantId(tenantId);
+            stripeLocation.setStripeAccountId(account.getStripeAccountId());
+            stripeLocation.setLocationId(location.getId());
+            stripeLocation.setDisplayName(location.getDisplayName());
+            stripeLocation.setAddressLine1(location.getAddress().getLine1());
+            stripeLocation.setAddressLine2(location.getAddress().getLine2());
+            stripeLocation.setAddressCity(location.getAddress().getCity());
+            stripeLocation.setAddressState(location.getAddress().getState());
+            stripeLocation.setAddressCountry(location.getAddress().getCountry());
+            stripeLocation.setAddressPostalCode(location.getAddress().getPostalCode());
+            stripeLocation.setCreatedAt(LocalDateTime.now());
+            stripeLocation.setUpdatedAt(LocalDateTime.now());
+            stripeLocation.setDeleted(false);
+            
+            stripeLocationMapper.insert(stripeLocation);
+            
+            return LocationDTO.builder()
+                .id(location.getId())
+                .displayName(location.getDisplayName())
+                .address(LocationDTO.Address.builder()
+                    .line1(location.getAddress().getLine1())
+                    .line2(location.getAddress().getLine2())
+                    .city(location.getAddress().getCity())
+                    .state(location.getAddress().getState())
+                    .country(location.getAddress().getCountry())
+                    .postalCode(location.getAddress().getPostalCode())
+                    .build())
+                .build();
+        } catch (Exception e) {
+            log.error("Failed to create location for tenant: {}", tenantId, e);
+            throw new RuntimeException("Failed to create location: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public List<LocationDTO> listLocations(Long tenantId) {
+        log.info("Listing locations for tenant: {}", tenantId);
+        
+        // 先尝试从数据库获取
+        List<StripeLocation> dbLocations = stripeLocationMapper.selectByTenantId(tenantId);
+        if (!dbLocations.isEmpty()) {
+            return dbLocations.stream()
+                .map(loc -> LocationDTO.builder()
+                    .id(loc.getLocationId())
+                    .displayName(loc.getDisplayName())
+                    .address(LocationDTO.Address.builder()
+                        .line1(loc.getAddressLine1())
+                        .line2(loc.getAddressLine2())
+                        .city(loc.getAddressCity())
+                        .state(loc.getAddressState())
+                        .country(loc.getAddressCountry())
+                        .postalCode(loc.getAddressPostalCode())
+                        .build())
+                    .build())
+                .collect(Collectors.toList());
+        }
+        
+        // 如果数据库没有，从Stripe API获取并同步到数据库
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            com.stripe.param.terminal.LocationListParams params = com.stripe.param.terminal.LocationListParams.builder()
+                .setLimit(100L)
+                .build();
+            
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            com.stripe.model.terminal.LocationCollection locations = 
+                com.stripe.model.terminal.Location.list(params, requestOptions);
+            
+            // 同步到数据库
+            for (com.stripe.model.terminal.Location location : locations.getData()) {
+                StripeLocation existing = stripeLocationMapper.selectByLocationId(location.getId());
+                if (existing == null) {
+                    StripeLocation stripeLocation = new StripeLocation();
+                    stripeLocation.setTenantId(tenantId);
+                    stripeLocation.setStripeAccountId(account.getStripeAccountId());
+                    stripeLocation.setLocationId(location.getId());
+                    stripeLocation.setDisplayName(location.getDisplayName());
+                    stripeLocation.setAddressLine1(location.getAddress().getLine1());
+                    stripeLocation.setAddressLine2(location.getAddress().getLine2());
+                    stripeLocation.setAddressCity(location.getAddress().getCity());
+                    stripeLocation.setAddressState(location.getAddress().getState());
+                    stripeLocation.setAddressCountry(location.getAddress().getCountry());
+                    stripeLocation.setAddressPostalCode(location.getAddress().getPostalCode());
+                    stripeLocation.setCreatedAt(LocalDateTime.now());
+                    stripeLocation.setUpdatedAt(LocalDateTime.now());
+                    stripeLocation.setDeleted(false);
+                    stripeLocationMapper.insert(stripeLocation);
+                }
+            }
+            
+            return locations.getData().stream()
+                .map(location -> LocationDTO.builder()
+                    .id(location.getId())
+                    .displayName(location.getDisplayName())
+                    .address(LocationDTO.Address.builder()
+                        .line1(location.getAddress().getLine1())
+                        .line2(location.getAddress().getLine2())
+                        .city(location.getAddress().getCity())
+                        .state(location.getAddress().getState())
+                        .country(location.getAddress().getCountry())
+                        .postalCode(location.getAddress().getPostalCode())
+                        .build())
+                    .build())
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Failed to list locations for tenant: {}", tenantId, e);
+            return new ArrayList<>();
         }
     }
     
@@ -1128,6 +1257,20 @@ public class StripeConnectServiceImpl implements StripeConnectService {
         }
         
         try {
+            // 首先删除关联的终端记录（软删除）
+            if (account.getStripeAccountId() != null) {
+                int deletedTerminals = stripeTerminalMapper.deleteByStripeAccountId(account.getStripeAccountId());
+                if (deletedTerminals > 0) {
+                    log.info("Soft deleted {} terminals for Stripe account: {}", deletedTerminals, account.getStripeAccountId());
+                }
+            } else {
+                // 如果没有Stripe账户ID，按租户ID删除
+                int deletedTerminals = stripeTerminalMapper.deleteByTenantId(tenantId);
+                if (deletedTerminals > 0) {
+                    log.info("Soft deleted {} terminals for tenant: {}", deletedTerminals, tenantId);
+                }
+            }
+            
             // 在Stripe中删除账户（测试模式）
             if (account.getStripeAccountId() != null) {
                 try {
@@ -1140,8 +1283,15 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 }
             }
             
-            // 标记本地账户为已删除
+            // 标记本地账户为已删除，并清空Stripe相关ID
             account.setDeleted(true);
+            // 清空已删除的Stripe账户ID和用户ID，避免重新创建时混淆
+            // 注意：这里不直接设置为null，因为可能需要保留历史记录
+            // 但需要确保重新创建时不会使用旧的ID
+            account.setOnboardingCompleted(false);
+            account.setChargesEnabled(false);
+            account.setPayoutsEnabled(false);
+            account.setDetailsSubmitted(false);
             account.setUpdatedAt(LocalDateTime.now());
             stripeAccountMapper.updateById(account);
             

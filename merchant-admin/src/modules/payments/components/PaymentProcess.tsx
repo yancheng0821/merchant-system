@@ -215,11 +215,13 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
     isActive: boolean;
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
+    hasTerminals: boolean;
     loading: boolean;
   }>({
     isActive: false,
     chargesEnabled: false,
     payoutsEnabled: false,
+    hasTerminals: false,
     loading: true
   });
   
@@ -231,19 +233,30 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
     if (!user?.tenantId) return;
     
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}`,
-        {
-          withCredentials: true,
-        }
-      );
+      // 并行获取账户状态和终端列表
+      const [accountResponse, terminalsResponse] = await Promise.all([
+        axios.get(
+          `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}`,
+          { withCredentials: true }
+        ),
+        axios.get(
+          `${API_BASE_URL}/api/business/stripe-connect/terminal/list`,
+          {
+            params: { tenantId: user.tenantId },
+            withCredentials: true
+          }
+        ).catch(() => ({ data: { data: [] } })) // 如果终端API失败，返回空数组
+      ]);
       
-      const accountInfo = response.data?.data;
+      const accountInfo = accountResponse.data?.data;
+      const terminals = terminalsResponse.data?.data || [];
+      
       if (accountInfo) {
         setStripeAccountStatus({
           isActive: accountInfo.chargesEnabled && accountInfo.payoutsEnabled,
           chargesEnabled: accountInfo.chargesEnabled || false,
           payoutsEnabled: accountInfo.payoutsEnabled || false,
+          hasTerminals: terminals.length > 0,
           loading: false
         });
       } else {
@@ -251,6 +264,7 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
           isActive: false,
           chargesEnabled: false,
           payoutsEnabled: false,
+          hasTerminals: false,
           loading: false
         });
       }
@@ -260,6 +274,7 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
         isActive: false,
         chargesEnabled: false,
         payoutsEnabled: false,
+        hasTerminals: false,
         loading: false
       });
     }
@@ -588,10 +603,13 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
       return;
     }
     
-    // 如果选择了卡支付但Stripe未激活，显示提示对话框
-    if ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.chargesEnabled) {
-      setStripeSetupDialog(true);
-      return;
+    // 如果选择了卡支付但Stripe未激活或未绑定终端，显示提示对话框
+    if ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card')) {
+      if (!stripeAccountStatus.chargesEnabled || 
+          (stripeAccountStatus.chargesEnabled && stripeAccountStatus.payoutsEnabled && !stripeAccountStatus.hasTerminals)) {
+        setStripeSetupDialog(true);
+        return;
+      }
     }
 
     setPaymentDialog(true);
@@ -1887,7 +1905,8 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
                 {/* Stripe状态提示 */}
                 {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.loading && (
                   <>
-                    {!stripeAccountStatus.chargesEnabled ? (
+                    {(!stripeAccountStatus.chargesEnabled || 
+                      (stripeAccountStatus.chargesEnabled && stripeAccountStatus.payoutsEnabled && !stripeAccountStatus.hasTerminals)) ? (
                       <Box
                         sx={{
                           mt: 2,
@@ -1904,7 +1923,9 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
                               {t('payments.cardPaymentUnavailable', 'Card Payment Unavailable')}
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#78350F', mb: 2 }}>
-                              {t('payments.stripeNotActiveMessage', 'Please complete Stripe setup to accept card payments.')}
+                              {!stripeAccountStatus.chargesEnabled 
+                                ? t('payments.stripeNotActiveMessage', 'Please complete Stripe setup to accept card payments.')
+                                : t('payments.terminalNotBoundMessage', 'Please bind a terminal device to accept card payments.')}
                             </Typography>
                             <Button
                               variant="contained"
@@ -1999,7 +2020,9 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
                 onClick={handleCreateOrder}
                 disabled={
                   orderItems.length === 0 ||
-                  ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.chargesEnabled)
+                  ((paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && 
+                    (!stripeAccountStatus.chargesEnabled || 
+                     (stripeAccountStatus.chargesEnabled && stripeAccountStatus.payoutsEnabled && !stripeAccountStatus.hasTerminals)))
                 }
                 sx={{
                   py: 2,
@@ -2628,10 +2651,14 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
             }}
           >
             <Typography variant="body1" sx={{ color: '#78350F', mb: 1 }}>
-              {t('payments.stripeNotActiveMessage', '您需要先完成Stripe支付设置才能接受信用卡/借记卡支付。')}
+              {!stripeAccountStatus.chargesEnabled 
+                ? t('payments.stripeNotActiveMessage', '您需要先完成Stripe支付设置才能接受信用卡/借记卡支付。')
+                : t('payments.terminalNotBoundMessage', '您需要先绑定终端设备才能接受信用卡/借记卡支付。')}
             </Typography>
             <Typography variant="body2" sx={{ color: '#92400E' }}>
-              {t('payments.stripeSetupBenefit', '完成设置后，您将可以接受各种信用卡和借记卡支付，资金将自动转入您的银行账户。')}
+              {!stripeAccountStatus.chargesEnabled 
+                ? t('payments.stripeSetupBenefit', '完成设置后，您将可以接受各种信用卡和借记卡支付，资金将自动转入您的银行账户。')
+                : t('payments.terminalBindBenefit', '绑定终端后，您将可以通过POS终端接受客户的信用卡和借记卡支付。')}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>

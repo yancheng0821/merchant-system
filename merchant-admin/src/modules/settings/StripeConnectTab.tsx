@@ -48,6 +48,7 @@ import {
   ArrowForward as ArrowForwardIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
+import TerminalManagement from './TerminalManagement';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
@@ -208,10 +209,36 @@ const StripeConnectTab: React.FC = () => {
   const createOnboardingLink = async () => {
     if (!user?.tenantId) return;
     
-    // 如果账户已经提交了详细信息且正在审核中，不允许重新进入
-    if (accountInfo?.detailsSubmitted && !accountInfo?.onboardingCompleted) {
-      alert(t('settings.stripe.underReview'));
-      return;
+    // 检查是否有待处理的验证项
+    const hasPendingRequirements = accountInfo?.pendingVerification && 
+                                   accountInfo.pendingVerification.length > 0;
+    
+    // 如果账户已经提交了详细信息且正在审核中，但还不能收款，说明是纯审核状态
+    if (accountInfo?.detailsSubmitted && !accountInfo?.chargesEnabled && !accountInfo?.onboardingCompleted) {
+      // 如果没有待处理项，说明正在等待Stripe审核，不应该重新进入
+      if (!hasPendingRequirements) {
+        setSnackbar({
+          open: true,
+          message: t('settings.stripe.accountUnderReviewMessage'),
+          severity: 'info',
+        });
+        return;
+      }
+      // 如果有待处理项，允许进入补充信息
+    }
+    
+    // 如果可以收款但不能提现，检查是否有待处理项
+    if (accountInfo?.chargesEnabled && !accountInfo?.payoutsEnabled) {
+      // 如果没有待处理项，说明正在等待审核
+      if (!hasPendingRequirements) {
+        setSnackbar({
+          open: true,
+          message: t('settings.stripe.identityUnderReview', '您的身份验证正在审核中，请耐心等待。审核通常需要1-3个工作日。'),
+          severity: 'info',
+        });
+        return;
+      }
+      // 如果有待处理项，允许进入补充信息
     }
     
     try {
@@ -267,7 +294,8 @@ const StripeConnectTab: React.FC = () => {
 
   // 获取Dashboard URL
   const openStripeDashboard = async () => {
-    if (!user?.tenantId || !accountInfo?.onboardingCompleted) return;
+    // 只要有账户信息就可以打开Dashboard，不需要等待onboarding完成
+    if (!user?.tenantId || !accountInfo) return;
     
     try {
       const response = await axios.get(
@@ -929,11 +957,34 @@ const StripeConnectTab: React.FC = () => {
                       {t('settings.stripe.pendingItems')}:
                     </Typography>
                     <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                      {accountInfo.pendingVerification.map((item, index) => (
-                        <li key={index}>
-                          <Typography variant="caption">{item}</Typography>
-                        </li>
-                      ))}
+                      {accountInfo.pendingVerification.map((item, index) => {
+                        // 将技术字段名转换为用户友好的描述
+                        const getVerificationItemText = (item: string): string => {
+                          if (item.includes('proof_of_liveness')) {
+                            return t('settings.stripe.verificationItems.proofOfLiveness', '身份证明文件');
+                          }
+                          if (item.includes('document')) {
+                            return t('settings.stripe.verificationItems.document', '身份证件');
+                          }
+                          if (item.includes('address')) {
+                            return t('settings.stripe.verificationItems.address', '地址证明');
+                          }
+                          if (item.includes('bank_account')) {
+                            return t('settings.stripe.verificationItems.bankAccount', '银行账户信息');
+                          }
+                          if (item.includes('business')) {
+                            return t('settings.stripe.verificationItems.business', '企业信息');
+                          }
+                          // 如果没有匹配的，返回一个通用描述
+                          return t('settings.stripe.verificationItems.additional', '额外验证信息');
+                        };
+                        
+                        return (
+                          <li key={index}>
+                            <Typography variant="caption">{getVerificationItemText(item)}</Typography>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </Box>
                 )}
@@ -1100,6 +1151,13 @@ const StripeConnectTab: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
+        </Grid>
+      )}
+      
+      {/* 终端管理 - 仅在账户完全激活后显示 */}
+      {accountInfo && accountInfo.chargesEnabled && accountInfo.payoutsEnabled && (
+        <Grid item xs={12}>
+          <TerminalManagement />
         </Grid>
       )}
       

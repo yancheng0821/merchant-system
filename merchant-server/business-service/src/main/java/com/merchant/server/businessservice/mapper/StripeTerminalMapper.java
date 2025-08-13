@@ -42,4 +42,18 @@ public interface StripeTerminalMapper {
      */
     @Select("SELECT * FROM stripe_terminals WHERE terminal_id = #{terminalId} AND deleted = 0")
     StripeTerminal selectByTerminalId(@Param("terminalId") String terminalId);
+    
+    /**
+     * 根据Stripe账户ID删除所有终端（软删除）
+     */
+    @Update("UPDATE stripe_terminals SET deleted = 1, updated_at = NOW() " +
+            "WHERE stripe_account_id = #{stripeAccountId}")
+    int deleteByStripeAccountId(@Param("stripeAccountId") String stripeAccountId);
+    
+    /**
+     * 根据租户ID删除所有终端（软删除）
+     */
+    @Update("UPDATE stripe_terminals SET deleted = 1, updated_at = NOW() " +
+            "WHERE tenant_id = #{tenantId}")
+    int deleteByTenantId(@Param("tenantId") Long tenantId);
 }

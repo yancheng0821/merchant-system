@@ -99,6 +99,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // 监听session过期事件
+  useEffect(() => {
+    const handleSessionExpired = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('Session expired event received:', customEvent.detail);
+      
+      // 清除用户状态
+      setUser(null);
+      setError('Session expired. Please login again.');
+      
+      // 清除本地存储
+      tokenManager.clearAll();
+      localStorage.removeItem('user');
+    };
+
+    window.addEventListener('sessionExpired', handleSessionExpired);
+
+    return () => {
+      window.removeEventListener('sessionExpired', handleSessionExpired);
+    };
+  }, []);
+
+  // 定期验证token有效性（每5分钟验证一次）
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      const token = tokenManager.getToken();
+      if (token) {
+        try {
+          const pureToken = token?.startsWith('Bearer ') ? token.slice(7) : token;
+          const response = await authApi.validateToken(pureToken);
+          
+          if (!response.success) {
+            console.log('Token validation failed during periodic check');
+            // 触发session过期事件
+            const event = new CustomEvent('sessionExpired', { 
+              detail: { reason: 'Token validation failed' } 
+            });
+            window.dispatchEvent(event);
+          }
+        } catch (error) {
+          console.error('Failed to validate token:', error);
+          // 如果验证失败，可能是网络问题，不立即登出
+        }
+      }
+    }, 5 * 60 * 1000); // 5分钟
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [user]);
+
   const validateStoredToken = async (token: string) => {
     try {
       // 修复：去掉Bearer前缀

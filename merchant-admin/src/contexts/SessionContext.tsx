@@ -35,6 +35,25 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [warningShown, setWarningShown] = useState(false);
 
+  // 监听API触发的session过期事件
+  useEffect(() => {
+    const handleApiSessionExpired = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('API session expired event received:', customEvent.detail);
+      
+      // 设置session过期状态
+      setIsSessionExpired(true);
+      setShowSessionDialog(true);
+      setLastActivity(null);
+    };
+
+    window.addEventListener('sessionExpired', handleApiSessionExpired);
+
+    return () => {
+      window.removeEventListener('sessionExpired', handleApiSessionExpired);
+    };
+  }, []);
+
   // 获取会话超时设置
   useEffect(() => {
     const fetchSessionTimeout = async () => {
@@ -59,22 +78,38 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     fetchSessionTimeout();
   }, [user?.tenantId]);
 
-  // 当用户登录时初始化lastActivity
+  // 当用户登录时初始化lastActivity并重置过期状态
   useEffect(() => {
-    if (user && lastActivity === null) {
-      setLastActivity(Date.now());
+    if (user) {
+      // 如果是新登录（lastActivity为null）或者之前已过期，重置状态
+      if (lastActivity === null || isSessionExpired) {
+        console.log('User logged in, resetting session state');
+        setLastActivity(Date.now());
+        setIsSessionExpired(false);
+        setShowSessionDialog(false);
+        setWarningShown(false);
+      }
+    } else {
+      // 用户登出时，清除状态
+      setLastActivity(null);
+      setIsSessionExpired(false);
+      setShowSessionDialog(false);
+      setWarningShown(false);
     }
-  }, [user, lastActivity]);
+  }, [user]); // 只依赖user，避免循环依赖
 
   // 刷新会话活动时间
   const refreshSession = useCallback(() => {
-    // 如果session已经过期，不允许刷新
-    if (isSessionExpired) {
-      return;
-    }
-    setLastActivity(Date.now());
-    setWarningShown(false);
-  }, [isSessionExpired]);
+    // 使用函数式更新确保使用最新的过期状态
+    setIsSessionExpired(currentExpired => {
+      if (!currentExpired) {
+        // 只有在未过期时才刷新活动时间
+        setLastActivity(Date.now());
+        setWarningShown(false);
+      }
+      return currentExpired;
+    });
+  }, []);
 
   // 更新会话超时时间
   const updateSessionTimeout = useCallback((timeout: number) => {
@@ -97,27 +132,27 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     let activityTimeout: NodeJS.Timeout;
 
     const handleActivity = () => {
-      // 如果会话已经过期，立即返回，不进行任何更新
-      if (isSessionExpired) {
-        return;
-      }
-      
       // 防抖处理，避免过于频繁的更新
       clearTimeout(activityTimeout);
       activityTimeout = setTimeout(() => {
-        // 再次检查会话状态，确保在防抖期间没有过期
-        if (isSessionExpired) {
-          return;
-        }
-        
         // 使用函数式更新来获取最新的状态
-        setLastActivity(prevLastActivity => {
-          // 只有在lastActivity不为null且会话未过期时才更新
-          if (prevLastActivity !== null && !isSessionExpired) {
-            setWarningShown(false);
-            return Date.now();
+        setIsSessionExpired(currentExpired => {
+          // 如果已经过期，不更新活动时间
+          if (currentExpired) {
+            return currentExpired;
           }
-          return prevLastActivity;
+          
+          // 如果未过期，更新活动时间
+          setLastActivity(prevLastActivity => {
+            // 只有在lastActivity不为null时才更新
+            if (prevLastActivity !== null) {
+              setWarningShown(false);
+              return Date.now();
+            }
+            return prevLastActivity;
+          });
+          
+          return currentExpired;
         });
       }, 1000); // 1秒防抖
     };
@@ -139,55 +174,55 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
   // 检查会话是否过期
   useEffect(() => {
-    // 只有在用户登录且lastActivity已初始化后才开始检查会话
-    if (!user || lastActivity === null) {
+    // 只有在用户登录且lastActivity已初始化且未过期后才开始检查会话
+    if (!user || lastActivity === null || isSessionExpired) {
       return;
     }
 
-    let interval: NodeJS.Timeout;
-
     const checkSession = () => {
-      // 获取当前的lastActivity值
-      const currentLastActivity = lastActivity;
-      if (currentLastActivity === null) {
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastActivity = now - currentLastActivity;
-      const timeoutMs = sessionTimeout * 60 * 1000; // 转换为毫秒
-
-      // 检查是否超时
-      if (timeSinceLastActivity > timeoutMs) {
-        console.log('Session expired:', {
-          timeSinceLastActivity: timeSinceLastActivity / 1000 / 60,
-          sessionTimeout,
-          lastActivity: new Date(currentLastActivity).toLocaleString()
-        });
-        setIsSessionExpired(true);
-        setShowSessionDialog(true);
-        // 立即将lastActivity设置为null，确保事件监听器被移除
-        setLastActivity(null);
-        // 清除定时器，避免重复检查
-        if (interval) {
-          clearInterval(interval);
+      // 使用setState的函数形式来获取最新的lastActivity值
+      setLastActivity(currentLastActivity => {
+        if (currentLastActivity === null) {
+          return currentLastActivity;
         }
-      }
+
+        const now = Date.now();
+        const timeSinceLastActivity = now - currentLastActivity;
+        const timeoutMs = sessionTimeout * 60 * 1000; // 转换为毫秒
+
+        // 检查是否超时
+        if (timeSinceLastActivity > timeoutMs) {
+          console.log('Session expired due to inactivity:', {
+            inactiveMinutes: Math.round(timeSinceLastActivity / 1000 / 60),
+            sessionTimeoutMinutes: sessionTimeout,
+            lastActivity: new Date(currentLastActivity).toLocaleString()
+          });
+          
+          // 触发session过期 - 在外部设置，避免在setState中设置其他state
+          setTimeout(() => {
+            setIsSessionExpired(true);
+            setShowSessionDialog(true);
+          }, 0);
+          
+          // 返回null来清除lastActivity
+          return null;
+        }
+        
+        // 如果没有过期，返回原值
+        return currentLastActivity;
+      });
     };
 
-    // 延迟2秒后开始检查，给用户登录过程一些时间
-    const initialDelay = setTimeout(() => {
-      // 每30秒检查一次会话状态
-      interval = setInterval(checkSession, 30000);
-    }, 2000);
+    // 立即检查一次
+    checkSession();
+    
+    // 每30秒检查一次会话状态
+    const interval = setInterval(checkSession, 30000);
 
     return () => {
-      clearTimeout(initialDelay);
-      if (interval) {
-        clearInterval(interval);
-      }
+      clearInterval(interval);
     };
-  }, [user, sessionTimeout]); // 移除lastActivity和isSessionExpired依赖，避免重复创建定时器
+  }, [user, sessionTimeout, isSessionExpired]);
 
   const handleSessionExpiredConfirm = () => {
     setShowSessionDialog(false);

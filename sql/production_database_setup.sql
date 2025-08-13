@@ -798,7 +798,6 @@ CREATE TABLE IF NOT EXISTS stripe_accounts (
                                                updated_by BIGINT COMMENT '更新人ID',
                                                deleted BOOLEAN DEFAULT FALSE COMMENT '逻辑删除标记',
 
-                                               UNIQUE KEY uk_tenant_id (tenant_id),
                                                UNIQUE KEY uk_stripe_account_id (stripe_account_id),
                                                INDEX idx_stripe_user_id (stripe_user_id),
                                                INDEX idx_onboarding_status (onboarding_completed, charges_enabled),
@@ -939,6 +938,46 @@ CREATE TABLE IF NOT EXISTS stripe_refunds (
                                               FOREIGN KEY (tenant_id) REFERENCES merchant_auth.tenants(id),
                                               FOREIGN KEY (order_id) REFERENCES orders(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe退款表';
+
+
+
+-- Stripe Location表
+-- 用于存储Terminal设备的位置信息
+CREATE TABLE IF NOT EXISTS stripe_locations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    tenant_id BIGINT NOT NULL COMMENT '租户ID',
+    stripe_account_id VARCHAR(255) NOT NULL COMMENT 'Stripe Connect账户ID',
+    location_id VARCHAR(255) NOT NULL UNIQUE COMMENT 'Stripe Location ID (tml_xxx)',
+    
+    -- 位置信息
+    display_name VARCHAR(255) NOT NULL COMMENT '显示名称',
+    
+    -- 地址信息
+    address_line1 VARCHAR(255) COMMENT '地址行1',
+    address_line2 VARCHAR(255) COMMENT '地址行2',
+    address_city VARCHAR(100) COMMENT '城市',
+    address_state VARCHAR(50) COMMENT '省份/州',
+    address_country VARCHAR(10) DEFAULT 'CA' COMMENT '国家代码',
+    address_postal_code VARCHAR(20) COMMENT '邮政编码',
+    
+    -- 元数据
+    metadata JSON COMMENT '元数据',
+    
+    -- 时间戳
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted BOOLEAN DEFAULT FALSE COMMENT '软删除标记',
+    
+    -- 索引
+    INDEX idx_tenant (tenant_id),
+    INDEX idx_stripe_account (stripe_account_id),
+    INDEX idx_location_id (location_id),
+    
+    -- 外键
+    FOREIGN KEY (tenant_id) REFERENCES merchant_auth.tenants(id),
+    FOREIGN KEY (stripe_account_id) REFERENCES stripe_accounts(stripe_account_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stripe Location位置表';
+
 =====================================================
 -- 5. 数据分析数据库 (merchant_analytics)
 -- =====================================================
