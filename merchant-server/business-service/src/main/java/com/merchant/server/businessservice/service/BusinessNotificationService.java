@@ -1,9 +1,11 @@
 package com.merchant.server.businessservice.service;
 
+import com.merchant.server.businessservice.config.NotificationTemplates;
 import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.entity.BusinessNotification;
 import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.mapper.BusinessNotificationMapper;
+import com.merchant.server.businessservice.mapper.MerchantSettingsMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,19 +29,48 @@ public class BusinessNotificationService {
     
     private final BusinessNotificationMapper notificationMapper;
     private final AppointmentService appointmentService;
+    private final MerchantSettingsMapper merchantSettingsMapper;
+    
+    /**
+     * 获取商户语言设置
+     */
+    private String getMerchantLanguage(Long tenantId) {
+        try {
+            String language = merchantSettingsMapper.getMerchantLanguage(tenantId);
+            return language != null ? language : "zh-CN";
+        } catch (Exception e) {
+            log.error("Failed to get merchant language for tenant: {}", tenantId, e);
+            return "zh-CN";
+        }
+    }
     
     /**
      * 创建新预约通知
      */
     public void createNewAppointmentNotification(Appointment appointment, Customer customer, String serviceName) {
+        String language = getMerchantLanguage(appointment.getTenantId());
+        String title = NotificationTemplates.getTemplate(language, "NEW_APPOINTMENT_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "NEW_APPOINTMENT_CONTENT");
+        
+        String content;
+        if ("en-US".equals(language) || "en".equals(language)) {
+            content = String.format(contentTemplate,
+                customer.getFirstName(), customer.getLastName(),
+                serviceName,
+                appointment.getAppointmentDate(),
+                appointment.getAppointmentTime());
+        } else {
+            content = String.format(contentTemplate,
+                customer.getLastName(), customer.getFirstName(),
+                appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
+                serviceName);
+        }
+        
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("NEW_APPOINTMENT")
-                .title("新预约提醒")
-                .content(String.format("%s %s预约了%s的%s", 
-                    customer.getLastName(), customer.getFirstName(),
-                    appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
-                    serviceName))
+                .title(title)
+                .content(content)
                 .level("INFO")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -60,14 +91,29 @@ public class BusinessNotificationService {
      * 创建预约取消通知
      */
     public void createAppointmentCancelledNotification(Appointment appointment, Customer customer, String serviceName) {
+        String language = getMerchantLanguage(appointment.getTenantId());
+        String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_CANCELLED_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_CANCELLED_CONTENT");
+        
+        String content;
+        if ("en-US".equals(language) || "en".equals(language)) {
+            content = String.format(contentTemplate,
+                customer.getFirstName(), customer.getLastName(),
+                serviceName,
+                appointment.getAppointmentDate(),
+                appointment.getAppointmentTime());
+        } else {
+            content = String.format(contentTemplate,
+                customer.getLastName(), customer.getFirstName(),
+                appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
+                serviceName);
+        }
+        
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("APPOINTMENT_CANCELLED")
-                .title("预约取消提醒")
-                .content(String.format("%s %s取消了%s的%s预约", 
-                    customer.getLastName(), customer.getFirstName(),
-                    appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
-                    serviceName))
+                .title(title)
+                .content(content)
                 .level("WARNING")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -88,14 +134,29 @@ public class BusinessNotificationService {
      * 创建预约确认通知
      */
     public void createAppointmentConfirmedNotification(Appointment appointment, Customer customer, String serviceName) {
+        String language = getMerchantLanguage(appointment.getTenantId());
+        String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_CONFIRMED_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_CONFIRMED_CONTENT");
+        
+        String content;
+        if ("en-US".equals(language) || "en".equals(language)) {
+            content = String.format(contentTemplate,
+                customer.getFirstName(), customer.getLastName(),
+                serviceName,
+                appointment.getAppointmentDate(),
+                appointment.getAppointmentTime());
+        } else {
+            content = String.format(contentTemplate,
+                customer.getLastName(), customer.getFirstName(),
+                serviceName,
+                appointment.getAppointmentDate() + " " + appointment.getAppointmentTime());
+        }
+        
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("APPOINTMENT_CONFIRMED")
-                .title("预约确认提醒")
-                .content(String.format("%s %s的%s预约已确认，时间：%s", 
-                    customer.getLastName(), customer.getFirstName(),
-                    serviceName,
-                    appointment.getAppointmentDate() + " " + appointment.getAppointmentTime()))
+                .title(title)
+                .content(content)
                 .level("SUCCESS")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -116,13 +177,26 @@ public class BusinessNotificationService {
      * 创建预约即将开始提醒（30分钟前）
      */
     public void createAppointmentReminderNotification(Appointment appointment, Customer customer, String serviceName) {
+        String language = getMerchantLanguage(appointment.getTenantId());
+        String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_REMINDER_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_REMINDER_CONTENT");
+        
+        String content;
+        if ("en-US".equals(language) || "en".equals(language)) {
+            content = String.format(contentTemplate,
+                customer.getFirstName(), customer.getLastName(),
+                serviceName);
+        } else {
+            content = String.format(contentTemplate,
+                customer.getLastName(), customer.getFirstName(),
+                serviceName);
+        }
+        
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("APPOINTMENT_REMINDER")
-                .title("预约即将开始")
-                .content(String.format("%s %s的%s预约将在30分钟后开始", 
-                    customer.getLastName(), customer.getFirstName(),
-                    serviceName))
+                .title(title)
+                .content(content)
                 .level("WARNING")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -143,11 +217,16 @@ public class BusinessNotificationService {
      * 创建待确认预约通知
      */
     public void createPendingConfirmationNotification(Long tenantId, int pendingCount) {
+        String language = getMerchantLanguage(tenantId);
+        String title = NotificationTemplates.getTemplate(language, "PENDING_CONFIRMATION_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "PENDING_CONFIRMATION_CONTENT");
+        String content = String.format(contentTemplate, pendingCount);
+        
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(tenantId)
                 .notificationType("PENDING_CONFIRMATION")
-                .title("待确认预约提醒")
-                .content(String.format("有%d个预约待确认，请及时处理", pendingCount))
+                .title(title)
+                .content(content)
                 .level("WARNING")
                 .businessType("APPOINTMENT")
                 .isRead(false)
@@ -156,6 +235,81 @@ public class BusinessNotificationService {
         
         notificationMapper.insert(notification);
         log.info("Created pending confirmation notification for tenant: {}", tenantId);
+    }
+    
+    /**
+     * 创建支付成功通知
+     */
+    public void createPaymentSuccessNotification(Long tenantId, String orderId, Double amount) {
+        String language = getMerchantLanguage(tenantId);
+        String title = NotificationTemplates.getTemplate(language, "PAYMENT_SUCCESS_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "PAYMENT_SUCCESS_CONTENT");
+        String content = String.format(contentTemplate, orderId, amount);
+        
+        BusinessNotification notification = BusinessNotification.builder()
+                .tenantId(tenantId)
+                .notificationType("PAYMENT_SUCCESS")
+                .title(title)
+                .content(content)
+                .level("SUCCESS")
+                .businessId(orderId)
+                .businessType("ORDER")
+                .isRead(false)
+                .deleted(false)
+                .build();
+        
+        notificationMapper.insert(notification);
+        log.info("Created payment success notification for order: {}", orderId);
+    }
+    
+    /**
+     * 创建支付失败通知
+     */
+    public void createPaymentFailedNotification(Long tenantId, String orderId) {
+        String language = getMerchantLanguage(tenantId);
+        String title = NotificationTemplates.getTemplate(language, "PAYMENT_FAILED_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "PAYMENT_FAILED_CONTENT");
+        String content = String.format(contentTemplate, orderId);
+        
+        BusinessNotification notification = BusinessNotification.builder()
+                .tenantId(tenantId)
+                .notificationType("PAYMENT_FAILED")
+                .title(title)
+                .content(content)
+                .level("ERROR")
+                .businessId(orderId)
+                .businessType("ORDER")
+                .isRead(false)
+                .deleted(false)
+                .build();
+        
+        notificationMapper.insert(notification);
+        log.info("Created payment failed notification for order: {}", orderId);
+    }
+    
+    /**
+     * 创建退款成功通知
+     */
+    public void createRefundSuccessNotification(Long tenantId, String orderId, Double amount) {
+        String language = getMerchantLanguage(tenantId);
+        String title = NotificationTemplates.getTemplate(language, "REFUND_SUCCESS_TITLE");
+        String contentTemplate = NotificationTemplates.getTemplate(language, "REFUND_SUCCESS_CONTENT");
+        String content = String.format(contentTemplate, orderId, amount);
+        
+        BusinessNotification notification = BusinessNotification.builder()
+                .tenantId(tenantId)
+                .notificationType("REFUND_SUCCESS")
+                .title(title)
+                .content(content)
+                .level("INFO")
+                .businessId(orderId)
+                .businessType("ORDER")
+                .isRead(false)
+                .deleted(false)
+                .build();
+        
+        notificationMapper.insert(notification);
+        log.info("Created refund success notification for order: {}", orderId);
     }
     
     /**

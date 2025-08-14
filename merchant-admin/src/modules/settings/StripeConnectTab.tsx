@@ -306,10 +306,16 @@ const StripeConnectTab: React.FC = () => {
       );
       
       if (response.data?.data?.url) {
+        // Express Dashboard登录链接是临时的，会直接让商户访问他们的子账户
+        // 无需额外登录，直接跳转到他们的Stripe Express仪表板
         window.open(response.data.data.url, '_blank');
+        
+        // 可选：显示提示信息
+        console.info('Opening Stripe Express Dashboard - no additional login required');
       }
     } catch (error) {
       console.error('Failed to get dashboard URL:', error);
+      // 可以添加用户友好的错误提示
     }
   };
 

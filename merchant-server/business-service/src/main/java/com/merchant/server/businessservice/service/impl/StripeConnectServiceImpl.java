@@ -7,6 +7,7 @@ import com.merchant.server.businessservice.service.StripeConnectService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.*;
+import com.stripe.model.LoginLink;
 import com.stripe.model.terminal.Reader;
 import com.stripe.net.RequestOptions;
 import com.stripe.net.Webhook;
@@ -907,26 +908,39 @@ public class StripeConnectServiceImpl implements StripeConnectService {
     public String getStripeDashboardUrl(Long tenantId) {
         StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
         if (account == null) {
+            log.warn("No Stripe account found for tenant: {}", tenantId);
             return null;
         }
         
-        if (account.getDashboardUrl() != null) {
-            return account.getDashboardUrl();
-        }
-        
-        // 生成Express Dashboard登录链接
+        // 为Express账户生成登录链接
+        // 注意：LoginLink是一次性的，每次调用都会生成新的链接
         try {
-            Map<String, Object> params = new HashMap<>();
+            // Express Dashboard Login Link
+            // 这会创建一个临时的、安全的URL，允许连接账户所有者直接访问他们的Stripe Express仪表板
+            // 无需单独登录
+            LoginLink loginLink = LoginLink.createOnAccount(
+                account.getStripeAccountId(),
+                (Map<String, Object>) null,  // Express账户不需要额外参数
+                null  // 使用默认的RequestOptions
+            );
             
-            RequestOptions requestOptions = RequestOptions.builder()
-                .setStripeAccount(account.getStripeAccountId())
-                .build();
+            String url = loginLink.getUrl();
+            log.info("Generated Express Dashboard login link for tenant {}: {}", tenantId, url);
             
-            LoginLink loginLink = LoginLink.createOnAccount(account.getStripeAccountId(), params, requestOptions);
-            return loginLink.getUrl();
+            // 注意：这个链接是临时的，有效期很短（通常几分钟）
+            // 不应该保存这个URL，每次都应该生成新的
+            return url;
             
         } catch (StripeException e) {
-            log.error("Failed to create login link", e);
+            log.error("Failed to create Express Dashboard login link for tenant: {}", tenantId, e);
+            
+            // 如果是Standard或Custom账户，返回标准的Stripe Dashboard URL
+            // 用户需要自己登录
+            if ("standard".equals(account.getAccountType()) || "custom".equals(account.getAccountType())) {
+                log.info("Returning standard dashboard URL for non-Express account");
+                return "https://dashboard.stripe.com/login";
+            }
+            
             return null;
         }
     }

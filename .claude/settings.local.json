@@ -44,7 +44,8 @@
       "Bash(mvn:*)",
       "Bash(sed:*)",
       "Bash(jar tf:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": []
   }
