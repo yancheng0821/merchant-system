@@ -5,7 +5,6 @@ import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.entity.BusinessNotification;
 import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.mapper.BusinessNotificationMapper;
-import com.merchant.server.businessservice.mapper.MerchantSettingsMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,26 +28,22 @@ public class BusinessNotificationService {
     
     private final BusinessNotificationMapper notificationMapper;
     private final AppointmentService appointmentService;
-    private final MerchantSettingsMapper merchantSettingsMapper;
-    
-    /**
-     * 获取商户语言设置
-     */
-    private String getMerchantLanguage(Long tenantId) {
-        try {
-            String language = merchantSettingsMapper.getMerchantLanguage(tenantId);
-            return language != null ? language : "zh-CN";
-        } catch (Exception e) {
-            log.error("Failed to get merchant language for tenant: {}", tenantId, e);
-            return "zh-CN";
-        }
-    }
     
     /**
      * 创建新预约通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createNewAppointmentNotification(Appointment appointment, Customer customer, String serviceName) {
-        String language = getMerchantLanguage(appointment.getTenantId());
+    public void createNewAppointmentNotification(Appointment appointment, Customer customer, String serviceName, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "NEW_APPOINTMENT_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "NEW_APPOINTMENT_CONTENT");
         
@@ -89,9 +84,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建预约取消通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createAppointmentCancelledNotification(Appointment appointment, Customer customer, String serviceName) {
-        String language = getMerchantLanguage(appointment.getTenantId());
+    public void createAppointmentCancelledNotification(Appointment appointment, Customer customer, String serviceName, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_CANCELLED_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_CANCELLED_CONTENT");
         
@@ -132,9 +137,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建预约确认通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createAppointmentConfirmedNotification(Appointment appointment, Customer customer, String serviceName) {
-        String language = getMerchantLanguage(appointment.getTenantId());
+    public void createAppointmentConfirmedNotification(Appointment appointment, Customer customer, String serviceName, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_CONFIRMED_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_CONFIRMED_CONTENT");
         
@@ -175,9 +190,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建预约即将开始提醒（30分钟前）
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createAppointmentReminderNotification(Appointment appointment, Customer customer, String serviceName) {
-        String language = getMerchantLanguage(appointment.getTenantId());
+    public void createAppointmentReminderNotification(Appointment appointment, Customer customer, String serviceName, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_REMINDER_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_REMINDER_CONTENT");
         
@@ -215,9 +240,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建待确认预约通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createPendingConfirmationNotification(Long tenantId, int pendingCount) {
-        String language = getMerchantLanguage(tenantId);
+    public void createPendingConfirmationNotification(Long tenantId, int pendingCount, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "PENDING_CONFIRMATION_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "PENDING_CONFIRMATION_CONTENT");
         String content = String.format(contentTemplate, pendingCount);
@@ -239,9 +274,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建支付成功通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createPaymentSuccessNotification(Long tenantId, String orderId, Double amount) {
-        String language = getMerchantLanguage(tenantId);
+    public void createPaymentSuccessNotification(Long tenantId, String orderId, Double amount, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "PAYMENT_SUCCESS_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "PAYMENT_SUCCESS_CONTENT");
         String content = String.format(contentTemplate, orderId, amount);
@@ -264,9 +309,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建支付失败通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createPaymentFailedNotification(Long tenantId, String orderId) {
-        String language = getMerchantLanguage(tenantId);
+    public void createPaymentFailedNotification(Long tenantId, String orderId, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "PAYMENT_FAILED_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "PAYMENT_FAILED_CONTENT");
         String content = String.format(contentTemplate, orderId);
@@ -289,9 +344,19 @@ public class BusinessNotificationService {
     
     /**
      * 创建退款成功通知
+     * @param language 语言代码 (zh 或 en)
      */
-    public void createRefundSuccessNotification(Long tenantId, String orderId, Double amount) {
-        String language = getMerchantLanguage(tenantId);
+    public void createRefundSuccessNotification(Long tenantId, String orderId, Double amount, String language) {
+        // 使用传入的语言参数，如果为空则使用默认值
+        if (language == null || language.isEmpty()) {
+            language = "zh-CN";
+        }
+        // 将 zh 转换为 zh-CN, en 转换为 en-US
+        if ("zh".equals(language)) {
+            language = "zh-CN";
+        } else if ("en".equals(language)) {
+            language = "en-US";
+        }
         String title = NotificationTemplates.getTemplate(language, "REFUND_SUCCESS_TITLE");
         String contentTemplate = NotificationTemplates.getTemplate(language, "REFUND_SUCCESS_CONTENT");
         String content = String.format(contentTemplate, orderId, amount);
@@ -370,7 +435,8 @@ public class BusinessNotificationService {
                     List<com.merchant.server.businessservice.entity.AppointmentService> services = appointment.getAppointmentServices();
                     Long serviceId = services != null && !services.isEmpty() ? services.get(0).getServiceId() : null;
                     String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
-                    createAppointmentReminderNotification(appointment, customer, serviceName);
+                    // 定时任务默认使用中文
+                    createAppointmentReminderNotification(appointment, customer, serviceName, "zh-CN");
                 }
             }
         } catch (Exception e) {

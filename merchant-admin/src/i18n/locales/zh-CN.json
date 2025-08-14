@@ -1268,6 +1268,7 @@
     "timeSlots": "时间段",
     "legend": "图例",
     "availability": {
+      "title": "可用性设置",
       "available": "空闲",
       "unavailable": "不可用",
       "busy": "忙碌",

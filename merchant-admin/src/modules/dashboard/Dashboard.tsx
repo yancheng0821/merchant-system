@@ -261,7 +261,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         dashboardApi.getSalesTrend(user.tenantId, days),
         dashboardApi.getServiceCategoryStats(user.tenantId, days),
         dashboardApi.getTopServices(user.tenantId, days, 5),
-        // 获取今日预约数据
+        // 获取今日预约数据（排除已取消的）
         appointmentApi.getAllAppointments(user.tenantId).then((allAppointments: any[]) => {
           // 使用本地日期而不是UTC日期
           const now = new Date();
@@ -270,7 +270,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           const day = String(now.getDate()).padStart(2, '0');
           const today = `${year}-${month}-${day}`;
           const todayAppointments = allAppointments.filter((appointment: any) => 
-            appointment.appointmentDate === today
+            appointment.appointmentDate === today && 
+            appointment.status !== 'CANCELLED' && 
+            appointment.status !== 'CANCELED'
           );
           return todayAppointments;
         }).catch((error) => {
@@ -314,15 +316,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           : Promise.resolve([])
       ]);
 
-      // 计算预约统计数据
+      // 计算预约统计数据（基于过滤后的今日预约）
       const completedCount = appointments.filter((apt: any) => apt.status === 'COMPLETED').length;
       const inProgressCount = appointments.filter((apt: any) => apt.status === 'IN_PROGRESS').length;
       const pendingCount = appointments.filter((apt: any) => 
         apt.status === 'PENDING' || apt.status === 'CONFIRMED'
       ).length;
+      const totalActiveAppointments = appointments.length; // 已经过滤掉取消的预约
       
       setDashboardStats({
         ...stats,
+        totalAppointments: totalActiveAppointments, // 使用过滤后的总数
         completedAppointments: completedCount,
         inProgressAppointments: inProgressCount,
         pendingAppointments: pendingCount,
@@ -376,8 +380,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           const today = now.toISOString().split('T')[0];
           const currentTime = now.toTimeString().slice(0, 5); // HH:mm
           
-          // 查找当前的预约
+          // 查找当前的预约（排除已取消的）
           const currentAppointments = appointments.filter((apt: any) => {
+            // 排除已取消的预约
+            if (apt.status === 'CANCELLED' || apt.status === 'CANCELED') return false;
             if (apt.appointmentDate !== today) return false;
             const aptTime = apt.appointmentTime;
             const duration = apt.duration || 60; // 默认60分钟
@@ -435,8 +441,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           const today = now.toISOString().split('T')[0];
           const currentTime = now.toTimeString().slice(0, 5); // HH:mm
           
-          // 查找当前的预约
+          // 查找当前的预约（排除已取消的）
           const currentAppointments = appointments.filter((apt: any) => {
+            // 排除已取消的预约
+            if (apt.status === 'CANCELLED' || apt.status === 'CANCELED') return false;
             if (apt.appointmentDate !== today) return false;
             const aptTime = apt.appointmentTime;
             const duration = apt.duration || 60; // 默认60分钟
@@ -1892,7 +1900,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 label={
                                   appointment.status === 'COMPLETED' ? t('dashboard.completed') : 
                                   appointment.status === 'IN_PROGRESS' ? t('dashboard.inProgress') : 
-                                  appointment.status === 'CANCELLED' ? t('status.cancelled') :
                                   t('dashboard.pending')
                                 }
                                 size="small"

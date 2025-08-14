@@ -1277,11 +1277,23 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 if (deletedTerminals > 0) {
                     log.info("Soft deleted {} terminals for Stripe account: {}", deletedTerminals, account.getStripeAccountId());
                 }
+                
+                // 删除关联的Location记录（软删除）
+                int deletedLocations = stripeLocationMapper.deleteByStripeAccountId(account.getStripeAccountId());
+                if (deletedLocations > 0) {
+                    log.info("Soft deleted {} locations for Stripe account: {}", deletedLocations, account.getStripeAccountId());
+                }
             } else {
                 // 如果没有Stripe账户ID，按租户ID删除
                 int deletedTerminals = stripeTerminalMapper.deleteByTenantId(tenantId);
                 if (deletedTerminals > 0) {
                     log.info("Soft deleted {} terminals for tenant: {}", deletedTerminals, tenantId);
+                }
+                
+                // 删除关联的Location记录（软删除）
+                int deletedLocations = stripeLocationMapper.deleteByTenantId(tenantId);
+                if (deletedLocations > 0) {
+                    log.info("Soft deleted {} locations for tenant: {}", deletedLocations, tenantId);
                 }
             }
             

@@ -75,7 +75,9 @@ public class AppointmentController {
      * 创建新预约
      */
     @PostMapping
-    public ResponseEntity<Appointment> createAppointment(@RequestBody AppointmentCreateDTO appointmentDTO) {
+    public ResponseEntity<Appointment> createAppointment(
+            @RequestBody AppointmentCreateDTO appointmentDTO,
+            @RequestHeader(value = "Accept-Language", defaultValue = "zh") String language) {
         Appointment created = appointmentService.createAppointmentWithServices(appointmentDTO);
         
         // 创建业务通知
@@ -93,7 +95,7 @@ public class AppointmentController {
             Long serviceId = created.getAppointmentServices() != null && !created.getAppointmentServices().isEmpty() 
                 ? created.getAppointmentServices().get(0).getServiceId() : null;
             String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
-            notificationService.createNewAppointmentNotification(created, customer, serviceName);
+            notificationService.createNewAppointmentNotification(created, customer, serviceName, language);
         } catch (Exception e) {
             log.error("Failed to create notification for appointment: {}", created.getId(), e);
         }
@@ -107,7 +109,8 @@ public class AppointmentController {
     @PutMapping("/{id}/status")
     public ResponseEntity<Appointment> updateAppointmentStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> statusUpdate) {
+            @RequestBody Map<String, String> statusUpdate,
+            @RequestHeader(value = "Accept-Language", defaultValue = "zh") String language) {
         String status = statusUpdate.get("status");
         Appointment updated = appointmentService.updateAppointmentStatus(id, status);
         
@@ -128,9 +131,9 @@ public class AppointmentController {
             String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
             
             if ("CONFIRMED".equals(status)) {
-                notificationService.createAppointmentConfirmedNotification(updated, customer, serviceName);
+                notificationService.createAppointmentConfirmedNotification(updated, customer, serviceName, language);
             } else if ("CANCELLED".equals(status)) {
-                notificationService.createAppointmentCancelledNotification(updated, customer, serviceName);
+                notificationService.createAppointmentCancelledNotification(updated, customer, serviceName, language);
             }
         } catch (Exception e) {
             log.error("Failed to create notification for appointment status update: {}", id, e);

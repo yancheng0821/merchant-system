@@ -198,7 +198,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
             lastActivity: new Date(currentLastActivity).toLocaleString()
           });
           
-          // 触发session过期 - 在外部设置，避免在setState中设置其他state
+          // 触发session过期
           setTimeout(() => {
             setIsSessionExpired(true);
             setShowSessionDialog(true);
