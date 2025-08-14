@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.AppointmentResourceMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="AppointmentResourceResultMap" type="com.merchant.server.businessservice.entity.AppointmentResource">
+        <id property="id" column="id"/>
+        <result property="appointmentId" column="appointment_id"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="resourceType" column="resource_type"/>
+        <result property="isPrimary" column="is_primary"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="resourceName" column="resource_name"/>
+        <result property="resourceStatus" column="resource_status"/>
+    </resultMap>
+
+    <!-- 插入单个预约资源关联 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.AppointmentResource" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment_resources (appointment_id, resource_id, resource_type, is_primary)
+        VALUES (#{appointmentId}, #{resourceId}, #{resourceType}, #{isPrimary})
+    </insert>
+
+    <!-- 批量插入预约资源关联 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO appointment_resources (appointment_id, resource_id, resource_type, is_primary) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.appointmentId}, #{item.resourceId}, #{item.resourceType}, #{item.isPrimary})
+        </foreach>
+    </insert>
+
+    <!-- 根据预约ID查询所有关联资源 -->
+    <select id="selectByAppointmentId" resultMap="AppointmentResourceResultMap">
+        SELECT ar.*, r.name as resource_name, r.status as resource_status
+        FROM appointment_resources ar
+        LEFT JOIN resource r ON ar.resource_id = r.id
+        WHERE ar.appointment_id = #{appointmentId}
+        ORDER BY ar.resource_type, ar.resource_id
+    </select>
+
+    <!-- 批量查询多个预约的资源（用于列表查询性能优化） -->
+    <select id="selectByAppointmentIds" resultMap="AppointmentResourceResultMap">
+        SELECT ar.*, r.name as resource_name, r.status as resource_status
+        FROM appointment_resources ar
+        LEFT JOIN resource r ON ar.resource_id = r.id
+        WHERE ar.appointment_id IN
+        <foreach collection="appointmentIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY ar.appointment_id, ar.resource_type, ar.resource_id
+    </select>
+
+    <!-- 根据资源ID和日期查询相关预约 -->
+    <select id="selectByResourceIdAndDate" resultMap="AppointmentResourceResultMap">
+        SELECT ar.*, a.appointment_date, a.appointment_time, a.status as appointment_status
+        FROM appointment_resources ar
+        LEFT JOIN appointments a ON ar.appointment_id = a.id
+        WHERE ar.resource_id = #{resourceId}
+        AND a.appointment_date = #{date}
+        AND a.status IN ('CONFIRMED', 'IN_PROGRESS')
+    </select>
+
+    <!-- 删除预约的所有资源关联 -->
+    <delete id="deleteByAppointmentId">
+        DELETE FROM appointment_resources WHERE appointment_id = #{appointmentId}
+    </delete>
+
+    <!-- 更新主要资源标记 -->
+    <update id="updatePrimary">
+        UPDATE appointment_resources 
+        SET is_primary = #{isPrimary}
+        WHERE appointment_id = #{appointmentId} AND resource_id = #{resourceId}
+    </update>
+
+    <!-- 检查资源在指定时间是否已被预约 -->
+    <select id="isResourceBooked" resultType="boolean">
+        SELECT COUNT(*) > 0 
+        FROM appointment_resources ar
+        JOIN appointments a ON ar.appointment_id = a.id
+        WHERE ar.resource_id = #{resourceId}
+        AND a.appointment_date = #{date}
+        AND a.appointment_time = #{time}
+        AND a.status IN ('CONFIRMED', 'IN_PROGRESS')
+        <if test="excludeAppointmentId != null">
+            AND a.id != #{excludeAppointmentId}
+        </if>
+    </select>
+
+</mapper>

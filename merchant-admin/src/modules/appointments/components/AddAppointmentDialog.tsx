@@ -36,6 +36,7 @@ import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
   EventNote as AppointmentIcon,
+  MeetingRoom as MeetingRoomIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
@@ -1130,12 +1131,31 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                       <Typography variant="body2">{appointmentTime}</Typography>
                     </Box>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="body2">
-                        {selectedResource ? resourceOptions.find(resource => resource.id === selectedResource)?.name || t('appointments.unassigned') : t('appointments.unassigned')}
-                      </Typography>
-                    </Box>
+                    {/* 显示选中的资源（员工和/或房间） */}
+                    {selectedResource && (
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <PersonIcon sx={{ fontSize: 16, color: '#6366F1' }} />
+                        <Typography variant="body2">
+                          {t('appointments.staff')}: {resourceOptions.find(resource => resource.id === selectedResource)?.name || t('appointments.unassigned')}
+                        </Typography>
+                      </Box>
+                    )}
+                    {selectedRoom && (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <MeetingRoomIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                        <Typography variant="body2">
+                          {t('appointments.room')}: {resourceOptions.find(room => room.id === selectedRoom)?.name || t('appointments.unassigned')}
+                        </Typography>
+                      </Box>
+                    )}
+                    {!selectedResource && !selectedRoom && (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {t('appointments.unassigned')}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
 
                   <Grid item xs={12}>
@@ -1204,6 +1224,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      disableEnforceFocus
+      disableAutoFocus
       PaperProps={{
         sx: {
           borderRadius: 3,

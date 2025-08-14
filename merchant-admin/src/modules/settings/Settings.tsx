@@ -9,6 +9,8 @@ import {
   TextField,
   Button,
   FormControl,
+  FormControlLabel,
+  Checkbox,
   InputLabel,
   Select,
   MenuItem,
@@ -33,6 +35,10 @@ import {
   Public as ProvinceIcon,
   LocationCity as CityIcon,
   Payment as PaymentIcon,
+  Group as GroupIcon,
+  MeetingRoom as RoomIcon,
+  CheckBox as CheckBoxIcon,
+  CheckBoxOutlineBlank as CheckBoxBlankIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -81,23 +87,40 @@ interface SystemSettings {
   sessionTimeout: number;
 }
 
-const Settings: React.FC = () => {
+interface SettingsProps {
+  initialTab?: string | null;
+}
+
+const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
   const location = useLocation();
   
-  // 初始化时立即读取 localStorage，避免闪烁
-  const initialTab = (() => {
-    const settingsTab = localStorage.getItem('settingsTab');
-    if (settingsTab === 'payment' || settingsTab === 'stripe') {
+  // 初始化tab，优先使用prop，然后是localStorage
+  const getInitialTab = () => {
+    // 如果从prop传入了tab（如Stripe回调）
+    if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
       return 3; // 支付设置是第4个tab (index 3)
     }
+    
+    // 否则检查localStorage
+    const settingsTab = localStorage.getItem('settingsTab');
+    if (settingsTab === 'payment' || settingsTab === 'stripe') {
+      return 3;
+    }
     return 0;
-  })();
+  };
   
-  const [selectedTab, setSelectedTab] = useState(initialTab);
+  const [selectedTab, setSelectedTab] = useState(getInitialTab());
+  
+  // 监听prop变化
+  useEffect(() => {
+    if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
+      setSelectedTab(3);
+    }
+  }, [propInitialTab]);
   
   // 组件挂载后清理 localStorage
   useEffect(() => {
@@ -127,6 +150,9 @@ const Settings: React.FC = () => {
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     sessionTimeout: 30
   });
+
+  // 资源类型配置
+  const [resourceTypes, setResourceTypes] = useState<string[]>(['STAFF']);
 
   // 输入框显示值状态（用于处理空值显示）
   const [sessionTimeoutDisplay, setSessionTimeoutDisplay] = useState<string>('');
@@ -205,6 +231,22 @@ const Settings: React.FC = () => {
             sessionTimeout: sessionTimeoutValue
           });
           setSessionTimeoutDisplay(sessionTimeoutValue.toString());
+
+          // 解析资源类型配置
+          const resourceTypesConfig = configResponse.find((config: any) => config.configKey === 'resource_types');
+          if (resourceTypesConfig && resourceTypesConfig.configValue) {
+            try {
+              const types = JSON.parse(resourceTypesConfig.configValue);
+              if (Array.isArray(types)) {
+                setResourceTypes(types);
+              }
+            } catch (e) {
+              console.error('Failed to parse resource types:', e);
+              setResourceTypes(['STAFF']);
+            }
+          } else {
+            setResourceTypes(['STAFF']);
+          }
         }
       } catch (error) {
         console.error('获取设置信息失败:', error);
@@ -346,6 +388,9 @@ const Settings: React.FC = () => {
 
       // 保存系统设置
       await merchantConfigApi.updateConfig(user.tenantId, 'session_timeout', systemSettings.sessionTimeout.toString(), '会话超时时间(分钟)');
+
+      // 保存资源类型配置
+      await merchantConfigApi.updateConfig(user.tenantId, 'resource_types', JSON.stringify(resourceTypes), '资源类型配置');
 
       // 刷新Context中的设置
       await refreshTaxSettings();
@@ -692,32 +737,98 @@ const Settings: React.FC = () => {
                         <TuneIcon sx={{ fontSize: 20 }} />
                       </Box>
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {t('settings.systemPrefs')}
+                        {t('settings.businessOperations')}
                       </Typography>
                     </Box>
 
                     <Grid container spacing={3}>
                       <Grid item xs={12}>
-                        <FormControl fullWidth>
-                          <InputLabel>{t('settings.timezone')}</InputLabel>
-                          <Select
-                            value={merchantInfo.timezone}
-                            onChange={(e) => handleMerchantInfoChange('timezone', e.target.value)}
-                            label={t('settings.timezone')}
-                            sx={{
-                              borderRadius: 2,
-                            }}
-                          >
-                            <MenuItem value="Asia/Shanghai">{t('settings.timezones.beijing')}</MenuItem>
-                            <MenuItem value="America/New_York">{t('settings.timezones.newYork')}</MenuItem>
-                            <MenuItem value="America/Vancouver">{t('settings.timezones.vancouver')}</MenuItem>
-                            <MenuItem value="America/Toronto">{t('settings.timezones.toronto')}</MenuItem>
-                            <MenuItem value="Europe/London">{t('settings.timezones.london')}</MenuItem>
-                            <MenuItem value="Asia/Tokyo">{t('settings.timezones.tokyo')}</MenuItem>
-                            <MenuItem value="Australia/Sydney">{t('settings.timezones.sydney')}</MenuItem>
-                            <MenuItem value="Europe/Paris">{t('settings.timezones.paris')}</MenuItem>
-                          </Select>
-                        </FormControl>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: 'text.secondary' }}>
+                            {t('settings.resourceTypes.title')}
+                          </Typography>
+                          <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'text.secondary' }}>
+                            {t('settings.resourceTypes.description')}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={resourceTypes.includes('STAFF')}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setResourceTypes(prev => [...prev.filter(t => t !== 'STAFF'), 'STAFF']);
+                                    } else {
+                                      // 至少要有一个资源类型
+                                      if (resourceTypes.length > 1) {
+                                        setResourceTypes(prev => prev.filter(t => t !== 'STAFF'));
+                                      }
+                                    }
+                                  }}
+                                  icon={<CheckBoxBlankIcon />}
+                                  checkedIcon={<CheckBoxIcon />}
+                                  sx={{
+                                    color: '#10B981',
+                                    '&.Mui-checked': {
+                                      color: '#10B981',
+                                    },
+                                  }}
+                                />
+                              }
+                              label={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <GroupIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                                  <Typography variant="body2">{t('settings.resourceTypes.staff')}</Typography>
+                                </Box>
+                              }
+                            />
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={resourceTypes.includes('ROOM')}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setResourceTypes(prev => [...prev.filter(t => t !== 'ROOM'), 'ROOM']);
+                                    } else {
+                                      // 至少要有一个资源类型
+                                      if (resourceTypes.length > 1) {
+                                        setResourceTypes(prev => prev.filter(t => t !== 'ROOM'));
+                                      }
+                                    }
+                                  }}
+                                  icon={<CheckBoxBlankIcon />}
+                                  checkedIcon={<CheckBoxIcon />}
+                                  sx={{
+                                    color: '#10B981',
+                                    '&.Mui-checked': {
+                                      color: '#10B981',
+                                    },
+                                  }}
+                                />
+                              }
+                              label={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <RoomIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                                  <Typography variant="body2">{t('settings.resourceTypes.room')}</Typography>
+                                </Box>
+                              }
+                            />
+                          </Box>
+                          {resourceTypes.length === 0 && (
+                            <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
+                              {t('settings.resourceTypes.atLeastOne')}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      {/* 预留空间给营业时间配置 */}
+                      <Grid item xs={12}>
+                        <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2, mt: 1 }}>
+                          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                            {t('settings.moreSettingsComingSoon')}
+                          </Typography>
+                        </Box>
                       </Grid>
                     </Grid>
                   </CardContent>
@@ -863,11 +974,34 @@ const Settings: React.FC = () => {
                       <TuneIcon sx={{ fontSize: 20 }} />
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {t('settings.advancedSettings')}
+                      {t('settings.systemPrefs')}
                     </Typography>
                   </Box>
 
                   <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>{t('settings.timezone')}</InputLabel>
+                        <Select
+                          value={merchantInfo.timezone}
+                          onChange={(e) => handleMerchantInfoChange('timezone', e.target.value)}
+                          label={t('settings.timezone')}
+                          sx={{
+                            borderRadius: 2,
+                          }}
+                        >
+                          <MenuItem value="Asia/Shanghai">{t('settings.timezones.beijing')}</MenuItem>
+                          <MenuItem value="America/New_York">{t('settings.timezones.newYork')}</MenuItem>
+                          <MenuItem value="America/Vancouver">{t('settings.timezones.vancouver')}</MenuItem>
+                          <MenuItem value="America/Toronto">{t('settings.timezones.toronto')}</MenuItem>
+                          <MenuItem value="Europe/London">{t('settings.timezones.london')}</MenuItem>
+                          <MenuItem value="Asia/Tokyo">{t('settings.timezones.tokyo')}</MenuItem>
+                          <MenuItem value="Australia/Sydney">{t('settings.timezones.sydney')}</MenuItem>
+                          <MenuItem value="Europe/Paris">{t('settings.timezones.paris')}</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    
                     <Grid item xs={12}>
                       <TextField
                         fullWidth

@@ -14,10 +14,8 @@ public class AppointmentCreateDTO {
     
     private Long tenantId;
     private Long customerId;
-    private Long resourceId;
-    private Appointment.ResourceType resourceType;
     
-    // 选中的资源信息，用于创建资源预约时段
+    // 选中的资源信息，用于创建资源预约时段（必填）
     private List<SelectedResourceDTO> selectedResources;
     
     @JsonFormat(pattern = "yyyy-MM-dd")

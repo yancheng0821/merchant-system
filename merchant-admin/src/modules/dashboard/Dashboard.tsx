@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -48,6 +48,7 @@ import {
   Groups as GroupsIcon,
   AddCircle as AddCircleIcon,
   CalendarToday as CalendarTodayIcon,
+  AccessTime as AccessTimeIcon,
   Info as InfoIcon,
   ListAlt as ListAltIcon,
   ExpandMore as ExpandMoreIcon,
@@ -126,6 +127,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [lastNotificationTime, setLastNotificationTime] = useState<Date | null>(null);
   const [isNotificationExpanded, setIsNotificationExpanded] = useState(false);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const currentTimeRef = useRef<HTMLDivElement>(null);
 
   const handleTimeRangeChange = (event: SelectChangeEvent<TimeRange>) => {
     setTimeRange(event.target.value as TimeRange);
@@ -534,6 +537,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     return () => clearInterval(interval);
   }, [user?.tenantId, lastNotificationTime]);
+
+  // 自动滚动到当前时间
+  useEffect(() => {
+    if (currentTimeRef.current && timelineRef.current) {
+      // 延迟执行以确保DOM已渲染
+      setTimeout(() => {
+        if (currentTimeRef.current && timelineRef.current) {
+          const containerTop = timelineRef.current.offsetTop;
+          const currentTimeTop = currentTimeRef.current.offsetTop;
+          const containerHeight = timelineRef.current.clientHeight;
+          
+          // 滚动到当前时间位置，让它出现在容器中间
+          timelineRef.current.scrollTop = currentTimeTop - containerTop - (containerHeight / 2) + 50;
+        }
+      }, 100);
+    }
+  }, [todayAppointments]);
 
   // 标记通知为已读
   const markNotificationsAsRead = () => {
@@ -1735,7 +1755,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               
               {/* 运营状态指标 */}
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={12} sm={6}>
                   <Box sx={{ 
                     p: 2, 
                     borderRadius: 2, 
@@ -1750,22 +1770,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    background: alpha('#F59E0B', 0.1),
-                    border: `1px solid ${alpha('#F59E0B', 0.2)}`
-                  }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('dashboard.inProgress')}
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#F59E0B', mt: 0.5 }}>
-                      {dashboardStats?.inProgressAppointments || 0}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={12} sm={6}>
                   <Box sx={{ 
                     p: 2, 
                     borderRadius: 2, 
@@ -1780,21 +1785,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    background: alpha('#8B5CF6', 0.1),
-                    border: `1px solid ${alpha('#8B5CF6', 0.2)}`
-                  }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('dashboard.utilizationRate')}
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#8B5CF6', mt: 0.5 }}>
-                      {dashboardStats?.utilizationRate || 0}%
-                    </Typography>
-                  </Box>
-                </Grid>
               </Grid>
             </CardContent>
           </Card>
@@ -1806,6 +1796,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               borderRadius: 3,
               boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
               mt: 3,
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.01), rgba(8, 145, 178, 0.01))',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -1813,107 +1804,259 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <Box display="flex" alignItems="center">
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
                       background: 'linear-gradient(135deg, #06B6D4, #0891B2)',
-                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       mr: 2,
-                    }}
-                  />
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
-                      fontWeight: 600,
-                      color: 'text.primary',
+                      boxShadow: '0 4px 12px rgba(6, 182, 212, 0.3)',
                     }}
                   >
-                    {t('dashboard.todayTimeline')}
-                  </Typography>
+                    <ScheduleIcon sx={{ color: 'white', fontSize: 24 }} />
+                  </Box>
+                  <Box>
+                    <Typography 
+                      variant="h6"
+                      sx={{ 
+                        fontWeight: 700,
+                        color: 'text.primary',
+                        mb: 0.5,
+                      }}
+                    >
+                      {t('dashboard.todayTimeline')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('dashboard.currentTime')}: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Typography>
+                  </Box>
                 </Box>
-                <Chip 
-                  label={new Date().toLocaleDateString()} 
-                  size="small"
-                  sx={{ 
-                    bgcolor: alpha('#06B6D4', 0.1),
-                    color: '#06B6D4',
-                    fontWeight: 600,
-                  }}
-                />
+                <Box display="flex" gap={1}>
+                  <Chip 
+                    icon={<CalendarTodayIcon sx={{ fontSize: 16 }} />}
+                    label={new Date().toLocaleDateString()} 
+                    size="small"
+                    sx={{ 
+                      bgcolor: alpha('#06B6D4', 0.1),
+                      color: '#06B6D4',
+                      fontWeight: 600,
+                      px: 1,
+                    }}
+                  />
+                </Box>
               </Box>
               
               {/* 时间轴 */}
-              <Box sx={{ position: 'relative', pl: 4, maxHeight: 500, overflowY: 'auto' }}>
+              <Box 
+                ref={timelineRef}
+                sx={{ 
+                  position: 'relative', 
+                  pl: 4, 
+                  maxHeight: 600, 
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  '&::-webkit-scrollbar': {
+                    width: 8,
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    backgroundColor: alpha('#06B6D4', 0.05),
+                    borderRadius: 4,
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: alpha('#06B6D4', 0.3),
+                    borderRadius: 4,
+                    '&:hover': {
+                      backgroundColor: alpha('#06B6D4', 0.5),
+                    },
+                  },
+                }}
+              >
                 {/* 垂直线 */}
                 <Box sx={{
                   position: 'absolute',
                   left: 20,
                   top: 0,
                   bottom: 0,
-                  width: 2,
-                  bgcolor: 'divider',
+                  width: 3,
+                  background: `linear-gradient(180deg, 
+                    ${alpha('#06B6D4', 0.1)} 0%, 
+                    ${alpha('#06B6D4', 0.3)} 50%, 
+                    ${alpha('#06B6D4', 0.1)} 100%)`,
+                  borderRadius: 2,
                 }} />
                 
                 {/* 时间节点 - 显示真实预约数据 */}
                 {todayAppointments.length > 0 ? (
                   todayAppointments
                     .sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime))
-                    .slice(0, 10) // 最多显示10个预约
                     .map((appointment, index) => {
                       const now = new Date();
+                      const currentTimeStr = now.toTimeString().slice(0, 5);
                       const appointmentDateTime = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
                       const isCompleted = appointment.status === 'COMPLETED';
                       const isCurrent = appointment.status === 'IN_PROGRESS';
                       const isPending = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
+                      const isPast = appointmentDateTime < now && !isCompleted && !isCurrent;
+                      const isNearCurrent = Math.abs(appointmentDateTime.getTime() - now.getTime()) < 3600000; // 1小时内
                       
                       return (
-                        <Box key={appointment.id} sx={{ position: 'relative', mb: 3 }}>
-                          {/* 时间点 */}
-                          <Box sx={{
-                            position: 'absolute',
-                            left: -25,
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            bgcolor: isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : '#E5E7EB',
-                            border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 'none',
-                          }} />
-                          
-                          {/* 预约信息 */}
-                          <Box sx={{
-                            ml: 2,
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: isCompleted ? alpha('#10B981', 0.05) : 
-                                    isCurrent ? alpha('#F59E0B', 0.05) : 
-                                    alpha('#6B7280', 0.05),
-                            border: `1px solid ${
-                              isCompleted ? alpha('#10B981', 0.2) : 
-                              isCurrent ? alpha('#F59E0B', 0.2) : 
-                              alpha('#6B7280', 0.1)
-                            }`,
-                          }}>
-                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                {appointment.appointmentTime}
-                              </Typography>
-                              <Chip
-                                label={
-                                  appointment.status === 'COMPLETED' ? t('dashboard.completed') : 
-                                  appointment.status === 'IN_PROGRESS' ? t('dashboard.inProgress') : 
-                                  t('dashboard.pending')
-                                }
-                                size="small"
-                                sx={{
-                                  height: 20,
-                                  fontSize: '0.7rem',
-                                  bgcolor: isCompleted ? alpha('#10B981', 0.1) : 
-                                          isCurrent ? alpha('#F59E0B', 0.1) : 
-                                          alpha('#6B7280', 0.1),
-                                  color: isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : '#6B7280',
-                                }}
-                              />
+                        <React.Fragment key={appointment.id}>
+                          {/* 当前时间指示器 */}
+                          {index === 0 && appointment.appointmentTime > currentTimeStr && (
+                            <Box 
+                              ref={currentTimeRef}
+                              sx={{ 
+                                position: 'relative', 
+                                mb: 3,
+                                animation: 'pulse 2s infinite',
+                                '@keyframes pulse': {
+                                  '0%': { opacity: 1 },
+                                  '50%': { opacity: 0.7 },
+                                  '100%': { opacity: 1 },
+                                },
+                              }}
+                            >
+                              <Box sx={{
+                                position: 'absolute',
+                                left: -30,
+                                width: 20,
+                                height: 20,
+                                borderRadius: '50%',
+                                bgcolor: '#EF4444',
+                                border: '3px solid rgba(239, 68, 68, 0.3)',
+                                boxShadow: '0 0 0 6px rgba(239, 68, 68, 0.1)',
+                                zIndex: 2,
+                              }} />
+                              <Box sx={{
+                                ml: 2,
+                                p: 1.5,
+                                borderRadius: 2,
+                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))',
+                                border: `2px dashed ${alpha('#EF4444', 0.5)}`,
+                              }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#EF4444' }}>
+                                  {t('dashboard.currentTimeNow')} - {currentTimeStr}
+                                </Typography>
+                              </Box>
                             </Box>
-                            <Typography variant="body2" color="text.primary">
+                          )}
+                          
+                          {/* 如果是第一个预约且时间还没到当前时间，在预约后面加指示器 */}
+                          {appointment.appointmentTime <= currentTimeStr && 
+                           index < todayAppointments.length - 1 && 
+                           todayAppointments[index + 1].appointmentTime > currentTimeStr && (
+                            <Box 
+                              ref={currentTimeRef}
+                              sx={{ 
+                                position: 'relative', 
+                                mb: 3, 
+                                mt: 3,
+                                animation: 'pulse 2s infinite',
+                                '@keyframes pulse': {
+                                  '0%': { opacity: 1 },
+                                  '50%': { opacity: 0.7 },
+                                  '100%': { opacity: 1 },
+                                },
+                              }}
+                            >
+                              <Box sx={{
+                                position: 'absolute',
+                                left: -30,
+                                width: 20,
+                                height: 20,
+                                borderRadius: '50%',
+                                bgcolor: '#EF4444',
+                                border: '3px solid rgba(239, 68, 68, 0.3)',
+                                boxShadow: '0 0 0 6px rgba(239, 68, 68, 0.1)',
+                                zIndex: 2,
+                              }} />
+                              <Box sx={{
+                                ml: 2,
+                                p: 1.5,
+                                borderRadius: 2,
+                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))',
+                                border: `2px dashed ${alpha('#EF4444', 0.5)}`,
+                              }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#EF4444' }}>
+                                  {t('dashboard.currentTimeNow')} - {currentTimeStr}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                          
+                          <Box sx={{ position: 'relative', mb: 3 }}>
+                            {/* 时间点 */}
+                            <Box sx={{
+                              position: 'absolute',
+                              left: -26,
+                              width: 14,
+                              height: 14,
+                              borderRadius: '50%',
+                              bgcolor: isCompleted ? '#10B981' : 
+                                      isCurrent ? '#F59E0B' : 
+                                      isPast ? '#6B7280' :
+                                      '#3B82F6',
+                              border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 
+                                     isNearCurrent ? '2px solid rgba(59, 130, 246, 0.3)' : 'none',
+                              boxShadow: isNearCurrent ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                              zIndex: 1,
+                            }} />
+                            
+                            {/* 预约信息 */}
+                            <Box sx={{
+                              ml: 2,
+                              p: 2.5,
+                              borderRadius: 2,
+                              background: isCompleted ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02))' : 
+                                        isCurrent ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02))' : 
+                                        isPast ? 'linear-gradient(135deg, rgba(107, 114, 128, 0.05), rgba(107, 114, 128, 0.02))' :
+                                        'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
+                              border: `1px solid ${
+                                isCompleted ? alpha('#10B981', 0.2) : 
+                                isCurrent ? alpha('#F59E0B', 0.3) : 
+                                isPast ? alpha('#6B7280', 0.1) :
+                                alpha('#3B82F6', 0.2)
+                              }`,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                transform: 'translateX(4px)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              },
+                            }}>
+                              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                  <AccessTimeIcon sx={{ fontSize: 16, color: isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : isPast ? '#6B7280' : '#3B82F6' }} />
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                    {appointment.appointmentTime}
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={
+                                    appointment.status === 'COMPLETED' ? t('dashboard.completed') : 
+                                    appointment.status === 'IN_PROGRESS' ? t('dashboard.inProgress') : 
+                                    isPast ? t('dashboard.overdue') :
+                                    t('dashboard.pending')
+                                  }
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    bgcolor: isCompleted ? alpha('#10B981', 0.15) : 
+                                            isCurrent ? alpha('#F59E0B', 0.15) : 
+                                            isPast ? alpha('#6B7280', 0.15) :
+                                            alpha('#3B82F6', 0.15),
+                                    color: isCompleted ? '#10B981' : 
+                                          isCurrent ? '#F59E0B' : 
+                                          isPast ? '#6B7280' :
+                                          '#3B82F6',
+                                    border: 'none',
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600, mb: 0.5 }}>
                               {/* 尝试多种方式获取服务名称 */}
                               {appointment.services?.map((s: any) => s.serviceName).join(', ') || 
                                appointment.appointmentServices?.map((s: any) => s.serviceName).join(', ') ||
@@ -1923,48 +2066,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <Typography variant="caption" color="text.secondary">
                               {/* 显示客户和资源（员工或房间） */}
                               {(() => {
-                                // 调试：打印第一个预约的详细信息
-                                if (index === 0) {
-                                }
-                                
                                 // 初始化变量
                                 let customerDisplay = t('dashboard.customer');
                                 let resourceDisplay = t('dashboard.unassigned');
-                                let resourceTypeLabel = '';
+                                let resourceInfo: string[] = [];
                                 
-                                // 获取资源名称（优先检查appointmentServices中的资源信息）
-                                if (appointment.appointmentServices && appointment.appointmentServices.length > 0) {
+                                // 优先检查 appointmentResources 字段
+                                if (appointment.appointmentResources && appointment.appointmentResources.length > 0) {
+                                  resourceInfo = appointment.appointmentResources.map((res: any) => {
+                                    const typeLabel = res.resourceType === 'STAFF' ? t('dashboard.staff') : t('dashboard.room');
+                                    const name = res.resourceName || res.name || `ID:${res.resourceId}`;
+                                    return `${name} (${typeLabel})`;
+                                  });
+                                  resourceDisplay = resourceInfo.join(', ');
+                                } 
+                                // 然后检查appointmentServices中的资源信息
+                                else if (appointment.appointmentServices && appointment.appointmentServices.length > 0) {
                                   const service = appointment.appointmentServices[0];
                                   if (service.staffName) {
                                     resourceDisplay = service.staffName;
-                                    resourceTypeLabel = t('dashboard.staff');
                                   } else if (service.resourceName) {
                                     resourceDisplay = service.resourceName;
-                                    resourceTypeLabel = service.resourceType === 'ROOM' ? t('dashboard.room') : t('dashboard.resource');
                                   }
                                 } 
-                                
-                                // 如果appointmentServices中没有，检查其他字段
-                                if (resourceDisplay === t('dashboard.unassigned')) {
-                                  if (appointment.staffName) {
-                                    resourceDisplay = appointment.staffName;
-                                    resourceTypeLabel = t('dashboard.staff');
-                                  } else if (appointment.staff?.name) {
-                                    resourceDisplay = appointment.staff.name;
-                                    resourceTypeLabel = t('dashboard.staff');
-                                  } else if (appointment.resourceName) {
-                                    resourceDisplay = appointment.resourceName;
-                                    resourceTypeLabel = appointment.resourceType === 'ROOM' ? t('dashboard.room') : t('dashboard.resource');
-                                  } else if (appointment.resource?.name) {
-                                    resourceDisplay = appointment.resource.name;
-                                    resourceTypeLabel = appointment.resource.type === 'ROOM' ? t('dashboard.room') : t('dashboard.resource');
-                                  } else if (appointment.roomName) {
-                                    resourceDisplay = appointment.roomName;
-                                    resourceTypeLabel = t('dashboard.room');
-                                  } else if (appointment.room?.name) {
-                                    resourceDisplay = appointment.room.name;
-                                    resourceTypeLabel = t('dashboard.room');
-                                  }
+                                // 最后检查其他字段
+                                else if (appointment.staffName) {
+                                  resourceDisplay = appointment.staffName;
+                                } else if (appointment.staff?.name) {
+                                  resourceDisplay = appointment.staff.name;
+                                } else if (appointment.resourceName) {
+                                  resourceDisplay = appointment.resourceName;
+                                } else if (appointment.resource?.name) {
+                                  resourceDisplay = appointment.resource.name;
+                                } else if (appointment.roomName) {
+                                  resourceDisplay = appointment.roomName;
+                                } else if (appointment.room?.name) {
+                                  resourceDisplay = appointment.room.name;
                                 }
                                 
                                 // 获取客户名称 - 使用与AppointmentManagement相同的字段
@@ -1976,24 +2113,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                   // 如果没有customer对象，尝试其他字段
                                   customerDisplay = appointment.customerName || t('dashboard.customer');
                                   
-                                  // 检查customerName是否实际包含资源名（兼容旧数据）
-                                  if (customerDisplay && (customerDisplay.includes('every') || customerDisplay.includes('Room') || customerDisplay.includes('Staff'))) {
-                                    // customerName实际包含的是资源名
-                                    if (resourceDisplay === t('dashboard.unassigned')) {
-                                      resourceDisplay = customerDisplay;
-                                      resourceTypeLabel = customerDisplay.includes('Room') ? t('dashboard.room') : t('dashboard.staff');
-                                    }
-                                    customerDisplay = t('dashboard.customer');
-                                  }
                                 }
                                 
                                 // 格式化显示
-                                const resourceInfo = resourceTypeLabel ? `${resourceTypeLabel}: ${resourceDisplay}` : resourceDisplay;
-                                return `${customerDisplay} - ${resourceInfo}`;
+                                return `${customerDisplay} - ${resourceDisplay}`;
                               })()}
                             </Typography>
+                            </Box>
                           </Box>
-                        </Box>
+                          {/* 如果是最后一个预约且当前时间在其之后，显示当前时间指示器 */}
+                          {index === todayAppointments.length - 1 && appointment.appointmentTime < currentTimeStr && (
+                            <Box 
+                              ref={currentTimeRef}
+                              sx={{ 
+                                position: 'relative', 
+                                mt: 3,
+                                animation: 'pulse 2s infinite',
+                                '@keyframes pulse': {
+                                  '0%': { opacity: 1 },
+                                  '50%': { opacity: 0.7 },
+                                  '100%': { opacity: 1 },
+                                },
+                              }}
+                            >
+                              <Box sx={{
+                                position: 'absolute',
+                                left: -30,
+                                width: 20,
+                                height: 20,
+                                borderRadius: '50%',
+                                bgcolor: '#EF4444',
+                                border: '3px solid rgba(239, 68, 68, 0.3)',
+                                boxShadow: '0 0 0 6px rgba(239, 68, 68, 0.1)',
+                                zIndex: 2,
+                              }} />
+                              <Box sx={{
+                                ml: 2,
+                                p: 1.5,
+                                borderRadius: 2,
+                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))',
+                                border: `2px dashed ${alpha('#EF4444', 0.5)}`,
+                              }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#EF4444' }}>
+                                  {t('dashboard.currentTimeNow')} - {currentTimeStr}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                        </React.Fragment>
                       );
                     })
                 ) : (

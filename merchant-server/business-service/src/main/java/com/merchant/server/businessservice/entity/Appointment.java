@@ -18,12 +18,6 @@ public class Appointment {
     
     private Long customerId;
     
-
-    
-    private Long resourceId;
-    
-    private ResourceType resourceType;
-    
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate appointmentDate;
     
@@ -51,21 +45,32 @@ public class Appointment {
     // 关联对象（如果需要的话）
     private Customer customer;
     
-    private Staff staff;
-    
-    private Resource resource;
-    
     // 预约服务明细
     private List<AppointmentService> appointmentServices;
+    
+    // 预约关联的所有资源
+    private List<AppointmentResource> appointmentResources;
+    
+    // 便捷方法：获取员工资源
+    public AppointmentResource getStaffResource() {
+        if (appointmentResources == null) return null;
+        return appointmentResources.stream()
+            .filter(r -> r.getResourceType() == AppointmentResource.ResourceType.STAFF)
+            .findFirst()
+            .orElse(null);
+    }
+    
+    // 便捷方法：获取房间资源
+    public AppointmentResource getRoomResource() {
+        if (appointmentResources == null) return null;
+        return appointmentResources.stream()
+            .filter(r -> r.getResourceType() == AppointmentResource.ResourceType.ROOM)
+            .findFirst()
+            .orElse(null);
+    }
     
     // 枚举定义
     public enum AppointmentStatus {
         CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
     }
-    
-    public enum ResourceType {
-        STAFF, ROOM
-    }
-    
-
 }

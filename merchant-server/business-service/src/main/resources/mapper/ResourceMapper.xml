@@ -79,7 +79,8 @@
     <!-- 检查资源可用性 -->
     <select id="isResourceAvailable" resultType="boolean">
         SELECT COUNT(*) = 0 FROM appointments a
-        WHERE a.resource_id = #{resourceId}
+        INNER JOIN appointment_resources ar ON a.id = ar.appointment_id
+        WHERE ar.resource_id = #{resourceId}
         AND a.appointment_date = #{date}
         AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
         AND (

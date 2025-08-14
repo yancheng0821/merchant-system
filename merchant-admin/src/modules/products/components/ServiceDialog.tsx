@@ -29,7 +29,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../../config/constants';
-import { ServiceManagement as ServiceManagementType, ServiceCategory } from '../../../services/api';
+import { ServiceManagement as ServiceManagementType, ServiceCategory, merchantConfigApi } from '../../../services/api';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // 主题颜色 - 使用青色主题
 const THEME_COLOR = '#06B6D4';
@@ -54,6 +55,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
   mode,
 }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<ServiceManagementType>>({
     name: '',
     categoryId: 0,
@@ -64,6 +66,55 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
     resourceType: 'STAFF',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availableResourceTypes, setAvailableResourceTypes] = useState<Array<{ value: string; label: string }>>([]);
+
+  // 获取商户配置，确定可用的资源类型
+  useEffect(() => {
+    const fetchMerchantConfig = async () => {
+      if (!user?.tenantId) return;
+      
+      try {
+        const config = await merchantConfigApi.getMerchantConfig(user.tenantId);
+        const resourceTypesArray = config.resource_types || config.resourceTypes || config.resourceType || ['STAFF'];
+        
+        const types: Array<{ value: string; label: string }> = [];
+        
+        // 根据商户配置的资源类型，设置可用选项
+        if (Array.isArray(resourceTypesArray)) {
+          if (resourceTypesArray.includes('STAFF') && resourceTypesArray.includes('ROOM')) {
+            // 商户同时有员工和房间，可以选择所有选项
+            types.push({ value: 'STAFF', label: t('services.staff') });
+            types.push({ value: 'ROOM', label: t('services.room') });
+            types.push({ value: 'BOTH', label: t('services.both') });
+          } else if (resourceTypesArray.includes('STAFF')) {
+            // 商户只有员工
+            types.push({ value: 'STAFF', label: t('services.staff') });
+          } else if (resourceTypesArray.includes('ROOM')) {
+            // 商户只有房间
+            types.push({ value: 'ROOM', label: t('services.room') });
+          }
+        } else {
+          // 默认只有员工
+          types.push({ value: 'STAFF', label: t('services.staff') });
+        }
+        
+        setAvailableResourceTypes(types);
+        
+        // 如果当前选择的资源类型不在可用选项中，设置为第一个可用选项
+        if (types.length > 0 && !types.find(t => t.value === formData.resourceType)) {
+          setFormData(prev => ({ ...prev, resourceType: types[0].value as 'STAFF' | 'ROOM' | 'BOTH' }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch merchant config:', error);
+        // 出错时使用默认值
+        setAvailableResourceTypes([{ value: 'STAFF', label: t('services.staff') }]);
+      }
+    };
+    
+    if (open) {
+      fetchMerchantConfig();
+    }
+  }, [open, user?.tenantId, t]);
 
   useEffect(() => {
     if (open) {
@@ -85,12 +136,12 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
           duration: 60,
           description: '',
           status: 'ACTIVE',
-          resourceType: 'STAFF',
+          resourceType: availableResourceTypes.length > 0 ? availableResourceTypes[0].value as 'STAFF' | 'ROOM' | 'BOTH' : 'STAFF',
         });
       }
       setErrors({});
     }
-  }, [open, mode, service]);
+  }, [open, mode, service, availableResourceTypes]);
 
   const handleChange = (field: keyof ServiceManagementType) => (event: any) => {
     let value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
@@ -157,12 +208,6 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
     const numValue = typeof value === 'string' ? parseFloat(value) : (value || 0);
     return CurrencyUtils.formatAmount(numValue);
   };
-
-  const resourceTypes = [
-    { value: 'STAFF', label: t('services.staff') },
-    { value: 'ROOM', label: t('services.room') },
-    { value: 'BOTH', label: t('services.both') },
-  ];
 
   return (
     <Dialog
@@ -484,7 +529,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                       },
                     }}
                   >
-                    {resourceTypes.map((type) => (
+                    {availableResourceTypes.map((type) => (
                       <MenuItem key={type.value} value={type.value}>
                         {type.label}
                       </MenuItem>

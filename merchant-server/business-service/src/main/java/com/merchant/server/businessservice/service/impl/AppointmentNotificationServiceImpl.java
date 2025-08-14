@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.service.impl;
 import com.merchant.server.businessservice.client.NotificationClient;
 import com.merchant.server.businessservice.dto.AppointmentNotificationDTO;
 import com.merchant.server.businessservice.entity.Appointment;
+import com.merchant.server.businessservice.entity.AppointmentResource;
 import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.mapper.CustomerMapper;
@@ -85,10 +86,18 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 return null;
             }
 
-            // 获取资源信息
+            // 获取资源信息（从appointmentResources中获取主要资源）
             Resource resource = null;
-            if (appointment.getResourceId() != null) {
-                resource = resourceMapper.findById(appointment.getResourceId());
+            if (appointment.getAppointmentResources() != null && !appointment.getAppointmentResources().isEmpty()) {
+                // 获取主要资源（优先选择员工）
+                AppointmentResource primaryResource = appointment.getAppointmentResources().stream()
+                    .filter(ar -> ar.getIsPrimary() != null && ar.getIsPrimary())
+                    .findFirst()
+                    .orElse(appointment.getAppointmentResources().get(0));
+                
+                if (primaryResource != null) {
+                    resource = resourceMapper.findById(primaryResource.getResourceId());
+                }
             }
 
             // 构建通知DTO

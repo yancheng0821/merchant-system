@@ -233,7 +233,25 @@
             AVG(workingHours) as workingHours,
             AVG(efficiencyScore) as efficiencyScore
         FROM (
-            -- 从订单表获取员工资源统计
+            -- 获取所有资源的基础信息（即使没有订单）
+            SELECT 
+                DATE(#{startDate}) as statDate,
+                r.id as resourceId,
+                r.type as resourceType,
+                r.name as resourceName,
+                0 as orderCount,
+                0.0 as totalRevenue,
+                0.0 as avgRating,
+                0 as ratingCount,
+                0.0 as workingHours,
+                0.0 as efficiencyScore
+            FROM resource r
+            WHERE r.tenant_id = #{tenantId}
+            AND r.status = 'ACTIVE'
+            
+            UNION ALL
+            
+            -- 从订单表获取资源统计
             SELECT 
                 DATE(o.created_at) as statDate,
                 o.resource_id as resourceId,
@@ -247,8 +265,8 @@
                 ) as resourceName,
                 COUNT(*) as orderCount,
                 COALESCE(SUM(o.total_amount), 0) as totalRevenue,
-                4.5 as avgRating,
-                COUNT(*) as ratingCount,
+                COALESCE(AVG(o.rating), 4.5) as avgRating,
+                COUNT(CASE WHEN o.rating IS NOT NULL THEN 1 END) as ratingCount,
                 8.0 as workingHours,
                 85.0 as efficiencyScore
             FROM orders o
@@ -261,32 +279,31 @@
             
             UNION ALL
             
-            -- 从预约表获取房间资源统计
+            -- 从预约表获取资源统计（包括员工和房间）
             SELECT 
                 DATE(a.appointment_date) as statDate,
-                a.resource_id as resourceId,
-                a.resource_type as resourceType,
+                ar.resource_id as resourceId,
+                ar.resource_type as resourceType,
                 COALESCE(r.name, 
                     CASE 
-                        WHEN a.resource_type = 'STAFF' THEN CONCAT('Staff Member ', a.resource_id)
-                        WHEN a.resource_type = 'ROOM' THEN CONCAT('Room ', a.resource_id)
-                        ELSE CONCAT('Resource ', a.resource_id)
+                        WHEN ar.resource_type = 'STAFF' THEN CONCAT('Staff Member ', ar.resource_id)
+                        WHEN ar.resource_type = 'ROOM' THEN CONCAT('Room ', ar.resource_id)
+                        ELSE CONCAT('Resource ', ar.resource_id)
                     END
                 ) as resourceName,
-                COUNT(*) as orderCount,
+                COUNT(DISTINCT a.id) as orderCount,
                 COALESCE(SUM(a.total_amount), 0) as totalRevenue,
-                4.5 as avgRating,
-                COUNT(*) as ratingCount,
+                COALESCE(AVG(a.rating), 4.5) as avgRating,
+                COUNT(DISTINCT CASE WHEN a.rating IS NOT NULL THEN a.id END) as ratingCount,
                 8.0 as workingHours,
                 85.0 as efficiencyScore
             FROM appointments a
-            LEFT JOIN resource r ON a.resource_id = r.id AND r.tenant_id = a.tenant_id
+            INNER JOIN appointment_resources ar ON a.id = ar.appointment_id
+            LEFT JOIN resource r ON ar.resource_id = r.id AND r.tenant_id = a.tenant_id
             WHERE a.tenant_id = #{tenantId} 
             AND DATE(a.appointment_date) BETWEEN #{startDate} AND #{endDate}
-            AND a.resource_id IS NOT NULL
-            AND a.resource_type = 'ROOM'
             AND a.status IN ('CONFIRMED', 'COMPLETED')
-            GROUP BY DATE(a.appointment_date), a.resource_id, a.resource_type, r.name
+            GROUP BY DATE(a.appointment_date), ar.resource_id, ar.resource_type, r.name
         ) combined_stats
         GROUP BY statDate, resourceId, resourceType, resourceName
         ORDER BY statDate, resourceId

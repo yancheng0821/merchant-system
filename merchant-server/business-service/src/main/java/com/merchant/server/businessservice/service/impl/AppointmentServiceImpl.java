@@ -1,8 +1,10 @@
 package com.merchant.server.businessservice.service.impl;
 
 import com.merchant.server.businessservice.entity.Appointment;
+import com.merchant.server.businessservice.entity.AppointmentResource;
 import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
+import com.merchant.server.businessservice.mapper.AppointmentResourceMapper;
 import com.merchant.server.businessservice.mapper.CustomerMapper;
 import com.merchant.server.businessservice.mapper.ServiceMapper;
 import com.merchant.server.businessservice.service.AppointmentService;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentMapper appointmentMapper;
+    private final AppointmentResourceMapper appointmentResourceMapper;
     private final AppointmentNotificationService notificationService;
     private final ResourceService resourceService;
     private final CustomerMapper customerMapper;
@@ -39,13 +42,37 @@ public class AppointmentServiceImpl implements AppointmentService {
         List<Appointment> appointments = appointmentMapper.findByTenantId(tenantId);
         log.info("Found {} appointments for tenant {}", appointments.size(), tenantId);
         
-        // 为每个预约获取服务详情
-        for (Appointment appointment : appointments) {
-            List<com.merchant.server.businessservice.entity.AppointmentService> services = appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
-            appointment.setAppointmentServices(services);
-            log.info("Appointment {}: date={}, time={}, status={}, customer={}, services={}", 
-                appointment.getId(), appointment.getAppointmentDate(), appointment.getAppointmentTime(), 
-                appointment.getStatus(), appointment.getCustomerId(), services.size());
+        // 批量获取所有预约的ID
+        List<Long> appointmentIds = appointments.stream()
+            .map(Appointment::getId)
+            .collect(java.util.stream.Collectors.toList());
+        
+        if (!appointmentIds.isEmpty()) {
+            // 批量获取所有预约的资源关联
+            List<AppointmentResource> allResources = appointmentResourceMapper.selectByAppointmentIds(appointmentIds);
+            
+            // 将资源按预约ID分组
+            Map<Long, List<AppointmentResource>> resourceMap = allResources.stream()
+                .collect(java.util.stream.Collectors.groupingBy(AppointmentResource::getAppointmentId));
+            
+            // 为每个预约设置服务详情和资源
+            for (Appointment appointment : appointments) {
+                // 获取服务详情
+                List<com.merchant.server.businessservice.entity.AppointmentService> services = 
+                    appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
+                appointment.setAppointmentServices(services);
+                
+                // 设置资源列表
+                List<AppointmentResource> resources = resourceMap.get(appointment.getId());
+                if (resources != null) {
+                    appointment.setAppointmentResources(resources);
+                }
+                
+                log.info("Appointment {}: date={}, time={}, status={}, customer={}, services={}, resources={}", 
+                    appointment.getId(), appointment.getAppointmentDate(), appointment.getAppointmentTime(), 
+                    appointment.getStatus(), appointment.getCustomerId(), services.size(), 
+                    resources != null ? resources.size() : 0);
+            }
         }
         
         return appointments;
@@ -54,7 +81,37 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public List<Appointment> getAppointmentsByCustomerId(Long customerId, Long tenantId) {
         log.info("Getting appointments for customer: {} in tenant: {}", customerId, tenantId);
-        return appointmentMapper.findByCustomerIdAndTenantId(customerId, tenantId);
+        List<Appointment> appointments = appointmentMapper.findByCustomerIdAndTenantId(customerId, tenantId);
+        
+        // 批量获取所有预约的ID
+        List<Long> appointmentIds = appointments.stream()
+            .map(Appointment::getId)
+            .collect(java.util.stream.Collectors.toList());
+        
+        if (!appointmentIds.isEmpty()) {
+            // 批量获取所有预约的资源关联
+            List<AppointmentResource> allResources = appointmentResourceMapper.selectByAppointmentIds(appointmentIds);
+            
+            // 将资源按预约ID分组
+            Map<Long, List<AppointmentResource>> resourceMap = allResources.stream()
+                .collect(java.util.stream.Collectors.groupingBy(AppointmentResource::getAppointmentId));
+            
+            // 为每个预约设置服务详情和资源
+            for (Appointment appointment : appointments) {
+                // 获取服务详情
+                List<com.merchant.server.businessservice.entity.AppointmentService> services = 
+                    appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
+                appointment.setAppointmentServices(services);
+                
+                // 设置资源列表
+                List<AppointmentResource> resources = resourceMap.get(appointment.getId());
+                if (resources != null) {
+                    appointment.setAppointmentResources(resources);
+                }
+            }
+        }
+        
+        return appointments;
     }
 
     @Override
@@ -112,26 +169,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             appointmentMapper.insert(appointment);
             log.info("Appointment created successfully with ID: {}", appointment.getId());
             
-            // 如果有资源ID，创建预约时间段
-            if (appointment.getResourceId() != null && appointment.getDuration() != null) {
-                LocalTime startTime = appointment.getAppointmentTime();
-                LocalTime endTime = startTime.plusMinutes(appointment.getDuration());
-                
-                try {
-                    resourceService.createBookingSlot(
-                        appointment.getResourceId(),
-                        appointment.getId(),
-                        appointment.getAppointmentDate(),
-                        startTime,
-                        endTime
-                    );
-                    log.info("Booking slot created for appointment: {}", appointment.getId());
-                } catch (Exception e) {
-                    log.error("Failed to create booking slot for appointment: {}", appointment.getId(), e);
-                    // 如果创建预约时间段失败，回滚预约创建
-                    throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
-                }
-            }
+            // 注意：这个方法是旧的API，新的预约应该使用createAppointmentWithServices
+            // 这里不创建资源关联，因为没有传入资源信息
             
             // 发送预约确认通知
             try {
@@ -158,8 +197,6 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = new Appointment();
         appointment.setTenantId(appointmentDTO.getTenantId());
         appointment.setCustomerId(appointmentDTO.getCustomerId());
-        appointment.setResourceId(appointmentDTO.getResourceId());
-        appointment.setResourceType(appointmentDTO.getResourceType());
         appointment.setAppointmentDate(appointmentDTO.getAppointmentDate());
         appointment.setAppointmentTime(appointmentDTO.getAppointmentTime());
         appointment.setDuration(appointmentDTO.getDuration());
@@ -182,14 +219,28 @@ public class AppointmentServiceImpl implements AppointmentService {
                 LocalTime endTime = startTime.plusMinutes(appointment.getDuration());
                 
                 // 添加详细日志
-                log.info("Processing booking slots - selectedResources: {}, resourceId: {}", 
-                    appointmentDTO.getSelectedResources(), appointment.getResourceId());
+                log.info("Processing booking slots - selectedResources: {}", 
+                    appointmentDTO.getSelectedResources());
                 
-                // 处理多个资源的预约时段创建
+                // 处理多个资源的预约时段创建和资源关联
                 if (appointmentDTO.getSelectedResources() != null && !appointmentDTO.getSelectedResources().isEmpty()) {
-                    log.info("Creating booking slots for {} selected resources", appointmentDTO.getSelectedResources().size());
-                    // 为每个选中的资源创建预约时段
-                    for (AppointmentCreateDTO.SelectedResourceDTO selectedResource : appointmentDTO.getSelectedResources()) {
+                    log.info("Creating booking slots and resource associations for {} selected resources", appointmentDTO.getSelectedResources().size());
+                    
+                    // 创建appointment_resources记录
+                    List<AppointmentResource> appointmentResources = new ArrayList<>();
+                    for (int i = 0; i < appointmentDTO.getSelectedResources().size(); i++) {
+                        AppointmentCreateDTO.SelectedResourceDTO selectedResource = appointmentDTO.getSelectedResources().get(i);
+                        
+                        // 创建资源关联记录
+                        AppointmentResource ar = new AppointmentResource();
+                        ar.setAppointmentId(appointment.getId());
+                        ar.setResourceId(selectedResource.getId());
+                        ar.setResourceType(AppointmentResource.ResourceType.valueOf(selectedResource.getType()));
+                        // is_primary字段在当前业务场景下不使用，统一设置为false
+                        ar.setIsPrimary(false);
+                        appointmentResources.add(ar);
+                        
+                        // 创建预约时段
                         try {
                             log.info("Creating booking slot for resource: {} (type: {})", selectedResource.getId(), selectedResource.getType());
                             resourceService.createBookingSlot(
@@ -208,26 +259,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                             throw new RuntimeException("Failed to create booking slot for resource " + selectedResource.getId() + ": " + e.getMessage(), e);
                         }
                     }
-                } else if (appointment.getResourceId() != null) {
-                    // 兼容旧逻辑：如果只有主要资源ID，创建单个预约时段
-                    log.info("Using fallback logic - creating single booking slot for resourceId: {}", appointment.getResourceId());
-                    try {
-                        resourceService.createBookingSlot(
-                            appointment.getResourceId(),
-                            appointment.getId(),
-                            appointment.getAppointmentDate(),
-                            startTime,
-                            endTime
-                        );
-                        log.info("Booking slot created for appointment: {}", appointment.getId());
-                    } catch (Exception e) {
-                        log.error("Failed to create booking slot for appointment: {}", appointment.getId(), e);
-                        // 如果创建预约时间段失败，回滚预约创建
-                        throw new RuntimeException("Failed to create booking slot: " + e.getMessage(), e);
+                    
+                    // 批量插入资源关联记录
+                    if (!appointmentResources.isEmpty()) {
+                        appointmentResourceMapper.batchInsert(appointmentResources);
+                        log.info("Created {} appointment resource associations", appointmentResources.size());
+                        
+                        // 设置资源信息到预约对象中（用于通知）
+                        appointment.setAppointmentResources(appointmentResources);
                     }
                 } else {
-                    log.warn("No resources specified for booking slots - selectedResources: {}, resourceId: {}", 
-                        appointmentDTO.getSelectedResources(), appointment.getResourceId());
+                    log.warn("No resources specified for booking slots - selectedResources: {}", 
+                        appointmentDTO.getSelectedResources());
                 }
             }
             
@@ -334,7 +377,15 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public Appointment getAppointmentById(Long id) {
         log.info("Getting appointment by id: {}", id);
-        return appointmentMapper.findById(id);
+        Appointment appointment = appointmentMapper.findById(id);
+        
+        if (appointment != null) {
+            // 加载资源关联
+            List<AppointmentResource> resources = appointmentResourceMapper.selectByAppointmentId(id);
+            appointment.setAppointmentResources(resources);
+        }
+        
+        return appointment;
     }
     
     @Override

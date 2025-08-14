@@ -52,16 +52,16 @@ public class DataSyncScheduler {
     }
     
     /**
-     * 每小时同步一次数据（用于测试）
+     * 每5分钟同步一次数据（用于测试）
      */
-    @Scheduled(fixedRate = 3600000) // 1小时 = 3,600,000毫秒
-    public void syncDataHourly() {
-        log.info("Starting hourly data sync for all tenants");
+    @Scheduled(fixedRate = 300000) // 5分钟 = 300,000毫秒
+    public void syncDataEveryFiveMinutes() {
+        log.info("Starting 5-minute data sync for all tenants");
         
         try {
             // 动态获取所有活跃租户
             List<Map<String, Object>> activeTenants = authServiceClient.getActiveTenants();
-            log.info("Found {} active tenants for hourly sync", activeTenants.size());
+            log.info("Found {} active tenants for 5-minute sync", activeTenants.size());
             
             for (Map<String, Object> tenant : activeTenants) {
                 Long tenantId = ((Number) tenant.get("id")).longValue();
@@ -69,15 +69,15 @@ public class DataSyncScheduler {
                 
                 try {
                     dataSyncService.syncDataForTenant(tenantId);
-                    log.info("Hourly data sync completed for tenant: {} (ID: {})", tenantName, tenantId);
+                    log.info("5-minute data sync completed for tenant: {} (ID: {})", tenantName, tenantId);
                 } catch (Exception e) {
-                    log.error("Error during hourly sync for tenant: {} (ID: {})", tenantName, tenantId, e);
+                    log.error("Error during 5-minute sync for tenant: {} (ID: {})", tenantName, tenantId, e);
                 }
             }
             
-            log.info("Hourly data sync completed for all {} tenants", activeTenants.size());
+            log.info("5-minute data sync completed for all {} tenants", activeTenants.size());
         } catch (Exception e) {
-            log.error("Error during hourly data sync", e);
+            log.error("Error during 5-minute data sync", e);
         }
     }
 } 

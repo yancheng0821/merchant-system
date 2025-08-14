@@ -28,7 +28,7 @@ import {
   ExpandMore,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { TaxProvider } from './contexts/TaxContext';
 import { SessionProvider } from './contexts/SessionContext';
@@ -51,20 +51,28 @@ import LanguageSwitcher from './components/common/LanguageSwitcher';
 
 const drawerWidth = 260;
 
-const MainApp: React.FC = () => {
+const MainAppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, logout, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   
-  // 检查localStorage中的导航意图
+  // 从URL路径获取初始选中项
   const getInitialSelectedItem = () => {
+    // 首先检查URL路径
+    const path = location.pathname.slice(1) || 'dashboard';
+    
+    // 检查localStorage中的导航意图（兼容旧逻辑）
     const navigateTo = localStorage.getItem('navigateTo');
     if (navigateTo) {
-      localStorage.removeItem('navigateTo'); // 清除导航意图
+      localStorage.removeItem('navigateTo');
       return navigateTo;
     }
-    return 'dashboard';
+    
+    return path;
   };
   
   const [selectedItem, setSelectedItem] = useState(getInitialSelectedItem());
@@ -72,6 +80,28 @@ const MainApp: React.FC = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
   // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+
+  // 监听URL变化并同步selectedItem
+  useEffect(() => {
+    const path = location.pathname.slice(1) || 'dashboard';
+    setSelectedItem(path);
+    
+    // 特殊处理Stripe回调
+    if (path === 'settings' && searchParams.get('tab') === 'payment') {
+      // 确保Settings组件接收到正确的tab参数
+      setSelectedItem('settings');
+    }
+  }, [location, searchParams]);
+
+  // 当selectedItem变化时，更新URL
+  useEffect(() => {
+    if (selectedItem) {
+      // 不要在初始加载时更新URL
+      if (location.pathname !== `/${selectedItem}`) {
+        navigate(`/${selectedItem}`, { replace: false });
+      }
+    }
+  }, [selectedItem, navigate, location.pathname]);
 
   // 获取商户配置和初始化预加载器
   useEffect(() => {
@@ -312,9 +342,7 @@ const MainApp: React.FC = () => {
     );
   }
 
-  return (
-    <Router>
-      {user ? (
+  return user ? (
         <TaxProvider>
           <SessionProvider>
         <Box sx={{ display: 'flex', bgcolor: '#f8fafc' }}>
@@ -494,7 +522,7 @@ const MainApp: React.FC = () => {
               {selectedItem === 'resources' && <ResourceManagement />}
               {selectedItem === 'notifications' && <NotificationManagement />}
               {selectedItem === 'analytics' && <Analytics />}
-              {selectedItem === 'settings' && <Settings />}
+              {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}
               {selectedItem === 'profile' && <UserProfile />}
             </Container>
           </Box>
@@ -503,7 +531,13 @@ const MainApp: React.FC = () => {
         </TaxProvider>
       ) : (
         <LoginPage />
-      )}
+      );
+};
+
+const MainApp: React.FC = () => {
+  return (
+    <Router>
+      <MainAppContent />
     </Router>
   );
 };

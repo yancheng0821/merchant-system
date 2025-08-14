@@ -1115,8 +1115,6 @@ export interface Appointment {
   id: number;
   tenantId: number;
   customerId: number;
-  resourceId?: number;
-  resourceType?: 'STAFF' | 'ROOM';
   appointmentDate: string;
   appointmentTime: string;
   duration: number;
@@ -1131,6 +1129,17 @@ export interface Appointment {
   selectedResources?: {
     id: number;
     type: 'STAFF' | 'ROOM';
+  }[];
+  // 新增：预约关联的所有资源
+  appointmentResources?: {
+    id: number;
+    appointmentId: number;
+    resourceId: number;
+    resourceType: 'STAFF' | 'ROOM';
+    isPrimary: boolean;
+    resourceName?: string;
+    resourceStatus?: string;
+    createdAt?: string;
   }[];
   // 关联对象
   customer?: Customer;

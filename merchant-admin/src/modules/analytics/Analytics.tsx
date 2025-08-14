@@ -22,6 +22,7 @@ import {
   alpha,
   CircularProgress,
   Alert,
+  Button,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -33,6 +34,7 @@ import {
   Business as AiIcon,
   CalendarMonth as CalendarIcon,
   AccessTime as TimeIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -82,6 +84,7 @@ const Analytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [heatmapData, setHeatmapData] = useState<any>({});
   const [heatmapView, setHeatmapView] = useState<'week' | 'month'>('week');
+  const [syncing, setSyncing] = useState(false);
 
   const handleTimeRangeChange = (event: any) => {
     setTimeRange(event.target.value);
@@ -93,6 +96,32 @@ const Analytics: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
+  };
+
+  // 手动同步数据
+  const handleSyncData = async () => {
+    if (!user?.tenantId) return;
+    
+    setSyncing(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_ANALYTICS_SERVICE_URL || 'http://localhost:8084'}/api/analytics/sync/${user.tenantId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        // 同步成功后重新加载数据
+        await fetchAnalyticsData();
+      } else {
+        console.error('Failed to sync data');
+      }
+    } catch (error) {
+      console.error('Error syncing data:', error);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   // 获取分析数据
@@ -233,7 +262,24 @@ const Analytics: React.FC = () => {
             </Typography>
           </Box>
 
-          <FormControl size="small" sx={{ minWidth: 140 }}>
+          <Box display="flex" gap={2}>
+            <Button
+              variant="outlined"
+              startIcon={syncing ? <CircularProgress size={16} /> : <SyncIcon />}
+              onClick={handleSyncData}
+              disabled={syncing}
+              sx={{
+                borderColor: '#0891B2',
+                color: '#0891B2',
+                '&:hover': {
+                  borderColor: '#0E7490',
+                  backgroundColor: alpha('#0891B2', 0.04),
+                },
+              }}
+            >
+              {syncing ? t('analytics.syncing') : t('analytics.syncData')}
+            </Button>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
             <Select
               value={timeRange}
               onChange={handleTimeRangeChange}
@@ -253,6 +299,7 @@ const Analytics: React.FC = () => {
               <MenuItem value="1year">{t('analytics.timePeriods.1year')}</MenuItem>
             </Select>
           </FormControl>
+          </Box>
         </Box>
       </Box>
 
@@ -677,33 +724,42 @@ const Analytics: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {staffPerformance.map((staff: any) => (
-                  <TableRow key={staff.staffId} sx={{ '&:hover': { backgroundColor: alpha('#8B5CF6', 0.04) } }}>
+                {staffPerformance.map((resource: any) => (
+                  <TableRow key={resource.staffId} sx={{ '&:hover': { backgroundColor: alpha('#8B5CF6', 0.04) } }}>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={2}>
-                        <Avatar sx={{ bgcolor: '#8B5CF6', width: 32, height: 32 }}>
-                          {staff.avatar}
+                        <Avatar sx={{ 
+                          bgcolor: resource.resourceType === 'ROOM' ? '#EC4899' : '#8B5CF6', 
+                          width: 32, 
+                          height: 32 
+                        }}>
+                          {resource.resourceType === 'ROOM' ? 'R' : resource.avatar}
                         </Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {staff.staffName}
-                        </Typography>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {resource.staffName}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {resource.resourceType === 'ROOM' ? t('resources.type.room') : t('resources.type.staff')}
+                          </Typography>
+                        </Box>
                       </Box>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
-                        {CurrencyUtils.formatAmountWithCommas(staff.totalRevenue)}
+                        {CurrencyUtils.formatAmountWithCommas(resource.totalRevenue)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2">
-                        {staff.orderCount}
+                        {resource.orderCount}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
                       <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
                         <StarIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {staff.avgRating}
+                          {resource.avgRating}
                         </Typography>
                       </Box>
                     </TableCell>
@@ -711,7 +767,7 @@ const Analytics: React.FC = () => {
                       <Box display="flex" alignItems="center" gap={1}>
                         <LinearProgress
                           variant="determinate"
-                          value={staff.efficiencyScore}
+                          value={resource.efficiencyScore}
                           sx={{
                             flex: 1,
                             height: 8,
@@ -724,13 +780,13 @@ const Analytics: React.FC = () => {
                           }}
                         />
                         <Typography variant="caption" sx={{ fontWeight: 600, color: '#8B5CF6' }}>
-                          {staff.efficiencyScore}%
+                          {resource.efficiencyScore}%
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={0.5}>
-                        {staff.topServices?.map((service: string, index: number) => (
+                        {resource.topServices?.map((service: string, index: number) => (
                           <Chip
                             key={index}
                             label={service}

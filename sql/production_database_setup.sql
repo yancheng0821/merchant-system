@@ -488,8 +488,6 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '预约ID',
   `tenant_id` bigint NOT NULL COMMENT '租户ID',
   `customer_id` bigint NOT NULL COMMENT '客户ID',
-  `resource_id` bigint DEFAULT NULL COMMENT '预约的资源ID',
-  `resource_type` enum('STAFF','ROOM') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预约的资源类型',
   `appointment_date` date NOT NULL COMMENT '预约日期',
   `appointment_time` time NOT NULL COMMENT '预约时间',
   `duration` int NOT NULL COMMENT '预计时长(分钟)',
@@ -505,11 +503,8 @@ CREATE TABLE IF NOT EXISTS `appointments` (
   KEY `idx_customer_date` (`customer_id`,`appointment_date`),
   KEY `idx_staff_date` (`appointment_date`),
   KEY `idx_tenant_status` (`tenant_id`,`status`),
-  KEY `idx_resource_id` (`resource_id`),
   KEY `idx_resource_date` (`resource_id`,`appointment_date`),
-  KEY `idx_resource_type` (`resource_type`),
   CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
-  CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`resource_id`) REFERENCES `resource` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约表';
 
 -- 预约服务关联表
@@ -527,6 +522,23 @@ CREATE TABLE IF NOT EXISTS `appointment_services` (
   CONSTRAINT `appointment_services_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `appointment_services_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约服务明细表';
+
+--预约资源关联表
+CREATE TABLE IF NOT EXISTS `appointment_resources` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `appointment_id` bigint NOT NULL COMMENT '预约ID',
+  `resource_id` bigint NOT NULL COMMENT '资源ID',
+  `resource_type` enum('STAFF','ROOM') NOT NULL COMMENT '资源类型',
+  `is_primary` tinyint(1) DEFAULT 0 COMMENT '是否主要资源',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_appointment_resource` (`appointment_id`, `resource_id`),
+  KEY `idx_appointment_id` (`appointment_id`),
+  KEY `idx_resource_id` (`resource_id`),
+  KEY `idx_resource_type` (`resource_type`),
+  CONSTRAINT `appointment_resources_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `appointment_resources_ibfk_2` FOREIGN KEY (`resource_id`) REFERENCES `resource` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约资源关联表';
 
 -- 资源预约时段表
 CREATE TABLE IF NOT EXISTS `resource_booking_slots` (

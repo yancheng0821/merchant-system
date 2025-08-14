@@ -49,6 +49,7 @@ import {
   Close as CloseIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
+  MeetingRoom as MeetingRoomIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n/config';
@@ -647,20 +648,15 @@ const AppointmentManagement: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box>
+                        {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {t('appointments.appointmentService')}
+                            {appointment.appointmentServices.map(service => service.serviceName).join(', ')}
                           </Typography>
-                          {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
-                            <Typography variant="caption" color="text.secondary">
-                              {appointment.appointmentServices.map(service => service.serviceName).join(', ')}
-                            </Typography>
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">
-                              {t('appointments.noServiceDetails')}
-                            </Typography>
-                          )}
-                        </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            {t('appointments.noServiceDetails')}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
@@ -677,11 +673,27 @@ const AppointmentManagement: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <PersonIcon sx={{ fontSize: 16, color: '#6366F1' }} />
-                          <Typography variant="body2">
-                            {appointment.resource?.name || t('appointments.unassigned')}
-                          </Typography>
+                        <Box>
+                          {appointment.appointmentResources && appointment.appointmentResources.length > 0 ? (
+                            <Box display="flex" flexDirection="column" gap={0.5}>
+                              {appointment.appointmentResources.map((resource, idx) => (
+                                <Box key={idx} display="flex" alignItems="center" gap={0.5}>
+                                  {resource.resourceType === 'STAFF' ? (
+                                    <PersonIcon sx={{ fontSize: 14, color: '#6366F1' }} />
+                                  ) : (
+                                    <MeetingRoomIcon sx={{ fontSize: 14, color: '#10B981' }} />
+                                  )}
+                                  <Typography variant="caption">
+                                    {resource.resourceName || t('appointments.unassigned')}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              {t('appointments.unassigned')}
+                            </Typography>
+                          )}
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -722,6 +734,8 @@ const AppointmentManagement: React.FC = () => {
                           onClick={(e) => {
                             setMenuAnchorEl(e.currentTarget);
                             setSelectedAppointment(appointment);
+                            // Blur the button to prevent aria-hidden warning
+                            e.currentTarget.blur();
                           }}
                           sx={{
                             '&:hover': {
@@ -762,6 +776,7 @@ const AppointmentManagement: React.FC = () => {
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
         onClose={() => setMenuAnchorEl(null)}
+        disableRestoreFocus
         PaperProps={{
           sx: {
             borderRadius: 2,
@@ -773,8 +788,12 @@ const AppointmentManagement: React.FC = () => {
       >
         <MenuItem
           onClick={() => {
-            setViewDetailsOpen(true);
+            // Close menu first
             setMenuAnchorEl(null);
+            // Open dialog after a short delay to avoid focus conflicts
+            setTimeout(() => {
+              setViewDetailsOpen(true);
+            }, 100);
           }}
           sx={{ '&:hover': { backgroundColor: alpha('#6366F1', 0.08) } }}
         >
@@ -895,6 +914,8 @@ const AppointmentManagement: React.FC = () => {
         onClose={() => setViewDetailsOpen(false)}
         maxWidth="md"
         fullWidth
+        disableAutoFocus
+        disableEnforceFocus
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -952,10 +973,30 @@ const AppointmentManagement: React.FC = () => {
                     {formatTime(selectedAppointment.appointmentTime)} ({selectedAppointment.duration} {t('appointments.minutesUnit')})
                   </Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">{selectedAppointment.resource?.name || t('appointments.unassigned')}</Typography>
-                </Box>
+                {selectedAppointment.appointmentResources && selectedAppointment.appointmentResources.length > 0 ? (
+                  <Box>
+                    {selectedAppointment.appointmentResources.map((resource, idx) => (
+                      <Box key={idx} display="flex" alignItems="center" gap={1} mb={1}>
+                        {resource.resourceType === 'STAFF' ? (
+                          <PersonIcon sx={{ fontSize: 16, color: '#6366F1' }} />
+                        ) : (
+                          <MeetingRoomIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                        )}
+                        <Typography variant="body2">
+                          {resource.resourceName || t('appointments.unassigned')}
+                          <Typography variant="caption" color="text.secondary" component="span" sx={{ ml: 0.5 }}>
+                            ({resource.resourceType === 'STAFF' ? t('appointments.staff') : t('appointments.room')})
+                          </Typography>
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary">{t('appointments.unassigned')}</Typography>
+                  </Box>
+                )}
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                     {t('appointments.status')}: {getStatusChip(selectedAppointment.status)}

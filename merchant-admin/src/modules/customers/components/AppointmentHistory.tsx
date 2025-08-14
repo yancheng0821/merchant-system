@@ -38,6 +38,8 @@ import {
   TrendingUp as TrendingUpIcon,
   AccountBalanceWallet as WalletIcon,
   RateReview as ReviewIcon,
+  Person as PersonIcon,
+  MeetingRoom as MeetingRoomIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
@@ -193,6 +195,8 @@ const AppointmentHistory: React.FC<{
         onClose={onClose}
         maxWidth="lg"
         fullWidth
+        disableEnforceFocus
+        disableAutoFocus
         PaperProps={{
           sx: {
             minHeight: '80vh',
@@ -467,7 +471,7 @@ const AppointmentHistory: React.FC<{
                   <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                     <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('customers.service')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.dateTime')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.staff')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.resource')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.status')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.price')}</TableCell>
                     <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.rating')}</TableCell>
@@ -532,9 +536,29 @@ const AppointmentHistory: React.FC<{
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {appointment.resource?.name || t('customers.unassigned')}
-                        </Typography>
+                        {appointment.appointmentResources && appointment.appointmentResources.length > 0 ? (
+                          <Box display="flex" flexDirection="column" gap={0.5}>
+                            {appointment.appointmentResources.map((resource, idx) => (
+                              <Box key={idx} display="flex" alignItems="center" gap={0.5}>
+                                {resource.resourceType === 'STAFF' ? (
+                                  <PersonIcon sx={{ fontSize: 14, color: '#6366F1' }} />
+                                ) : (
+                                  <MeetingRoomIcon sx={{ fontSize: 14, color: '#10B981' }} />
+                                )}
+                                <Typography variant="caption">
+                                  {resource.resourceName || t('customers.unassigned')}
+                                  <Typography variant="caption" color="text.secondary" component="span" sx={{ ml: 0.5 }}>
+                                    ({resource.resourceType === 'STAFF' ? t('customers.staff') : t('customers.room')})
+                                  </Typography>
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            {t('customers.unassigned')}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Chip
