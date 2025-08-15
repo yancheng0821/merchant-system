@@ -51,7 +51,15 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     onBack,
 }) => {
     const { t } = useTranslation();
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    // 获取本地日期字符串（避免时区问题）
+    const getLocalDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    const [selectedDate, setSelectedDate] = useState(getLocalDateString(new Date()));
     const [availabilityData, setAvailabilityData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -109,7 +117,9 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     const getTimeSlotStatus = (timeSlot: string) => {
         if (!availabilityData) return 'unavailable';
 
-        const date = new Date(selectedDate);
+        // 解析日期字符串，避免时区问题
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
         const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
 
         // 如果没有可用性数据，默认为不可用
@@ -234,12 +244,19 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
         scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
         shouldPreserveScrollRef.current = true;
         
-        const currentDate = new Date(selectedDate);
-        const newDate = new Date(currentDate);
-        newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
+        // 解析日期字符串，避免时区问题
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const currentDate = new Date(year, month - 1, day); // month是0-based
+        
+        // 根据方向调整日期
+        if (direction === 'next') {
+            currentDate.setDate(currentDate.getDate() + 1);
+        } else {
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
         
         // 设置新日期，这会触发useEffect重新获取数据
-        setSelectedDate(newDate.toISOString().split('T')[0]);
+        setSelectedDate(getLocalDateString(currentDate));
     };
 
 
@@ -449,8 +466,8 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                             }}
                             size="small"
                             inputProps={{
-                                min: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                                max: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                                min: getLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+                                max: getLocalDateString(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)),
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {

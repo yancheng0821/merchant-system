@@ -42,6 +42,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
     const [availabilities, setAvailabilities] = useState<Record<number, ResourceAvailability[]>>({});
     const [resourceStatuses, setResourceStatuses] = useState<Record<number, ResourceStatus>>({});
+    const [todayBookings, setTodayBookings] = useState<Record<number, any[]>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'today' | 'week'>('today');
@@ -80,6 +81,14 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
         { key: 7, label: t('staff.weekdays.sunday') },
     ], [t]);
 
+    // 获取本地日期字符串（避免时区问题）
+    const getLocalDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // 获取资源数据
     const fetchResources = async () => {
         try {
@@ -89,33 +98,45 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
             const activeResources = resourcesData.filter((r: Resource) => r.status === 'ACTIVE');
             setResources(activeResources);
 
-            // 获取每个资源的可用性和实时状态
+            // 今天的日期字符串
+            const todayStr = getLocalDateString(new Date());
+
+            // 获取每个资源的可用性、实时状态和今日预约
             const dataPromises = resourcesData.map(async (resource: Resource) => {
                 try {
-                    const [availability, status] = await Promise.all([
+                    const [availability, status, detailedAvailability] = await Promise.all([
                         resourceApi.getResourceAvailability(resource.id),
-                        resourceApi.getResourceStatus(resource.id)
+                        resourceApi.getResourceStatus(resource.id),
+                        resourceApi.getResourceDetailedAvailability(resource.id, todayStr)
                     ]);
-                    return { resourceId: resource.id, availability, status };
+                    return { 
+                        resourceId: resource.id, 
+                        availability, 
+                        status,
+                        todayBookings: detailedAvailability?.bookingSlots || []
+                    };
                 } catch (err) {
                     console.warn(`Failed to fetch data for resource ${resource.id}:`, err);
-                    return { resourceId: resource.id, availability: [], status: null };
+                    return { resourceId: resource.id, availability: [], status: null, todayBookings: [] };
                 }
             });
 
             const dataResults = await Promise.all(dataPromises);
             const availabilityMap: Record<number, ResourceAvailability[]> = {};
             const statusMap: Record<number, ResourceStatus> = {};
+            const bookingsMap: Record<number, any[]> = {};
 
-            dataResults.forEach(({ resourceId, availability, status }) => {
+            dataResults.forEach(({ resourceId, availability, status, todayBookings }) => {
                 availabilityMap[resourceId] = availability;
                 if (status) {
                     statusMap[resourceId] = status;
                 }
+                bookingsMap[resourceId] = todayBookings;
             });
 
             setAvailabilities(availabilityMap);
             setResourceStatuses(statusMap);
+            setTodayBookings(bookingsMap);
         } catch (err) {
             console.error('获取资源数据失败:', err);
             setError(err instanceof Error ? err.message : '获取资源数据失败');
@@ -149,14 +170,15 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
         setFilteredResources(filtered);
     }, [resources, searchTerm, resourceType]);
 
-    // 检查资源在特定时间的可用性
-    const checkResourceAvailability = (resourceId: number, dayOfWeek: number, time: string): boolean => {
+    // 检查资源在特定时间的可用性（包括检查预约占用）
+    const checkResourceAvailability = (resourceId: number, dayOfWeek: number, time: string, checkBookings: boolean = false): 'available' | 'booked' | 'unavailable' => {
         const resourceAvailability = availabilities[resourceId] || [];
         const timeHour = parseInt(time.split(':')[0]);
         const timeMinute = parseInt(time.split(':')[1]);
         const timeInMinutes = timeHour * 60 + timeMinute;
 
-        return resourceAvailability.some(availability => {
+        // 首先检查基础可用性
+        const isBasicallyAvailable = resourceAvailability.some(availability => {
             if (availability.dayOfWeek !== dayOfWeek || !availability.isAvailable) {
                 return false;
             }
@@ -169,8 +191,28 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
             const endMinute = parseInt(availability.endTime.split(':')[1]);
             const endInMinutes = endHour * 60 + endMinute;
 
-            return timeInMinutes >= startInMinutes && timeInMinutes < endInMinutes;
+            return timeInMinutes >= startInMinutes && timeInMinutes <= endInMinutes;
         });
+
+        if (!isBasicallyAvailable) {
+            return 'unavailable';
+        }
+
+        // 如果需要检查预约占用
+        if (checkBookings && todayBookings[resourceId]) {
+            const timeStr = time + ':00'; // 转换为HH:mm:ss格式
+            const isBooked = todayBookings[resourceId].some((booking: any) => {
+                const startTime = booking.startTime.length === 5 ? booking.startTime + ':00' : booking.startTime;
+                const endTime = booking.endTime.length === 5 ? booking.endTime + ':00' : booking.endTime;
+                return timeStr >= startTime && timeStr < endTime && booking.status === 'BOOKED';
+            });
+            
+            if (isBooked) {
+                return 'booked';
+            }
+        }
+
+        return 'available';
     };
 
     // 获取资源头像/图标
@@ -229,10 +271,13 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
             <Grid container spacing={4}>
                 {filteredResources.map((resource) => {
                     const availableSlots = timeSlots.filter(time => 
-                        checkResourceAvailability(resource.id, todayDayOfWeek, time)
+                        checkResourceAvailability(resource.id, todayDayOfWeek, time, true) === 'available'
+                    );
+                    const bookedSlots = timeSlots.filter(time =>
+                        checkResourceAvailability(resource.id, todayDayOfWeek, time, true) === 'booked'
                     );
                     const unavailableSlots = timeSlots.filter(time => 
-                        !checkResourceAvailability(resource.id, todayDayOfWeek, time)
+                        checkResourceAvailability(resource.id, todayDayOfWeek, time, true) === 'unavailable'
                     );
                     const availabilityPercentage = Math.round((availableSlots.length / timeSlots.length) * 100);
                     
@@ -405,7 +450,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                             }}
                                         >
                                             {timeSlots.slice(0, 24).map((time) => {
-                                                const isAvailable = checkResourceAvailability(resource.id, todayDayOfWeek, time);
+                                                const status = checkResourceAvailability(resource.id, todayDayOfWeek, time, true);
                                                 return (
                                                     <Box
                                                         key={time}
@@ -414,12 +459,15 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                             py: 0.5,
                                                             borderRadius: 1.5,
                                                             textAlign: 'center',
-                                                            backgroundColor: isAvailable
-                                                                ? alpha('#10B981', 0.1)
-                                                                : alpha('#EF4444', 0.1),
-                                                            border: `1px solid ${isAvailable
-                                                                ? alpha('#10B981', 0.2)
-                                                                : alpha('#EF4444', 0.2)}`,
+                                                            backgroundColor: 
+                                                                status === 'available' ? alpha('#10B981', 0.1) :
+                                                                status === 'booked' ? alpha('#F59E0B', 0.1) :
+                                                                alpha('#EF4444', 0.1),
+                                                            border: `1px solid ${
+                                                                status === 'available' ? alpha('#10B981', 0.2) :
+                                                                status === 'booked' ? alpha('#F59E0B', 0.2) :
+                                                                alpha('#EF4444', 0.2)
+                                                            }`,
                                                             transition: 'all 0.2s ease',
                                                             minHeight: 24,
                                                             display: 'flex',
@@ -427,9 +475,11 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                             justifyContent: 'center',
                                                             '&:hover': {
                                                                 transform: 'scale(1.05)',
-                                                                boxShadow: `0 1px 4px ${isAvailable
-                                                                    ? alpha('#10B981', 0.3)
-                                                                    : alpha('#EF4444', 0.3)}`,
+                                                                boxShadow: `0 1px 4px ${
+                                                                    status === 'available' ? alpha('#10B981', 0.3) :
+                                                                    status === 'booked' ? alpha('#F59E0B', 0.3) :
+                                                                    alpha('#EF4444', 0.3)
+                                                                }`,
                                                             },
                                                         }}
                                                     >
@@ -437,7 +487,10 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                             variant="caption"
                                                             sx={{
                                                                 fontWeight: 600,
-                                                                color: isAvailable ? '#10B981' : '#EF4444',
+                                                                color: 
+                                                                    status === 'available' ? '#10B981' :
+                                                                    status === 'booked' ? '#F59E0B' :
+                                                                    '#EF4444',
                                                                 fontSize: '0.65rem',
                                                                 lineHeight: 1,
                                                             }}

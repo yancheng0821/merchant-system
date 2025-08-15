@@ -169,6 +169,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 AnalyticsOverviewDTO.StaffPerformanceDTO staffDTO = new AnalyticsOverviewDTO.StaffPerformanceDTO();
                 staffDTO.setStaffId((Long) row.get("resourceId"));
                 staffDTO.setStaffName((String) row.get("resourceName"));
+                staffDTO.setResourceType((String) row.get("resourceType")); // Set resource type (STAFF or ROOM)
                 staffDTO.setTotalRevenue((BigDecimal) row.get("totalRevenue"));
                 staffDTO.setOrderCount(((Number) row.get("orderCount")).intValue());
                 staffDTO.setAvgRating(((BigDecimal) row.get("avgRating")).setScale(1, RoundingMode.HALF_UP));

@@ -22,7 +22,6 @@ import {
   alpha,
   CircularProgress,
   Alert,
-  Button,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -34,7 +33,6 @@ import {
   Business as AiIcon,
   CalendarMonth as CalendarIcon,
   AccessTime as TimeIcon,
-  Sync as SyncIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -84,7 +82,6 @@ const Analytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [heatmapData, setHeatmapData] = useState<any>({});
   const [heatmapView, setHeatmapView] = useState<'week' | 'month'>('week');
-  const [syncing, setSyncing] = useState(false);
 
   const handleTimeRangeChange = (event: any) => {
     setTimeRange(event.target.value);
@@ -96,32 +93,6 @@ const Analytics: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
-  };
-
-  // 手动同步数据
-  const handleSyncData = async () => {
-    if (!user?.tenantId) return;
-    
-    setSyncing(true);
-    try {
-      const response = await fetch(`${process.env.REACT_APP_ANALYTICS_SERVICE_URL || 'http://localhost:8084'}/api/analytics/sync/${user.tenantId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        // 同步成功后重新加载数据
-        await fetchAnalyticsData();
-      } else {
-        console.error('Failed to sync data');
-      }
-    } catch (error) {
-      console.error('Error syncing data:', error);
-    } finally {
-      setSyncing(false);
-    }
   };
 
   // 获取分析数据
@@ -263,22 +234,6 @@ const Analytics: React.FC = () => {
           </Box>
 
           <Box display="flex" gap={2}>
-            <Button
-              variant="outlined"
-              startIcon={syncing ? <CircularProgress size={16} /> : <SyncIcon />}
-              onClick={handleSyncData}
-              disabled={syncing}
-              sx={{
-                borderColor: '#0891B2',
-                color: '#0891B2',
-                '&:hover': {
-                  borderColor: '#0E7490',
-                  backgroundColor: alpha('#0891B2', 0.04),
-                },
-              }}
-            >
-              {syncing ? t('analytics.syncing') : t('analytics.syncData')}
-            </Button>
             <FormControl size="small" sx={{ minWidth: 140 }}>
             <Select
               value={timeRange}

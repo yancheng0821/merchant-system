@@ -128,7 +128,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [lastNotificationTime, setLastNotificationTime] = useState<Date | null>(null);
   const [isNotificationExpanded, setIsNotificationExpanded] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
-  const currentTimeRef = useRef<HTMLDivElement>(null);
 
   const handleTimeRangeChange = (event: SelectChangeEvent<TimeRange>) => {
     setTimeRange(event.target.value as TimeRange);
@@ -395,9 +394,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             const aptEndTimeStr = aptEndTime.toTimeString().slice(0, 5);
             
             // 检查是否有员工分配 - 使用resourceId作为员工ID
-            const hasStaff = apt.appointmentServices?.some((svc: any) => 
+            let hasStaff = apt.appointmentServices?.some((svc: any) => 
               svc.staffId === staff.id || svc.resourceId === staff.id
             ) || apt.staffId === staff.id || apt.resourceId === staff.id;
+            
+            // 也检查appointmentResources数组
+            if (!hasStaff && apt.appointmentResources && apt.appointmentResources.length > 0) {
+              hasStaff = apt.appointmentResources.some((res: any) => 
+                res.resourceId === staff.id && res.resourceType === 'STAFF'
+              );
+            }
             
             return hasStaff && aptTime <= currentTime && aptEndTimeStr > currentTime;
           });
@@ -456,7 +462,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             const aptEndTimeStr = aptEndTime.toTimeString().slice(0, 5);
             
             // 检查是否使用这个房间
-            const hasRoom = apt.roomId === room.id || apt.resourceId === room.id;
+            let hasRoom = apt.roomId === room.id || apt.resourceId === room.id;
+            
+            // 也检查appointmentResources数组
+            if (!hasRoom && apt.appointmentResources && apt.appointmentResources.length > 0) {
+              hasRoom = apt.appointmentResources.some((res: any) => 
+                res.resourceId === room.id && res.resourceType === 'ROOM'
+              );
+            }
             
             return hasRoom && aptTime <= currentTime && aptEndTimeStr > currentTime;
           });
@@ -538,18 +551,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return () => clearInterval(interval);
   }, [user?.tenantId, lastNotificationTime]);
 
-  // 自动滚动到当前时间
+  // 自动滚动到当前时间附近的预约
   useEffect(() => {
-    if (currentTimeRef.current && timelineRef.current) {
+    if (timelineRef.current && todayAppointments.length > 0) {
       // 延迟执行以确保DOM已渲染
       setTimeout(() => {
-        if (currentTimeRef.current && timelineRef.current) {
-          const containerTop = timelineRef.current.offsetTop;
-          const currentTimeTop = currentTimeRef.current.offsetTop;
-          const containerHeight = timelineRef.current.clientHeight;
+        if (timelineRef.current) {
+          const now = new Date();
+          const currentTimeStr = now.toTimeString().slice(0, 5); // HH:mm format
           
-          // 滚动到当前时间位置，让它出现在容器中间
-          timelineRef.current.scrollTop = currentTimeTop - containerTop - (containerHeight / 2) + 50;
+          // 找到当前时间附近的预约索引
+          let targetIndex = 0;
+          for (let i = 0; i < todayAppointments.length; i++) {
+            const appointmentTimeStr = todayAppointments[i].appointmentTime.slice(0, 5);
+            if (appointmentTimeStr > currentTimeStr) {
+              // Found first future appointment, scroll to previous one or this one
+              targetIndex = Math.max(0, i - 1);
+              break;
+            }
+            targetIndex = i;
+          }
+          
+          // 计算滚动位置 (每个预约大约150px高度，包括margin)
+          const appointmentHeight = 150;
+          const scrollPosition = Math.max(0, targetIndex * appointmentHeight - 100);
+          
+          // 滚动到目标位置
+          timelineRef.current.scrollTop = scrollPosition;
         }
       }, 100);
     }
@@ -1828,9 +1856,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     >
                       {t('dashboard.todayTimeline')}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('dashboard.currentTime')}: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Typography>
                   </Box>
                 </Box>
                 <Box display="flex" gap={1}>
@@ -1873,124 +1898,121 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   },
                 }}
               >
-                {/* 垂直线 */}
-                <Box sx={{
-                  position: 'absolute',
-                  left: 20,
-                  top: 0,
-                  bottom: 0,
-                  width: 3,
-                  background: `linear-gradient(180deg, 
-                    ${alpha('#06B6D4', 0.1)} 0%, 
-                    ${alpha('#06B6D4', 0.3)} 50%, 
-                    ${alpha('#06B6D4', 0.1)} 100%)`,
-                  borderRadius: 2,
-                }} />
-                
-                {/* 时间节点 - 显示真实预约数据 */}
+                {/* 时间节点容器 - 包含垂直线和所有时间节点 */}
                 {todayAppointments.length > 0 ? (
-                  todayAppointments
-                    .sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime))
-                    .map((appointment, index) => {
+                  <Box sx={{ 
+                    position: 'relative',
+                    paddingLeft: '40px', // 给垂直线留出空间
+                  }}>
+                    {/* 时间节点内容 */}
+                    {(() => {
                       const now = new Date();
-                      const currentTimeStr = now.toTimeString().slice(0, 5);
-                      const appointmentDateTime = new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`);
-                      const isCompleted = appointment.status === 'COMPLETED';
-                      const isCurrent = appointment.status === 'IN_PROGRESS';
-                      const isPending = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
-                      const isPast = appointmentDateTime < now && !isCompleted && !isCurrent;
-                      const isNearCurrent = Math.abs(appointmentDateTime.getTime() - now.getTime()) < 3600000; // 1小时内
+                      const currentTimeStr = now.toTimeString().slice(0, 5); // HH:mm format
                       
-                      return (
+                      // 排序预约列表
+                      const sortedAppointments = todayAppointments.sort((a, b) => 
+                        a.appointmentTime.localeCompare(b.appointmentTime)
+                      );
+                      
+                      // 创建包含预约和当前时间指示器的元素列表
+                      const elements: React.ReactNode[] = [];
+                      let currentTimeInserted = false;
+                      
+                      sortedAppointments.forEach((appointment, index) => {
+                        const appointmentTimeStr = appointment.appointmentTime.slice(0, 5);
+                        
+                        // 在适当位置插入当前时间指示器
+                        if (!currentTimeInserted && appointmentTimeStr > currentTimeStr) {
+                          elements.push(
+                          <Box key="current-time" sx={{ position: 'relative', mb: 3 }}>
+                            {/* 垂直线段 */}
+                            <Box sx={{
+                              position: 'absolute',
+                              left: -34,
+                              top: -24,
+                              bottom: -24,
+                              width: 2,
+                              backgroundColor: alpha('#06B6D4', 0.2),
+                              borderRadius: 1,
+                              zIndex: 0,
+                            }} />
+                            {/* 当前时间的点 - 使用青色主题 */}
+                            <Box sx={{
+                              position: 'absolute',
+                              left: -40,
+                              width: 14,
+                              height: 14,
+                              borderRadius: '50%',
+                              bgcolor: '#06B6D4',
+                              border: '2px solid white',
+                              boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)',
+                              animation: 'pulse 2s infinite',
+                              zIndex: 2,
+                              '@keyframes pulse': {
+                                '0%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
+                                '50%': { boxShadow: '0 0 0 6px rgba(6, 182, 212, 0.1)' },
+                                '100%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
+                              },
+                            }} />
+                            
+                            {/* 当前时间标记 */}
+                            <Box sx={{
+                              ml: 2,
+                              p: 1.5,
+                              borderRadius: 2,
+                              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05))',
+                              border: `2px dashed ${alpha('#06B6D4', 0.4)}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              width: 'fit-content',
+                            }}>
+                              <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                                {t('dashboard.currentTime')}
+                              </Typography>
+                              <Box sx={{
+                                bgcolor: '#06B6D4',
+                                color: 'white',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                              }}>
+                                {currentTimeStr}
+                              </Box>
+                            </Box>
+                          </Box>
+                          );
+                          currentTimeInserted = true;
+                        }
+                        
+                        // 渲染预约
+                        const isCompleted = appointment.status === 'COMPLETED';
+                        const isCurrent = appointment.status === 'IN_PROGRESS';
+                        const isPending = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
+                        const isPast = appointmentTimeStr < currentTimeStr && !isCompleted && !isCurrent;
+                        
+                        elements.push(
                         <React.Fragment key={appointment.id}>
-                          {/* 当前时间指示器 */}
-                          {index === 0 && appointment.appointmentTime > currentTimeStr && (
-                            <Box 
-                              ref={currentTimeRef}
-                              sx={{ 
-                                position: 'relative', 
-                                mb: 3,
-                                animation: 'pulse 2s infinite',
-                                '@keyframes pulse': {
-                                  '0%': { opacity: 1 },
-                                  '50%': { opacity: 0.7 },
-                                  '100%': { opacity: 1 },
-                                },
-                              }}
-                            >
-                              <Box sx={{
-                                position: 'absolute',
-                                left: -30,
-                                width: 20,
-                                height: 20,
-                                borderRadius: '50%',
-                                bgcolor: '#EF4444',
-                                border: '3px solid rgba(239, 68, 68, 0.3)',
-                                boxShadow: '0 0 0 6px rgba(239, 68, 68, 0.1)',
-                                zIndex: 2,
-                              }} />
-                              <Box sx={{
-                                ml: 2,
-                                p: 1.5,
-                                borderRadius: 2,
-                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))',
-                                border: `2px dashed ${alpha('#EF4444', 0.5)}`,
-                              }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#EF4444' }}>
-                                  {t('dashboard.currentTimeNow')} - {currentTimeStr}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          )}
-                          
-                          {/* 如果是第一个预约且时间还没到当前时间，在预约后面加指示器 */}
-                          {appointment.appointmentTime <= currentTimeStr && 
-                           index < todayAppointments.length - 1 && 
-                           todayAppointments[index + 1].appointmentTime > currentTimeStr && (
-                            <Box 
-                              ref={currentTimeRef}
-                              sx={{ 
-                                position: 'relative', 
-                                mb: 3, 
-                                mt: 3,
-                                animation: 'pulse 2s infinite',
-                                '@keyframes pulse': {
-                                  '0%': { opacity: 1 },
-                                  '50%': { opacity: 0.7 },
-                                  '100%': { opacity: 1 },
-                                },
-                              }}
-                            >
-                              <Box sx={{
-                                position: 'absolute',
-                                left: -30,
-                                width: 20,
-                                height: 20,
-                                borderRadius: '50%',
-                                bgcolor: '#EF4444',
-                                border: '3px solid rgba(239, 68, 68, 0.3)',
-                                boxShadow: '0 0 0 6px rgba(239, 68, 68, 0.1)',
-                                zIndex: 2,
-                              }} />
-                              <Box sx={{
-                                ml: 2,
-                                p: 1.5,
-                                borderRadius: 2,
-                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))',
-                                border: `2px dashed ${alpha('#EF4444', 0.5)}`,
-                              }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#EF4444' }}>
-                                  {t('dashboard.currentTimeNow')} - {currentTimeStr}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          )}
-                          
                           <Box sx={{ position: 'relative', mb: 3 }}>
+                            {/* 垂直线段 - 连接相邻的时间节点 */}
+                            {(index === 0 || index < sortedAppointments.length - 1) && (
+                              <Box sx={{
+                                position: 'absolute',
+                                left: -34,
+                                top: index === 0 ? -24 : 7,
+                                bottom: -24,
+                                width: 2,
+                                backgroundColor: alpha('#06B6D4', 0.2),
+                                borderRadius: 1,
+                                zIndex: 0,
+                              }} />
+                            )}
                             {/* 时间点 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -26,
+                              left: -40,
                               width: 14,
                               height: 14,
                               borderRadius: '50%',
@@ -1998,9 +2020,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                       isCurrent ? '#F59E0B' : 
                                       isPast ? '#6B7280' :
                                       '#3B82F6',
-                              border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 
-                                     isNearCurrent ? '2px solid rgba(59, 130, 246, 0.3)' : 'none',
-                              boxShadow: isNearCurrent ? '0 0 0 4px rgba(59, 130, 246, 0.1)' : 'none',
+                              border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 'none',
                               zIndex: 1,
                             }} />
                             
@@ -2027,7 +2047,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             }}>
                               <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
                                 <Box display="flex" alignItems="center" gap={1}>
-                                  <AccessTimeIcon sx={{ fontSize: 16, color: isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : isPast ? '#6B7280' : '#3B82F6' }} />
+                                  <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                   <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
                                     {appointment.appointmentTime}
                                   </Typography>
@@ -2121,48 +2141,80 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             </Typography>
                             </Box>
                           </Box>
-                          {/* 如果是最后一个预约且当前时间在其之后，显示当前时间指示器 */}
-                          {index === todayAppointments.length - 1 && appointment.appointmentTime < currentTimeStr && (
-                            <Box 
-                              ref={currentTimeRef}
-                              sx={{ 
-                                position: 'relative', 
-                                mt: 3,
-                                animation: 'pulse 2s infinite',
-                                '@keyframes pulse': {
-                                  '0%': { opacity: 1 },
-                                  '50%': { opacity: 0.7 },
-                                  '100%': { opacity: 1 },
-                                },
-                              }}
-                            >
-                              <Box sx={{
-                                position: 'absolute',
-                                left: -30,
-                                width: 20,
-                                height: 20,
-                                borderRadius: '50%',
-                                bgcolor: '#EF4444',
-                                border: '3px solid rgba(239, 68, 68, 0.3)',
-                                boxShadow: '0 0 0 6px rgba(239, 68, 68, 0.1)',
-                                zIndex: 2,
-                              }} />
-                              <Box sx={{
-                                ml: 2,
-                                p: 1.5,
-                                borderRadius: 2,
-                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))',
-                                border: `2px dashed ${alpha('#EF4444', 0.5)}`,
-                              }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#EF4444' }}>
-                                  {t('dashboard.currentTimeNow')} - {currentTimeStr}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          )}
                         </React.Fragment>
-                      );
-                    })
+                        );
+                      });
+                      
+                      // 如果当前时间在所有预约之后，在末尾添加当前时间指示器
+                      if (!currentTimeInserted) {
+                        elements.push(
+                        <Box key="current-time" sx={{ position: 'relative', mb: 3 }}>
+                          {/* 垂直线段 - 连接到前一个节点 */}
+                          {sortedAppointments.length > 0 && (
+                            <Box sx={{
+                              position: 'absolute',
+                              left: -34,
+                              top: -24,
+                              height: 24,
+                              width: 2,
+                              backgroundColor: alpha('#06B6D4', 0.2),
+                              borderRadius: 1,
+                              zIndex: 0,
+                            }} />
+                          )}
+                          {/* 当前时间的点 - 使用青色主题 */}
+                          <Box sx={{
+                            position: 'absolute',
+                            left: -40,
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            bgcolor: '#06B6D4',
+                            border: '2px solid white',
+                            boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)',
+                            animation: 'pulse 2s infinite',
+                            zIndex: 2,
+                            '@keyframes pulse': {
+                              '0%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
+                              '50%': { boxShadow: '0 0 0 6px rgba(6, 182, 212, 0.1)' },
+                              '100%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
+                            },
+                          }} />
+                          
+                          {/* 当前时间卡片 */}
+                          <Box sx={{
+                            ml: 2,
+                            p: 2,
+                            borderRadius: 2,
+                            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05))',
+                            border: `2px dashed ${alpha('#06B6D4', 0.4)}`,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            width: 'fit-content',
+                          }}>
+                            <Box sx={{
+                              bgcolor: '#06B6D4',
+                              color: 'white',
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: 1,
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                            }}>
+                              {currentTimeStr}
+                            </Box>
+                            <Typography variant="body2" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                              {t('dashboard.currentTime')}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        );
+                      }
+                      
+                      return elements;
+                    })()}
+                  </Box>
                 ) : (
                   // 无预约时显示提示
                   <Box sx={{ textAlign: 'center', py: 8 }}>

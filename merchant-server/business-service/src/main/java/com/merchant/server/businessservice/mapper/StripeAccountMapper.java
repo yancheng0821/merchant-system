@@ -52,8 +52,8 @@ public interface StripeAccountMapper {
     StripeAccount selectByStripeAccountId(@Param("stripeAccountId") String stripeAccountId);
     
     /**
-     * 根据租户ID查询Stripe账户（包括已删除的）
+     * 根据租户ID查询Stripe账户（包括已删除的，返回最新的一条）
      */
-    @Select("SELECT * FROM stripe_accounts WHERE tenant_id = #{tenantId}")
+    @Select("SELECT * FROM stripe_accounts WHERE tenant_id = #{tenantId} ORDER BY created_at DESC LIMIT 1")
     StripeAccount selectByTenantIdIncludeDeleted(@Param("tenantId") Long tenantId);
 }

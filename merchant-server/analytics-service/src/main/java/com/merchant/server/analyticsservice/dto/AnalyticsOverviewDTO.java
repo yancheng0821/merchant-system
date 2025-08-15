@@ -49,6 +49,7 @@ public class AnalyticsOverviewDTO {
     public static class StaffPerformanceDTO {
         private Long staffId;
         private String staffName;
+        private String resourceType; // STAFF or ROOM
         private String avatar;
         private BigDecimal totalRevenue;
         private Integer orderCount;

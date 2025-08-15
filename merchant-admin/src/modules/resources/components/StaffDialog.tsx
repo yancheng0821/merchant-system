@@ -117,10 +117,22 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     
                     // 用实际数据覆盖默认值
                     availabilityData.forEach(item => {
+                        // Convert HH:mm:ss to HH:mm format and handle end of day
+                        const formatTime = (time: string) => {
+                            if (!time) return '09:00';
+                            // Remove seconds if present
+                            const timeWithoutSeconds = time.substring(0, 5);
+                            // Convert 23:59 to 24:00 for display (end of day)
+                            if (timeWithoutSeconds === '23:59') {
+                                return '24:00';
+                            }
+                            return timeWithoutSeconds;
+                        };
+                        
                         availabilityMap[item.dayOfWeek] = {
                             isAvailable: item.isAvailable,
-                            startTime: item.startTime,
-                            endTime: item.endTime
+                            startTime: formatTime(item.startTime),
+                            endTime: formatTime(item.endTime)
                         };
                     });
                     
@@ -249,12 +261,27 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     specialties: formData.skills, // 将skills映射到specialties
                     availabilities: Object.entries(availabilities)
                         .filter(([_, availability]) => availability.isAvailable)
-                        .map(([dayOfWeek, availability]) => ({
-                            dayOfWeek: parseInt(dayOfWeek),
-                            startTime: availability.startTime,
-                            endTime: availability.endTime,
-                            isAvailable: true
-                        }))
+                        .map(([dayOfWeek, availability]) => {
+                            // Convert 24:00 to 23:59 for backend (to avoid midnight issues)
+                            const formatTimeForBackend = (time: string) => {
+                                let formattedTime = time;
+                                if (time === '24:00' || time === '00:00') {
+                                    formattedTime = '23:59';
+                                }
+                                // Ensure time format includes seconds for Java LocalTime
+                                if (formattedTime.includes(':') && formattedTime.split(':').length === 2) {
+                                    formattedTime = `${formattedTime}:00`;
+                                }
+                                return formattedTime;
+                            };
+                            
+                            return {
+                                dayOfWeek: parseInt(dayOfWeek),
+                                startTime: formatTimeForBackend(availability.startTime),
+                                endTime: formatTimeForBackend(availability.endTime),
+                                isAvailable: true
+                            };
+                        })
                 };
 
                 // 调用新的API创建资源
@@ -268,24 +295,51 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 }
             } else {
                 // 更新现有员工
-                const staffData: Partial<StaffResource> = {
-                    ...formData,
-                    tenantId,
-                    type: 'STAFF',
-                };
-                await onSave(staffData);
-                
-                // 更新可用性数据
-                const { resourceApi } = await import('../../../services/api');
-                const availabilityUpdates = Object.entries(availabilities).map(([dayOfWeek, availability]) => ({
-                    resourceId: staff.id,
-                    dayOfWeek: parseInt(dayOfWeek),
-                    startTime: availability.startTime,
-                    endTime: availability.endTime,
-                    isAvailable: availability.isAvailable
-                }));
-                
-                await resourceApi.setResourceAvailability(staff.id, availabilityUpdates);
+                try {
+                    // 先更新可用性数据
+                    const { resourceApi } = await import('../../../services/api');
+                    const availabilityUpdates = Object.entries(availabilities).map(([dayOfWeek, availability]) => {
+                        // Convert 24:00 to 23:59 for backend (to avoid midnight issues)
+                        const formatTimeForBackend = (time: string) => {
+                            let formattedTime = time;
+                            if (time === '24:00' || time === '00:00') {
+                                formattedTime = '23:59';
+                            }
+                            // Ensure time format includes seconds for Java LocalTime
+                            if (formattedTime.includes(':') && formattedTime.split(':').length === 2) {
+                                formattedTime = `${formattedTime}:00`;
+                            }
+                            return formattedTime;
+                        };
+                        
+                        return {
+                            resourceId: staff.id,
+                            dayOfWeek: parseInt(dayOfWeek),
+                            startTime: formatTimeForBackend(availability.startTime),
+                            endTime: formatTimeForBackend(availability.endTime),
+                            isAvailable: availability.isAvailable
+                        };
+                    });
+                    
+                    console.log('Updating availability for staff:', staff.id, availabilityUpdates);
+                    
+                    // 等待可用性更新完成
+                    await resourceApi.setResourceAvailability(staff.id, availabilityUpdates);
+                    console.log('Availability updated successfully');
+                    
+                    // 然后更新员工基本信息
+                    const staffData: Partial<StaffResource> = {
+                        ...formData,
+                        tenantId,
+                        type: 'STAFF',
+                    };
+                    console.log('Updating staff data:', staffData);
+                    await onSave(staffData);
+                    console.log('Staff data updated successfully');
+                } catch (availabilityError) {
+                    console.error('Failed to update availability:', availabilityError);
+                    throw availabilityError; // 重新抛出错误以便外层捕获
+                }
             }
             onClose();
         } catch (err: any) {
@@ -757,11 +811,23 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                                     label={t('staff.availability.endTime')}
                                                     type="time"
                                                     size="small"
-                                                    value={availabilities[day.key]?.endTime || '22:00'}
-                                                    onChange={(e) => handleAvailabilityChange(day.key, 'endTime', e.target.value)}
+                                                    value={availabilities[day.key]?.endTime === '24:00' ? '23:59' : (availabilities[day.key]?.endTime || '22:00')}
+                                                    onChange={(e) => {
+                                                        // Allow user to set 23:59 which we'll treat as 24:00 (midnight)
+                                                        const value = e.target.value;
+                                                        if (value === '23:59' || value === '00:00') {
+                                                            handleAvailabilityChange(day.key, 'endTime', '24:00');
+                                                        } else {
+                                                            handleAvailabilityChange(day.key, 'endTime', value);
+                                                        }
+                                                    }}
                                                     InputLabelProps={{
                                                         shrink: true,
                                                     }}
+                                                    inputProps={{
+                                                        step: 300, // 5 minute intervals
+                                                    }}
+                                                    helperText={availabilities[day.key]?.endTime === '24:00' ? t('staff.availability.endOfDay') : ''}
                                                     sx={{
                                                         flex: 1,
                                                         '& .MuiOutlinedInput-root': {

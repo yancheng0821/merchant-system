@@ -126,6 +126,14 @@ public class ResourceServiceImpl implements ResourceService {
         // 插入新的可用性记录
         for (ResourceAvailability availability : availabilities) {
             availability.setResourceId(resourceId);
+            
+            // 如果结束时间是00:00:00（午夜），转换为23:59:00
+            if (availability.getEndTime() != null && availability.getEndTime().equals(LocalTime.MIDNIGHT)) {
+                availability.setEndTime(LocalTime.of(23, 59, 0));
+                log.info("Converted end time from 00:00:00 to 23:59:00 for resource {} on day {}", 
+                    resourceId, availability.getDayOfWeek());
+            }
+            
             availability.setCreatedAt(LocalDateTime.now());
             availability.setUpdatedAt(LocalDateTime.now());
             resourceMapper.insertAvailability(availability);
