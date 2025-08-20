@@ -49,7 +49,8 @@
       "Bash(REACT_APP_API_BASE_URL=https://api.swiftmerchantplatform.com npm run build)",
       "Bash(export REACT_APP_API_BASE_URL=https://api.swiftmerchantplatform.com)",
       "Bash(kubectl rollout history:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(md-to-pdf:*)"
     ],
     "deny": []
   }
