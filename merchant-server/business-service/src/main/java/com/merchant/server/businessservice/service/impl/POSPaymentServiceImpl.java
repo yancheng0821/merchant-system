@@ -8,6 +8,7 @@ import com.merchant.server.businessservice.entity.*;
 import com.merchant.server.businessservice.enums.CallbackStatus;
 import com.merchant.server.businessservice.mapper.*;
 import com.merchant.server.businessservice.entity.Customer;
+import com.merchant.server.businessservice.entity.StripeTerminal;
 import com.merchant.server.businessservice.service.POSPaymentService;
 import com.merchant.server.common.util.CurrencyUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
     private final PaymentCallbackMapper paymentCallbackMapper;
     private final AppointmentMapper appointmentMapper;
     private final CustomerMapper customerMapper;
+    private final StripeTerminalMapper stripeTerminalMapper;
     
     @Value("${pos.client.type:mock}")
     private String posClientType;
@@ -64,13 +66,15 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                                  POSTransactionMapper posTransactionMapper,
                                  PaymentCallbackMapper paymentCallbackMapper,
                                  AppointmentMapper appointmentMapper,
-                                 CustomerMapper customerMapper) {
+                                 CustomerMapper customerMapper,
+                                 StripeTerminalMapper stripeTerminalMapper) {
         this.orderMapper = orderMapper;
         this.posTerminalMapper = posTerminalMapper;
         this.posTransactionMapper = posTransactionMapper;
         this.paymentCallbackMapper = paymentCallbackMapper;
         this.appointmentMapper = appointmentMapper;
         this.customerMapper = customerMapper;
+        this.stripeTerminalMapper = stripeTerminalMapper;
     }
     
     @PostConstruct
@@ -136,17 +140,41 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         }
         
         POSTerminal terminal = null;
-        try {
-            terminal = posTerminalMapper.selectByTerminalId(terminalId, order.getTenantId());
-        } catch (Exception e) {
-            log.warn("Failed to query POS terminal, using mock terminal: {}", e.getMessage());
+        
+        // 根据POS客户端类型选择查询方式
+        if ("stripe".equalsIgnoreCase(posClientType)) {
+            // 使用Stripe时，查询stripe_terminals表
+            try {
+                com.merchant.server.businessservice.entity.StripeTerminal stripeTerminal = 
+                    stripeTerminalMapper.selectByTerminalId(terminalId);
+                    
+                if (stripeTerminal != null && !stripeTerminal.getDeleted()) {
+                    // 转换StripeTerminal为POSTerminal
+                    terminal = new POSTerminal();
+                    terminal.setTerminalId(stripeTerminal.getTerminalId());
+                    terminal.setTenantId(stripeTerminal.getTenantId());
+                    terminal.setTerminalName(stripeTerminal.getLabel());
+                    terminal.setTerminalStatus(stripeTerminal.getStatus());
+                    terminal.setPosProvider("STRIPE");
+                    terminal.setApiEndpoint("https://api.stripe.com");
+                    terminal.setMerchantId(stripeTerminal.getStripeAccountId());
+                    log.info("Found Stripe terminal: {} for tenant: {}, stripe_account_id: {}", 
+                        terminalId, order.getTenantId(), stripeTerminal.getStripeAccountId());
+                } else {
+                    log.warn("Stripe terminal not found or deleted: {}", terminalId);
+                }
+            } catch (Exception e) {
+                log.error("Failed to query Stripe terminal: {}", e.getMessage());
+            }
+        } else {
+            // 使用其他POS系统时，查询pos_terminals表
+            try {
+                terminal = posTerminalMapper.selectByTerminalId(terminalId, order.getTenantId());
+            } catch (Exception e) {
+                log.warn("Failed to query POS terminal: {}", e.getMessage());
+            }
         }
         
-        // 如果没有找到终端或终端不可用，创建一个模拟终端用于开发/测试
-        if (terminal == null) {
-            log.info("Creating mock POS terminal for development/testing: {}", terminalId);
-            terminal = createMockTerminal(terminalId, order.getTenantId());
-        }
         
         // 标准化金额，处理前端浮点数精度问题
         Double normalizedTotalAmount = CurrencyUtils.normalizeAmount(order.getTotalAmount());

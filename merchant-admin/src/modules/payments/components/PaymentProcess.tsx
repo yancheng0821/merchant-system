@@ -177,7 +177,7 @@ interface Appointment {
   resourceType?: 'STAFF' | 'ROOM';
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmindsystems.com';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmerchantplatform.com';
 
 interface PaymentProcessProps {
   onNavigate?: (item: string) => void;
@@ -227,6 +227,11 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
   
   // Stripe设置提示对话框
   const [stripeSetupDialog, setStripeSetupDialog] = useState(false);
+  
+  // 终端选择相关状态
+  const [terminals, setTerminals] = useState<any[]>([]);
+  const [selectedTerminal, setSelectedTerminal] = useState<string>('');
+  const [loadingTerminals, setLoadingTerminals] = useState(false);
 
   // 检查Stripe账户状态
   const checkStripeStatus = useCallback(async () => {
@@ -249,14 +254,34 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
       ]);
       
       const accountInfo = accountResponse.data?.data;
-      const terminals = terminalsResponse.data?.data || [];
+      const terminalsData = terminalsResponse.data?.data || [];
+      
+      // 存储终端列表
+      setTerminals(terminalsData);
+      
+      // 只考虑在线的终端
+      const onlineTerminals = terminalsData.filter((t: any) => t.status === 'online');
+      
+      // 自动选择逻辑：如果只有一个在线终端，自动选择
+      if (onlineTerminals.length === 1) {
+        const terminalId = onlineTerminals[0].terminalId || onlineTerminals[0].id;
+        setSelectedTerminal(terminalId);
+        // 保存到localStorage
+        localStorage.setItem('lastSelectedTerminal', terminalId);
+      } else if (onlineTerminals.length > 1) {
+        // 多个在线终端时，尝试从localStorage恢复上次选择
+        const lastSelected = localStorage.getItem('lastSelectedTerminal');
+        if (lastSelected && onlineTerminals.some((t: any) => (t.terminalId || t.id) === lastSelected)) {
+          setSelectedTerminal(lastSelected);
+        }
+      }
       
       if (accountInfo) {
         setStripeAccountStatus({
           isActive: accountInfo.chargesEnabled && accountInfo.payoutsEnabled,
           chargesEnabled: accountInfo.chargesEnabled || false,
           payoutsEnabled: accountInfo.payoutsEnabled || false,
-          hasTerminals: terminals.length > 0,
+          hasTerminals: onlineTerminals.length > 0,
           loading: false
         });
       } else {
@@ -277,6 +302,45 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
         hasTerminals: false,
         loading: false
       });
+    }
+  }, [user?.tenantId]);
+
+  // 独立的获取终端列表函数
+  const fetchTerminals = useCallback(async () => {
+    if (!user?.tenantId) return;
+    
+    setLoadingTerminals(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/business/stripe-connect/terminal/list`,
+        {
+          params: { tenantId: user.tenantId },
+          withCredentials: true
+        }
+      );
+      
+      const terminalsData = response.data?.data || [];
+      setTerminals(terminalsData);
+      
+      // 只考虑在线的终端
+      const onlineTerminals = terminalsData.filter((t: any) => t.status === 'online');
+      
+      // 自动选择逻辑
+      if (onlineTerminals.length === 1) {
+        const terminalId = onlineTerminals[0].terminalId || onlineTerminals[0].id;
+        setSelectedTerminal(terminalId);
+        localStorage.setItem('lastSelectedTerminal', terminalId);
+      } else if (onlineTerminals.length > 1) {
+        const lastSelected = localStorage.getItem('lastSelectedTerminal');
+        if (lastSelected && onlineTerminals.some((t: any) => (t.terminalId || t.id) === lastSelected)) {
+          setSelectedTerminal(lastSelected);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch terminals:', error);
+      setTerminals([]);
+    } finally {
+      setLoadingTerminals(false);
     }
   }, [user?.tenantId]);
 
@@ -615,9 +679,15 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
     setPaymentDialog(true);
     setPaymentStatus('idle');
     setPaymentError(null);
+    
+    // 刷新终端列表（如果使用卡支付）
+    if (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') {
+      fetchTerminals();
+    }
   };
 
   const handleProcessPayment = async () => {
+    
     // 检查是否选择了信用卡或借记卡支付
     if (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') {
       // 检查Stripe账户状态
@@ -634,6 +704,20 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
         
         // 显示Stripe设置对话框
         setStripeSetupDialog(true);
+        return;
+      }
+      
+      // 检查是否选择了终端（只考虑在线终端）
+      const onlineTerminals = terminals.filter((t: any) => t.status === 'online');
+      if (onlineTerminals.length > 0 && !selectedTerminal) {
+        setPaymentError(t('payments.selectTerminalError', 'Please select a terminal to process card payment'));
+        return;
+      }
+      
+      // 检查选中的终端是否在线
+      const terminal = terminals.find((t: any) => (t.terminalId || t.id) === selectedTerminal);
+      if (terminal && terminal.status !== 'online') {
+        setPaymentError(t('payments.terminalOfflineError', 'Selected terminal is offline. Please select an online terminal.'));
         return;
       }
     }
@@ -694,6 +778,10 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
         tipPercentage: 0.0,
         paymentMethod: paymentMethod, // 添加支付方式
         notes: notes || '',
+        // 如果是卡支付，添加终端ID
+        ...((paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && selectedTerminal && {
+          posTerminalId: selectedTerminal,
+        }),
         services: orderItems.map(item => ({
           serviceId: Number(item.serviceId),
           quantity: Number(item.quantity),
@@ -738,8 +826,13 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
         });
         setPaymentStatus('success');
       } else {
-        // Card payment - initiate POS transaction
-        const paymentResponse = await api.initiatePayment(paymentData);
+        // Card payment - initiate POS transaction with selected terminal
+        const cardPaymentData = {
+          ...paymentData,
+          posTerminalId: selectedTerminal // 使用选中的终端ID
+        };
+        
+        const paymentResponse = await api.processCardPayment(cardPaymentData);
         
         // 开始轮询支付状态
         const transactionId = paymentResponse.transactionId;
@@ -1902,6 +1995,90 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
                   </Select>
                 </FormControl>
                 
+                {/* 终端选择 - 仅在选择卡支付且有可用终端时显示 */}
+                {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && 
+                 stripeAccountStatus.chargesEnabled && 
+                 terminals.filter((t: any) => t.status === 'online').length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#374151' }}>
+                      {t('payments.selectTerminal', 'Select Terminal')}
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        value={selectedTerminal}
+                        onChange={(e) => {
+                          setSelectedTerminal(e.target.value);
+                          // 保存到localStorage
+                          localStorage.setItem('lastSelectedTerminal', e.target.value);
+                        }}
+                        disabled={loadingTerminals}
+                        displayEmpty
+                        sx={{
+                          borderRadius: 2,
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#d1d5db',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#10B981',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#10B981',
+                          },
+                        }}
+                      >
+                        {terminals.filter((t: any) => t.status === 'online').length === 0 ? (
+                          <MenuItem value="" disabled>
+                            <Typography sx={{ color: '#9CA3AF' }}>
+                              {t('payments.noTerminalsAvailable', 'No terminals available')}
+                            </Typography>
+                          </MenuItem>
+                        ) : (
+                          terminals
+                            .filter((terminal: any) => terminal.status === 'online')
+                            .map((terminal: any) => {
+                              const terminalId = terminal.terminalId || terminal.id;
+                              return (
+                                <MenuItem key={terminalId} value={terminalId}>
+                                  <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                                    <Box display="flex" alignItems="center" gap={1.5}>
+                                      <PaymentIcon sx={{ color: '#10B981' }} />
+                                      <Box>
+                                        <Typography sx={{ fontWeight: 500 }}>
+                                          {terminal.label || terminalId}
+                                        </Typography>
+                                        {terminal.location && (
+                                          <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                                            {terminal.location}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                    </Box>
+                                    <Chip
+                                      label={t('common.online', 'Online')}
+                                      size="small"
+                                      sx={{
+                                        height: 22,
+                                        backgroundColor: '#D1FAE5',
+                                        color: '#059669',
+                                        fontWeight: 500,
+                                        fontSize: '0.75rem',
+                                      }}
+                                    />
+                                  </Box>
+                                </MenuItem>
+                              );
+                            })
+                        )}
+                      </Select>
+                    </FormControl>
+                    {terminals.filter((t: any) => t.status === 'online').length === 1 && (
+                      <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: '#6B7280' }}>
+                        {t('payments.autoSelectedTerminal', 'Automatically selected the only available terminal')}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+                
                 {/* Stripe状态提示 */}
                 {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && !stripeAccountStatus.loading && (
                   <>
@@ -2134,6 +2311,12 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
         <DialogContent sx={{ p: 3 }}>
           {paymentStatus === 'idle' && (
             <Box>
+              {/* 显示错误信息 */}
+              {paymentError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {paymentError}
+                </Alert>
+              )}
 
               <Grid container spacing={2}>
                 {/* Customer Information */}

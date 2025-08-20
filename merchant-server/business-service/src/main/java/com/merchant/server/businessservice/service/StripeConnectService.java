@@ -117,6 +117,22 @@ public interface StripeConnectService {
     TerminalDTO updateTerminalStatus(Long tenantId, String terminalId);
     
     /**
+     * 删除Terminal
+     * @param tenantId 租户ID
+     * @param terminalId Terminal ID
+     * @return 是否删除成功
+     */
+    boolean deleteTerminal(Long tenantId, String terminalId);
+    
+    /**
+     * 删除Location
+     * @param tenantId 租户ID
+     * @param locationId Location ID
+     * @return 是否删除成功
+     */
+    boolean deleteLocation(Long tenantId, String locationId);
+    
+    /**
      * 在Terminal上收集支付方式
      * @param tenantId 租户ID
      * @param terminalId Terminal ID

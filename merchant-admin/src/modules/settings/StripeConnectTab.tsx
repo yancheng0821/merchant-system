@@ -48,12 +48,12 @@ import {
   ArrowForward as ArrowForwardIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import TerminalManagement from './TerminalManagement';
+import ModernTerminalManagement from './ModernTerminalManagement';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmindsystems.com';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmerchantplatform.com';
 
 interface StripeAccountInfo {
   stripeAccountId?: string;
@@ -1163,7 +1163,7 @@ const StripeConnectTab: React.FC = () => {
       {/* 终端管理 - 仅在账户完全激活后显示 */}
       {accountInfo && accountInfo.chargesEnabled && accountInfo.payoutsEnabled && (
         <Grid item xs={12}>
-          <TerminalManagement />
+          <ModernTerminalManagement />
         </Grid>
       )}
       

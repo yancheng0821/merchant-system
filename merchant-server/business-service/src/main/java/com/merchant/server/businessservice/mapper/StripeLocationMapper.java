@@ -30,7 +30,7 @@ public interface StripeLocationMapper {
             "address_line1 = #{addressLine1}, address_line2 = #{addressLine2}, " +
             "address_city = #{addressCity}, address_state = #{addressState}, " +
             "address_country = #{addressCountry}, address_postal_code = #{addressPostalCode}, " +
-            "metadata = #{metadata}, updated_at = #{updatedAt} " +
+            "metadata = #{metadata}, updated_at = #{updatedAt}, deleted = #{deleted} " +
             "WHERE id = #{id}")
     int updateById(StripeLocation location);
     

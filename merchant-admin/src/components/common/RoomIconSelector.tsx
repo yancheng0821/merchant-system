@@ -116,8 +116,8 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
         }
         
         // 2. 如果是完整URL但域名错误，修正它
-        if (fixedValue && (fixedValue.startsWith('https://swiftmindsystems.com/api/') || 
-                          fixedValue.startsWith('http://swiftmindsystems.com/api/'))) {
+        if (fixedValue && (fixedValue.startsWith('https://swiftmerchantplatform.com/api/') || 
+                          fixedValue.startsWith('http://swiftmerchantplatform.com/api/'))) {
             // 提取路径部分
             const pathMatch = fixedValue.match(/https?:\/\/[^\/]+(\/.+)/);
             if (pathMatch) {

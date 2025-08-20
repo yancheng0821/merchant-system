@@ -27,7 +27,7 @@ public interface StripeTerminalMapper {
      */
     @Update("UPDATE stripe_terminals SET " +
             "status = #{status}, last_seen_at = #{lastSeenAt}, ip_address = #{ipAddress}, " +
-            "config = #{config}, updated_at = #{updatedAt} " +
+            "config = #{config}, updated_at = #{updatedAt}, deleted = #{deleted} " +
             "WHERE id = #{id}")
     int updateById(StripeTerminal terminal);
     

@@ -128,9 +128,9 @@ kubectl rollout restart deployment/business-service -n merchant-system
 
 ## 🌐 访问地址
 
-- **前端**: https://swiftmindsystems.com
-- **API**: https://api.swiftmindsystems.com
-- **健康检查**: https://api.swiftmindsystems.com/health
+- **前端**: https://swiftmerchantplatform.com
+- **API**: https://api.swiftmerchantplatform.com
+- **健康检查**: https://api.swiftmerchantplatform.com/health
 
 ## ⚙️ 环境要求
 
@@ -155,7 +155,7 @@ kubectl apply -f k8s-deployment/stripe-config.yaml
 
 ### 配置Webhook
 在Stripe Dashboard配置webhook端点：
-- URL: `https://api.swiftmindsystems.com/api/stripe-connect/webhook`
+- URL: `https://api.swiftmerchantplatform.com/api/stripe-connect/webhook`
 - 事件: payment_intent.succeeded, account.updated等
 
 ## 💡 注意事项

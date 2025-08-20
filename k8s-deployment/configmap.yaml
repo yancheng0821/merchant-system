@@ -47,7 +47,11 @@ data:
   EUREKA_CLIENT_ENABLED: "false"
   
   # Google OAuth配置
-  GOOGLE_REDIRECT_URI: "https://swiftmindsystems.com/auth/google/callback"
+  GOOGLE_REDIRECT_URI: "https://swiftmerchantplatform.com/auth/google/callback"
+  
+  # Stripe配置
+  STRIPE_REDIRECT_URI: "https://swiftmerchantplatform.com/settings?tab=payment"
+  STRIPE_WEBHOOK_URL: "https://api.swiftmerchantplatform.com/api/business/stripe-connect/webhook"
   
   # 前端配置
-  REACT_APP_API_BASE_URL: "https://swiftmindsystems.com"
+  REACT_APP_API_BASE_URL: "https://api.swiftmerchantplatform.com"

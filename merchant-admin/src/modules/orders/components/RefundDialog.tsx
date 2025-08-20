@@ -24,6 +24,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Order } from '../OrderManagement';
 import { CurrencyUtils } from '../../../config/constants';
+import { api } from '../../../services/api';
 
 interface RefundReason {
   value: string;
@@ -45,12 +46,32 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
   onRefundComplete,
 }) => {
   const { t, i18n } = useTranslation();
+  
+  // 确保每次组件创建时状态都是全新的
   const [refundType, setRefundType] = useState<'full' | 'partial'>('full');
   const [refundAmount, setRefundAmount] = useState<number>(0);
   const [refundReason, setRefundReason] = useState('');
   const [refundReasons, setRefundReasons] = useState<RefundReason[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>('');
+  
+  // 组件挂载时立即清空错误
+  React.useEffect(() => {
+    console.log('🔵 RefundDialog MOUNTED, clearing error');
+    setError('');
+    return () => {
+      console.log('🔴 RefundDialog UNMOUNTING, clearing error');
+      setError('');
+    };
+  }, []); // 空依赖，只在挂载和卸载时执行
+  
+  // 监控 error 状态的所有变化
+  React.useEffect(() => {
+    console.log('⚠️ Error state changed to:', error);
+    if (error) {
+      console.trace('Error was set from:');
+    }
+  }, [error]);
 
   const maxRefundAmount = order ? order.totalAmount - (order.refundAmount || 0) : 0;
 
@@ -68,35 +89,79 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
     ]);
   }, []);
 
+  // 统一的重置函数
+  const resetForm = React.useCallback(() => {
+    setError('');
+    setIsProcessing(false);
+    setRefundType('full');
+    setRefundReason('');
+    setRefundAmount(0);
+  }, []);
+
+  // handleClose 函数必须在使用之前定义
+  const handleClose = React.useCallback(() => {
+    console.log('🚪 handleClose called, current error:', error);
+    // 使用统一的重置函数
+    resetForm();
+    // 调用父组件的关闭回调
+    onClose();
+    console.log('🚪 handleClose completed');
+  }, [resetForm, onClose]);
+
+  // 监听对话框打开/关闭，重置状态
   React.useEffect(() => {
-    if (open && order) {
-      setRefundAmount(maxRefundAmount);
+    console.log('📝 Dialog open state changed:', open, 'Order:', order?.id);
+    
+    if (open) {
+      console.log('✅ Dialog OPENING - clearing all states');
+      console.log('   Current error before clear:', error);
+      
+      // 每次打开时立即清空错误（最重要！）
+      setError('');
+      setIsProcessing(false);
       setRefundType('full');
       setRefundReason('');
+      
+      // 设置初始金额
+      if (order) {
+        console.log('   Setting refund amount to:', maxRefundAmount);
+        setRefundAmount(maxRefundAmount);
+      } else {
+        console.log('   No order, setting refund amount to 0');
+        setRefundAmount(0);
+      }
+    } else {
+      console.log('❌ Dialog CLOSING - clearing error and processing state');
+      console.log('   Current error before clear:', error);
+      // 关闭时也清空错误
       setError('');
+      setIsProcessing(false);
     }
-  }, [open, order, maxRefundAmount]);
+  }, [open]); // 只依赖 open，不依赖其他值
 
-  if (!order || order.paymentStatus !== 'paid') return null;
+  // 如果没有订单或订单状态不对，渲染一个空的但正常关闭的对话框
+  if (!order || order.paymentStatus !== 'paid') {
+    return (
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <Typography>{t('orders.invalidOrderForRefund')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>{t('orders.close')}</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
 
   const formatCurrency = (amount: number) => {
     return CurrencyUtils.formatAmount(amount);
   };
 
-  const simulateRefundProcessing = async (): Promise<{ success: boolean; refundId?: string }> => {
-    // 模拟退款处理延迟
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // 模拟退款结果（95% 成功率）
-    const success = Math.random() > 0.05;
-    
-    if (success) {
-      const refundId = `REF-${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-')}`;
-      return { success: true, refundId };
-    } else {
-      return { success: false };
-    }
-  };
 
   const handleRefund = async () => {
     if (!refundReason.trim()) {
@@ -113,26 +178,44 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
     setError('');
 
     try {
-      const result = await simulateRefundProcessing();
+      // 获取选中的退款原因对象
+      const selectedReason = refundReasons.find(r => r.value === refundReason);
+      const stripeReason = selectedReason?.stripe_value || 'requested_by_customer';
+      const displayReason = selectedReason ? t(selectedReason.translationKey) : refundReason;
       
-      if (result.success) {
+      // 调用真实的退款API
+      const response = await api.processRefund({
+        orderId: parseInt(order.id, 10),
+        amount: refundAmount,
+        reason: `${stripeReason}|${displayReason}` // 传递Stripe值和显示文本
+      });
+      
+      if (response.success) {
         const totalRefunded = (order.refundAmount || 0) + refundAmount;
         const updatedOrder: Order = {
           ...order,
           paymentStatus: totalRefunded >= order.totalAmount ? 'refunded' : 'paid',
           refundAmount: totalRefunded,
           refundReason: order.refundReason 
-            ? `${order.refundReason}; ${refundReason}` 
-            : refundReason,
+            ? `${order.refundReason}; ${displayReason}` 
+            : displayReason,
         };
 
+        // 先调用回调通知父组件
         onRefundComplete(updatedOrder);
-        onClose();
+        
+        // 确保对话框真的关闭
+        handleClose();
       } else {
-        setError(t('orders.refundFailed'));
+        const errorMsg = response.message || t('orders.refundFailed');
+        console.log('💥 Refund failed, setting error:', errorMsg);
+        setError(errorMsg);
       }
-    } catch (err) {
-      setError(t('orders.refundError'));
+    } catch (err: any) {
+      // 显示具体的错误信息
+      const errorMessage = err?.response?.data?.message || err?.message || t('orders.refundError');
+      console.log('💥 Refund exception, setting error:', errorMessage);
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -146,19 +229,29 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
     } else {
       setRefundAmount(0);
     }
+    // 当用户修改退款类型时，清除之前的错误信息
+    if (error) {
+      setError('');
+    }
   };
 
   const handleRefundAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const amount = parseFloat(event.target.value) || 0;
     setRefundAmount(Math.min(amount, maxRefundAmount));
+    // 当用户修改退款金额时，清除之前的错误信息
+    if (error) {
+      setError('');
+    }
   };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      disablePortal  // 不使用 Portal
+      transitionDuration={0}  // 禁用动画
     >
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={1}>
@@ -273,7 +366,13 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
           <InputLabel>{t('orders.selectRefundReason')}</InputLabel>
           <Select
             value={refundReason}
-            onChange={(e) => setRefundReason(e.target.value)}
+            onChange={(e) => {
+              setRefundReason(e.target.value);
+              // 当用户修改退款原因时，清除之前的错误信息
+              if (error) {
+                setError('');
+              }
+            }}
             label={t('orders.selectRefundReason')}
           >
             {refundReasons.map((reason) => (
@@ -284,8 +383,8 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
           </Select>
         </FormControl>
 
-        {/* Error Alert */}
-        {error && (
+        {/* Error Alert - 只有在对话框打开时才显示 */}
+        {open && error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
@@ -319,7 +418,7 @@ const RefundDialog: React.FC<RefundDialogProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={isProcessing}>
+        <Button onClick={handleClose} disabled={isProcessing}>
           {t('orders.cancel')}
         </Button>
         <Button

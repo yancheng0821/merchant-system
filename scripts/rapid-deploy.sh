@@ -238,14 +238,14 @@ build_frontend() {
     rm -rf build  # 清理旧的构建
     npm install
     # 使用生产环境变量构建
-    REACT_APP_API_BASE_URL=https://api.swiftmindsystems.com npm run build
+    REACT_APP_API_BASE_URL=https://api.swiftmerchantplatform.com npm run build
     
     # 验证构建结果包含正确的API URL
-    if grep -q "https://api.swiftmindsystems.com" build/static/js/*.js 2>/dev/null; then
-        log_success "✓ 构建包含正确的API域名 (api.swiftmindsystems.com)"
+    if grep -q "https://api.swiftmerchantplatform.com" build/static/js/*.js 2>/dev/null; then
+        log_success "✓ 构建包含正确的API域名 (api.swiftmerchantplatform.com)"
     else
         log_error "✗ 构建未包含正确的API域名！"
-        log_error "  期望: https://api.swiftmindsystems.com"
+        log_error "  期望: https://api.swiftmerchantplatform.com"
         log_error "  请检查环境变量配置"
         exit 1
     fi
@@ -509,8 +509,8 @@ show_access_info() {
     echo "  命名空间: ${NAMESPACE}"
     echo ""
     echo "🌐 访问地址:"
-    echo "  前端: https://swiftmindsystems.com"
-    echo "  API: https://api.swiftmindsystems.com"
+    echo "  前端: https://swiftmerchantplatform.com"
+    echo "  API: https://api.swiftmerchantplatform.com"
     echo ""
     echo "🔍 查看日志:"
     echo "  kubectl logs -n ${NAMESPACE} deployment/business-service -f"

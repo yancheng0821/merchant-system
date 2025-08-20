@@ -12,8 +12,8 @@ const getApiBaseUrl = (): string => {
   
   // 根据当前域名判断
   const hostname = window.location.hostname;
-  if (hostname === 'swiftmindsystems.com' || hostname === 'www.swiftmindsystems.com') {
-    return 'https://api.swiftmindsystems.com';
+  if (hostname === 'swiftmerchantplatform.com' || hostname === 'www.swiftmerchantplatform.com') {
+    return 'https://api.swiftmerchantplatform.com';
   }
   
   // 本地开发环境
@@ -27,10 +27,10 @@ export const getFullImageUrl = (imageUrl?: string): string | undefined => {
   // 如果已经是完整URL，检查是否需要修正域名
   if (imageUrl.startsWith('http')) {
     // 修正错误的域名
-    if (imageUrl.startsWith('https://swiftmindsystems.com/api/') || 
-        imageUrl.startsWith('http://swiftmindsystems.com/api/')) {
+    if (imageUrl.startsWith('https://swiftmerchantplatform.com/api/') || 
+        imageUrl.startsWith('http://swiftmerchantplatform.com/api/')) {
       // 替换为正确的API域名
-      return imageUrl.replace(/https?:\/\/swiftmindsystems\.com\/api\//, 'https://api.swiftmindsystems.com/api/');
+      return imageUrl.replace(/https?:\/\/swiftmerchantplatform\.com\/api\//, 'https://api.swiftmerchantplatform.com/api/');
     }
     return imageUrl;
   }

@@ -45,7 +45,11 @@
       "Bash(sed:*)",
       "Bash(jar tf:*)",
       "Bash(echo:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(REACT_APP_API_BASE_URL=https://api.swiftmerchantplatform.com npm run build)",
+      "Bash(export REACT_APP_API_BASE_URL=https://api.swiftmerchantplatform.com)",
+      "Bash(kubectl rollout history:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }

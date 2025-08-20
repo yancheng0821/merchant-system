@@ -21,7 +21,13 @@
     "step": "步骤",
     "of": "共",
     "complete": "完成",
-    "today": "今天"
+    "today": "今天",
+    "notAvailable": "无",
+    "online": "在线",
+    "offline": "离线",
+    "basicInfo": "基本信息",
+    "addressInfo": "地址信息",
+    "addressLine2": "地址第二行"
   },
   "auth": {
     "merchantRegister": "商户注册",
@@ -947,7 +953,12 @@
     "stripeFeature2": "快速到账",
     "stripeFeature3": "安全可靠",
     "goToSetupNow": "立即前往设置",
-    "transactionFailed": "交易失败"
+    "transactionFailed": "交易失败",
+    "selectTerminal": "选择终端",
+    "noTerminalsAvailable": "没有可用的终端",
+    "autoSelectedTerminal": "已自动选择唯一可用的终端",
+    "selectTerminalError": "请选择一个终端来处理信用卡支付",
+    "terminalOfflineError": "所选终端已离线。请选择一个在线终端。"
   },
   "orders": {
     "searchPlaceholder": "搜索订单号、客户姓名或员工...",
@@ -1708,7 +1719,35 @@
       "locationCreated": "位置创建成功",
       "createLocationError": "创建位置失败",
       "registered": "终端注册成功",
-      "registerError": "终端注册失败"
+      "registerError": "终端注册失败",
+      "deleteSuccess": "终端删除成功",
+      "deleteError": "删除终端失败",
+      "deleteConfirmTitle": "删除终端",
+      "deleteConfirmMessage": "确定要删除此终端吗？此操作无法撤销。",
+      "terminals": "终端设备",
+      "totalTerminals": "终端总数",
+      "onlineTerminals": "在线终端",
+      "registerSubtitle": "连接新终端到您的账户"
+    },
+    "location": {
+      "title": "位置管理",
+      "subtitle": "管理您的营业位置",
+      "noLocations": "暂无位置",
+      "noLocationsDesc": "添加您的第一个位置以组织管理终端设备",
+      "addLocation": "添加位置",
+      "addFirstLocation": "添加第一个位置",
+      "terminalsUsingLocation": "使用此位置的终端数",
+      "terminals": "个终端",
+      "terminalsAtLocation": "该位置的终端",
+      "deleteSuccess": "位置删除成功",
+      "deleteError": "删除位置失败",
+      "deleteConfirmTitle": "删除位置",
+      "deleteConfirmMessage": "确定要删除此位置吗？请确保没有终端正在使用此位置。",
+      "defaultLocation": "默认位置",
+      "locations": "位置",
+      "totalLocations": "位置总数",
+      "activeLocations": "活跃位置",
+      "nameHelp": "为此位置输入描述性名称"
     }
   },
   "individual": {

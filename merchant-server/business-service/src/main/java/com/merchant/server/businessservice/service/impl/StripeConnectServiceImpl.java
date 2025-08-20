@@ -8,10 +8,12 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.*;
 import com.stripe.model.LoginLink;
+import com.stripe.model.terminal.Location;
 import com.stripe.model.terminal.Reader;
 import com.stripe.net.RequestOptions;
 import com.stripe.net.Webhook;
 import com.stripe.param.*;
+import com.stripe.param.AccountUpdateParams;
 import com.stripe.param.terminal.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -144,6 +146,17 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 .setUrl(request.getWebsite())
                 .build();
             paramsBuilder.setBusinessProfile(businessProfile);
+            
+            // 请求支付和转账能力
+            AccountCreateParams.Capabilities capabilities = AccountCreateParams.Capabilities.builder()
+                .setCardPayments(AccountCreateParams.Capabilities.CardPayments.builder()
+                    .setRequested(true)
+                    .build())
+                .setTransfers(AccountCreateParams.Capabilities.Transfers.builder()
+                    .setRequested(true)
+                    .build())
+                .build();
+            paramsBuilder.setCapabilities(capabilities);
             
             // 注意：银行账户信息通常在onboarding流程中填写，不在创建时设置
             // 这是为了安全考虑，银行信息应该在Stripe的安全页面上输入
@@ -664,16 +677,61 @@ public class StripeConnectServiceImpl implements StripeConnectService {
         log.info("Creating terminal for tenant: {}", tenantId);
         
         StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
-        if (account == null || !account.getChargesEnabled()) {
-            throw new RuntimeException("Stripe account not ready for tenant: " + tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
         }
         
         try {
+            // 检查并确保账户有card_payments能力
+            Account stripeAccount = Account.retrieve(account.getStripeAccountId());
+            
+            // 检查card_payments能力
+            if (stripeAccount.getCapabilities() == null || 
+                stripeAccount.getCapabilities().getCardPayments() == null ||
+                !"active".equals(stripeAccount.getCapabilities().getCardPayments())) {
+                
+                log.info("Card payments capability not active for account: {}, requesting capability", account.getStripeAccountId());
+                
+                // 更新账户请求card_payments能力
+                AccountUpdateParams updateParams = AccountUpdateParams.builder()
+                    .setCapabilities(AccountUpdateParams.Capabilities.builder()
+                        .setCardPayments(AccountUpdateParams.Capabilities.CardPayments.builder()
+                            .setRequested(true)
+                            .build())
+                        .setTransfers(AccountUpdateParams.Capabilities.Transfers.builder()
+                            .setRequested(true)
+                            .build())
+                        .build())
+                    .build();
+                
+                stripeAccount.update(updateParams);
+                
+                // 重新检查能力状态
+                stripeAccount = Account.retrieve(account.getStripeAccountId());
+                if (stripeAccount.getCapabilities() == null || 
+                    stripeAccount.getCapabilities().getCardPayments() == null ||
+                    !"active".equals(stripeAccount.getCapabilities().getCardPayments())) {
+                    throw new RuntimeException("Card payments capability is not active. Please complete the onboarding process first.");
+                }
+            }
+            
+            // 检查charges_enabled
+            if (!stripeAccount.getChargesEnabled()) {
+                throw new RuntimeException("Charges are not enabled for this account. Please complete the onboarding process first.");
+            }
+            
+            // 验证locationId是否提供
+            String locationId = request.getLocationId();
+            if (locationId == null || locationId.trim().isEmpty()) {
+                log.error("No location ID provided for terminal creation");
+                throw new RuntimeException("Location ID is required to create a terminal");
+            }
+            
             // 创建Terminal Reader
             ReaderCreateParams params = ReaderCreateParams.builder()
                 .setRegistrationCode(request.getRegistrationCode())
                 .setLabel(request.getLabel())
-                .setLocation(request.getLocationId())
+                .setLocation(locationId)
                 .putMetadata("tenant_id", tenantId.toString())
                 .build();
             
@@ -751,6 +809,90 @@ public class StripeConnectServiceImpl implements StripeConnectService {
         } catch (StripeException e) {
             log.error("Failed to update terminal status", e);
             throw new RuntimeException("Failed to update terminal status: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public boolean deleteTerminal(Long tenantId, String terminalId) {
+        log.info("Deleting terminal: {} for tenant: {}", terminalId, tenantId);
+        
+        // 验证终端属于该租户
+        StripeTerminal terminal = stripeTerminalMapper.selectByTerminalId(terminalId);
+        if (terminal == null || !terminal.getTenantId().equals(tenantId)) {
+            throw new RuntimeException("Terminal not found or unauthorized: " + terminalId);
+        }
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            // 从Stripe删除终端
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            Reader reader = Reader.retrieve(terminalId, requestOptions);
+            reader.delete(requestOptions);
+            
+            // 从数据库软删除
+            terminal.setDeleted(true);
+            terminal.setUpdatedAt(LocalDateTime.now());
+            stripeTerminalMapper.updateById(terminal);
+            
+            log.info("Successfully deleted terminal: {} for tenant: {}", terminalId, tenantId);
+            return true;
+            
+        } catch (StripeException e) {
+            log.error("Failed to delete terminal from Stripe", e);
+            throw new RuntimeException("Failed to delete terminal: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional
+    public boolean deleteLocation(Long tenantId, String locationId) {
+        log.info("Deleting location: {} for tenant: {}", locationId, tenantId);
+        
+        StripeAccount account = stripeAccountMapper.selectByTenantId(tenantId);
+        if (account == null) {
+            throw new RuntimeException("Stripe account not found for tenant: " + tenantId);
+        }
+        
+        try {
+            // 检查是否有终端使用此location
+            List<StripeTerminal> terminals = stripeTerminalMapper.selectByTenantId(tenantId);
+            boolean hasTerminalsUsingLocation = terminals.stream()
+                .anyMatch(t -> locationId.equals(t.getLocationId()) && !t.getDeleted());
+            
+            if (hasTerminalsUsingLocation) {
+                throw new RuntimeException("Cannot delete location: terminals are still using this location");
+            }
+            
+            // 从Stripe删除location
+            RequestOptions requestOptions = RequestOptions.builder()
+                .setStripeAccount(account.getStripeAccountId())
+                .build();
+            
+            Location location = Location.retrieve(locationId, requestOptions);
+            location.delete(requestOptions);
+            
+            // 从数据库删除（如果有记录的话）
+            StripeLocation dbLocation = stripeLocationMapper.selectByLocationId(locationId);
+            if (dbLocation != null) {
+                dbLocation.setDeleted(true);
+                dbLocation.setUpdatedAt(LocalDateTime.now());
+                stripeLocationMapper.updateById(dbLocation);
+            }
+            
+            log.info("Successfully deleted location: {} for tenant: {}", locationId, tenantId);
+            return true;
+            
+        } catch (StripeException e) {
+            log.error("Failed to delete location from Stripe", e);
+            throw new RuntimeException("Failed to delete location: " + e.getMessage());
         }
     }
     

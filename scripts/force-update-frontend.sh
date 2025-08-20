@@ -72,7 +72,7 @@ log_success "新Pod已启动: $NEW_POD"
 
 # 10. 验证API URL配置
 log_step "验证API URL配置..."
-kubectl exec deployment/merchant-admin -n merchant-system -- sh -c 'grep -o "https://api.swiftmindsystems.com" /usr/share/nginx/html/static/js/main.*.js | head -1'
+kubectl exec deployment/merchant-admin -n merchant-system -- sh -c 'grep -o "https://api.swiftmerchantplatform.com" /usr/share/nginx/html/static/js/main.*.js | head -1'
 
 if [ $? -eq 0 ]; then
     log_success "✓ 前端正在使用正确的API域名"
@@ -87,5 +87,5 @@ echo ""
 echo "请执行以下操作："
 echo "1. 清除浏览器缓存 (Ctrl+Shift+R 或 Cmd+Shift+R)"
 echo "2. 或使用隐身/无痕模式访问"
-echo "3. 访问: https://swiftmindsystems.com"
+echo "3. 访问: https://swiftmerchantplatform.com"
 echo "========================================"

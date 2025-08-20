@@ -799,6 +799,7 @@ const OrderManagement: React.FC = () => {
         </MenuItem>
         <MenuItem
           onClick={() => {
+            console.log('🎯 Refund menu clicked for order:', selectedOrder?.id);
             setRefundDialogOpen(true);
             setMenuAnchorEl(null);
           }}
@@ -845,15 +846,28 @@ const OrderManagement: React.FC = () => {
         }}
       />
 
-      <RefundDialog 
-        open={refundDialogOpen} 
-        onClose={() => setRefundDialogOpen(false)}
-        order={selectedOrder}
-        onRefundComplete={(updatedOrder) => {
-          // 处理退款完成逻辑
-          setRefundDialogOpen(false);
-        }}
-      />
+      {refundDialogOpen && selectedOrder && (
+        <RefundDialog 
+          key={`refund-${selectedOrder.id}-${Date.now()}`} // 添加时间戳确保每次都是新实例
+          open={refundDialogOpen} 
+          onClose={() => {
+            setRefundDialogOpen(false);
+            // 延迟清理，确保动画完成
+            setTimeout(() => {
+              setSelectedOrder(null);
+            }, 100);
+          }}
+          order={selectedOrder}
+          onRefundComplete={(updatedOrder) => {
+            // 处理退款完成逻辑（更新订单列表等）
+            console.log('Refund completed for order:', updatedOrder.id);
+            setRefundDialogOpen(false);
+            setTimeout(() => {
+              setSelectedOrder(null);
+            }, 100);
+          }}
+        />
+      )}
 
       {/* 删除确认对话框 */}
       <Dialog 

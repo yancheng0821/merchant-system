@@ -2,17 +2,24 @@ package com.merchant.server.businessservice.client.impl;
 
 import com.merchant.server.businessservice.client.AbstractPOSClient;
 import com.merchant.server.businessservice.dto.pos.*;
+import com.merchant.server.businessservice.entity.POSTransaction;
 import com.merchant.server.businessservice.entity.StripeAccount;
 import com.merchant.server.businessservice.entity.StripeTerminal;
+import com.merchant.server.businessservice.mapper.POSTransactionMapper;
 import com.merchant.server.businessservice.mapper.StripeAccountMapper;
 import com.merchant.server.businessservice.mapper.StripeTerminalMapper;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Charge;
+import com.stripe.model.ChargeCollection;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.PaymentMethod;
+import com.stripe.model.Refund;
 import com.stripe.model.terminal.ConnectionToken;
 import com.stripe.model.terminal.Location;
 import com.stripe.model.terminal.Reader;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.RefundCreateParams;
 import com.stripe.param.terminal.ConnectionTokenCreateParams;
 import com.stripe.param.terminal.LocationCreateParams;
 import com.stripe.param.terminal.LocationListParams;
@@ -51,6 +58,7 @@ public class StripeTerminalClient extends AbstractPOSClient {
     
     private final StripeAccountMapper stripeAccountMapper;
     private final StripeTerminalMapper stripeTerminalMapper;
+    private final POSTransactionMapper posTransactionMapper;
     
     @PostConstruct
     public void init() {
@@ -73,42 +81,78 @@ public class StripeTerminalClient extends AbstractPOSClient {
             }
             
             // 创建PaymentIntent
-            // 在测试模式下使用card而不是card_present，这样可以在Dashboard手动完成
-            String paymentMethodType = (useSimulator && stripeApiKey.startsWith("sk_test_")) 
-                ? "card" : "card_present";
-            
+            // 根据前端选择的支付方式设置正确的Stripe payment method types
             PaymentIntentCreateParams.Builder paramsBuilder = PaymentIntentCreateParams.builder()
                 .setAmount(request.getAmount().multiply(BigDecimal.valueOf(100)).longValue()) // 转换为分
                 .setCurrency(request.getCurrency() != null ? request.getCurrency() : "cad")
                 .setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.AUTOMATIC)
-                .addPaymentMethodType(paymentMethodType)
                 .putMetadata("order_id", request.getOrderId())
                 .putMetadata("tenant_id", tenantId.toString())
-                .putMetadata("terminal_id", request.getTerminalId());
+                .putMetadata("terminal_id", request.getTerminalId())
+                .putMetadata("_stripe_terminal_payment", "true"); // 标记这是Terminal支付
             
-            // 测试模式下，使用card支付方式可以在Dashboard手动完成
+            // 根据支付方式添加相应的payment method types
+            String requestedPaymentMethod = request.getPaymentMethod();
+            if ("debit_card".equalsIgnoreCase(requestedPaymentMethod)) {
+                // 借记卡：添加 interac_present（加拿大本地借记卡）和 card_present（国际借记卡）
+                paramsBuilder.addPaymentMethodType("interac_present");
+                paramsBuilder.addPaymentMethodType("card_present");
+                log.info("Payment method set to debit cards (interac_present + card_present)");
+            } else if ("credit_card".equalsIgnoreCase(requestedPaymentMethod)) {
+                // 信用卡：只添加 card_present
+                paramsBuilder.addPaymentMethodType("card_present");
+                log.info("Payment method set to credit cards only (card_present)");
+            } else {
+                // 默认或其他：接受所有类型
+                paramsBuilder.addPaymentMethodType("card_present");
+                paramsBuilder.addPaymentMethodType("interac_present");
+                log.info("Payment method set to all card types (card_present + interac_present)");
+            }
             
-            PaymentIntentCreateParams params = paramsBuilder.build();
-            
-            // 对于Terminal支付，使用平台账户创建PaymentIntent
-            // 然后通过application_fee_amount和transfer_data来分配资金
+            // 对于Terminal支付，必须在Reader所在的账户创建PaymentIntent
+            // 在多租户SaaS平台中，Reader总是在connected account中，
+            // 所以PaymentIntent也必须在connected account中创建
             PaymentIntent paymentIntent;
             
-            // Terminal支付建议使用平台账户，避免跨账户问题
-            // 收益可以通过transfer或application fee处理
-            paymentIntent = PaymentIntent.create(params);
-            log.info("Created PaymentIntent {} in platform account for tenant {}", 
-                paymentIntent.getId(), tenantId);
+            if (stripeAccount != null && stripeAccount.getStripeAccountId() != null) {
+                // 必须在connected account中创建PaymentIntent
+                // 因为Reader在connected account中注册
+                RequestOptions requestOptions = RequestOptions.builder()
+                    .setStripeAccount(stripeAccount.getStripeAccountId())
+                    .build();
+                
+                PaymentIntentCreateParams params = paramsBuilder
+                    .setPaymentMethodOptions(
+                        PaymentIntentCreateParams.PaymentMethodOptions.builder()
+                            .setCardPresent(
+                                PaymentIntentCreateParams.PaymentMethodOptions.CardPresent.builder()
+                                    .build()
+                            )
+                            .build()
+                    )
+                    .build();
+                
+                paymentIntent = PaymentIntent.create(params, requestOptions);
+                log.info("Created PaymentIntent {} in connected account {} for tenant {}", 
+                    paymentIntent.getId(), stripeAccount.getStripeAccountId(), tenantId);
+            } else {
+                // 如果没有connected account，在平台账户创建（仅用于测试）
+                PaymentIntentCreateParams params = paramsBuilder.build();
+                paymentIntent = PaymentIntent.create(params);
+                log.info("Created PaymentIntent {} in platform account for tenant {} (no connected account)", 
+                    paymentIntent.getId(), tenantId);
+            }
             
             // 获取或创建Terminal Reader
             Reader reader = getOrCreateReader(request.getTerminalId(), tenantId);
             
             // 处理支付
             if (reader != null && reader.getStatus().equals("online")) {
-                // 在测试模式的模拟Reader中，不需要真正处理PaymentIntent
-                // 模拟Reader会自动完成支付
-                log.info("Using simulated reader {} for payment. PaymentIntent: {}", 
-                    reader.getId(), paymentIntent.getId());
+                log.info("Got reader {} with status {} for payment. PaymentIntent: {}", 
+                    reader.getId(), reader.getStatus(), paymentIntent.getId());
+                log.info("Reader device type: {}, livemode: {}", 
+                    reader.getDeviceType(), reader.getLivemode());
+                
                 
                 // 对于模拟Reader，我们跳过processPaymentIntent调用
                 // 因为模拟Reader不能真正处理支付，只是用于测试流程
@@ -129,23 +173,62 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 } else {
                     // 真实Reader才需要处理
                     try {
-                        ReaderProcessPaymentIntentParams processParams = ReaderProcessPaymentIntentParams.builder()
-                            .setPaymentIntent(paymentIntent.getId())
-                            .build();
-                        
-                        // 如果是connected account的Reader，需要使用相同的account context
-                        if (stripeAccount.getStripeAccountId() != null) {
-                            RequestOptions processOptions = RequestOptions.builder()
+                        // 对于connected account的reader，需要使用正确的RequestOptions
+                        if (stripeAccount != null && stripeAccount.getStripeAccountId() != null) {
+                            RequestOptions requestOptions = RequestOptions.builder()
                                 .setStripeAccount(stripeAccount.getStripeAccountId())
                                 .build();
-                            // 注意：Reader.processPaymentIntent 不支持 RequestOptions参数
-                            // 所以我们暂时跳过真实设备的处理
-                            log.warn("Real reader payment processing needs physical device interaction");
+                            
+                            log.info("Processing payment in connected account: {}", stripeAccount.getStripeAccountId());
+                            log.info("PaymentIntent ID: {}, Reader ID: {}", paymentIntent.getId(), reader.getId());
+                            
+                            
+                            // 重新获取reader确保在正确的账户上下文中
+                            Reader connectedReader = Reader.retrieve(reader.getId(), requestOptions);
+                            
+                            // 构建processPaymentIntent参数
+                            Map<String, Object> params = new HashMap<>();
+                            params.put("payment_intent", paymentIntent.getId());
+                            
+                            // 使用testHelperProcessPaymentIntent方法（如果在测试模式）
+                            // 或者使用标准的processPaymentIntent方法
+                            try {
+                                // 尝试使用Stripe提供的processPaymentIntent方法
+                                // 注意：这里我们需要确保RequestOptions被正确传递
+                                ReaderProcessPaymentIntentParams processParams = ReaderProcessPaymentIntentParams.builder()
+                                    .setPaymentIntent(paymentIntent.getId())
+                                    .build();
+                                
+                                // 调用processPaymentIntent，显式传递RequestOptions
+                                // 这应该会在HTTP请求中包含Stripe-Account header
+                                connectedReader = connectedReader.processPaymentIntent(processParams, requestOptions);
+                                
+                                log.info("✓ Payment processing initiated on reader {} in connected account {}", 
+                                    connectedReader.getId(), stripeAccount.getStripeAccountId());
+                                
+                                reader = connectedReader;
+                            } catch (StripeException e) {
+                                log.error("Failed to process payment with RequestOptions: {}", e.getMessage());
+                                // 如果上面失败，尝试另一种方法
+                                throw e;
+                            }
                         } else {
+                            // 平台账户的reader
+                            ReaderProcessPaymentIntentParams processParams = ReaderProcessPaymentIntentParams.builder()
+                                .setPaymentIntent(paymentIntent.getId())
+                                .build();
+                            
                             reader = reader.processPaymentIntent(processParams);
+                            log.info("Payment processing initiated on reader {} in platform account", 
+                                reader.getId());
                         }
+                        
+                        log.info("Payment processing status: {}", 
+                            reader.getAction() != null ? reader.getAction().getStatus() : "unknown");
+                        
                     } catch (StripeException e) {
                         log.error("Failed to process payment on reader: {}", e.getMessage());
+                        log.error("Full error details: ", e);
                         // 不抛出异常，因为PaymentIntent已创建
                     }
                 }
@@ -164,8 +247,11 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 
         } catch (StripeException e) {
             log.error("Stripe Terminal payment initiation failed", e);
+            // 当支付初始化失败时，使用特殊的transaction ID格式来表示失败
+            // 不要使用orderId作为transactionId，避免后续查询出错
+            String failedTransactionId = "failed_" + request.getOrderId() + "_" + System.currentTimeMillis();
             return POSInitResponse.builder()
-                .transactionId(request.getOrderId())
+                .transactionId(failedTransactionId)
                 .status("failed")
                 .message("Payment initiation failed: " + e.getMessage())
                 .initiatedAt(LocalDateTime.now())
@@ -177,19 +263,76 @@ public class StripeTerminalClient extends AbstractPOSClient {
     public POSTransactionStatus queryTransactionStatus(String transactionId) {
         log.info("Querying Stripe payment status for transaction: {}", transactionId);
         
+        // 处理失败的transaction ID（格式: failed_orderId_timestamp）
+        if (transactionId != null && transactionId.startsWith("failed_")) {
+            log.info("Transaction {} was a failed initialization, returning failed status", transactionId);
+            return POSTransactionStatus.builder()
+                .transactionId(transactionId)
+                .status("failed")
+                .errorMessage("Payment initialization failed")
+                .build();
+        }
+        
         try {
-            // 首先尝试在平台账户查询
+            // 从transactionId提取metadata来获取tenant_id
+            // 首先尝试从数据库获取交易记录，其中包含tenant信息
+            POSTransaction posTransaction = posTransactionMapper.selectByTransactionId(transactionId);
             PaymentIntent paymentIntent = null;
-            try {
-                paymentIntent = PaymentIntent.retrieve(transactionId);
-            } catch (StripeException e) {
-                log.debug("PaymentIntent not found in platform account, will try connected accounts");
+            
+            // 用于存储Reader的失败信息
+            String readerFailureMessage = null;
+            String readerFailureCode = null;
+            
+            if (posTransaction != null && posTransaction.getTenantId() != null) {
+                // 获取商户的Stripe账户
+                StripeAccount stripeAccount = stripeAccountMapper.selectByTenantId(posTransaction.getTenantId());
+                
+                if (stripeAccount != null && stripeAccount.getStripeAccountId() != null) {
+                    // 在connected account中查询
+                    RequestOptions requestOptions = RequestOptions.builder()
+                        .setStripeAccount(stripeAccount.getStripeAccountId())
+                        .build();
+                    
+                    try {
+                        paymentIntent = PaymentIntent.retrieve(transactionId, requestOptions);
+                        log.debug("Found PaymentIntent {} in connected account {}", 
+                            transactionId, stripeAccount.getStripeAccountId());
+                        
+                        // 检查是否有使用的Terminal，如果有，检查Reader的状态
+                        if (posTransaction.getPosTerminalId() != null) {
+                            try {
+                                Reader reader = Reader.retrieve(posTransaction.getPosTerminalId(), requestOptions);
+                                if (reader.getAction() != null && 
+                                    "failed".equals(reader.getAction().getStatus())) {
+                                    readerFailureMessage = reader.getAction().getFailureMessage();
+                                    readerFailureCode = reader.getAction().getFailureCode();
+                                    log.info("Reader {} has failed action: {} - {}", 
+                                        reader.getId(), readerFailureCode, readerFailureMessage);
+                                }
+                            } catch (Exception e) {
+                                log.debug("Could not retrieve reader status: {}", e.getMessage());
+                            }
+                        }
+                    } catch (StripeException e) {
+                        log.debug("PaymentIntent not found in connected account {}: {}", 
+                            stripeAccount.getStripeAccountId(), e.getMessage());
+                    }
+                }
             }
             
-            // 如果在平台账户找不到，尝试在connected accounts查询
+            // 如果在connected account找不到，尝试平台账户（仅用于向后兼容）
             if (paymentIntent == null) {
-                // 这里简化处理：在实际应用中，应该记录PaymentIntent与账户的关联
-                log.warn("PaymentIntent {} not found. It might be in a connected account", transactionId);
+                try {
+                    paymentIntent = PaymentIntent.retrieve(transactionId);
+                    log.debug("Found PaymentIntent {} in platform account", transactionId);
+                } catch (StripeException e) {
+                    log.debug("PaymentIntent not found in platform account: {}", e.getMessage());
+                }
+            }
+            
+            // 如果都找不到，返回pending状态
+            if (paymentIntent == null) {
+                log.warn("PaymentIntent {} not found in any account", transactionId);
                 
                 // 返回pending状态，让系统继续轮询
                 return POSTransactionStatus.builder()
@@ -215,6 +358,15 @@ public class StripeTerminalClient extends AbstractPOSClient {
             // 没有错误时，正常映射状态
             POSTransactionStatus status = mapStripeStatusToPOSStatus(paymentIntent.getStatus());
             status.setTransactionId(transactionId);
+            
+            // 检查Reader是否有失败信息（比如不支持的支付方式）
+            if (readerFailureMessage != null) {
+                log.info("Payment failed due to reader error: {}", readerFailureMessage);
+                status.setStatus("failed");
+                status.setErrorMessage(readerFailureMessage);
+                status.setErrorCode(readerFailureCode);
+                return status;
+            }
             
             // 如果状态是requires_payment_method但之前有支付方法历史，可能是被拒绝了
             // 注意：Stripe Java SDK中PaymentIntent的charges属性需要通过展开参数获取
@@ -266,19 +418,81 @@ public class StripeTerminalClient extends AbstractPOSClient {
         log.info("Processing refund for transaction: {}", request.getOriginalTransactionId());
         
         try {
-            // 创建退款
-            Map<String, Object> refundParams = new HashMap<>();
-            refundParams.put("payment_intent", request.getOriginalTransactionId());
-            if (request.getRefundAmount() != null) {
-                refundParams.put("amount", request.getRefundAmount().multiply(BigDecimal.valueOf(100)).longValue());
+            // 首先需要确定这个PaymentIntent属于哪个子商户
+            // 通过查询数据库获取原始交易信息
+            POSTransaction originalTransaction = posTransactionMapper.selectByTransactionId(request.getOriginalTransactionId());
+            RequestOptions requestOptions = null;
+            
+            if (originalTransaction != null && originalTransaction.getTenantId() != null) {
+                // 获取商户的Stripe账户
+                StripeAccount stripeAccount = stripeAccountMapper.selectByTenantId(originalTransaction.getTenantId());
+                if (stripeAccount != null && stripeAccount.getStripeAccountId() != null) {
+                    // 设置RequestOptions以在子商户账户中执行退款
+                    requestOptions = RequestOptions.builder()
+                        .setStripeAccount(stripeAccount.getStripeAccountId())
+                        .build();
+                    log.info("Processing refund in connected account: {} for tenant: {}", 
+                        stripeAccount.getStripeAccountId(), originalTransaction.getTenantId());
+                }
+            } else {
+                log.warn("Could not find original transaction or tenant info for refund: {}", 
+                    request.getOriginalTransactionId());
             }
             
-            // 映射退款原因到Stripe接受的值
-            // Stripe只接受: duplicate, fraudulent, requested_by_customer
-            String stripeReason = mapRefundReasonToStripe(request.getReason());
-            refundParams.put("reason", stripeReason);
+            // 首先获取原始PaymentIntent以确定支付方式
+            PaymentIntent originalPaymentIntent = null;
+            String paymentMethodId = null;
             
-            com.stripe.model.Refund refund = com.stripe.model.Refund.create(refundParams);
+            try {
+                // 需要展开charges信息以获取支付方式详情
+                Map<String, Object> params = new HashMap<>();
+                params.put("expand[]", "charges");
+                
+                if (requestOptions != null) {
+                    originalPaymentIntent = PaymentIntent.retrieve(request.getOriginalTransactionId(), params, requestOptions);
+                } else {
+                    originalPaymentIntent = PaymentIntent.retrieve(request.getOriginalTransactionId(), params, null);
+                }
+                paymentMethodId = originalPaymentIntent.getPaymentMethod();
+                log.info("Original PaymentIntent {} used payment method: {}", 
+                    request.getOriginalTransactionId(), paymentMethodId);
+            } catch (Exception e) {
+                log.warn("Could not retrieve original PaymentIntent details: {}", e.getMessage());
+            }
+            
+            // 使用 RefundCreateParams 创建退款
+            // 对于 Terminal 支付，Stripe 会自动从原始 PaymentIntent 获取 payment_method_data
+            log.info("Processing refund for PaymentIntent: {}", request.getOriginalTransactionId());
+            
+            // 映射退款原因到Stripe接受的值
+            RefundCreateParams.Reason refundReason = mapRefundReasonToStripeEnum(request.getReason());
+            
+            // 构建退款参数
+            RefundCreateParams.Builder refundParamsBuilder = RefundCreateParams.builder()
+                .setPaymentIntent(request.getOriginalTransactionId())
+                .setReason(refundReason);
+            
+            // 如果指定了退款金额，添加金额参数
+            if (request.getRefundAmount() != null) {
+                refundParamsBuilder.setAmount(request.getRefundAmount().multiply(BigDecimal.valueOf(100)).longValue());
+            }
+            
+            RefundCreateParams refundParams = refundParamsBuilder.build();
+            
+            // 记录调试信息
+            log.info("Creating refund with params: PaymentIntent={}, Amount={}", 
+                request.getOriginalTransactionId(), 
+                request.getRefundAmount());
+            
+            // 使用RequestOptions创建退款（如果有的话）
+            Refund refund;
+            if (requestOptions != null) {
+                refund = Refund.create(refundParams, requestOptions);
+                log.info("Refund created in connected account: {}", refund.getId());
+            } else {
+                refund = Refund.create(refundParams);
+                log.info("Refund created in platform account (fallback): {}", refund.getId());
+            }
             
             return POSRefundResponse.builder()
                 .refundTransactionId(refund.getId())
@@ -325,10 +539,30 @@ public class StripeTerminalClient extends AbstractPOSClient {
      * 获取或创建Terminal Reader
      */
     private Reader getOrCreateReader(String terminalId, Long tenantId) throws StripeException {
+        // 获取商户的Stripe账户以确定context
+        StripeAccount stripeAccount = stripeAccountMapper.selectByTenantId(tenantId);
+        RequestOptions requestOptions = null;
+        
+        // 如果有connected account，创建RequestOptions
+        if (stripeAccount != null && stripeAccount.getStripeAccountId() != null 
+            && !stripeAccount.getStripeAccountId().isEmpty()) {
+            requestOptions = RequestOptions.builder()
+                .setStripeAccount(stripeAccount.getStripeAccountId())
+                .build();
+            log.debug("Using connected account context: {}", stripeAccount.getStripeAccountId());
+        }
+        
         // 如果提供了特定的terminalId，尝试获取它
         if (terminalId != null && !terminalId.isEmpty() && !terminalId.equals("POS-001")) {
             try {
-                return Reader.retrieve(terminalId);
+                // 在多租户SaaS平台中，Reader 总是属于 connected account
+                if (requestOptions != null) {
+                    log.debug("Retrieving reader {} from connected account: {}", terminalId, stripeAccount.getStripeAccountId());
+                    return Reader.retrieve(terminalId, requestOptions);
+                } else {
+                    log.error("No connected account found for tenant {}, cannot retrieve reader", tenantId);
+                    throw new RuntimeException("No connected account found for tenant " + tenantId);
+                }
             } catch (StripeException e) {
                 log.warn("Terminal {} not found: {}", terminalId, e.getMessage());
             }
@@ -346,13 +580,19 @@ public class StripeTerminalClient extends AbstractPOSClient {
         for (StripeTerminal savedTerminal : savedTerminals) {
             if (savedTerminal.getTerminalId() != null && !savedTerminal.getDeleted()) {
                 try {
-                    Reader reader = Reader.retrieve(savedTerminal.getTerminalId());
-                    if ("online".equals(reader.getStatus())) {
-                        log.info("Using existing reader for tenant {}: {}", tenantId, reader.getId());
-                        return reader;
+                    // 在多租户SaaS平台中，Reader 总是属于 connected account
+                    if (requestOptions != null) {
+                        Reader reader = Reader.retrieve(savedTerminal.getTerminalId(), requestOptions);
+                        if (reader != null && "online".equals(reader.getStatus())) {
+                            log.info("Using existing reader for tenant {}: {}", tenantId, reader.getId());
+                            return reader;
+                        }
+                    } else {
+                        log.warn("No connected account for tenant {}, skipping reader {}", 
+                                tenantId, savedTerminal.getTerminalId());
                     }
                 } catch (StripeException e) {
-                    log.debug("Saved reader {} not available", savedTerminal.getTerminalId());
+                    log.debug("Saved reader {} not available: {}", savedTerminal.getTerminalId(), e.getMessage());
                 }
             }
         }
@@ -363,12 +603,16 @@ public class StripeTerminalClient extends AbstractPOSClient {
             return createSimulatedReaderForTenant(tenantId);
         }
         
-        // 尝试找任何在线的Reader
-        for (Reader reader : Reader.list(listParams).getData()) {
-            if ("online".equals(reader.getStatus())) {
-                log.info("Using available online reader: {}", reader.getId());
-                return reader;
+        // 尝试找任何在线的Reader（使用connected account context）
+        if (requestOptions != null) {
+            for (Reader reader : Reader.list(listParams, requestOptions).getData()) {
+                if ("online".equals(reader.getStatus())) {
+                    log.info("Using available online reader: {}", reader.getId());
+                    return reader;
+                }
             }
+        } else {
+            log.warn("No connected account for tenant {}, cannot list readers", tenantId);
         }
         
         log.warn("No online reader found for tenant: {}", tenantId);
@@ -512,6 +756,33 @@ public class StripeTerminalClient extends AbstractPOSClient {
         } else {
             // 默认都映射为客户请求
             return "requested_by_customer";
+        }
+    }
+    
+    private RefundCreateParams.Reason mapRefundReasonToStripeEnum(String reason) {
+        if (reason == null || reason.isEmpty()) {
+            return RefundCreateParams.Reason.REQUESTED_BY_CUSTOMER;
+        }
+        
+        // 如果reason包含管道符，说明是从前端传过来的格式化字符串
+        if (reason.contains("|")) {
+            String stripeValue = reason.split("\\|")[0];
+            if ("duplicate".equals(stripeValue)) {
+                return RefundCreateParams.Reason.DUPLICATE;
+            } else if ("fraudulent".equals(stripeValue)) {
+                return RefundCreateParams.Reason.FRAUDULENT;
+            }
+        }
+        
+        // 将常见的退款原因映射到Stripe的枚举
+        String lowerReason = reason.toLowerCase();
+        if (lowerReason.contains("duplicate") || lowerReason.contains("重复")) {
+            return RefundCreateParams.Reason.DUPLICATE;
+        } else if (lowerReason.contains("fraud") || lowerReason.contains("欺诈") || lowerReason.contains("诈骗")) {
+            return RefundCreateParams.Reason.FRAUDULENT;
+        } else {
+            // 默认都映射为客户请求
+            return RefundCreateParams.Reason.REQUESTED_BY_CUSTOMER;
         }
     }
     

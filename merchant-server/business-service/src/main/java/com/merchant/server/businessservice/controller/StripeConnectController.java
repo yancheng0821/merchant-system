@@ -145,6 +145,24 @@ public class StripeConnectController {
         return ApiResponse.success(terminal);
     }
     
+    @DeleteMapping("/terminal/{terminalId}")
+    public ApiResponse<Boolean> deleteTerminal(
+            @RequestParam Long tenantId,
+            @PathVariable String terminalId) {
+        log.info("Deleting terminal: {} for tenant: {}", terminalId, tenantId);
+        boolean result = stripeConnectService.deleteTerminal(tenantId, terminalId);
+        return ApiResponse.success(result);
+    }
+    
+    @DeleteMapping("/location/{locationId}")
+    public ApiResponse<Boolean> deleteLocation(
+            @RequestParam Long tenantId,
+            @PathVariable String locationId) {
+        log.info("Deleting location: {} for tenant: {}", locationId, tenantId);
+        boolean result = stripeConnectService.deleteLocation(tenantId, locationId);
+        return ApiResponse.success(result);
+    }
+    
     @PostMapping("/terminal/{terminalId}/collect-payment")
     public ApiResponse<CollectPaymentResultDTO> collectPaymentMethod(
             @RequestParam Long tenantId,

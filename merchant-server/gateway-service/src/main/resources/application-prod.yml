@@ -14,8 +14,9 @@ spring:
         corsConfigurations:
           '[/**]':
             allowedOrigins:
-              - "https://swiftmindsystems.com"
-              - "https://www.swiftmindsystems.com"
+              - "https://swiftmerchantplatform.com"
+              - "https://www.swiftmerchantplatform.com"
+              - "https://api.swiftmerchantplatform.com"
             allowedMethods:
               - GET
               - POST
