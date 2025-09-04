@@ -6,9 +6,9 @@ metadata:
 type: Opaque
 stringData:
   # 替换为你的实际Stripe API密钥
-  STRIPE_API_KEY: "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"
-  STRIPE_WEBHOOK_SECRET: "whsec_9dx0QGG4Pk5k1YwkciuMabfNcpgQOYjg"
-  STRIPE_CLIENT_ID: "ca_StSiNIMNsaS1ongYHTsG2Thfm5IwW2gV"
+  STRIPE_API_KEY: ""
+  STRIPE_WEBHOOK_SECRET: ""
+  STRIPE_CLIENT_ID: ""
   # Stripe Terminal Location ID (可选，如果你有固定的Location可以在这里设置)
   #STRIPE_TERMINAL_LOCATION_ID: "tml_GJeGowJums1qGc"
 ---
