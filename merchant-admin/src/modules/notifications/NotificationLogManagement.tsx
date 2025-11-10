@@ -24,10 +24,15 @@ import {
   Select,
   MenuItem,
   Alert,
-  Pagination,
+  TablePagination,
   Grid,
+  Divider,
   alpha,
-  CircularProgress
+  CircularProgress,
+  Menu,
+  ListItemIcon,
+  ListItemText,
+  Snackbar
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -40,9 +45,13 @@ import {
   Schedule as ScheduleIcon,
   Info as InfoIcon,
   Error as ErrorIcon,
+  Replay as RetryIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../../services/api';
+import { usePermission } from '../../hooks/usePermission';
+import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 
 interface NotificationLog {
   id: number;
@@ -63,20 +72,26 @@ interface NotificationLog {
 
 const NotificationLogManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermission();
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedLog, setSelectedLog] = useState<NotificationLog | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalElements, setTotalElements] = useState(0);
   const [filters, setFilters] = useState({
     templateCode: '',
     type: '',
     status: '',
     recipient: '',
-    businessId: ''
+    businessId: '',
+    businessType: ''
   });
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // 橙色主题色，确保文字清晰
   const themeColor = '#F97316';
@@ -94,13 +109,23 @@ const NotificationLogManagement: React.FC = () => {
     { value: 'APPOINTMENT_REMINDER', label: t('notifications.templateCodes.appointmentReminder') }
   ];
 
+  const businessTypes = [
+    { value: 'APPOINTMENT', label: t('notifications.businessTypes.appointment', 'Appointment') },
+    { value: 'PAYMENT', label: t('notifications.businessTypes.payment', 'Payment') },
+    { value: 'PACKAGE', label: t('notifications.businessTypes.package', 'Package') },
+    { value: 'CUSTOMER', label: t('notifications.businessTypes.customer', 'Customer') },
+    { value: 'STAFF', label: t('notifications.businessTypes.staff', 'Staff') },
+    { value: 'SYSTEM', label: t('notifications.businessTypes.system', 'System') },
+    { value: 'OTHER', label: t('notifications.businessTypes.other', 'Other') }
+  ];
+
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
         tenantId,
-        page: page - 1,
-        size: 20,
+        page: page,
+        size: rowsPerPage,
         ...filters
       };
 
@@ -115,8 +140,7 @@ const NotificationLogManagement: React.FC = () => {
       });
       
       setLogs(sortedLogs);
-      // 由于后端返回的是数组，暂时使用简单的分页计算
-      setTotalPages(Math.ceil(sortedLogs.length / 20));
+      setTotalElements(sortedLogs.length);
       setError(null);
     } catch (err) {
       setError(t('notifications.fetchTemplatesFailed'));
@@ -124,7 +148,7 @@ const NotificationLogManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, filters, tenantId]);
+  }, [page, rowsPerPage, filters, tenantId]);
 
   useEffect(() => {
     fetchLogs();
@@ -137,12 +161,15 @@ const NotificationLogManagement: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedLog(null);
+    // 延迟清空selectedLog，等待Dialog关闭动画完成
+    setTimeout(() => {
+      setSelectedLog(null);
+    }, 200);
   };
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters({ ...filters, [field]: value });
-    setPage(1);
+    setPage(0);
   };
 
   const handleSearch = () => {
@@ -152,10 +179,51 @@ const NotificationLogManagement: React.FC = () => {
   const handleRetryFailed = async () => {
     try {
       await notificationApi.retryFailedNotifications();
+      setSuccessMessage(t('notifications.retryFailedSuccess'));
       await fetchLogs();
     } catch (err) {
       setError(t('notifications.retryFailedNotifications'));
       console.error('Error retrying failed notifications:', err);
+    }
+  };
+
+  const handleRetrySingle = async (logId: number) => {
+    try {
+      setLoading(true);
+      await notificationApi.retrySingleNotification(logId);
+      setSuccessMessage(t('notifications.retrySingleSuccess'));
+      await fetchLogs();
+      setError(null);
+    } catch (err) {
+      setError(t('notifications.retrySingleFailed', 'Failed to retry notification'));
+      console.error('Error retrying single notification:', err);
+    } finally {
+      setLoading(false);
+      handleMenuClose();
+    }
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, logId: number) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedLogId(logId);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedLogId(null);
+  };
+
+  const handleMenuViewDetails = () => {
+    const log = logs.find(l => l.id === selectedLogId);
+    if (log) {
+      handleViewLog(log);
+    }
+    handleMenuClose();
+  };
+
+  const handleMenuRetry = () => {
+    if (selectedLogId) {
+      handleRetrySingle(selectedLogId);
     }
   };
 
@@ -222,8 +290,7 @@ const NotificationLogManagement: React.FC = () => {
                 variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={fetchLogs}
-                sx={{ 
-                  mr: 2,
+                sx={{
                   borderRadius: 2,
                   borderColor: themeColor,
                   color: themeColor,
@@ -237,7 +304,8 @@ const NotificationLogManagement: React.FC = () => {
               >
                 {t('notifications.refresh')}
               </Button>
-              <Button
+              {/* 批量重试功能已注释 - 使用单条重试按钮代替 */}
+              {/* <Button
                 variant="contained"
                 onClick={handleRetryFailed}
                 sx={{
@@ -253,7 +321,7 @@ const NotificationLogManagement: React.FC = () => {
                 }}
               >
                 {t('notifications.retryFailedNotifications')}
-              </Button>
+              </Button> */}
             </Box>
           </Box>
         </CardContent>
@@ -283,33 +351,8 @@ const NotificationLogManagement: React.FC = () => {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>{t('notifications.templateType')}</InputLabel>
-                <Select
-                  value={filters.templateCode}
-                  onChange={(e) => handleFilterChange('templateCode', e.target.value)}
-                  label={t('notifications.templateType')}
-                  sx={{
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                  }}
-                >
-                  <MenuItem value="">{t('notifications.all')}</MenuItem>
-                  {templateCodes.map((code) => (
-                    <MenuItem key={code.value} value={code.value}>
-                      {code.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+          <Grid container spacing={2} alignItems="center">
+            {/* 第一行 */}
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
                 <InputLabel>{t('notifications.notificationType')}</InputLabel>
@@ -358,6 +401,32 @@ const NotificationLogManagement: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>{t('notifications.businessType', 'Business Type')}</InputLabel>
+                <Select
+                  value={filters.businessType}
+                  onChange={(e) => handleFilterChange('businessType', e.target.value)}
+                  label={t('notifications.businessType', 'Business Type')}
+                  sx={{
+                    borderRadius: 2,
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: themeColor,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: themeColor,
+                    },
+                  }}
+                >
+                  <MenuItem value="">{t('notifications.all')}</MenuItem>
+                  {businessTypes.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
               <TextField
                 fullWidth
                 size="small"
@@ -377,7 +446,7 @@ const NotificationLogManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={1.5}>
               <TextField
                 fullWidth
                 size="small"
@@ -436,9 +505,6 @@ const NotificationLogManagement: React.FC = () => {
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
-                  {t('notifications.templateType')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
                   {t('notifications.notificationType')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
@@ -448,10 +514,10 @@ const NotificationLogManagement: React.FC = () => {
                   {t('notifications.status')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
-                  {t('notifications.businessId')}
+                  {t('notifications.businessType', 'Business Type')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
-                  {t('notifications.retryCount')}
+                  {t('notifications.businessId')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
                   {t('notifications.createdAt')}
@@ -467,15 +533,17 @@ const NotificationLogManagement: React.FC = () => {
             <TableBody>
               {logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">
                       {t('notifications.noLogs')}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log) => (
-                  <TableRow 
+                logs
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((log) => (
+                  <TableRow
                     key={log.id}
                     sx={{
                       '&:hover': {
@@ -484,11 +552,6 @@ const NotificationLogManagement: React.FC = () => {
                       transition: 'background-color 0.2s ease',
                     }}
                   >
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {getTemplateLabel(log.templateCode)}
-                      </Typography>
-                    </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
                         {log.type === 'SMS' ? (
@@ -510,13 +573,13 @@ const NotificationLogManagement: React.FC = () => {
                       <Chip
                         label={getStatusLabel(log.status)}
                         sx={{
-                          backgroundColor: getStatusColor(log.status) === 'success' 
-                            ? alpha('#10B981', 0.1) 
+                          backgroundColor: getStatusColor(log.status) === 'success'
+                            ? alpha('#10B981', 0.1)
                             : getStatusColor(log.status) === 'error'
                             ? alpha('#EF4444', 0.1)
                             : alpha('#F59E0B', 0.1),
-                          color: getStatusColor(log.status) === 'success' 
-                            ? '#10B981' 
+                          color: getStatusColor(log.status) === 'success'
+                            ? '#10B981'
                             : getStatusColor(log.status) === 'error'
                             ? '#EF4444'
                             : '#F59E0B',
@@ -531,38 +594,52 @@ const NotificationLogManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {log.businessId}
+                        {log.businessType || '-'}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {log.retryCount}
+                        {log.businessId || '-'}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </Typography>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                          {formatUtcToMerchantTime(log.createdAt, 'yyyy-MM-dd')}
+                        </Typography>
+                        <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
+                          {formatUtcToMerchantTime(log.createdAt, 'HH:mm:ss')}
+                        </Typography>
+                      </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {log.sentAt ? new Date(log.sentAt).toLocaleString() : '-'}
-                      </Typography>
+                      {log.sentAt ? (
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                            {formatUtcToMerchantTime(log.sentAt, 'yyyy-MM-dd')}
+                          </Typography>
+                          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
+                            {formatUtcToMerchantTime(log.sentAt, 'HH:mm:ss')}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">-</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
-                        onClick={() => handleViewLog(log)}
+                        onClick={(e) => handleMenuOpen(e, log.id)}
                         sx={{
-                          color: themeColor,
+                          color: 'text.secondary',
                           '&:hover': {
                             backgroundColor: alpha(themeColor, 0.1),
-                            transform: 'scale(1.1)',
+                            color: themeColor,
                           },
                           transition: 'all 0.2s ease',
                         }}
                       >
-                        <ViewIcon sx={{ fontSize: 18 }} />
+                        <MoreVertIcon sx={{ fontSize: 20 }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -572,384 +649,632 @@ const NotificationLogManagement: React.FC = () => {
           </Table>
         </TableContainer>
 
-        <Box 
-          display="flex" 
-          justifyContent="center" 
-          sx={{ 
-            p: 3, 
+        {/* Actions Menu */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              minWidth: 160,
+            }
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+          <MenuItem onClick={handleMenuViewDetails}>
+            <ListItemIcon>
+              <ViewIcon sx={{ fontSize: 18, color: themeColor }} />
+            </ListItemIcon>
+            <Typography variant="body2">{t('notifications.viewDetails', 'View Details')}</Typography>
+          </MenuItem>
+          {hasPermission('notifications:retry') &&
+           selectedLogId && logs.find(l => l.id === selectedLogId)?.status &&
+           (logs.find(l => l.id === selectedLogId)!.status === 'FAILED' ||
+            logs.find(l => l.id === selectedLogId)!.status === 'PENDING') && (
+            <MenuItem onClick={handleMenuRetry}>
+              <ListItemIcon>
+                <RetryIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
+              </ListItemIcon>
+              <Typography variant="body2">{t('notifications.retrySingle', 'Retry Send')}</Typography>
+            </MenuItem>
+          )}
+        </Menu>
+
+        <TablePagination
+          component="div"
+          count={totalElements}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          sx={{
             borderTop: '1px solid',
             borderColor: 'divider',
             backgroundColor: '#f8fafc',
           }}
-        >
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_event, value) => setPage(value)}
-            sx={{
-              '& .MuiPaginationItem-root': {
-                '&.Mui-selected': {
-                  backgroundColor: themeColor,
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: `${themeColor}dd`,
-                  }
-                }
-              }
-            }}
-          />
-        </Box>
+        />
       </Card>
 
       {/* 通知详情弹窗 */}
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="md" 
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            bgcolor: 'background.paper',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
           }
         }}
       >
-        {/* 现代化对话框标题 */}
+        {/* 对话框标题 */}
         <DialogTitle
           sx={{
-            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#EA580C', 0.08)})`,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
+            background: `linear-gradient(135deg, ${alpha(themeColor, 0.05)}, ${alpha(themeColor, 0.02)})`,
+            borderBottom: `2px solid ${alpha(themeColor, 0.1)}`,
+            pb: 2,
+            pt: 2.5,
           }}
         >
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
+            <Box display="flex" alignItems="center" gap={1.5}>
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: 40,
+                  height: 40,
                   borderRadius: 2,
                   background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
+                  boxShadow: `0 4px 12px ${alpha(themeColor, 0.3)}`,
                 }}
               >
-                <ViewIcon sx={{ fontSize: 24 }} />
+                <InfoIcon sx={{ color: 'white', fontSize: 20 }} />
               </Box>
-              <Box>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {t('notifications.notificationDetails')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedLog ? `${getTypeLabel(selectedLog.type)} - ${getTemplateLabel(selectedLog.templateCode)}` : ''}
-                </Typography>
-              </Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.primary',
+                }}
+              >
+                {t('notifications.notificationDetails')}
+              </Typography>
             </Box>
-            <IconButton 
+            <IconButton
               onClick={handleCloseDialog}
+              size="small"
               sx={{
+                color: 'text.secondary',
                 '&:hover': {
                   backgroundColor: alpha(themeColor, 0.1),
+                  color: themeColor,
                 },
               }}
             >
-              <CloseIcon />
+              <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            {selectedLog && (
-              <>
-                {/* 基本信息 */}
-                <Paper
-                  elevation={0}
+        <DialogContent sx={{ px: 3, pt: 3, pb: 3 }}>
+          {selectedLog && (
+            <Box>
+              {/* 基本信息 */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  mb: 2.5,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(themeColor, 0.1)}`,
+                  background: alpha(themeColor, 0.02),
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
                   sx={{
-                    p: 3,
-                    mb: 3,
-                    border: '1px solid',
-                    borderColor: alpha(themeColor, 0.2),
-                    borderRadius: 2,
-                    background: alpha(themeColor, 0.02),
+                    fontWeight: 600,
+                    color: themeColor,
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
                   }}
                 >
-                  <Box display="flex" alignItems="center" gap={2} mb={3}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                      }}
-                    >
-                      <InfoIcon sx={{ fontSize: 18 }} />
-                    </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
-                      {t('notifications.basicInfo')}
-                    </Typography>
-                  </Box>
+                  <InfoIcon sx={{ fontSize: 18 }} />
+                  {t('notifications.basicInfo')}
+                </Typography>
 
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.templateType')}
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {getTemplateLabel(selectedLog.templateCode)}
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.notificationType')}
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        {selectedLog.type === 'SMS' ? (
+                          <SmsIcon sx={{ fontSize: 16, color: themeColor }} />
+                        ) : (
+                          <EmailIcon sx={{ fontSize: 16, color: themeColor }} />
+                        )}
+                        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                          {getTypeLabel(selectedLog.type)}
                         </Typography>
                       </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.notificationType')}
-                        </Typography>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          {selectedLog.type === 'SMS' ? (
-                            <SmsIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
-                          ) : (
-                            <EmailIcon sx={{ fontSize: 16, color: '#10B981' }} />
-                          )}
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                            {getTypeLabel(selectedLog.type)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.recipient')}
-                        </Typography>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <PersonIcon sx={{ fontSize: 16, color: themeColor }} />
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                            {selectedLog.recipient}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.status')}
-                        </Typography>
-                        <Chip
-                          label={getStatusLabel(selectedLog.status)}
-                          sx={{
-                            backgroundColor: getStatusColor(selectedLog.status) === 'success' 
-                              ? alpha('#10B981', 0.1) 
-                              : getStatusColor(selectedLog.status) === 'error'
-                              ? alpha('#EF4444', 0.1)
-                              : alpha('#F59E0B', 0.1),
-                            color: getStatusColor(selectedLog.status) === 'success' 
-                              ? '#10B981' 
-                              : getStatusColor(selectedLog.status) === 'error'
-                              ? '#EF4444'
-                              : '#F59E0B',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                          }}
-                        />
-                      </Box>
-                    </Grid>
+                    </Box>
                   </Grid>
-                </Paper>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.recipient')}
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <PersonIcon sx={{ fontSize: 16, color: themeColor }} />
+                        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                          {selectedLog.recipient}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.status')}
+                      </Typography>
+                      <Chip
+                        label={getStatusLabel(selectedLog.status)}
+                        size="small"
+                        sx={{
+                          height: 26,
+                          backgroundColor: getStatusColor(selectedLog.status) === 'success'
+                            ? alpha('#10B981', 0.15)
+                            : getStatusColor(selectedLog.status) === 'error'
+                            ? alpha('#EF4444', 0.15)
+                            : alpha('#F59E0B', 0.15),
+                          color: getStatusColor(selectedLog.status) === 'success'
+                            ? '#10B981'
+                            : getStatusColor(selectedLog.status) === 'error'
+                            ? '#EF4444'
+                            : '#F59E0B',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          borderRadius: 1.5,
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.businessType', 'Business Type')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                        {selectedLog.businessType || '-'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.businessId')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                        {selectedLog.businessId || '-'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.templateType')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                        {getTemplateLabel(selectedLog.templateCode)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
 
-                {/* 内容信息 */}
-                <Paper
-                  elevation={0}
+              {/* 内容信息 */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  mb: 2.5,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(themeColor, 0.1)}`,
+                  background: alpha(themeColor, 0.02),
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
                   sx={{
-                    p: 3,
-                    mb: 3,
-                    border: '1px solid',
-                    borderColor: alpha(themeColor, 0.2),
-                    borderRadius: 2,
-                    background: alpha(themeColor, 0.02),
+                    fontWeight: 600,
+                    color: themeColor,
+                    mb: 2,
                   }}
                 >
-                  <Box display="flex" alignItems="center" gap={2} mb={3}>
-                    <Box
+                  {t('notifications.contentInfo')}
+                </Typography>
+
+                {selectedLog.subject && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography
+                      variant="caption"
                       sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
+                        color: 'text.secondary',
+                        fontWeight: 500,
+                        display: 'block',
+                        mb: 0.5,
                       }}
                     >
-                      {selectedLog.type === 'SMS' ? <SmsIcon sx={{ fontSize: 18 }} /> : <EmailIcon sx={{ fontSize: 18 }} />}
-                    </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
-                      {t('notifications.contentInfo')}
+                      {t('notifications.subject')}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      {selectedLog.subject}
                     </Typography>
                   </Box>
+                )}
 
-                  <Grid container spacing={3}>
-                    {selectedLog.subject && (
-                      <Grid item xs={12}>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                            {t('notifications.subject')}
-                          </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                            {selectedLog.subject}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    )}
-                    <Grid item xs={12}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.content')}
-                        </Typography>
-                        <Paper 
-                          sx={{ 
-                            p: 2, 
-                            mt: 1, 
-                            backgroundColor: alpha('#f8fafc', 0.8), 
-                            borderRadius: 2,
-                            border: '1px solid',
-                            borderColor: alpha(themeColor, 0.1),
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                      fontWeight: 500,
+                      display: 'block',
+                      mb: 1,
+                    }}
+                  >
+                    {t('notifications.content')}
+                  </Typography>
+
+                  {/* 如果是EMAIL类型且包含HTML，显示渲染预览 */}
+                  {selectedLog.type === 'EMAIL' && selectedLog.content.includes('<') ? (
+                    <Box>
+                      {/* HTML 渲染预览 */}
+                      <Box
+                        sx={{
+                          border: '1px solid',
+                          borderColor: alpha(themeColor, 0.2),
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          mb: 2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 1,
+                            backgroundColor: alpha(themeColor, 0.05),
+                            borderBottom: '1px solid',
+                            borderColor: alpha(themeColor, 0.2),
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
                           }}
                         >
-                          <Typography
-                            component="pre"
-                            sx={{ 
-                              whiteSpace: 'pre-wrap', 
-                              fontSize: '0.875rem',
-                              fontFamily: 'monospace',
-                              color: 'text.primary',
-                            }}
-                          >
-                            {selectedLog.content}
+                          <EmailIcon sx={{ fontSize: 16, color: themeColor }} />
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: themeColor }}>
+                            {t('notifications.htmlPreview')}
                           </Typography>
-                        </Paper>
+                        </Box>
+                        <Box
+                          sx={{
+                            p: 2,
+                            backgroundColor: '#ffffff',
+                            maxHeight: 400,
+                            overflowY: 'auto',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: selectedLog.content }}
+                        />
                       </Box>
-                    </Grid>
-                  </Grid>
-                </Paper>
 
-                {/* 时间和错误信息 */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    border: '1px solid',
-                    borderColor: alpha(themeColor, 0.2),
-                    borderRadius: 2,
-                    background: alpha(themeColor, 0.02),
-                  }}
-                >
-                  <Box display="flex" alignItems="center" gap={2} mb={3}>
+                      {/* 原始代码（可折叠） */}
+                      <Box
+                        sx={{
+                          p: 2,
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: 2,
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                            fontWeight: 500,
+                            display: 'block',
+                            mb: 1,
+                          }}
+                        >
+                          {t('notifications.sourceCode', 'Source Code')}
+                        </Typography>
+                        <Typography
+                          component="pre"
+                          sx={{
+                            whiteSpace: 'pre-wrap',
+                            fontSize: '0.75rem',
+                            fontFamily: 'monospace',
+                            color: 'text.secondary',
+                            margin: 0,
+                            lineHeight: 1.4,
+                            maxHeight: 200,
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {selectedLog.content}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ) : (
+                    /* 非HTML内容，直接显示 */
                     <Box
                       sx={{
-                        width: 32,
-                        height: 32,
+                        p: 2,
+                        backgroundColor: '#ffffff',
                         borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
+                        border: '1px solid #e5e7eb',
                       }}
                     >
-                      <ScheduleIcon sx={{ fontSize: 18 }} />
+                      <Typography
+                        component="pre"
+                        sx={{
+                          whiteSpace: 'pre-wrap',
+                          fontSize: '0.875rem',
+                          fontFamily: 'inherit',
+                          color: 'text.primary',
+                          margin: 0,
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {selectedLog.content}
+                      </Typography>
                     </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
-                      {t('notifications.timeInfo')}
-                    </Typography>
-                  </Box>
+                  )}
+                </Box>
+              </Paper>
 
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
+              {/* 时间和错误信息 */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(themeColor, 0.1)}`,
+                  background: alpha(themeColor, 0.02),
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 600,
+                    color: themeColor,
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <ScheduleIcon sx={{ fontSize: 18 }} />
+                  {t('notifications.timeInfo')}
+                </Typography>
+
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.createdAt')}
+                      </Typography>
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.createdAt')}
+                        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                          {formatUtcToMerchantTime(selectedLog.createdAt, 'yyyy-MM-dd')}
                         </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {new Date(selectedLog.createdAt).toLocaleString()}
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {formatUtcToMerchantTime(selectedLog.createdAt, 'HH:mm:ss')}
                         </Typography>
                       </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-                          {t('notifications.sentAt')}
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {selectedLog.sentAt ? new Date(selectedLog.sentAt).toLocaleString() : t('notifications.notSent')}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    {selectedLog.errorMessage && (
-                      <Grid item xs={12}>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#EF4444' }}>
-                            {t('notifications.errorMessage')}
-                          </Typography>
-                          <Box display="flex" alignItems="start" gap={1}>
-                            <ErrorIcon sx={{ fontSize: 16, color: '#EF4444', mt: 0.5 }} />
-                            <Typography variant="body1" sx={{ fontWeight: 500, color: '#EF4444' }}>
-                              {selectedLog.errorMessage}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                    )}
+                    </Box>
                   </Grid>
-                </Paper>
-              </>
-            )}
-          </Box>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.sentAt')}
+                      </Typography>
+                      {selectedLog.sentAt ? (
+                        <Box>
+                          <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                            {formatUtcToMerchantTime(selectedLog.sentAt, 'yyyy-MM-dd')}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {formatUtcToMerchantTime(selectedLog.sentAt, 'HH:mm:ss')}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                          {t('notifications.notSent')}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'block',
+                          mb: 0.5,
+                        }}
+                      >
+                        {t('notifications.retryCount', 'Retry Count')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                        {selectedLog.retryCount || 0}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  {selectedLog.errorMessage && (
+                    <Grid item xs={12}>
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          backgroundColor: alpha('#EF4444', 0.08),
+                          border: `1px solid ${alpha('#EF4444', 0.2)}`,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: '#EF4444',
+                            fontWeight: 600,
+                            display: 'block',
+                            mb: 0.5,
+                          }}
+                        >
+                          {t('notifications.errorMessage')}
+                        </Typography>
+                        <Box display="flex" alignItems="start" gap={1}>
+                          <ErrorIcon sx={{ fontSize: 16, color: '#EF4444', mt: 0.2 }} />
+                          <Typography variant="body2" sx={{ color: '#EF4444', fontWeight: 500 }}>
+                            {selectedLog.errorMessage}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </Paper>
+            </Box>
+          )}
         </DialogContent>
-        <DialogActions 
-          sx={{ 
-            p: 3,
-            borderTop: '1px solid',
-            borderColor: 'divider',
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            borderTop: `2px solid ${alpha(themeColor, 0.1)}`,
             background: alpha(themeColor, 0.02),
           }}
         >
-          <Button 
+          <Button
             onClick={handleCloseDialog}
             variant="contained"
             sx={{
               borderRadius: 2,
               px: 4,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 600,
               background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-              boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+              boxShadow: `0 4px 12px ${alpha(themeColor, 0.3)}`,
               '&:hover': {
                 background: `linear-gradient(135deg, #EA580C, #C2410C)`,
-                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                transform: 'translateY(-1px)',
+                boxShadow: `0 6px 16px ${alpha(themeColor, 0.4)}`,
               },
+              transition: 'all 0.3s ease',
             }}
           >
             {t('notifications.close')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={3000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+          }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

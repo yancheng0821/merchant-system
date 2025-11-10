@@ -9,6 +9,7 @@
         <result property="firstName" column="first_name"/>
         <result property="lastName" column="last_name"/>
         <result property="phone" column="phone"/>
+        <result property="countryCode" column="country_code"/>
         <result property="email" column="email"/>
         <result property="address" column="address"/>
         <result property="dateOfBirth" column="date_of_birth"/>
@@ -26,13 +27,13 @@
         <result property="createdBy" column="created_by"/>
         <result property="updatedBy" column="updated_by"/>
         <!-- 偏好服务ID集合映射 -->
-        <collection property="preferredServiceIds" ofType="java.lang.Long" 
+        <collection property="preferredServiceIds" ofType="java.lang.Long"
                    select="selectPreferredServiceIds" column="id"/>
     </resultMap>
 
     <!-- 基础查询SQL -->
     <sql id="Base_Column_List">
-        id, tenant_id, first_name, last_name, phone, email, address, date_of_birth,
+        id, tenant_id, first_name, last_name, phone, country_code, email, address, date_of_birth,
         gender, membership_level, points, total_spent, status, notes, allergies,
         communication_preference, last_visit_date, created_at, updated_at, created_by, updated_by
     </sql>
@@ -246,11 +247,11 @@
     <!-- 插入客户 -->
     <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Customer" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO customers (
-            tenant_id, first_name, last_name, phone, email, address, date_of_birth,
+            tenant_id, first_name, last_name, phone, country_code, email, address, date_of_birth,
             gender, membership_level, points, total_spent, status, notes, allergies,
             communication_preference, last_visit_date, created_at, updated_at, created_by, updated_by
         ) VALUES (
-            #{tenantId}, #{firstName}, #{lastName}, #{phone}, #{email}, #{address}, #{dateOfBirth},
+            #{tenantId}, #{firstName}, #{lastName}, #{phone}, #{countryCode}, #{email}, #{address}, #{dateOfBirth},
             #{gender}, #{membershipLevel}, #{points}, #{totalSpent}, #{status}, #{notes}, #{allergies},
             #{communicationPreference}, #{lastVisitDate}, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}
         )
@@ -263,6 +264,7 @@
             first_name = #{firstName},
             last_name = #{lastName},
             phone = #{phone},
+            country_code = #{countryCode},
             email = #{email},
             address = #{address},
             date_of_birth = #{dateOfBirth},
@@ -344,9 +346,25 @@
 
     <!-- Dashboard 相关查询 -->
     <select id="countNewCustomersByDateRange" resultType="int">
-        SELECT COUNT(*) FROM customers 
-        WHERE tenant_id = #{tenantId} 
-        AND DATE(CONVERT_TZ(created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        SELECT COUNT(*) FROM customers
+        WHERE tenant_id = #{tenantId}
+        AND DATE(created_at) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- Dashboard 查询新客户数量 - 使用 datetime 范围 (支持时区转换) -->
+    <select id="countNewCustomersByDateTimeRange" resultType="int">
+        SELECT COUNT(*) FROM customers
+        WHERE tenant_id = #{tenantId}
+        AND created_at &gt;= #{startDateTime}
+        AND created_at &lt;= #{endDateTime}
+    </select>
+
+    <!-- 获取客户活跃套餐数量 -->
+    <select id="countActivePackages" resultType="int">
+        SELECT COUNT(*) FROM customer_packages
+        WHERE customer_id = #{customerId}
+        AND status = 'ACTIVE'
+        AND expiration_date >= UTC_TIMESTAMP()
     </select>
 
 </mapper>

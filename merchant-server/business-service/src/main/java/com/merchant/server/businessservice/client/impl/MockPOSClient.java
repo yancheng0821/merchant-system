@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -46,7 +47,7 @@ public class MockPOSClient extends AbstractPOSClient {
             .status("pending")
             .amount(request.getAmount())
             .paymentMethod(request.getPaymentMethod())
-            .createdAt(LocalDateTime.now())
+            .createdAt(LocalDateTime.now(ZoneOffset.UTC))
             .build();
             
         transactions.put(transactionId, transaction);
@@ -59,7 +60,7 @@ public class MockPOSClient extends AbstractPOSClient {
             .status("initiated")
             .terminalStatus("ready")
             .message("Payment initiated, waiting for card")
-            .initiatedAt(LocalDateTime.now())
+            .initiatedAt(LocalDateTime.now(ZoneOffset.UTC))
             .actionRequired("insert_card")
             .displayMessage("Please insert or tap your card")
             .timeout(120)
@@ -93,14 +94,14 @@ public class MockPOSClient extends AbstractPOSClient {
         POSTransactionStatus transaction = transactions.get(transactionId);
         if (transaction != null && !transaction.isFinal()) {
             transaction.setStatus("cancelled");
-            transaction.setCompletedAt(LocalDateTime.now());
+            transaction.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
             
             return POSCancelResponse.builder()
                 .transactionId(transactionId)
                 .success(true)
                 .status("cancelled")
                 .message("Transaction cancelled successfully")
-                .cancelledAt(LocalDateTime.now())
+                .cancelledAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
         }
         
@@ -124,7 +125,7 @@ public class MockPOSClient extends AbstractPOSClient {
             .status("refunded")
             .refundedAmount(request.getRefundAmount())
             .message("Refund processed successfully")
-            .refundedAt(LocalDateTime.now())
+            .refundedAt(LocalDateTime.now(ZoneOffset.UTC))
             .build();
             
         logResponse("refund", response);
@@ -138,7 +139,7 @@ public class MockPOSClient extends AbstractPOSClient {
             .status("online")
             .connected(true)
             .firmwareVersion("1.0.0")
-            .lastHeartbeat(LocalDateTime.now())
+            .lastHeartbeat(LocalDateTime.now(ZoneOffset.UTC))
             .batteryLevel("85%")
             .networkStatus("connected")
             .build();
@@ -194,7 +195,7 @@ public class MockPOSClient extends AbstractPOSClient {
                     transaction.setErrorMessage("Insufficient funds");
                 }
                 
-                transaction.setCompletedAt(LocalDateTime.now());
+                transaction.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
                 
                 log.info("Mock payment processed: {} - {}, mockEnabled={}", 
                     transactionId, transaction.getStatus(), mockEnabled);

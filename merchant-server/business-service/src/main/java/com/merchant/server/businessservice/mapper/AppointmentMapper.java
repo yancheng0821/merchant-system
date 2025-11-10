@@ -34,7 +34,12 @@ public interface AppointmentMapper {
      * 批量插入预约服务
      */
     int insertAppointmentServices(@Param("appointmentServices") List<AppointmentService> appointmentServices);
-    
+
+    /**
+     * 删除预约的所有服务
+     */
+    int deleteAppointmentServices(@Param("appointmentId") Long appointmentId);
+
     /**
      * 根据客户ID和租户ID查询预约
      */
@@ -130,4 +135,22 @@ public interface AppointmentMapper {
      * 查询即将开始的预约（用于提醒）
      */
     List<Appointment> findUpcomingAppointments(@Param("date") String date, @Param("time") String time);
+
+    /**
+     * 查询指定日期已完成的预约（用于每日汇总）
+     */
+    List<Appointment> findCompletedAppointmentsByDate(@Param("date") java.time.LocalDate date);
+
+    /**
+     * 查询指定租户和日期已完成的预约（用于多时区每日汇总）
+     */
+    List<Appointment> findCompletedAppointmentsByTenantAndDate(
+        @Param("tenantId") Long tenantId,
+        @Param("date") java.time.LocalDate date
+    );
+
+    /**
+     * 查询所有有预约的租户ID列表（用于多时区定时任务）
+     */
+    List<Long> findAllTenantIdsWithAppointments();
 }

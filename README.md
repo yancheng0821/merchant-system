@@ -195,7 +195,6 @@ cd eureka-server && mvn spring-boot:run
 cd auth-service && mvn spring-boot:run
 cd merchant-service && mvn spring-boot:run
 cd business-service && mvn spring-boot:run
-cd analytics-service && mvn spring-boot:run
 cd notification-service && mvn spring-boot:run
 
 # 启动 Python AI 服务
@@ -227,7 +226,6 @@ CREATE DATABASE merchant_auth;
 CREATE DATABASE merchant_management;
 CREATE DATABASE merchant_business;
 CREATE DATABASE merchant_ai;
-CREATE DATABASE merchant_analytics;
 CREATE DATABASE merchant_notification;
 ```
 
@@ -261,7 +259,6 @@ merchant-server/
 ├── auth-service/          # 认证授权服务 (端口: 8081)
 ├── merchant-service/      # 商户管理服务 (端口: 8082)
 ├── business-service/      # 业务核心服务 (端口: 8083)
-├── analytics-service/     # 数据分析服务 (端口: 8086)
 ├── notification-service/  # 通知通信服务 (端口: 8084)
 ├── gateway-service/       # API网关服务 (端口: 8080) - 开发环境
 ├── eureka-server/        # 服务注册中心 (端口: 8761) - 开发环境
@@ -285,7 +282,6 @@ k8s-deployment/
 ├── auth-service.yaml     # 认证服务部署
 ├── merchant-service.yaml # 商户服务部署
 ├── business-service.yaml # 业务服务部署
-├── analytics-service.yaml # 分析服务部署
 ├── notification-service.yaml # 通知服务部署
 ├── ai-service.yaml       # AI服务部署
 ├── merchant-admin.yaml   # 前端应用部署
@@ -363,7 +359,6 @@ k8s-deployment/
 - 商户服务: `http://localhost:8080/api/merchant/**`
 - 业务服务: `http://localhost:8080/api/business/**`
 - AI服务: `http://localhost:8080/api/ai/**`
-- 分析服务: `http://localhost:8080/api/analytics/**`
 - 通知服务: `http://localhost:8080/api/notification/**`
 
 ### 生产环境 (K8s Ingress)
@@ -373,10 +368,9 @@ k8s-deployment/
 
 ### 服务端口映射
 - auth-service: 8081
-- merchant-service: 8082  
+- merchant-service: 8082
 - business-service: 8083
 - notification-service: 8084
-- analytics-service: 8086
 - ai-service-python: 5000 (FastAPI)
 - merchant-admin: 80 (Nginx)
 
@@ -789,7 +783,7 @@ MIT License
 
 ## 🏆 项目亮点
 
-- ✅ **完整的微服务架构** - 6个Java服务 + Python AI服务
+- ✅ **完整的微服务架构** - 5个Java服务 + Python AI服务
 - ✅ **云原生部署** - 完整的AWS K8s生产方案
 - ✅ **AI智能功能** - FastAPI实现的智能推荐和预测
 - ✅ **多租户架构** - 支持多商户数据隔离

@@ -3,11 +3,12 @@
 
 <head>
   <meta charset="utf-8" />
-  <!-- 使用apple-touch-icon作为favicon -->
-  <link rel="icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
+  <link rel="alternate icon" href="%PUBLIC_URL%/favicon.ico" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#667eea" />
-  <meta name="description" content="Merchant System - 专业的商户管理平台" />
+  <meta name="theme-color" content="#6366F1" />
+  <meta name="description" content="VA Merchant System - 专业的商户管理平台" />
   <!-- Google Sign-In Client ID Meta Tag -->
   <meta name="google-signin-client_id"
     content="567578445873-v336ul1tb9i08kvvm2vg3mkmoe5cvtfj.apps.googleusercontent.com" />
@@ -25,6 +26,7 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- 添加Google API加载检查 -->
@@ -32,7 +34,72 @@
     window.onGoogleLibraryLoad = function () {
     };
   </script>
-  <title>Merchant System - 商户管理平台</title>
+  <!-- 屏蔽MetaMask和其他浏览器扩展的错误 -->
+  <script>
+    (function() {
+      'use strict';
+
+      // Store original console methods
+      const originalError = console.error;
+      const originalWarn = console.warn;
+
+      // Override console.error to filter extension errors
+      console.error = function(...args) {
+        const errorString = args.join(' ');
+        if (errorString.includes('MetaMask') ||
+            errorString.includes('chrome-extension') ||
+            errorString.includes('moz-extension')) {
+          return; // Suppress extension errors
+        }
+        originalError.apply(console, args);
+      };
+
+      // Override console.warn
+      console.warn = function(...args) {
+        const warnString = args.join(' ');
+        if (warnString.includes('MetaMask') ||
+            warnString.includes('chrome-extension') ||
+            warnString.includes('moz-extension')) {
+          return; // Suppress extension warnings
+        }
+        originalWarn.apply(console, args);
+      };
+
+      // Global error handler
+      window.addEventListener('error', function(e) {
+        if (e.filename && (
+            e.filename.indexOf('chrome-extension://') > -1 ||
+            e.filename.indexOf('moz-extension://') > -1)) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return true;
+        }
+
+        if (e.message && (
+            e.message.indexOf('MetaMask') > -1 ||
+            e.message.indexOf('chrome-extension') > -1)) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return true;
+        }
+      }, true); // Use capture phase
+
+      // Promise rejection handler
+      window.addEventListener('unhandledrejection', function(e) {
+        const reason = e.reason || {};
+        const message = reason.message || String(reason);
+
+        if (message.includes('MetaMask') ||
+            message.includes('chrome-extension') ||
+            message.includes('moz-extension')) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return true;
+        }
+      }, true); // Use capture phase
+    })();
+  </script>
+  <title>Merchant System</title>
 </head>
 
 <body>

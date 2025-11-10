@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -181,9 +182,9 @@ public class StripeTerminalSimulatorService {
                 terminal.setLocationId(reader.getLocation());
                 terminal.setStatus(reader.getStatus());
                 terminal.setIpAddress(reader.getIpAddress());
-                terminal.setLastSeenAt(LocalDateTime.now());
-                terminal.setCreatedAt(LocalDateTime.now());
-                terminal.setUpdatedAt(LocalDateTime.now());
+                terminal.setLastSeenAt(LocalDateTime.now(ZoneOffset.UTC));
+                terminal.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+                terminal.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 terminal.setDeleted(false);
                 
                 stripeTerminalMapper.insert(terminal);
@@ -191,8 +192,8 @@ public class StripeTerminalSimulatorService {
             } else {
                 // 更新现有记录
                 existing.setStatus(reader.getStatus());
-                existing.setLastSeenAt(LocalDateTime.now());
-                existing.setUpdatedAt(LocalDateTime.now());
+                existing.setLastSeenAt(LocalDateTime.now(ZoneOffset.UTC));
+                existing.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 stripeTerminalMapper.updateById(existing);
                 log.info("Updated terminal info in database for tenant {}", tenantId);
             }
@@ -225,7 +226,7 @@ public class StripeTerminalSimulatorService {
             StripeTerminal terminal = stripeTerminalMapper.selectByTerminalId(terminalId);
             if (terminal != null) {
                 terminal.setDeleted(true);
-                terminal.setUpdatedAt(LocalDateTime.now());
+                terminal.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 stripeTerminalMapper.updateById(terminal);
             }
             

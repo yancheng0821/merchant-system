@@ -27,7 +27,12 @@ public interface NotificationLogMapper {
      * 根据业务ID查询通知日志
      */
     List<NotificationLog> findByBusinessId(@Param("businessId") String businessId);
-    
+
+    /**
+     * 根据ID查询通知日志
+     */
+    NotificationLog findById(@Param("id") Long id);
+
     /**
      * 查询待发送的通知
      */
@@ -63,5 +68,6 @@ public interface NotificationLogMapper {
                                                    @Param("type") String type,
                                                    @Param("status") String status,
                                                    @Param("recipient") String recipient,
-                                                   @Param("businessId") String businessId);
+                                                   @Param("businessId") String businessId,
+                                                   @Param("businessType") String businessType);
 }

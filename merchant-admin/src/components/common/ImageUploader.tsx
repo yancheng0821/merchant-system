@@ -83,14 +83,19 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             // 获取租户ID
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             const tenantId = user.tenantId || 1;
-            
-            // 动态导入API
-            const { fileUploadApi } = await import('../../services/api');
-            
+
             // 根据上传类型选择对应的API
             if (uploadType === 'avatar') {
-                return await fileUploadApi.uploadAvatar(file, tenantId);
+                // 头像上传使用 userApi
+                const { userApi } = await import('../../services/api');
+                const response = await userApi.uploadAvatar(file);
+                if (response.success && response.data) {
+                    return response.data.avatarUrl;
+                }
+                throw new Error(response.message || 'Upload failed');
             } else {
+                // 房间图标上传使用 fileUploadApi
+                const { fileUploadApi } = await import('../../services/api');
                 return await fileUploadApi.uploadRoomIcon(file, tenantId);
             }
         } catch (error) {
@@ -105,16 +110,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
     const handleDelete = async () => {
         if (value) {
-            try {
-                // 如果是服务器上的文件，调用删除API
-                if (value.startsWith('http') || value.startsWith('/api/')) {
-                    const { fileUploadApi } = await import('../../services/api');
-                    await fileUploadApi.deleteFile(value);
-                }
-            } catch (error) {
-                console.warn('Failed to delete file from server:', error);
-                // 即使删除失败，也继续清除本地状态
-            }
+            // 注意：文件删除功能已移除，仅清除本地状态
+            // 如需实现文件删除，请在后端添加相应接口
+            console.info('File deletion skipped - clearing local state only');
         }
         
         onChange(null);

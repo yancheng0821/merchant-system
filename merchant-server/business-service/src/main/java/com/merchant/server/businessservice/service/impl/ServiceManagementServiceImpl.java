@@ -19,9 +19,10 @@ import java.util.stream.Collectors;
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
 public class ServiceManagementServiceImpl implements ServiceManagementService {
-    
+
     private final ServiceMapper serviceMapper;
     private final ServiceCategoryMapper serviceCategoryMapper;
+    private final com.merchant.server.businessservice.util.MessageUtil messageUtil;
     
     @Override
     public List<ServiceDTO> getServices(ServiceQueryDTO queryDTO) {
@@ -53,36 +54,36 @@ public class ServiceManagementServiceImpl implements ServiceManagementService {
     public ServiceDTO getServiceById(Long id) {
         com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(id);
         if (service == null) {
-            throw new RuntimeException("服务不存在");
+            throw new RuntimeException(messageUtil.getMessage("service.not.found"));
         }
         return convertToDTO(service);
     }
-    
+
     @Override
     @Transactional
     public ServiceDTO createService(ServiceDTO serviceDTO) {
         // 检查服务名称是否已存在
         if (serviceMapper.countByTenantIdAndName(serviceDTO.getTenantId(), serviceDTO.getName(), null) > 0) {
-            throw new RuntimeException("服务名称已存在");
+            throw new RuntimeException(messageUtil.getMessage("service.name.exists"));
         }
-        
+
         com.merchant.server.businessservice.entity.Service service = convertToEntity(serviceDTO);
         serviceMapper.insert(service);
-        
+
         return convertToDTO(service);
     }
-    
+
     @Override
     @Transactional
     public ServiceDTO updateService(Long id, ServiceDTO serviceDTO) {
         com.merchant.server.businessservice.entity.Service existingService = serviceMapper.selectById(id);
         if (existingService == null) {
-            throw new RuntimeException("服务不存在");
+            throw new RuntimeException(messageUtil.getMessage("service.not.found"));
         }
-        
+
         // 检查服务名称是否已存在（排除当前服务）
         if (serviceMapper.countByTenantIdAndName(serviceDTO.getTenantId(), serviceDTO.getName(), id) > 0) {
-            throw new RuntimeException("服务名称已存在");
+            throw new RuntimeException(messageUtil.getMessage("service.name.exists"));
         }
         
         com.merchant.server.businessservice.entity.Service service = convertToEntity(serviceDTO);
@@ -97,11 +98,11 @@ public class ServiceManagementServiceImpl implements ServiceManagementService {
     public void deleteService(Long id) {
         com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(id);
         if (service == null) {
-            throw new RuntimeException("服务不存在");
+            throw new RuntimeException(messageUtil.getMessage("service.not.found"));
         }
-        
+
         // TODO: 检查是否有关联的预约记录，如果有则不允许删除
-        
+
         serviceMapper.deleteById(id);
     }
     

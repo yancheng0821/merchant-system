@@ -3,22 +3,22 @@
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-NO_TRACE}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <!-- 文件输出 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/merchant-service.log</file>
+        <file>/Users/aisenyc/merchant-system/merchant-server/logs/merchant-service.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/merchant-service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>/Users/aisenyc/merchant-system/merchant-server/logs/merchant-service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>100MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-NO_TRACE}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -33,11 +33,16 @@
     
     <!-- 设置Spring相关日志级别 -->
     <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.context.support.PostProcessorRegistrationDelegate" level="ERROR"/>
+    <logger name="org.springframework.cloud" level="WARN"/>
+    <logger name="org.springframework.cloud.client.loadbalancer" level="ERROR"/>
+    <logger name="org.springframework.cloud.loadbalancer" level="ERROR"/>
+    <logger name="org.springframework.cloud.commons" level="ERROR"/>
     <logger name="org.hibernate" level="WARN"/>
     <logger name="org.apache.catalina" level="WARN"/>
     <logger name="org.apache.coyote" level="WARN"/>
     <logger name="org.apache.tomcat" level="WARN"/>
-    
+
     <!-- 根日志级别 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

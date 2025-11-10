@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/aisenyc/merchant-system/**)",
+      "Bash(mvn clean install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

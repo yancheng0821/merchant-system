@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.ZoneId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
@@ -176,8 +177,8 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             account.setChargesEnabled(stripeAccount.getChargesEnabled());
             account.setPayoutsEnabled(stripeAccount.getPayoutsEnabled());
             account.setDetailsSubmitted(stripeAccount.getDetailsSubmitted());
-            account.setCreatedAt(LocalDateTime.now());
-            account.setUpdatedAt(LocalDateTime.now());
+            account.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             account.setDeleted(false);
             
             Map<String, Object> metadata = new HashMap<>();
@@ -234,7 +235,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             account.setOnboardingUrl(accountLink.getUrl());
             account.setReturnUrl(returnUrl);
             account.setRefreshUrl(refreshUrl);
-            account.setUpdatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeAccountMapper.updateById(account);
             
             return AccountLinkDTO.builder()
@@ -339,7 +340,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 account.setDashboardUrl(dashboardUrl);
             }
             
-            account.setUpdatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeAccountMapper.updateById(account);
             
             return convertToDTO(account);
@@ -408,14 +409,14 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             intent.setPaymentMethodType(request.getPaymentMethodType());
             intent.setApplicationFeeAmount(applicationFee);
             intent.setMetadata(convertToJson(request.getMetadata()));
-            intent.setCreatedAt(LocalDateTime.now());
+            intent.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
             
             stripePaymentIntentMapper.insert(intent);
             
             // 更新订单
             order.setTransactionId(paymentIntent.getId());
             order.setPaymentStatus("pending");
-            order.setUpdatedAt(LocalDateTime.now());
+            order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             orderMapper.updateById(order);
             
             return convertToPaymentIntentDTO(intent);
@@ -452,7 +453,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             // 更新数据库
             intent.setStatus(confirmedIntent.getStatus());
             if ("succeeded".equals(confirmedIntent.getStatus())) {
-                intent.setConfirmedAt(LocalDateTime.now());
+                intent.setConfirmedAt(LocalDateTime.now(ZoneOffset.UTC));
             }
             stripePaymentIntentMapper.updateById(intent);
             
@@ -462,8 +463,8 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 if (order != null) {
                     order.setPaymentStatus("paid");
                     order.setOrderStatus("completed");
-                    order.setCompletedAt(LocalDateTime.now());
-                    order.setUpdatedAt(LocalDateTime.now());
+                    order.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
+                    order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                     orderMapper.updateById(order);
                 }
             }
@@ -501,7 +502,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             
             // 更新数据库
             intent.setStatus(canceledIntent.getStatus());
-            intent.setCanceledAt(LocalDateTime.now());
+            intent.setCanceledAt(LocalDateTime.now(ZoneOffset.UTC));
             stripePaymentIntentMapper.updateById(intent);
             
             // 更新订单状态
@@ -509,7 +510,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             if (order != null) {
                 order.setPaymentStatus("cancelled");
                 order.setOrderStatus("cancelled");
-                order.setUpdatedAt(LocalDateTime.now());
+                order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 orderMapper.updateById(order);
             }
             
@@ -564,8 +565,8 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             stripeLocation.setAddressState(location.getAddress().getState());
             stripeLocation.setAddressCountry(location.getAddress().getCountry());
             stripeLocation.setAddressPostalCode(location.getAddress().getPostalCode());
-            stripeLocation.setCreatedAt(LocalDateTime.now());
-            stripeLocation.setUpdatedAt(LocalDateTime.now());
+            stripeLocation.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            stripeLocation.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeLocation.setDeleted(false);
             
             stripeLocationMapper.insert(stripeLocation);
@@ -644,8 +645,8 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                     stripeLocation.setAddressState(location.getAddress().getState());
                     stripeLocation.setAddressCountry(location.getAddress().getCountry());
                     stripeLocation.setAddressPostalCode(location.getAddress().getPostalCode());
-                    stripeLocation.setCreatedAt(LocalDateTime.now());
-                    stripeLocation.setUpdatedAt(LocalDateTime.now());
+                    stripeLocation.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+                    stripeLocation.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                     stripeLocation.setDeleted(false);
                     stripeLocationMapper.insert(stripeLocation);
                 }
@@ -752,8 +753,8 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             terminal.setLocationId(reader.getLocation());
             terminal.setStatus(reader.getStatus());
             terminal.setConfig(null); // Initialize as null for now
-            terminal.setCreatedAt(LocalDateTime.now());
-            terminal.setUpdatedAt(LocalDateTime.now());
+            terminal.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            terminal.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             terminal.setDeleted(false);
             
             stripeTerminalMapper.insert(terminal);
@@ -801,7 +802,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             if (reader.getIpAddress() != null) {
                 terminal.setIpAddress(reader.getIpAddress());
             }
-            terminal.setUpdatedAt(LocalDateTime.now());
+            terminal.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeTerminalMapper.updateById(terminal);
             
             return convertToTerminalDTO(terminal);
@@ -839,7 +840,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             
             // 从数据库软删除
             terminal.setDeleted(true);
-            terminal.setUpdatedAt(LocalDateTime.now());
+            terminal.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeTerminalMapper.updateById(terminal);
             
             log.info("Successfully deleted terminal: {} for tenant: {}", terminalId, tenantId);
@@ -883,7 +884,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             StripeLocation dbLocation = stripeLocationMapper.selectByLocationId(locationId);
             if (dbLocation != null) {
                 dbLocation.setDeleted(true);
-                dbLocation.setUpdatedAt(LocalDateTime.now());
+                dbLocation.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 stripeLocationMapper.updateById(dbLocation);
             }
             
@@ -930,7 +931,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 .amount(result.getAmount())
                 .currency(result.getCurrency())
                 .message("Payment processed successfully")
-                .processedAt(LocalDateTime.now())
+                .processedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
                 
         } catch (Exception e) {
@@ -983,7 +984,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 .currency(refund.getCurrency())
                 .status(refund.getStatus())
                 .reason(refund.getReason())
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
                 
         } catch (StripeException e) {
@@ -1097,7 +1098,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             StripePaymentIntent intent = stripePaymentIntentMapper.selectByPaymentIntentId(paymentIntent.getId());
             if (intent != null) {
                 intent.setStatus("succeeded");
-                intent.setConfirmedAt(LocalDateTime.now());
+                intent.setConfirmedAt(LocalDateTime.now(ZoneOffset.UTC));
                 stripePaymentIntentMapper.updateById(intent);
                 
                 // 更新订单状态
@@ -1105,7 +1106,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 if (order != null) {
                     order.setPaymentStatus("paid");
                     order.setOrderStatus("completed");
-                    order.setCompletedAt(LocalDateTime.now());
+                    order.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
                     orderMapper.updateById(order);
                 }
             }
@@ -1275,7 +1276,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
         );
         account.setDashboardUrl(dashboardUrl);
         
-        account.setUpdatedAt(LocalDateTime.now());
+        account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         stripeAccountMapper.updateById(account);
         
         log.info("Successfully force completed onboarding for account: {}", account.getStripeAccountId());
@@ -1304,7 +1305,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             Map<String, Object> params = new HashMap<>();
             params.put("metadata", Map.of(
                 "test_mode_verification", "completed",
-                "verified_at", LocalDateTime.now().toString()
+                "verified_at", LocalDateTime.now(ZoneOffset.UTC).toString()
             ));
             
             RequestOptions requestOptions = RequestOptions.builder()
@@ -1332,7 +1333,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             );
             account.setDashboardUrl(dashboardUrl);
             
-            account.setUpdatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeAccountMapper.updateById(account);
             
             log.info("Successfully simulated account verification for: {}", account.getStripeAccountId());
@@ -1460,7 +1461,7 @@ public class StripeConnectServiceImpl implements StripeConnectService {
             account.setChargesEnabled(false);
             account.setPayoutsEnabled(false);
             account.setDetailsSubmitted(false);
-            account.setUpdatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeAccountMapper.updateById(account);
             
             log.info("Successfully disconnected Stripe account for tenant: {}", tenantId);
@@ -1499,11 +1500,11 @@ public class StripeConnectServiceImpl implements StripeConnectService {
                 metadata = new HashMap<>();
             }
             metadata.put("deactivated", true);
-            metadata.put("deactivated_at", LocalDateTime.now().toString());
+            metadata.put("deactivated_at", LocalDateTime.now(ZoneOffset.UTC).toString());
             metadata.put("deactivation_reason", "merchant_requested");
             account.setMetadata(convertToJson(metadata));
             
-            account.setUpdatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             stripeAccountMapper.updateById(account);
             
             log.info("Successfully deactivated Stripe account for tenant: {}. Account data preserved for compliance.", tenantId);

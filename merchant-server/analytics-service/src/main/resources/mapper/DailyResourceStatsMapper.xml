@@ -21,7 +21,7 @@
 
     <insert id="insert" parameterType="com.merchant.server.analyticsservice.entity.DailyResourceStats" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO daily_resource_stats (tenant_id, resource_id, resource_name, resource_type, stat_date, order_count, total_revenue, avg_rating, rating_count, working_hours, efficiency_score, created_at, updated_at)
-        VALUES (#{tenantId}, #{resourceId}, #{resourceName}, #{resourceType}, #{statDate}, #{orderCount}, #{totalRevenue}, #{avgRating}, #{ratingCount}, #{workingHours}, #{efficiencyScore}, NOW(), NOW())
+        VALUES (#{tenantId}, #{resourceId}, #{resourceName}, #{resourceType}, #{statDate}, #{orderCount}, #{totalRevenue}, #{avgRating}, #{ratingCount}, #{workingHours}, #{efficiencyScore}, UTC_TIMESTAMP(), UTC_TIMESTAMP())
         ON DUPLICATE KEY UPDATE
         resource_name = #{resourceName},
         resource_type = #{resourceType},
@@ -31,7 +31,7 @@
         rating_count = #{ratingCount},
         working_hours = #{workingHours},
         efficiency_score = #{efficiencyScore},
-        updated_at = NOW()
+        updated_at = UTC_TIMESTAMP()
     </insert>
 
     <select id="selectByTenantIdAndDateRange" resultMap="BaseResultMap">

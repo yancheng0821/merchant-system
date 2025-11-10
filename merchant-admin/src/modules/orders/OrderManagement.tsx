@@ -41,13 +41,16 @@ import {
   CreditCard as CreditCardIcon,
   AccountBalanceWallet as WalletIcon,
   ShoppingCart as OrdersIcon,
+  CompareArrows as MixedPaymentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { usePermission } from '../../hooks/usePermission';
 import AddOrderDialog from './components/AddOrderDialog';
 import OrderDetailsDialog from './components/OrderDetailsDialog';
 import PaymentDialog from './components/PaymentDialog';
 import RefundDialog from './components/RefundDialog';
 import { CurrencyUtils } from '../../config/constants';
+import { smartFormatDateTime } from '../../utils/timezoneUtils';
 
 // 订单接口
 export interface Order {
@@ -67,6 +70,7 @@ export interface Order {
   paymentStatus: 'pending' | 'paid' | 'refunded' | 'failed';
   orderStatus: 'draft' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   staff: string;
+  appointmentId?: number;
   posTerminalId?: string;
   transactionId?: string;
   cardLast4?: string;
@@ -90,6 +94,7 @@ export interface OrderService {
 
 const OrderManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermission();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -302,6 +307,7 @@ const OrderManagement: React.FC = () => {
       case 'credit_card': return <CreditCardIcon sx={{ fontSize: 16 }} />;
       case 'debit_card': return <PaymentIcon sx={{ fontSize: 16 }} />;
       case 'mobile_pay': return <WalletIcon sx={{ fontSize: 16 }} />;
+      case 'mixed': return <MixedPaymentIcon sx={{ fontSize: 16 }} />;
       default: return <PaymentIcon sx={{ fontSize: 16 }} />;
     }
   };
@@ -604,6 +610,7 @@ const OrderManagement: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => setAddOrderOpen(true)}
+                disabled={!hasPermission('orders:create')}
                 sx={{
                   borderRadius: 2,
                   py: 1.5,
@@ -613,6 +620,10 @@ const OrderManagement: React.FC = () => {
                     background: 'linear-gradient(135deg, #059669, #047857)',
                     transform: 'translateY(-1px)',
                     boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
+                  },
+                  '&.Mui-disabled': {
+                    background: 'linear-gradient(135deg, #9CA3AF, #6B7280)',
+                    color: 'rgba(255, 255, 255, 0.5)',
                   },
                   transition: 'all 0.3s ease',
                 }}
@@ -717,13 +728,18 @@ const OrderManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {new Date(order.createdAt).toLocaleDateString()}
+                        {smartFormatDateTime(order.createdAt, 'yyyy-MM-dd')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(order.createdAt).toLocaleTimeString()}
+                        {smartFormatDateTime(order.createdAt, 'HH:mm:ss')}
                       </Typography>
                     </TableCell>
                     <TableCell>
+                      {/* 只有当用户有任意操作权限时才显示菜单按钮 */}
+                      {(hasPermission('orders:view') ||
+                        hasPermission('orders:payment') ||
+                        hasPermission('orders:refund') ||
+                        hasPermission('orders:delete')) && (
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -738,6 +754,7 @@ const OrderManagement: React.FC = () => {
                       >
                         <MoreVertIcon />
                       </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -787,6 +804,7 @@ const OrderManagement: React.FC = () => {
           <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
           {t('orders.viewDetails')}
         </MenuItem>
+        {hasPermission('orders:payment') && (
         <MenuItem
           onClick={() => {
             setPaymentDialogOpen(true);
@@ -797,6 +815,8 @@ const OrderManagement: React.FC = () => {
           <PaymentIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
           {t('orders.processPayment')}
         </MenuItem>
+        )}
+        {hasPermission('orders:refund') && (
         <MenuItem
           onClick={() => {
             console.log('🎯 Refund menu clicked for order:', selectedOrder?.id);
@@ -808,6 +828,8 @@ const OrderManagement: React.FC = () => {
           <RefundIcon sx={{ mr: 1, fontSize: 18, color: '#F59E0B' }} />
           {t('orders.requestRefund')}
         </MenuItem>
+        )}
+        {hasPermission('orders:delete') && (
         <MenuItem
           onClick={() => {
             setDeleteDialogOpen(true);
@@ -818,6 +840,7 @@ const OrderManagement: React.FC = () => {
           <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
           {t('orders.deleteOrder')}
         </MenuItem>
+        )}
       </Menu>
 
       {/* 对话框组件 */}

@@ -5,85 +5,108 @@ server:
 spring:
   application:
     name: auth-service
-  
+
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_auth?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&characterSetResults=utf8&connectionCollation=utf8_unicode_ci&zeroDateTimeBehavior=convertToNull
+    username: ${DB_USERNAME:merchant_app}
+    password: ${DB_PASSWORD:MerchantApp@2024}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
-      maximum-pool-size: 5
-      minimum-idle: 2
+      maximum-pool-size: 20
+      minimum-idle: 5
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-  
+
   cloud:
     discovery:
-      enabled: false  # 生产环境使用K8s服务发现
-  
+      enabled: true
+
+  # RabbitMQ 配置
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:merchant_app}
+    password: ${RABBITMQ_PASSWORD:MerchantApp@2024}
+    virtual-host: ${RABBITMQ_VHOST:merchant_vhost}
+    connection-name-strategy: com.merchant.server.authservice.config.RabbitMQConnectionNameStrategy
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+
   # 国际化配置
   messages:
     basename: messages
     encoding: UTF-8
     fallback-to-system-locale: false
     use-code-as-default-message: false
-  
+
   # 文件上传配置
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # HTTP编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.merchant.server.authservice.entity
   configuration:
     map-underscore-to-camel-case: true
+    default-time-zone: UTC
 
 eureka:
   client:
-    enabled: false  # 生产环境禁用Eureka
-
-# Feign 客户端配置
-feign:
-  client:
-    config:
-      default:
-        connectTimeout: 30000  # 30秒连接超时
-        readTimeout: 60000     # 60秒读取超时
-      merchant-service:
-        connectTimeout: 30000
-        readTimeout: 60000
+    enabled: true
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    appname: ${spring.application.name}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
 
 jwt:
-  secret: ${JWT_SECRET}
-  expiration: 86400000  # 24小时
-  refresh-expiration: 604800000  # 7天
+  secret: ${JWT_SECRET:merchant-system-jwt-secret-key-2024}
+  expiration: 2592000  # 30天（秒）
+  refresh-expiration: 5184000  # 60天（秒）
 
-# Google OAuth2 配置
-google:
-  oauth2:
-    client-id: ${GOOGLE_CLIENT_ID}
-    client-secret: ${GOOGLE_CLIENT_SECRET}
-    redirect-uri: ${GOOGLE_REDIRECT_URI}
+# 微服务URL配置（生产环境通过Eureka发现）
+business-service:
+  url: http://business-service:8083
+
+notification-service:
+  url: http://notification-service:8084
+
+# 前端URL配置
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  password-reset:
+    token-validity-hours: 24
 
 # 文件上传配置
 file:
   upload:
-    path: ${APP_AVATAR_UPLOAD_PATH:/shared/avatars}
-    url-prefix: ${APP_AVATAR_URL_PREFIX:/api/files/avatars/}
-
-# Actuator配置
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
+    path: ${UPLOAD_PATH:/var/uploads}
+    max-size: 10485760  # 10MB
 
 # 生产环境日志配置
 logging:
@@ -98,7 +121,7 @@ logging:
     org.apache.catalina: WARN
     org.apache.coyote: WARN
     org.apache.tomcat: WARN
-    root: WARN
+    root: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

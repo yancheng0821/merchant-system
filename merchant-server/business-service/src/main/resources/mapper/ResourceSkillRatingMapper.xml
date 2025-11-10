@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.ResourceSkillRatingMapper">
+
+    <resultMap id="ResourceSkillRatingResultMap" type="com.merchant.server.businessservice.entity.ResourceSkillRating">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="service_id" property="serviceId"/>
+        <result column="avg_rating" property="avgRating"/>
+        <result column="rating_count" property="ratingCount"/>
+        <result column="total_rating_points" property="totalRatingPoints"/>
+        <result column="five_star_count" property="fiveStarCount"/>
+        <result column="four_star_count" property="fourStarCount"/>
+        <result column="three_star_count" property="threeStarCount"/>
+        <result column="two_star_count" property="twoStarCount"/>
+        <result column="one_star_count" property="oneStarCount"/>
+        <result column="last_rated_at" property="lastRatedAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings WHERE id = #{id}
+    </select>
+
+    <select id="findByResourceIdAndServiceId" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </select>
+
+    <select id="findByResourceId" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE resource_id = #{resourceId}
+        ORDER BY avg_rating DESC, rating_count DESC
+    </select>
+
+    <select id="findByServiceId" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE service_id = #{serviceId}
+        ORDER BY avg_rating DESC, rating_count DESC
+    </select>
+
+    <select id="findByServiceIdOrderByRating" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE service_id = #{serviceId}
+        ORDER BY avg_rating DESC, rating_count DESC, resource_id
+    </select>
+
+    <select id="findHighRatedByServiceId" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE service_id = #{serviceId}
+        AND avg_rating >= #{minRating}
+        AND rating_count >= #{minRatingCount}
+        ORDER BY avg_rating DESC, rating_count DESC
+    </select>
+
+    <select id="findByTenantId" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE tenant_id = #{tenantId}
+        ORDER BY avg_rating DESC, rating_count DESC
+    </select>
+
+    <select id="findTopRatedByTenantId" resultMap="ResourceSkillRatingResultMap">
+        SELECT * FROM resource_skill_ratings
+        WHERE tenant_id = #{tenantId}
+        AND rating_count >= #{minRatingCount}
+        ORDER BY avg_rating DESC, rating_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource_skill_ratings (
+            tenant_id, resource_id, service_id, avg_rating, rating_count,
+            total_rating_points, five_star_count, four_star_count, three_star_count,
+            two_star_count, one_star_count, last_rated_at, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{resourceId}, #{serviceId}, #{avgRating}, #{ratingCount},
+            #{totalRatingPoints}, #{fiveStarCount}, #{fourStarCount}, #{threeStarCount},
+            #{twoStarCount}, #{oneStarCount}, #{lastRatedAt}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE resource_skill_ratings SET
+            avg_rating = #{avgRating},
+            rating_count = #{ratingCount},
+            total_rating_points = #{totalRatingPoints},
+            five_star_count = #{fiveStarCount},
+            four_star_count = #{fourStarCount},
+            three_star_count = #{threeStarCount},
+            two_star_count = #{twoStarCount},
+            one_star_count = #{oneStarCount},
+            last_rated_at = #{lastRatedAt},
+            updated_at = UTC_TIMESTAMP()
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </update>
+
+    <update id="addRating">
+        UPDATE resource_skill_ratings SET
+            total_rating_points = total_rating_points + #{rating},
+            rating_count = rating_count + 1,
+            five_star_count = five_star_count + <if test="rating == 5">1</if><if test="rating != 5">0</if>,
+            four_star_count = four_star_count + <if test="rating == 4">1</if><if test="rating != 4">0</if>,
+            three_star_count = three_star_count + <if test="rating == 3">1</if><if test="rating != 3">0</if>,
+            two_star_count = two_star_count + <if test="rating == 2">1</if><if test="rating != 2">0</if>,
+            one_star_count = one_star_count + <if test="rating == 1">1</if><if test="rating != 1">0</if>,
+            avg_rating = (total_rating_points + #{rating}) / (rating_count + 1),
+            last_rated_at = UTC_TIMESTAMP(),
+            updated_at = UTC_TIMESTAMP()
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </update>
+
+    <delete id="deleteByResourceIdAndServiceId">
+        DELETE FROM resource_skill_ratings
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </delete>
+
+    <delete id="deleteByResourceId">
+        DELETE FROM resource_skill_ratings WHERE resource_id = #{resourceId}
+    </delete>
+
+    <delete id="deleteByServiceId">
+        DELETE FROM resource_skill_ratings WHERE service_id = #{serviceId}
+    </delete>
+
+    <select id="existsByResourceIdAndServiceId" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM resource_skill_ratings
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </select>
+
+</mapper>

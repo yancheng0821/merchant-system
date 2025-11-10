@@ -1,10 +1,15 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
+import com.merchant.server.businessservice.dto.TimeSegmentDTO;
+import com.merchant.server.businessservice.dto.WeekAvailabilityDTO;
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
 import com.merchant.server.businessservice.entity.ResourceBookingSlot;
+import com.merchant.server.businessservice.entity.ResourceServiceExpertise;
 import com.merchant.server.businessservice.dto.ResourceCreateDTO;
 import com.merchant.server.businessservice.service.ResourceService;
+import com.merchant.server.businessservice.mapper.ResourceServiceExpertiseMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +29,12 @@ import java.util.List;
 public class ResourceController {
 
     private final ResourceService resourceService;
+    private final ResourceServiceExpertiseMapper resourceServiceExpertiseMapper;
 
     /**
      * 获取租户下所有资源
      */
+    @RequiresPermission("resources:view")
     @GetMapping("/tenant/{tenantId}")
     public ResponseEntity<List<Resource>> getAllResources(@PathVariable Long tenantId) {
         log.info("Getting all resources for tenant: {}", tenantId);
@@ -37,6 +45,7 @@ public class ResourceController {
     /**
      * 根据类型获取资源
      */
+    @RequiresPermission("resources:view")
     @GetMapping("/tenant/{tenantId}/type/{type}")
     public ResponseEntity<List<Resource>> getResourcesByType(
             @PathVariable Long tenantId,
@@ -55,6 +64,7 @@ public class ResourceController {
     /**
      * 根据服务获取可用资源
      */
+    @RequiresPermission("resources:view")
     @GetMapping("/service/{serviceId}/tenant/{tenantId}")
     public ResponseEntity<List<Resource>> getAvailableResourcesByService(
             @PathVariable Long serviceId,
@@ -86,6 +96,8 @@ public class ResourceController {
     /**
      * 创建资源
      */
+    @RequiresPermission("resources:create")
+    @com.merchant.server.common.annotation.Auditable(resource = "RESOURCE", action = "CREATE", recordOldValue = true, description = "Create new resource (staff/room)")
     @PostMapping
     public ResponseEntity<Resource> createResource(@RequestBody Resource resource) {
         log.info("Creating resource: {}", resource.getName());
@@ -96,6 +108,8 @@ public class ResourceController {
     /**
      * 创建资源（包含可用性信息）
      */
+    @RequiresPermission("resources:create")
+    @com.merchant.server.common.annotation.Auditable(resource = "RESOURCE", action = "CREATE", recordOldValue = true, description = "Create new resource with availability schedule")
     @PostMapping("/with-availability")
     public ResponseEntity<Resource> createResourceWithAvailability(@RequestBody ResourceCreateDTO resourceDTO) {
         log.info("Creating resource with availability: {}", resourceDTO.getName());
@@ -113,13 +127,14 @@ public class ResourceController {
         resource.setHourlyRate(resourceDTO.getHourlyRate());
         resource.setStatus(resourceDTO.getStatus());
         resource.setPhone(resourceDTO.getPhone());
+        resource.setCountryCode(resourceDTO.getCountryCode());  // ⭐ 添加countryCode
         resource.setEmail(resourceDTO.getEmail());
         resource.setPosition(resourceDTO.getPosition());
         resource.setStartDate(resourceDTO.getStartDate());
         resource.setAvatar(resourceDTO.getAvatar());
         resource.setIcon(resourceDTO.getIcon());
-        resource.setCreatedAt(LocalDateTime.now());
-        resource.setUpdatedAt(LocalDateTime.now());
+        resource.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        resource.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         // 创建资源
         Resource createdResource = resourceService.createResource(resource);
@@ -135,8 +150,8 @@ public class ResourceController {
                 availability.setStartTime(LocalTime.parse(availabilityDTO.getStartTime()));
                 availability.setEndTime(LocalTime.parse(availabilityDTO.getEndTime()));
                 availability.setIsAvailable(availabilityDTO.getIsAvailable());
-                availability.setCreatedAt(LocalDateTime.now());
-                availability.setUpdatedAt(LocalDateTime.now());
+                availability.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+                availability.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 
                 availabilities.add(availability);
             }
@@ -151,6 +166,8 @@ public class ResourceController {
     /**
      * 更新资源
      */
+    @RequiresPermission("resources:update")
+    @com.merchant.server.common.annotation.Auditable(resource = "RESOURCE", action = "UPDATE", resourceIdParam = "id", recordOldValue = true, description = "Update resource information")
     @PutMapping("/{id}")
     public ResponseEntity<Resource> updateResource(
             @PathVariable Long id,
@@ -164,6 +181,8 @@ public class ResourceController {
     /**
      * 删除资源
      */
+    @RequiresPermission("resources:delete")
+    @com.merchant.server.common.annotation.Auditable(resource = "RESOURCE", action = "DELETE", resourceIdParam = "id", recordOldValue = true, description = "Delete resource")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteResource(@PathVariable Long id) {
         log.info("Deleting resource: {}", id);
@@ -174,6 +193,7 @@ public class ResourceController {
     /**
      * 获取资源详情
      */
+    @RequiresPermission("resources:view")
     @GetMapping("/detail/{id}")
     public ResponseEntity<Resource> getResourceById(@PathVariable Long id) {
         log.info("Getting resource by id: {}", id);
@@ -292,7 +312,7 @@ public class ResourceController {
         status.setStatus(resource.getStatus().name());
         
         // 检查当前时间的可用性
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         LocalDate today = now.toLocalDate();
         LocalTime currentTime = now.toLocalTime();
         
@@ -364,4 +384,153 @@ public class ResourceController {
         public List<ResourceBookingSlot> getBookingSlots() { return bookingSlots; }
         public void setBookingSlots(List<ResourceBookingSlot> bookingSlots) { this.bookingSlots = bookingSlots; }
     }
+
+    // ========== 员工-服务关联 API ==========
+
+    /**
+     * 获取员工的所有服务专长
+     */
+    @GetMapping("/{resourceId}/services")
+    public ResponseEntity<List<ResourceServiceExpertise>> getResourceServices(@PathVariable Long resourceId) {
+        log.info("Getting service expertise for resource: {}", resourceId);
+        List<ResourceServiceExpertise> expertiseList = resourceServiceExpertiseMapper.findByResourceId(resourceId);
+        return ResponseEntity.ok(expertiseList);
+    }
+
+    /**
+     * 添加员工-服务关联
+     */
+    @PostMapping("/{resourceId}/services")
+    public ResponseEntity<Void> addResourceService(
+            @PathVariable Long resourceId,
+            @RequestBody ResourceServiceExpertise expertise) {
+        log.info("Adding service expertise for resource: {}, service: {}", resourceId, expertise.getServiceId());
+        expertise.setResourceId(resourceId);
+        expertise.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        resourceServiceExpertiseMapper.insert(expertise);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 批量设置员工的服务关联
+     */
+    @PutMapping("/{resourceId}/services")
+    public ResponseEntity<Void> setResourceServices(
+            @PathVariable Long resourceId,
+            @RequestBody List<ResourceServiceExpertise> expertiseList) {
+        log.info("Setting {} service expertise records for resource: {}", expertiseList.size(), resourceId);
+
+        // 先删除现有的关联
+        resourceServiceExpertiseMapper.deleteByResourceId(resourceId);
+
+        // 添加新的关联
+        for (ResourceServiceExpertise expertise : expertiseList) {
+            expertise.setResourceId(resourceId);
+            expertise.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            resourceServiceExpertiseMapper.insert(expertise);
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 删除员工-服务关联
+     */
+    @DeleteMapping("/{resourceId}/services/{serviceId}")
+    public ResponseEntity<Void> deleteResourceService(
+            @PathVariable Long resourceId,
+            @PathVariable Long serviceId) {
+        log.info("Deleting service expertise for resource: {}, service: {}", resourceId, serviceId);
+        resourceServiceExpertiseMapper.deleteByResourceIdAndServiceId(resourceId, serviceId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 获取提供某个服务的所有员工
+     */
+    @GetMapping("/service/{serviceId}")
+    public ResponseEntity<List<Resource>> getResourcesByService(@PathVariable Long serviceId) {
+        log.info("Getting resources that provide service: {}", serviceId);
+        List<ResourceServiceExpertise> expertiseList = resourceServiceExpertiseMapper.findByServiceId(serviceId);
+
+        List<Resource> resources = new ArrayList<>();
+        for (ResourceServiceExpertise expertise : expertiseList) {
+            Resource resource = resourceService.getResourceById(expertise.getResourceId());
+            if (resource != null && resource.getStatus() == Resource.ResourceStatus.ACTIVE) {
+                resources.add(resource);
+            }
+        }
+
+        return ResponseEntity.ok(resources);
+    }
+
+    // ========== 新增：多时间段排班管理API ==========
+
+    /**
+     * 获取资源的每周可用性（支持多时间段）
+     * GET /api/business/resources/{resourceId}/availability/week
+     */
+    @GetMapping("/{resourceId}/availability/week")
+    public ResponseEntity<WeekAvailabilityDTO> getWeekAvailability(@PathVariable Long resourceId) {
+        log.info("Getting week availability for resource: {}", resourceId);
+        WeekAvailabilityDTO weekAvailability = resourceService.getWeekAvailability(resourceId);
+        return ResponseEntity.ok(weekAvailability);
+    }
+
+    /**
+     * 更新资源的每周可用性（支持多时间段）
+     * PUT /api/business/resources/{resourceId}/availability/week
+     */
+    @com.merchant.server.common.annotation.Auditable(resource = "RESOURCE_SCHEDULE", action = "UPDATE", resourceIdParam = "resourceId", recordOldValue = true, description = "Update resource weekly schedule")
+    @PutMapping("/{resourceId}/availability/week")
+    public ResponseEntity<WeekAvailabilityDTO> updateWeekAvailability(
+            @PathVariable Long resourceId,
+            @RequestBody WeekAvailabilityDTO weekAvailability) {
+        log.info("Updating week availability for resource: {}", resourceId);
+        resourceService.updateWeekAvailability(resourceId, weekAvailability);
+        // 返回更新后的排班信息
+        WeekAvailabilityDTO updated = resourceService.getWeekAvailability(resourceId);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * 为某一天添加新的时间段
+     * POST /api/business/resources/{resourceId}/availability/day/{dayOfWeek}/segment
+     */
+    @PostMapping("/{resourceId}/availability/day/{dayOfWeek}/segment")
+    public ResponseEntity<ResourceAvailability> addTimeSegment(
+            @PathVariable Long resourceId,
+            @PathVariable Integer dayOfWeek,
+            @RequestBody TimeSegmentDTO segment) {
+        log.info("Adding time segment for resource: {}, day: {}", resourceId, dayOfWeek);
+        ResourceAvailability created = resourceService.addTimeSegment(resourceId, dayOfWeek, segment);
+        return ResponseEntity.ok(created);
+    }
+
+    /**
+     * 删除某个时间段
+     * DELETE /api/business/resources/availability/{availabilityId}
+     */
+    @DeleteMapping("/availability/{availabilityId}")
+    public ResponseEntity<Void> deleteTimeSegment(@PathVariable Long availabilityId) {
+        log.info("Deleting time segment: {}", availabilityId);
+        resourceService.deleteTimeSegment(availabilityId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 复制某一天的排班到其他天
+     * POST /api/business/resources/{resourceId}/availability/copy
+     */
+    @PostMapping("/{resourceId}/availability/copy")
+    public ResponseEntity<Void> copyDayAvailability(
+            @PathVariable Long resourceId,
+            @RequestParam Integer sourceDayOfWeek,
+            @RequestParam List<Integer> targetDaysOfWeek) {
+        log.info("Copying day availability from day {} to days {} for resource: {}",
+                sourceDayOfWeek, targetDaysOfWeek, resourceId);
+        resourceService.copyDayAvailability(resourceId, sourceDayOfWeek, targetDaysOfWeek);
+        return ResponseEntity.ok().build();
+    }
+
 }

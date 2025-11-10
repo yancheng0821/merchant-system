@@ -31,6 +31,7 @@ import {
   Paper,
   Grid,
   InputAdornment,
+  Snackbar,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import {
@@ -44,8 +45,11 @@ import {
   Code as CodeIcon,
   Subject as SubjectIcon,
   Description as DescriptionIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { notificationApi } from '../../services/api';
+import { usePermission } from '../../hooks/usePermission';
+import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 
 interface NotificationTemplate {
   id: number;
@@ -83,6 +87,7 @@ function TabPanel(props: TabPanelProps) {
 
 const NotificationTemplateManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermission();
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +99,9 @@ const NotificationTemplateManagement: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<NotificationTemplate | null>(null);
+  const [openPreviewDialog, setOpenPreviewDialog] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // 橙色主题色，提高可读性
   const themeColor = '#F97316';
@@ -114,10 +122,12 @@ const NotificationTemplateManagement: React.FC = () => {
   });
 
   const templateCodes = [
-    { value: 'APPOINTMENT_CONFIRMED', label: t('notifications.templateCodes.appointmentConfirmed') },
-    { value: 'APPOINTMENT_CANCELLED', label: t('notifications.templateCodes.appointmentCancelled') },
-    { value: 'APPOINTMENT_COMPLETED', label: t('notifications.templateCodes.appointmentCompleted') },
-    { value: 'APPOINTMENT_REMINDER', label: t('notifications.templateCodes.appointmentReminder') }
+    { value: 'APPOINTMENT_CONFIRMATION', label: t('notifications.templateCodes.appointmentConfirmed') },
+    { value: 'APPOINTMENT_CANCELLATION', label: t('notifications.templateCodes.appointmentCancelled') },
+    { value: 'APPOINTMENT_COMPLETION', label: t('notifications.templateCodes.appointmentCompleted') },
+    { value: 'APPOINTMENT_REMINDER', label: t('notifications.templateCodes.appointmentReminder') },
+    { value: 'PACKAGE_VERIFICATION', label: t('notifications.templateCodes.packageVerification') },
+    { value: 'PACKAGE_PURCHASE_SUCCESS', label: t('notifications.templateCodes.packagePurchaseSuccess') }
   ];
 
   const fetchTemplates = useCallback(async () => {
@@ -165,19 +175,24 @@ const NotificationTemplateManagement: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+  };
+
+  const handleDialogExited = () => {
     setEditingTemplate(null);
   };
 
   const handleSave = async () => {
     try {
       const templateData = { ...formData, tenantId };
-      
+
       if (editingTemplate) {
         await notificationApi.updateTemplate(editingTemplate.id, templateData);
+        setSuccessMessage(t('notifications.updateTemplateSuccess'));
       } else {
         await notificationApi.createTemplate(templateData);
+        setSuccessMessage(t('notifications.createTemplateSuccess'));
       }
-      
+
       await fetchTemplates();
       handleCloseDialog();
     } catch (err) {
@@ -195,6 +210,7 @@ const NotificationTemplateManagement: React.FC = () => {
     if (deletingTemplateId) {
       try {
         await notificationApi.deleteTemplate(deletingTemplateId);
+        setSuccessMessage(t('notifications.deleteTemplateSuccess'));
         await fetchTemplates();
         setOpenDeleteDialog(false);
         setDeletingTemplateId(null);
@@ -216,6 +232,7 @@ const NotificationTemplateManagement: React.FC = () => {
       // 转换为简单的语言代码 (en-US -> en, zh-CN -> zh)
       const languageCode = currentLanguage.split('-')[0];
       await notificationApi.initDefaultTemplates(tenantId, languageCode);
+      setSuccessMessage(t('notifications.initDefaultTemplatesSuccess'));
       await fetchTemplates();
       setOpenInitDialog(false);
     } catch (err) {
@@ -226,6 +243,106 @@ const NotificationTemplateManagement: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handlePreview = () => {
+    // 替换模板变量为示例数据
+    const sampleData = {
+      customerName: '张三',
+      appointmentDate: '2024-01-15',
+      appointmentTime: '14:30',
+      serviceName: '理发服务',
+      merchantName: '美发沙龙',
+      amount: '¥188.00',
+      orderNumber: 'ORD20240115001',
+    };
+
+    let processedContent = formData.content;
+
+    // 替换所有变量
+    Object.entries(sampleData).forEach(([key, value]) => {
+      const regex = new RegExp(`\\{${key}\\}`, 'g');
+      processedContent = processedContent.replace(regex, value);
+    });
+
+    // 如果是 EMAIL 类型，包装成 HTML
+    if (formData.type === 'EMAIL') {
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background-color: #f5f5f5;
+                margin: 0;
+                padding: 20px;
+              }
+              .email-container {
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                overflow: hidden;
+              }
+              .email-header {
+                background: linear-gradient(135deg, #F97316, #EA580C);
+                color: white;
+                padding: 30px 20px;
+                text-align: center;
+              }
+              .email-header h1 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 600;
+              }
+              .email-body {
+                padding: 30px 20px;
+              }
+              .email-body p {
+                margin: 0 0 15px 0;
+              }
+              .email-footer {
+                background-color: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                color: #6c757d;
+                font-size: 14px;
+                border-top: 1px solid #e9ecef;
+              }
+              .highlight {
+                color: #F97316;
+                font-weight: 600;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="email-container">
+              <div class="email-header">
+                <h1>${formData.subject || '邮件主题'}</h1>
+              </div>
+              <div class="email-body">
+                ${processedContent.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('')}
+              </div>
+              <div class="email-footer">
+                <p>此邮件由系统自动发送，请勿直接回复</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+      setPreviewHtml(html);
+    } else {
+      // SMS 类型，简单显示
+      setPreviewHtml(processedContent);
+    }
+
+    setOpenPreviewDialog(true);
   };
 
   const getFilteredTemplates = (type: 'SMS' | 'EMAIL') => {
@@ -303,7 +420,7 @@ const NotificationTemplateManagement: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" color="text.secondary">
-                    {new Date(template.updatedAt).toLocaleString()}
+                    {formatUtcToMerchantTime(template.updatedAt, 'yyyy-MM-dd HH:mm:ss')}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -357,10 +474,11 @@ const NotificationTemplateManagement: React.FC = () => {
               {t('notifications.templateManagement')}
             </Typography>
             <Box>
-              <Button
+              {/* 暂时注释掉初始化模板和新增模板按钮 */}
+              {/* <Button
                 variant="outlined"
                 onClick={handleInitDefaultTemplates}
-                sx={{ 
+                sx={{
                   mr: 2,
                   borderRadius: 2,
                   borderColor: themeColor,
@@ -394,7 +512,7 @@ const NotificationTemplateManagement: React.FC = () => {
                 }}
               >
                 {t('notifications.addTemplate')}
-              </Button>
+              </Button> */}
             </Box>
           </Box>
         </CardContent>
@@ -459,11 +577,14 @@ const NotificationTemplateManagement: React.FC = () => {
       </Card>
 
       {/* 编辑/新增模板弹窗 */}
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="md" 
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
         fullWidth
+        TransitionProps={{
+          onExited: handleDialogExited,
+        }}
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -563,7 +684,7 @@ const NotificationTemplateManagement: React.FC = () => {
 
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth disabled>
                     <InputLabel>{t('notifications.templateCode')}</InputLabel>
                     <Select
                       value={formData.templateCode}
@@ -591,6 +712,7 @@ const NotificationTemplateManagement: React.FC = () => {
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
+                    disabled
                     label={t('notifications.templateName')}
                     value={formData.templateName}
                     onChange={(e) => setFormData({ ...formData, templateName: e.target.value })}
@@ -609,7 +731,7 @@ const NotificationTemplateManagement: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth disabled>
                     <InputLabel>{t('notifications.type')}</InputLabel>
                     <Select
                       value={formData.type}
@@ -642,7 +764,7 @@ const NotificationTemplateManagement: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth disabled>
                     <InputLabel>{t('notifications.status')}</InputLabel>
                     <Select
                       value={formData.status}
@@ -750,44 +872,109 @@ const NotificationTemplateManagement: React.FC = () => {
                     }}
                   />
                 </Grid>
+
+                {/* HTML 渲染预览 - 仅当内容包含HTML标签时显示 */}
+                {formData.type === 'EMAIL' && formData.content && formData.content.includes('<') && (
+                  <Grid item xs={12}>
+                    <Box
+                      sx={{
+                        border: '1px solid',
+                        borderColor: alpha(themeColor, 0.2),
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          px: 2,
+                          py: 1,
+                          backgroundColor: alpha(themeColor, 0.05),
+                          borderBottom: '1px solid',
+                          borderColor: alpha(themeColor, 0.2),
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <VisibilityIcon sx={{ fontSize: 18, color: themeColor }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: themeColor }}>
+                          {t('notifications.htmlPreview')}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          p: 2,
+                          backgroundColor: '#ffffff',
+                          maxHeight: 400,
+                          overflowY: 'auto',
+                        }}
+                        dangerouslySetInnerHTML={{ __html: formData.content }}
+                      />
+                    </Box>
+                  </Grid>
+                )}
               </Grid>
             </Paper>
           </Box>
         </DialogContent>
-        <DialogActions 
-          sx={{ 
+        <DialogActions
+          sx={{
             p: 3,
             borderTop: '1px solid',
             borderColor: 'divider',
             background: alpha(themeColor, 0.02),
+            display: 'flex',
+            justifyContent: 'space-between',
           }}
         >
-          <Button 
-            onClick={handleCloseDialog}
-            sx={{ 
-              borderRadius: 2,
-              px: 3,
-              color: 'text.secondary',
-            }}
-          >
-            {t('notifications.cancel')}
-          </Button>
-          <Button 
-            onClick={handleSave} 
-            variant="contained"
+          <Button
+            onClick={handlePreview}
+            variant="outlined"
+            startIcon={<VisibilityIcon />}
+            disabled={!formData.content}
             sx={{
               borderRadius: 2,
               px: 3,
-              background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-              boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+              borderColor: themeColor,
+              color: themeColor,
+              fontWeight: 600,
               '&:hover': {
-                background: `linear-gradient(135deg, #EA580C, #C2410C)`,
-                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                borderColor: themeColor,
+                backgroundColor: alpha(themeColor, 0.08),
               },
             }}
           >
-            {t('notifications.save')}
+            {t('notifications.preview')}
           </Button>
+          <Box>
+            <Button
+              onClick={handleCloseDialog}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                color: 'text.secondary',
+                mr: 2,
+              }}
+            >
+              {t('notifications.cancel')}
+            </Button>
+            <Button
+              onClick={handleSave}
+              variant="contained"
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
+                boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+                '&:hover': {
+                  background: `linear-gradient(135deg, #EA580C, #C2410C)`,
+                  boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                },
+              }}
+            >
+              {t('notifications.save')}
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
 
@@ -886,6 +1073,155 @@ const NotificationTemplateManagement: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* 预览对话框 */}
+      <Dialog
+        open={openPreviewDialog}
+        onClose={() => setOpenPreviewDialog(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#EA580C', 0.08)})`,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            pb: 3,
+            pt: 3,
+          }}
+        >
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                }}
+              >
+                <VisibilityIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'text.primary',
+                    mb: 0.5,
+                  }}
+                >
+                  {t('notifications.templatePreview')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {formData.type === 'EMAIL' ? t('notifications.emailPreview') : t('notifications.smsPreview')}
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton
+              onClick={() => setOpenPreviewDialog(false)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: alpha(themeColor, 0.1),
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {formData.type === 'EMAIL' ? (
+            <Box
+              sx={{
+                minHeight: 400,
+                backgroundColor: '#f5f5f5',
+              }}
+            >
+              <iframe
+                srcDoc={previewHtml}
+                style={{
+                  width: '100%',
+                  height: '500px',
+                  border: 'none',
+                }}
+                title="Email Preview"
+              />
+            </Box>
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  border: '1px solid',
+                  borderColor: alpha(themeColor, 0.2),
+                  borderRadius: 2,
+                  background: alpha(themeColor, 0.02),
+                  minHeight: 200,
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={2} mb={2}>
+                  <SmsIcon sx={{ color: themeColor, fontSize: 24 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                    {t('notifications.smsContent')}
+                  </Typography>
+                </Box>
+                <Typography
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    lineHeight: 1.6,
+                    fontSize: '0.95rem',
+                  }}
+                >
+                  {previewHtml}
+                </Typography>
+                <Box mt={3} pt={2} borderTop="1px solid" borderColor="divider">
+                  <Typography variant="caption" color="text.secondary">
+                    {t('notifications.smsLength')}: {previewHtml.length} {t('notifications.characters')}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions
+          sx={{
+            p: 3,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            background: alpha(themeColor, 0.02),
+          }}
+        >
+          <Button
+            onClick={() => setOpenPreviewDialog(false)}
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
+              boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+              '&:hover': {
+                background: `linear-gradient(135deg, #EA580C, #C2410C)`,
+                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+              },
+            }}
+          >
+            {t('notifications.close')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* 操作菜单 */}
       <Menu
         anchorEl={menuAnchorEl}
@@ -912,19 +1248,42 @@ const NotificationTemplateManagement: React.FC = () => {
           <EditIcon sx={{ mr: 1, fontSize: 18, color: themeColor }} />
           {t('notifications.editTemplate')}
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            if (selectedTemplate) {
-              handleDelete(selectedTemplate.id);
-            }
-            setMenuAnchorEl(null);
-          }}
-          sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
-        >
-          <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
-          {t('notifications.deleteTemplate')}
-        </MenuItem>
+        {/* 删除模板 - 只有 SUPER_ADMIN 才能删除 */}
+        {hasPermission('notifications:delete_template') && (
+          <MenuItem
+            onClick={() => {
+              if (selectedTemplate) {
+                handleDelete(selectedTemplate.id);
+              }
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+          >
+            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            {t('notifications.deleteTemplate')}
+          </MenuItem>
+        )}
       </Menu>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={3000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+          }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

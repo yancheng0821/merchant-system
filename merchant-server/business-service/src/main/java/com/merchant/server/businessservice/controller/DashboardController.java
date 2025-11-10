@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class DashboardController {
     /**
      * 获取 Dashboard 统计数据
      */
+    @RequiresPermission("dashboard:view")
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getDashboardStats(
             @RequestParam Long tenantId,
@@ -35,6 +37,7 @@ public class DashboardController {
     /**
      * 获取销售趋势数据
      */
+    @RequiresPermission("dashboard:view")
     @GetMapping("/sales-trend")
     public ResponseEntity<Map<String, Object>> getSalesTrend(
             @RequestParam Long tenantId,
@@ -48,6 +51,7 @@ public class DashboardController {
     /**
      * 获取服务分类统计
      */
+    @RequiresPermission("dashboard:view")
     @GetMapping("/service-categories")
     public ResponseEntity<Map<String, Object>> getServiceCategoryStats(
             @RequestParam Long tenantId,
@@ -61,6 +65,7 @@ public class DashboardController {
     /**
      * 获取热门服务排行
      */
+    @RequiresPermission("dashboard:view")
     @GetMapping("/top-services")
     public ResponseEntity<Map<String, Object>> getTopServices(
             @RequestParam Long tenantId,

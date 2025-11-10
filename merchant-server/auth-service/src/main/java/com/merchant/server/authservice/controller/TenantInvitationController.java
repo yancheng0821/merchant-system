@@ -1,5 +1,6 @@
 package com.merchant.server.authservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.authservice.dto.InvitationValidationRequest;
 import com.merchant.server.authservice.dto.TenantInvitationCreateDTO;
 import com.merchant.server.authservice.entity.TenantInvitation;
@@ -23,6 +24,7 @@ public class TenantInvitationController {
     /**
      * 创建邀请码
      */
+    @RequiresPermission("users:create")
     @PostMapping
     public ApiResponse<TenantInvitation> createInvitation(
             @Valid @RequestBody TenantInvitationCreateDTO createDTO,
@@ -50,6 +52,7 @@ public class TenantInvitationController {
     /**
      * 获取租户的邀请码列表
      */
+    @RequiresPermission("users:view")
     @GetMapping("/tenant/{tenantId}")
     public ApiResponse<List<TenantInvitation>> getInvitationsByTenant(
             @PathVariable Long tenantId) {
@@ -63,6 +66,7 @@ public class TenantInvitationController {
     /**
      * 禁用邀请码
      */
+    @RequiresPermission("users:update")
     @PutMapping("/{invitationId}/disable")
     public ApiResponse<Void> disableInvitation(@PathVariable Long invitationId) {
         

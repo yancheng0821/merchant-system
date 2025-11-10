@@ -49,12 +49,17 @@ import {
   CheckCircle as CheckCircleIcon,
   Upload as UploadIcon,
   History as HistoryIcon,
+  CardGiftcard as PackageIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { customerApi, Customer, CustomerStats, handleApiError } from '../../services/api';
 import { CurrencyUtils } from '../../config/constants';
+import { usePermission } from '../../hooks/usePermission';
+import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 import CustomerDialog from './components/CustomerDialog';
 import AppointmentHistory from './components/AppointmentHistory';
+import CustomerPackages from './components/CustomerPackages';
+import PackagePurchase from './components/PackagePurchase';
 import { CustomerImport } from './components/CustomerImport';
 import { ImportHistory } from './components/ImportHistory';
 
@@ -62,6 +67,7 @@ import { ImportHistory } from './components/ImportHistory';
 
 const CustomerManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermission();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,11 +81,14 @@ const CustomerManagement: React.FC = () => {
 
   // 加载状态
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 对话框状态
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [appointmentHistoryOpen, setAppointmentHistoryOpen] = useState(false);
+  const [customerPackagesOpen, setCustomerPackagesOpen] = useState(false);
+  const [packagePurchaseDialogOpen, setPackagePurchaseDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerImportOpen, setCustomerImportOpen] = useState(false);
   const [importHistoryOpen, setImportHistoryOpen] = useState(false);
@@ -209,7 +218,7 @@ const CustomerManagement: React.FC = () => {
   // 保存客户（创建或更新）
   const handleSaveCustomer = async (customerData: Partial<Customer>) => {
     try {
-      setLoading(true);
+      setSubmitting(true);
 
       if (selectedCustomer?.id) {
         // 更新客户
@@ -232,8 +241,9 @@ const CustomerManagement: React.FC = () => {
             message: t('customers.validation.requiredFields'),
             severity: 'error',
           });
-          setLoading(false);
-          return;
+          setSubmitting(false);
+          // 抛出错误，让子组件知道保存失败
+          throw new Error(t('customers.validation.requiredFields'));
         }
 
         // 移除可能导致问题的字段，但保留用户填写的可选字段
@@ -248,6 +258,7 @@ const CustomerManagement: React.FC = () => {
         });
       }
 
+      // 成功后才关闭对话框和清空选中
       setCustomerDialogOpen(false);
       setSelectedCustomer(null);
       // 重新加载数据
@@ -262,8 +273,10 @@ const CustomerManagement: React.FC = () => {
         message: errorMessage,
         severity: 'error',
       });
+      // 重新抛出错误，让子组件知道保存失败
+      throw err;
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -354,6 +367,40 @@ const CustomerManagement: React.FC = () => {
         }}
       />
     );
+  };
+
+  // 获取头像显示的缩写
+  const getAvatarInitials = (customer: Customer) => {
+    const firstName = customer.firstName || '';
+    const lastName = customer.lastName || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    // 特殊处理：Walk-in Customer 显示为 "VI" (Visitor)
+    if (fullName.toLowerCase() === 'walk-in customer' || firstName.toLowerCase() === 'walk-in') {
+      return 'VI';
+    }
+
+    // 生成缩写
+    let initials = '';
+    if (firstName && lastName) {
+      initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
+    } else if (firstName) {
+      initials = firstName.substring(0, 2).toUpperCase();
+    } else if (lastName) {
+      initials = lastName.substring(0, 2).toUpperCase();
+    } else {
+      initials = '?';
+    }
+
+    return initials.toUpperCase();
+  };
+
+  // 检查是否是 Walk-in Customer
+  const isWalkInCustomer = (customer: Customer) => {
+    const firstName = customer.firstName || '';
+    const lastName = customer.lastName || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName.toLowerCase() === 'walk-in customer' || firstName.toLowerCase() === 'walk-in';
   };
 
   return (
@@ -607,10 +654,10 @@ const CustomerManagement: React.FC = () => {
                   sx={{
                     borderRadius: 2,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#F59E0B',
+                      borderColor: '#EC4899',
                     },
                   }}
                 >
@@ -687,61 +734,69 @@ const CustomerManagement: React.FC = () => {
 
             <Grid item xs={12} md={6}>
               <Box display="flex" gap={2} flexWrap="wrap">
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => setCustomerDialogOpen(true)}
-                  sx={{
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 3,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                    boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
-                    },
-                    transition: 'all 0.3s ease',
-                    minWidth: 140,
-                  }}
-                >
-                  {t('customers.addCustomer')}
-                </Button>
-                
-                <Button
-                  variant="outlined"
-                  startIcon={<UploadIcon />}
-                  onClick={() => setCustomerImportOpen(true)}
-                  sx={{
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 3,
-                    borderColor: '#EC4899',
-                    color: '#EC4899',
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderColor: '#DB2777',
-                      backgroundColor: alpha('#EC4899', 0.04),
-                      transform: 'translateY(-1px)',
+                {hasPermission('customers:create') && (
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      setSelectedCustomer(null);
+                      setCustomerDialogOpen(true);
+                    }}
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 3,
+                      background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                      boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #DB2777, #BE185D)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
+                      },
+                      transition: 'all 0.3s ease',
+                      minWidth: 140,
+                    }}
+                  >
+                    {t('customers.addCustomer')}
+                  </Button>
+                )}
+
+                {hasPermission('customers:import') && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<UploadIcon />}
+                    onClick={() => setCustomerImportOpen(true)}
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 3,
+                      borderColor: '#EC4899',
+                      color: '#EC4899',
                       borderWidth: 2,
-                    },
-                    transition: 'all 0.3s ease',
-                    minWidth: 140,
-                  }}
-                >
-                  {t('customers.batchImport')}
-                </Button>
-                
-                <Button
-                  variant="outlined"
-                  startIcon={<HistoryIcon />}
-                  onClick={() => setImportHistoryOpen(true)}
-                  sx={{
-                    borderRadius: 2,
-                    py: 1.5,
-                    px: 3,
-                    borderColor: '#EC4899',
+                      '&:hover': {
+                        borderColor: '#DB2777',
+                        backgroundColor: alpha('#EC4899', 0.04),
+                        transform: 'translateY(-1px)',
+                        borderWidth: 2,
+                      },
+                      transition: 'all 0.3s ease',
+                      minWidth: 140,
+                    }}
+                  >
+                    {t('customers.batchImport')}
+                  </Button>
+                )}
+
+                {hasPermission('customers:import') && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<HistoryIcon />}
+                    onClick={() => setImportHistoryOpen(true)}
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 3,
+                      borderColor: '#EC4899',
                     color: '#EC4899',
                     borderWidth: 2,
                     '&:hover': {
@@ -756,6 +811,7 @@ const CustomerManagement: React.FC = () => {
                 >
                   {t('customers.importHistory')}
                 </Button>
+                )}
               </Box>
             </Grid>
           </Grid>
@@ -777,6 +833,7 @@ const CustomerManagement: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('customers.tableHeaders.customer')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.contact')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.membership')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.packages')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.points')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.totalSpent')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.lastVisit')}</TableCell>
@@ -787,13 +844,13 @@ const CustomerManagement: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : customers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">
                       {t('customers.noCustomers')}
                     </Typography>
@@ -816,12 +873,12 @@ const CustomerManagement: React.FC = () => {
                           sx={{
                             width: 40,
                             height: 40,
-                            bgcolor: '#6366F1',
+                            bgcolor: '#EC4899',
                             fontSize: '1rem',
                             fontWeight: 600,
                           }}
                         >
-                          {customer.firstName?.charAt(0)}{customer.lastName?.charAt(0)}
+                          {getAvatarInitials(customer)}
                         </Avatar>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -838,7 +895,7 @@ const CustomerManagement: React.FC = () => {
                         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                           <PhoneIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                           <Typography variant="body2">
-                            {customer.phone}
+                            {customer.countryCode && `${customer.countryCode.replace(/-[A-Z]{2}$/, '')} `}{customer.phone}
                           </Typography>
                         </Box>
                         <Box display="flex" alignItems="center" gap={1}>
@@ -851,6 +908,90 @@ const CustomerManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       {getMembershipChip(customer.membershipLevel)}
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        {(customer.activePackageCount || 0) > 0 ? (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              cursor: hasPermission('customer_packages:view') ? 'pointer' : 'default',
+                              '&:hover': hasPermission('customer_packages:view') ? {
+                                '& .package-count': {
+                                  backgroundColor: alpha('#06B6D4', 0.2),
+                                }
+                              } : {},
+                            }}
+                            onClick={(e) => {
+                              if (hasPermission('customer_packages:view')) {
+                                e.stopPropagation();
+                                setSelectedCustomer(customer);
+                                setCustomerPackagesOpen(true);
+                              }
+                            }}
+                          >
+                            <Chip
+                              className="package-count"
+                              icon={<PackageIcon sx={{ fontSize: 16 }} />}
+                              label={customer.activePackageCount}
+                              size="small"
+                              sx={{
+                                height: 24,
+                                backgroundColor: alpha('#06B6D4', 0.1),
+                                color: '#0891B2',
+                                fontWeight: 600,
+                                '& .MuiChip-icon': {
+                                  color: '#06B6D4',
+                                },
+                              }}
+                            />
+                            {hasPermission('customer_packages:view') && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: '#06B6D4',
+                                  fontWeight: 500,
+                                  textDecoration: 'underline',
+                                  textDecorationStyle: 'dotted',
+                                  textUnderlineOffset: 3,
+                                }}
+                              >
+                                {t('customers.viewDetails')}
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : (
+                          !isWalkInCustomer(customer) && hasPermission('customer_packages:purchase') && (
+                            <Chip
+                              icon={<AddIcon sx={{ fontSize: 14 }} />}
+                              label={t('customers.addPackage')}
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCustomer(customer);
+                                setPackagePurchaseDialogOpen(true);
+                              }}
+                              sx={{
+                                height: 24,
+                                fontSize: '0.75rem',
+                                backgroundColor: alpha('#EC4899', 0.1),
+                                color: '#DB2777',
+                                cursor: 'pointer',
+                                '& .MuiChip-icon': {
+                                  color: '#EC4899',
+                                  fontSize: 16,
+                                },
+                                '&:hover': {
+                                  backgroundColor: alpha('#EC4899', 0.2),
+                                },
+                                transition: 'background-color 0.2s ease',
+                              }}
+                            />
+                          )
+                        )}
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
@@ -869,10 +1010,10 @@ const CustomerManagement: React.FC = () => {
                       {customer.lastVisit ? (
                         <Box>
                           <Typography variant="body2">
-                            {new Date(customer.lastVisit).toLocaleDateString()}
+                            {formatUtcToMerchantTime(customer.lastVisit, 'yyyy-MM-dd')}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {new Date(customer.lastVisit).toLocaleTimeString()}
+                            {formatUtcToMerchantTime(customer.lastVisit, 'HH:mm')}
                           </Typography>
                         </Box>
                       ) : (
@@ -885,20 +1026,25 @@ const CustomerManagement: React.FC = () => {
                       {getStatusChip(customer.status)}
                     </TableCell>
                     <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          setMenuAnchorEl(e.currentTarget);
-                          setSelectedCustomer(customer);
-                        }}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: alpha('#F59E0B', 0.1),
-                          },
-                        }}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
+                      {!isWalkInCustomer(customer) && (hasPermission('customers:update') ||
+                        hasPermission('customers:delete') ||
+                        hasPermission('customer_packages:purchase') ||
+                        hasPermission('appointments:view')) && (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            setMenuAnchorEl(e.currentTarget);
+                            setSelectedCustomer(customer);
+                          }}
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: alpha('#F59E0B', 0.1),
+                            },
+                          }}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -939,70 +1085,89 @@ const CustomerManagement: React.FC = () => {
           }
         }}
       >
-        <MenuItem
-          onClick={() => {
-            setAppointmentHistoryOpen(true);
-            setMenuAnchorEl(null);
-          }}
-          sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
-        >
-          <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
-          {t('customers.viewAppointments')}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setCustomerDialogOpen(true);
-            setMenuAnchorEl(null);
-          }}
-          sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
-        >
-          <EditIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
-          {t('customers.editCustomer')}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            handleToggleCustomerStatus();
-            setMenuAnchorEl(null);
-          }}
-          sx={{
-            '&:hover': {
-              backgroundColor: selectedCustomer?.status === 'ACTIVE'
-                ? alpha('#EF4444', 0.08)
-                : alpha('#10B981', 0.08)
-            }
-          }}
-        >
-          {selectedCustomer?.status === 'ACTIVE' ? (
-            <>
-              <BlockIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
-              {t('customers.deactivateCustomer')}
-            </>
-          ) : (
-            <>
-              <CheckCircleIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
-              {t('customers.activateCustomer')}
-            </>
-          )}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setDeleteDialogOpen(true);
-            setMenuAnchorEl(null);
-          }}
-          sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
-        >
-          <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
-          {t('customers.deleteCustomer')}
-        </MenuItem>
+        {hasPermission('appointments:view') && (
+          <MenuItem
+            onClick={() => {
+              setAppointmentHistoryOpen(true);
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
+          >
+            <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
+            {t('customers.viewAppointments')}
+          </MenuItem>
+        )}
+        {hasPermission('customer_packages:purchase') && (
+          <MenuItem
+            onClick={() => {
+              setPackagePurchaseDialogOpen(true);
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#10B981', 0.08) } }}
+          >
+            <AddIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
+            {t('customers.purchasePackage')}
+          </MenuItem>
+        )}
+        {hasPermission('customers:update') && (
+          <MenuItem
+            onClick={() => {
+              setCustomerDialogOpen(true);
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
+          >
+            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
+            {t('customers.editCustomer')}
+          </MenuItem>
+        )}
+        {/* Temporarily commented out - Deactivate/Activate Customer functionality */}
+        {/* {hasPermission('customers:update') && (
+          <MenuItem
+            onClick={() => {
+              handleToggleCustomerStatus();
+              setMenuAnchorEl(null);
+            }}
+            sx={{
+              '&:hover': {
+                backgroundColor: selectedCustomer?.status === 'ACTIVE'
+                  ? alpha('#EF4444', 0.08)
+                  : alpha('#10B981', 0.08)
+              }
+            }}
+          >
+            {selectedCustomer?.status === 'ACTIVE' ? (
+              <>
+                <BlockIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+                {t('customers.deactivateCustomer')}
+              </>
+            ) : (
+              <>
+                <CheckCircleIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
+                {t('customers.activateCustomer')}
+              </>
+            )}
+          </MenuItem>
+        )} */}
+        {hasPermission('customers:delete') && (
+          <MenuItem
+            onClick={() => {
+              setDeleteDialogOpen(true);
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+          >
+            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            {t('customers.deleteCustomer')}
+          </MenuItem>
+        )}
       </Menu>
 
       {/* 对话框组件 */}
       <CustomerDialog
         open={customerDialogOpen}
-        onClose={() => {
-          setCustomerDialogOpen(false);
-          setSelectedCustomer(null);
-        }}
+        onClose={() => setCustomerDialogOpen(false)}
+        onExited={() => setSelectedCustomer(null)}
         customer={selectedCustomer}
         onSave={handleSaveCustomer}
       />
@@ -1011,6 +1176,31 @@ const CustomerManagement: React.FC = () => {
         open={appointmentHistoryOpen}
         onClose={() => setAppointmentHistoryOpen(false)}
         customer={selectedCustomer}
+      />
+
+      <CustomerPackages
+        open={customerPackagesOpen}
+        onClose={() => setCustomerPackagesOpen(false)}
+        customer={selectedCustomer}
+        onPurchasePackage={() => {
+          setCustomerPackagesOpen(false);
+          setPackagePurchaseDialogOpen(true);
+        }}
+      />
+
+      {/* 套餐购买对话框 */}
+      <PackagePurchase
+        open={packagePurchaseDialogOpen}
+        onClose={() => setPackagePurchaseDialogOpen(false)}
+        customer={selectedCustomer}
+        onSuccess={() => {
+          fetchCustomers(buildQueryParams());
+          setSnackbar({
+            open: true,
+            message: t('customers.packagePurchaseSuccess'),
+            severity: 'success',
+          });
+        }}
       />
 
       {/* 客户数据导入对话框 */}
@@ -1093,14 +1283,14 @@ const CustomerManagement: React.FC = () => {
       {/* 通知组件 */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ borderRadius: 2 }}
         >
           {snackbar.message}
         </Alert>

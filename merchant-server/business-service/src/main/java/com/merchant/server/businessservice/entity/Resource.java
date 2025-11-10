@@ -35,7 +35,9 @@ public class Resource {
     
     // 员工特有字段
     private String phone; // 联系电话（员工专用）
-    
+
+    private String countryCode = "+1-CA"; // 国家码（员工专用），默认加拿大
+
     private String email; // 邮箱（员工专用）
     
     private String position; // 职位（员工专用）

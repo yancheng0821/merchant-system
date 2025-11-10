@@ -9,11 +9,13 @@ import {
   Button,
   Avatar,
   Chip,
-  Alert,
   IconButton,
   CircularProgress,
   alpha,
   Divider,
+  Fade,
+  Tooltip,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -23,6 +25,8 @@ import {
   Person as PersonIcon,
   Visibility,
   VisibilityOff,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIconMUI,
 } from '@mui/icons-material';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -31,22 +35,28 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { userApi, getFullImageUrl } from '../../services/api';
+import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { useNavigate } from 'react-router-dom';
+import { useSnackbar } from 'notistack';
+import { usePermission } from '../../hooks/usePermission';
+import InfoIcon from '@mui/icons-material/Info';
 
 const UserProfile: React.FC = () => {
   const { t } = useTranslation();
-  const { user, updateUserInfo, uploadAvatar, loading, logout } = useAuth();
+  const { user, updateUserInfo, uploadAvatar, loading, logout, error: authError } = useAuth();
   const navigate = useNavigate();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { userPermissions, isSuperAdmin } = usePermission();
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     email: user?.email || '',
     realName: user?.realName || '',
   });
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [emailError, setEmailError] = useState<string>('');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,6 +69,10 @@ const UserProfile: React.FC = () => {
   });
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordTouchedFields, setPasswordTouchedFields] = useState({
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   // 新增密码可见性状态
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -68,29 +82,57 @@ const UserProfile: React.FC = () => {
     setPasswordDialogOpen(true);
     setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordError(null);
+    setPasswordTouchedFields({ newPassword: false, confirmPassword: false });
   };
   const handleClosePasswordDialog = () => {
     setPasswordDialogOpen(false);
     setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordError(null);
+    setPasswordTouchedFields({ newPassword: false, confirmPassword: false });
   };
   const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setPasswordForm({ ...passwordForm, [name]: value });
+    setPasswordError(null);
+
+    // 标记字段为已触摸
+    if (name === 'confirmPassword') {
+      setPasswordTouchedFields(prev => ({
+        ...prev,
+        confirmPassword: true,
+      }));
+    }
   };
   const handleChangePassword = async () => {
     setPasswordError(null);
+
+    // 标记所有字段为已触摸
+    setPasswordTouchedFields({
+      newPassword: true,
+      confirmPassword: true,
+    });
+
     if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setPasswordError(t('auth.passwordRequired'));
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordError(t('auth.passwordTooShort'));
+
+    // 验证新密码要求
+    if (passwordForm.newPassword.length < 8 ||
+        !/[A-Z]/.test(passwordForm.newPassword) ||
+        !/[a-z]/.test(passwordForm.newPassword) ||
+        !/[0-9]/.test(passwordForm.newPassword) ||
+        !/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.newPassword)) {
+      setPasswordError(t('auth.passwordRequirementsNotMet'));
       return;
     }
+
+    // 验证两次密码是否一致
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError(t('auth.passwordNotMatch'));
+      setPasswordError(t('auth.passwordMismatch'));
       return;
     }
+
     if (passwordForm.oldPassword === passwordForm.newPassword) {
       setPasswordError(t('auth.passwordNoRepeat'));
       return;
@@ -100,7 +142,24 @@ const UserProfile: React.FC = () => {
       const resp = await userApi.changePassword(passwordForm);
       if (resp.success) {
         setPasswordDialogOpen(false);
-        setMessage({ type: 'success', text: t('auth.passwordChanged') });
+        enqueueSnackbar(t('auth.passwordChanged'), {
+          variant: 'success',
+          autoHideDuration: 3000,
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          content: (key, message) => (
+            <Alert
+              severity="success"
+              onClose={() => closeSnackbar(key)}
+              sx={{
+                width: '100%',
+                minWidth: '400px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              {message}
+            </Alert>
+          ),
+        });
         setTimeout(() => {
           logout();
           navigate('/login');
@@ -117,51 +176,122 @@ const UserProfile: React.FC = () => {
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // 实时验证邮箱格式
+    if (name === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && !emailRegex.test(value)) {
+        setEmailError(t('auth.invalidEmailFormat'));
+      } else {
+        setEmailError('');
+      }
+    }
   };
 
   const handleEdit = () => {
     setEditing(true);
-    setMessage(null);
+    setEmailError('');
   };
 
   const handleCancel = () => {
     setEditing(false);
+    setEmailError('');
     setFormData({
       email: user?.email || '',
       realName: user?.realName || '',
     });
-    setMessage(null);
   };
 
   const handleSave = async () => {
     try {
       if (!user || !user.id) {
-        setMessage({ type: 'error', text: t('auth.userNotFound') });
+        enqueueSnackbar(t('auth.userNotFound'), {
+          variant: 'error',
+          autoHideDuration: 3000,
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          content: (key, message) => (
+            <Alert
+              severity="error"
+              onClose={() => closeSnackbar(key)}
+              sx={{
+                width: '100%',
+                minWidth: '400px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              {message}
+            </Alert>
+          ),
+        });
         return;
       }
-      
+
+      // 验证邮箱格式
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (formData.email && !emailRegex.test(formData.email)) {
+        setEmailError(t('auth.invalidEmailFormat'));
+        return;
+      }
+
       // 确保userId是数字类型，而不是undefined或null
       const updateData = {
         email: formData.email,
         realName: formData.realName,
         userId: Number(user.id) // 确保userId是数字类型
       };
-      
+
       const success = await updateUserInfo(updateData);
-      
+
       if (success) {
         setEditing(false);
-        setMessage({ type: 'success', text: t('auth.profileUpdated') });
+        enqueueSnackbar(t('auth.profileUpdated'), {
+          variant: 'success',
+          autoHideDuration: 3000,
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          content: (key, message) => (
+            <Alert
+              severity="success"
+              onClose={() => closeSnackbar(key)}
+              sx={{
+                width: '100%',
+                minWidth: '400px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              {message}
+            </Alert>
+          ),
+        });
       } else {
         setFormData({
           email: user?.email || '',
           realName: user?.realName || '',
         });
-        setMessage({ type: 'error', text: t('auth.updateFailed') });
+        // Use the actual error message from AuthContext, or fallback to generic message
+        const errorMessage = authError || t('auth.updateFailed');
+        enqueueSnackbar(errorMessage, {
+          variant: 'error',
+          autoHideDuration: 3000,
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          content: (key, message) => (
+            <Alert
+              severity="error"
+              onClose={() => closeSnackbar(key)}
+              sx={{
+                width: '100%',
+                minWidth: '400px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              {message}
+            </Alert>
+          ),
+        });
       }
     } catch (error) {
       console.error('Profile update error:', error);
@@ -169,7 +299,26 @@ const UserProfile: React.FC = () => {
         email: user?.email || '',
         realName: user?.realName || '',
       });
-      setMessage({ type: 'error', text: t('auth.updateFailed') });
+      // Use the actual error message from AuthContext, or fallback to generic message
+      const errorMessage = authError || t('auth.updateFailed');
+      enqueueSnackbar(errorMessage, {
+        variant: 'error',
+        autoHideDuration: 3000,
+        anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        content: (key, message) => (
+          <Alert
+            severity="error"
+            onClose={() => closeSnackbar(key)}
+            sx={{
+              width: '100%',
+              minWidth: '400px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {message}
+          </Alert>
+        ),
+      });
     }
   };
 
@@ -179,29 +328,114 @@ const UserProfile: React.FC = () => {
 
     // 验证文件类型
     if (!file.type.startsWith('image/')) {
-      setMessage({ type: 'error', text: t('auth.invalidFileType') });
+      enqueueSnackbar(t('auth.invalidFileType'), {
+        variant: 'error',
+        autoHideDuration: 3000,
+        anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        content: (key, message) => (
+          <Alert
+            severity="error"
+            onClose={() => closeSnackbar(key)}
+            sx={{
+              width: '100%',
+              minWidth: '400px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {message}
+          </Alert>
+        ),
+      });
       return;
     }
 
     // 验证文件大小（5MB）
     if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: t('auth.fileTooLarge') });
+      enqueueSnackbar(t('auth.fileTooLarge'), {
+        variant: 'error',
+        autoHideDuration: 3000,
+        anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        content: (key, message) => (
+          <Alert
+            severity="error"
+            onClose={() => closeSnackbar(key)}
+            sx={{
+              width: '100%',
+              minWidth: '400px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {message}
+          </Alert>
+        ),
+      });
       return;
     }
 
     setAvatarUploading(true);
     try {
       await uploadAvatar(file);
-      setMessage({ type: 'success', text: t('auth.avatarUpdated') });
+      enqueueSnackbar(t('auth.avatarUpdated'), {
+        variant: 'success',
+        autoHideDuration: 3000,
+        anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        content: (key, message) => (
+          <Alert
+            severity="success"
+            onClose={() => closeSnackbar(key)}
+            sx={{
+              width: '100%',
+              minWidth: '400px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {message}
+          </Alert>
+        ),
+      });
     } catch (error) {
-      setMessage({ type: 'error', text: t('auth.avatarUploadFailed') });
+      enqueueSnackbar(t('auth.avatarUploadFailed'), {
+        variant: 'error',
+        autoHideDuration: 3000,
+        anchorOrigin: { vertical: 'top', horizontal: 'center' },
+        content: (key, message) => (
+          <Alert
+            severity="error"
+            onClose={() => closeSnackbar(key)}
+            sx={{
+              width: '100%',
+              minWidth: '400px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            {message}
+          </Alert>
+        ),
+      });
     } finally {
       setAvatarUploading(false);
     }
   };
 
   const getRoleChips = (roles?: string[]) => {
-    if (!roles || roles.length === 0) {
+    // 尝试从 permissions.roles 获取角色信息
+    let displayRoles: Array<{ code: string; name: string }> = [];
+
+    if (user?.permissions && typeof user.permissions === 'object' && 'roles' in user.permissions) {
+      const permissionRoles = (user.permissions as any).roles || [];
+      displayRoles = permissionRoles.map((r: any) => ({
+        code: r.roleCode,
+        name: r.displayName
+      }));
+    } else if (roles && roles.length > 0) {
+      // 如果有简单的角色字符串数组，使用它
+      displayRoles = roles.map(role => ({
+        code: role,
+        name: role
+      }));
+    }
+
+    if (displayRoles.length === 0) {
       return (
         <Chip
           label={t('auth.merchantAdmin')}
@@ -215,23 +449,29 @@ const UserProfile: React.FC = () => {
       );
     }
 
-    return roles.map((role, index) => {
-      const roleConfig = {
-        'ROLE_SYSTEM_ADMIN': { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('auth.systemAdmin') },
-        'ROLE_MERCHANT_ADMIN': { color: '#6366F1', bg: alpha('#6366F1', 0.1), label: t('auth.merchantAdmin') },
-        'ROLE_STAFF': { color: '#10B981', bg: alpha('#10B981', 0.1), label: 'Staff' },
-        'ROLE_USER': { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: 'User' },
+    return displayRoles.map((role, index) => {
+      const roleConfig: Record<string, { color: string; bg: string; label: string }> = {
+        'SUPER_ADMIN': { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('auth.superAdmin') },
+        'SYSTEM_ADMIN': { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('auth.systemAdmin') },
+        'MANAGER': { color: '#6366F1', bg: alpha('#6366F1', 0.1), label: t('auth.manager') },
+        'ACCOUNTANT': { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('auth.accountant') },
+        'RECEPTIONIST': { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('auth.receptionist') },
+        'STAFF': { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('auth.staff') },
       };
-      
-      const config = roleConfig[role as keyof typeof roleConfig] || roleConfig['ROLE_MERCHANT_ADMIN'];
-      
+
+      // 使用 displayName 如果有，否则使用配置的 label，最后使用 code
+      const config = roleConfig[role.code];
+      const label = role.name !== role.code ? role.name : (config?.label || role.code);
+      const color = config?.color || '#6366F1';
+      const bg = config?.bg || alpha('#6366F1', 0.1);
+
       return (
         <Chip
           key={index}
-          label={config.label}
+          label={label}
           sx={{
-            backgroundColor: config.bg,
-            color: config.color,
+            backgroundColor: bg,
+            color: color,
             fontWeight: 600,
             fontSize: '0.75rem',
             mr: 1,
@@ -274,29 +514,21 @@ const UserProfile: React.FC = () => {
               {t('auth.userProfileSubtitle')}
             </Typography>
           </Box>
-          {/* 修改密码按钮右对齐，缩小尺寸，渐变前深后浅 */}
+          {/* 修改密码按钮 */}
           <Button
             variant="contained"
-            color="primary"
             size="medium"
-            startIcon={<LockResetIcon sx={{ fontSize: 18 }} />}
+            startIcon={<LockResetIcon />}
             sx={{
-              borderRadius: 4,
-              fontWeight: 700,
-              fontSize: 15,
-              background: 'linear-gradient(90deg, #4F46E5 0%, #A5B4FC 100%)',
-              boxShadow: '0 2px 8px rgba(99,102,241,0.10)',
-              textTransform: 'none',
-              letterSpacing: 0.5,
               px: 3,
               py: 1,
-              transition: 'all 0.2s',
+              textTransform: 'none',
+              fontWeight: 500,
+              borderRadius: 2,
+              backgroundColor: '#6366f1',
               '&:hover': {
-                background: 'linear-gradient(90deg, #6366F1 0%, #A5B4FC 100%)',
-                boxShadow: '0 4px 16px rgba(99,102,241,0.15)',
-                transform: 'translateY(-1px) scale(1.02)',
+                backgroundColor: '#4f46e5',
               },
-              alignSelf: 'flex-start',
             }}
             onClick={handleOpenPasswordDialog}
           >
@@ -305,19 +537,29 @@ const UserProfile: React.FC = () => {
         </Box>
       </Box>
 
-      {message && (
-        <Alert 
-          severity={message.type} 
-          onClose={() => setMessage(null)}
-          sx={{ 
+      {/* 无权限提示 */}
+      {!isSuperAdmin() && userPermissions.permissionCodes.length === 0 && (
+        <Alert
+          severity="warning"
+          sx={{
             mb: 3,
             borderRadius: 2,
+            backgroundColor: alpha('#6366F1', 0.08),
+            border: 'none',
             '& .MuiAlert-message': {
-              fontWeight: 500,
-            }
+              width: '100%',
+            },
+            '& .MuiAlert-icon': {
+              color: '#F59E0B',
+            },
           }}
         >
-          {message.text}
+          <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5, color: '#1e293b' }}>
+            {t('auth.noPermissionTitle', '您暂时还没有系统权限')}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b' }}>
+            {t('auth.noPermissionMessage', '您的账户已成功注册，但尚未分配任何系统权限。请联系您的店长或管理员为您分配相应的使用权限，以便访问系统功能。')}
+          </Typography>
         </Alert>
       )}
 
@@ -407,7 +649,7 @@ const UserProfile: React.FC = () => {
                   {t('auth.memberSince')}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {user.lastLoginTime ? new Date(user.lastLoginTime).toLocaleDateString() : 'N/A'}
+                  {user.createdAt ? formatUtcToMerchantTime(user.createdAt, 'MMM dd, yyyy') : 'N/A'}
                 </Typography>
               </Box>
             </Box>
@@ -428,14 +670,15 @@ const UserProfile: React.FC = () => {
                 <Button
                   startIcon={<EditIcon />}
                   onClick={handleEdit}
-                  variant="outlined"
+                  size="small"
                   sx={{
-                    borderRadius: 2,
-                    borderColor: '#6366F1',
-                    color: '#6366F1',
+                    textTransform: 'none',
+                    color: '#6366f1',
+                    borderRadius: 1.5,
+                    px: 2,
+                    py: 0.75,
                     '&:hover': {
-                      borderColor: '#4F46E5',
-                      backgroundColor: alpha('#6366F1', 0.04),
+                      backgroundColor: 'rgba(99, 102, 241, 0.08)',
                     },
                   }}
                 >
@@ -444,31 +687,42 @@ const UserProfile: React.FC = () => {
               ) : (
                 <Box display="flex" gap={1}>
                   <Button
-                    startIcon={<SaveIcon />}
+                    startIcon={loading ? <CircularProgress size={16} sx={{ color: '#10b981' }} /> : <CheckCircleIcon />}
                     onClick={handleSave}
-                    variant="contained"
                     disabled={loading}
+                    variant="outlined"
+                    size="small"
                     sx={{
-                      borderRadius: 2,
-                      background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                      textTransform: 'none',
+                      color: '#10b981',
+                      borderColor: '#10b981',
+                      borderRadius: 1.5,
+                      px: 2,
+                      py: 0.75,
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #4F46E5, #3730A3)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                        borderColor: '#10b981',
+                      },
+                      '&:disabled': {
+                        borderColor: '#e5e7eb',
+                        color: '#9ca3af',
                       },
                     }}
                   >
-                    {loading ? <CircularProgress size={20} /> : t('auth.saveChanges')}
+                    {t('auth.saveChanges')}
                   </Button>
                   <Button
                     startIcon={<CancelIcon />}
                     onClick={handleCancel}
-                    variant="outlined"
+                    size="small"
                     sx={{
-                      borderRadius: 2,
-                      borderColor: '#9CA3AF',
-                      color: '#6B7280',
+                      textTransform: 'none',
+                      color: '#6b7280',
+                      borderRadius: 1.5,
+                      px: 2,
+                      py: 0.75,
                       '&:hover': {
-                        borderColor: '#6B7280',
-                        backgroundColor: alpha('#6B7280', 0.04),
+                        backgroundColor: 'rgba(107, 114, 128, 0.08)',
                       },
                     }}
                   >
@@ -499,6 +753,8 @@ const UserProfile: React.FC = () => {
                 value={editing ? formData.email : user.email}
                 onChange={handleChange}
                 disabled={!editing}
+                error={editing && !!emailError}
+                helperText={editing && emailError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
@@ -572,96 +828,268 @@ const UserProfile: React.FC = () => {
       </Card>
 
       {/* 修改密码弹窗 */}
-      <Dialog open={passwordDialogOpen} onClose={handleClosePasswordDialog}
-        maxWidth={false}
-        fullWidth={false}
+      <Dialog
+        open={passwordDialogOpen}
+        onClose={handleClosePasswordDialog}
+        maxWidth="sm"
+        fullWidth
         PaperProps={{
           sx: {
-            minWidth: 460,
-            maxWidth: 480,
-            width: 460,
-            borderRadius: 4,
-            boxShadow: '0 8px 32px rgba(99,102,241,0.18)',
-            border: 'none',
-            p: 0,
-            background: 'linear-gradient(135deg, #F3F4F6 60%, #EEF2FF 100%)',
-            position: 'relative',
-            overflow: 'visible',
+            borderRadius: 3,
           }
         }}
       >
-        {/* 顶部渐变条 */}
-        <Box sx={{ height: 6, width: '100%', borderTopLeftRadius: 16, borderTopRightRadius: 16, background: 'linear-gradient(90deg, #4F46E5 0%, #A5B4FC 100%)', position: 'absolute', top: 0, left: 0 }} />
-        <DialogTitle sx={{ fontWeight: 600, color: '#4F46E5', pt: 3, pb: 1, fontSize: 19, letterSpacing: 0.5, textAlign: 'center' }}>{t('auth.changePassword')}</DialogTitle>
-        <DialogContent sx={{ pt: 1, px: 4, pb: 0 }}>
-          <TextField
-            margin="normal"
-            label={t('auth.oldPassword')}
-            name="oldPassword"
-            type="password"
-            fullWidth
-            value={passwordForm.oldPassword}
-            onChange={handlePasswordInputChange}
-            autoComplete="current-password"
-            sx={{ mb: 2, borderRadius: 2, background: '#F3F4F6' }}
-            InputProps={{
-              style: { borderRadius: 8, fontSize: 15, background: '#F3F4F6', height: 40 },
-              startAdornment: <InputAdornment position="start"><VpnKeyIcon color="primary" /></InputAdornment>,
-            }}
-            InputLabelProps={{ style: { fontWeight: 500, fontSize: 15 } }}
-          />
-          <TextField
-            margin="normal"
-            label={t('auth.newPassword')}
-            name="newPassword"
-            type={showNewPassword ? 'text' : 'password'}
-            fullWidth
-            value={passwordForm.newPassword}
-            onChange={handlePasswordInputChange}
-            autoComplete="new-password"
-            sx={{ mb: 2, borderRadius: 2, background: '#F3F4F6' }}
-            InputProps={{
-              style: { borderRadius: 8, fontSize: 15, background: '#F3F4F6', height: 40 },
-              startAdornment: <InputAdornment position="start"><LockIcon color="primary" /></InputAdornment>,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setShowNewPassword((v) => !v)} edge="end" tabIndex={-1}>
-                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            InputLabelProps={{ style: { fontWeight: 500, fontSize: 15 } }}
-          />
-          <TextField
-            margin="normal"
-            label={t('auth.confirmPassword')}
-            name="confirmPassword"
-            type={showConfirmPassword ? 'text' : 'password'}
-            fullWidth
-            value={passwordForm.confirmPassword}
-            onChange={handlePasswordInputChange}
-            autoComplete="new-password"
-            sx={{ mb: 1, borderRadius: 2, background: '#F3F4F6' }}
-            InputProps={{
-              style: { borderRadius: 8, fontSize: 15, background: '#F3F4F6', height: 40 },
-              startAdornment: <InputAdornment position="start"><LockIcon color="primary" /></InputAdornment>,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setShowConfirmPassword((v) => !v)} edge="end" tabIndex={-1}>
-                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            InputLabelProps={{ style: { fontWeight: 500, fontSize: 15 } }}
-          />
-          {passwordError && <Alert severity="error" sx={{ mt: 2, borderRadius: 2, fontWeight: 500, fontSize: 14 }}>{passwordError}</Alert>}
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#6366F1' }}>
+              {t('auth.changePassword')}
+            </Typography>
+            <IconButton onClick={handleClosePasswordDialog}>
+              <CancelIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 3 }}>
+            <TextField
+              label={t('auth.oldPassword')}
+              name="oldPassword"
+              type="password"
+              fullWidth
+              value={passwordForm.oldPassword}
+              onChange={handlePasswordInputChange}
+              autoComplete="current-password"
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#6366F1',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#6366F1',
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <VpnKeyIcon sx={{ color: '#6366F1' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Box>
+              <TextField
+                label={t('auth.newPassword')}
+                name="newPassword"
+                type={showNewPassword ? 'text' : 'password'}
+                fullWidth
+                value={passwordForm.newPassword}
+                onChange={handlePasswordInputChange}
+                onFocus={() => setPasswordTouchedFields(prev => ({ ...prev, newPassword: true }))}
+                autoComplete="new-password"
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#6366F1',
+                    },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#6366F1',
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon sx={{ color: '#6366F1' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowNewPassword((v) => !v)}
+                        edge="end"
+                        tabIndex={-1}
+                      >
+                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {/* 密码要求提示 - 只在用户聚焦密码框且未全部满足时显示 */}
+              {passwordTouchedFields.newPassword && !(
+                passwordForm.newPassword &&
+                passwordForm.newPassword.length >= 8 &&
+                /[A-Z]/.test(passwordForm.newPassword) &&
+                /[a-z]/.test(passwordForm.newPassword) &&
+                /[0-9]/.test(passwordForm.newPassword) &&
+                /[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.newPassword)
+              ) && (
+                <Fade in={true}>
+                  <Box sx={{ mt: 0.5, mb: 1, px: 1 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500 }}>
+                      {t('auth.passwordRequirements')}:
+                    </Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {/* 至少8位 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                        {passwordForm.newPassword.length >= 8 ? (
+                          <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                        ) : (
+                          <CancelIconMUI sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: passwordForm.newPassword.length >= 8 ? 'success.main' : 'text.secondary',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {t('auth.passwordMinLength')}
+                        </Typography>
+                      </Box>
+                      {/* 大写字母 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                        {/[A-Z]/.test(passwordForm.newPassword) ? (
+                          <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                        ) : (
+                          <CancelIconMUI sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: /[A-Z]/.test(passwordForm.newPassword) ? 'success.main' : 'text.secondary',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {t('auth.passwordNeedsUpperCase')}
+                        </Typography>
+                      </Box>
+                      {/* 小写字母 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                        {/[a-z]/.test(passwordForm.newPassword) ? (
+                          <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                        ) : (
+                          <CancelIconMUI sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: /[a-z]/.test(passwordForm.newPassword) ? 'success.main' : 'text.secondary',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {t('auth.passwordNeedsLowerCase')}
+                        </Typography>
+                      </Box>
+                      {/* 数字 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                        {/[0-9]/.test(passwordForm.newPassword) ? (
+                          <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                        ) : (
+                          <CancelIconMUI sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: /[0-9]/.test(passwordForm.newPassword) ? 'success.main' : 'text.secondary',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {t('auth.passwordNeedsNumber')}
+                        </Typography>
+                      </Box>
+                      {/* 特殊字符 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                        {/[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.newPassword) ? (
+                          <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                        ) : (
+                          <CancelIconMUI sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                        )}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: /[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.newPassword) ? 'success.main' : 'text.secondary',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {t('auth.passwordNeedsSpecialChar')}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Fade>
+              )}
+            </Box>
+
+            <TextField
+              label={t('auth.confirmPassword')}
+              name="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              fullWidth
+              value={passwordForm.confirmPassword}
+              onChange={handlePasswordInputChange}
+              onFocus={() => setPasswordTouchedFields(prev => ({ ...prev, confirmPassword: true }))}
+              autoComplete="new-password"
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#6366F1',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#6366F1',
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon sx={{ color: '#6366F1' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      edge="end"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {passwordError && (
+              <Alert severity="error" sx={{ borderRadius: 2 }}>
+                {passwordError}
+              </Alert>
+            )}
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 4, pb: 3, pt: 1, justifyContent: 'center' }}>
-          <Button onClick={handleClosePasswordDialog} disabled={passwordLoading} variant="outlined" sx={{ borderRadius: 4, minWidth: 90, fontWeight: 600, fontSize: 13, height: 38, borderWidth: 1.5, borderColor: '#6366F1', color: '#4F46E5', background: '#F3F4F6', transition: 'all 0.2s', '&:hover': { borderColor: '#4F46E5', background: '#EEF2FF' } }}>{t('common.cancel')}</Button>
-          <Button onClick={handleChangePassword} color="primary" variant="contained" disabled={passwordLoading} sx={{ borderRadius: 4, minWidth: 90, fontWeight: 700, fontSize: 13, height: 38, ml: 2, background: 'linear-gradient(90deg, #4F46E5 0%, #A5B4FC 100%)', boxShadow: '0 2px 8px rgba(99,102,241,0.10)', transition: 'all 0.2s', '&:hover': { background: 'linear-gradient(90deg, #6366F1 0%, #A5B4FC 100%)', boxShadow: '0 4px 16px rgba(99,102,241,0.15)', transform: 'scale(1.03)' } }}>
-            {passwordLoading ? <CircularProgress size={20} /> : t('common.confirm')}
+
+        <DialogActions>
+          <Button
+            onClick={handleClosePasswordDialog}
+            disabled={passwordLoading}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={handleChangePassword}
+            disabled={passwordLoading}
+            variant="contained"
+          >
+            {passwordLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('common.confirm')}
           </Button>
         </DialogActions>
       </Dialog>

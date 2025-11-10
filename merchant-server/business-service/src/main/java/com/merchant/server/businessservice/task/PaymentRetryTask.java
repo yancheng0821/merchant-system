@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -46,7 +47,7 @@ public class PaymentRetryTask {
                     // 更新重试次数和下次重试时间
                     transaction.setRetryCount(transaction.getRetryCount() + 1);
                     transaction.setNextRetryTime(calculateNextRetryTime(transaction.getRetryCount()));
-                    transaction.setUpdatedAt(LocalDateTime.now());
+                    transaction.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                     posTransactionMapper.updateById(transaction);
                     
                 } catch (Exception e) {
@@ -80,7 +81,7 @@ public class PaymentRetryTask {
                     // 更新重试次数
                     callback.setRetryCount(callback.getRetryCount() + 1);
                     callback.setNextRetryTime(calculateNextRetryTime(callback.getRetryCount()));
-                    callback.setUpdatedAt(LocalDateTime.now());
+                    callback.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                     paymentCallbackMapper.updateById(callback);
                     
                 } catch (Exception e) {
@@ -100,6 +101,6 @@ public class PaymentRetryTask {
         // 重试间隔：1分钟、5分钟、15分钟、30分钟
         int[] intervals = {1, 5, 15, 30};
         int intervalMinutes = retryCount < intervals.length ? intervals[retryCount] : 60;
-        return LocalDateTime.now().plusMinutes(intervalMinutes);
+        return LocalDateTime.now(ZoneOffset.UTC).plusMinutes(intervalMinutes);
     }
 }

@@ -9,14 +9,16 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: false  # 生产环境禁用服务发现
+          enabled: true  # 启用服务发现
+          lower-case-service-id: true
       globalcors:
         corsConfigurations:
           '[/**]':
             allowedOrigins:
-              - "https://swiftmerchantplatform.com"
-              - "https://www.swiftmerchantplatform.com"
-              - "https://api.swiftmerchantplatform.com"
+              - "${FRONTEND_URL:http://localhost:3000}"
+              - "https://vamerchant.app"
+              - "https://www.vamerchant.app"
+              - "https://api.vamerchant.app"
             allowedMethods:
               - GET
               - POST
@@ -31,40 +33,52 @@ spring:
             allowCredentials: true
       routes:
         - id: auth-service
-          uri: http://auth-service:8081  # K8s内部服务
+          uri: lb://auth-service  # 通过Eureka负载均衡
           predicates:
             - Path=/api/auth/**
         - id: merchant-service
-          uri: http://merchant-service:8082
+          uri: lb://merchant-service
           predicates:
             - Path=/api/merchant/**
         - id: business-service
-          uri: http://business-service:8083
+          uri: lb://business-service
           predicates:
             - Path=/api/business/**
         - id: ai-service
-          uri: http://ai-service:5000
+          uri: http://localhost:5001  # AI服务直接路由
           predicates:
             - Path=/api/ai/**
-        - id: analytics-service
-          uri: http://analytics-service:8086
-          predicates:
-            - Path=/api/analytics/**
         - id: notification-service
-          uri: http://notification-service:8084
+          uri: lb://notification-service
           predicates:
             - Path=/api/notification/**
-        - id: file-service
-          uri: http://file-service:80
+        - id: static-resources
+          uri: lb://auth-service
           predicates:
-            - Path=/api/files/**
+            - Path=/static/uploads/**
   redis:
-    host: ${REDIS_HOST}
-    port: ${REDIS_PORT}
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:MerchantApp@2024}
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:merchant-system-jwt-secret-key-2024}
+  expiration: 86400000
 
 eureka:
   client:
-    enabled: false  # 生产环境禁用Eureka
+    enabled: true
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    appname: ${spring.application.name}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
 
 # 生产环境日志配置
 logging:

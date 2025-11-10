@@ -2,6 +2,7 @@ package com.merchant.server.authservice.entity;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Data
 public class MerchantSetting {
@@ -24,7 +25,7 @@ public class MerchantSetting {
         this.settingValue = settingValue;
         this.settingType = settingType;
         this.description = description;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneOffset.UTC);
+        this.updatedAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 }

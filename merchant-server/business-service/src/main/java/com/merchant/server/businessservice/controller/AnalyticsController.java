@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class AnalyticsController {
     /**
      * 获取订单统计数据
      */
+    @RequiresPermission("analytics:view_revenue")
     @GetMapping("/orders")
     public ResponseEntity<List<Map<String, Object>>> getOrderStats(
             @RequestParam Long tenantId,
@@ -43,6 +45,7 @@ public class AnalyticsController {
     /**
      * 获取服务统计数据
      */
+    @RequiresPermission("analytics:view_service_stats")
     @GetMapping("/services")
     public ResponseEntity<List<Map<String, Object>>> getServiceStats(
             @RequestParam Long tenantId,
@@ -63,6 +66,7 @@ public class AnalyticsController {
     /**
      * 获取资源统计数据
      */
+    @RequiresPermission("analytics:view_resource_performance")
     @GetMapping("/resources")
     public ResponseEntity<List<Map<String, Object>>> getResourceStats(
             @RequestParam Long tenantId,
@@ -83,6 +87,7 @@ public class AnalyticsController {
     /**
      * 获取业务指标数据
      */
+    @RequiresPermission("analytics:view_business_metrics")
     @GetMapping("/metrics")
     public ResponseEntity<Map<String, Object>> getBusinessMetrics(
             @RequestParam Long tenantId,

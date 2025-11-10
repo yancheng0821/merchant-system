@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Business Service客户端
  */
-@FeignClient(name = "business-service", url = "http://business-service:8083")
+@FeignClient(name = "business-service")
 public interface BusinessServiceClient {
     
     /**

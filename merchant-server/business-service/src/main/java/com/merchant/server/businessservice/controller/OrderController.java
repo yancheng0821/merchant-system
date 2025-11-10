@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.dto.OrderDTO;
 import com.merchant.server.businessservice.dto.OrderCreateDTO;
 import com.merchant.server.businessservice.dto.OrderServiceCreateDTO;
@@ -33,6 +34,7 @@ public class OrderController {
     /**
      * 分页查询订单
      */
+    @RequiresPermission("orders:view")
     @GetMapping
     public ResponseEntity<Map<String, Object>> getOrders(
             @RequestParam Long tenantId,
@@ -69,6 +71,7 @@ public class OrderController {
     /**
      * 获取订单详情
      */
+    @RequiresPermission("orders:view")
     @GetMapping("/{id}")
     public ResponseEntity<OrderDTO> getOrderById(@PathVariable Long id) {
         log.info("Fetching order details for id: {}", id);
@@ -84,6 +87,7 @@ public class OrderController {
     /**
      * 创建订单
      */
+    @RequiresPermission("orders:create")
     @PostMapping
     public ResponseEntity<?> createOrder(@Valid @RequestBody OrderCreateDTO orderCreate) {
         log.info("Creating new order for tenant: {}", orderCreate.getTenantId());
@@ -144,6 +148,7 @@ public class OrderController {
     /**
      * 更新订单
      */
+    @RequiresPermission("orders:update")
     @PutMapping("/{id}")
     public ResponseEntity<OrderDTO> updateOrder(
             @PathVariable Long id,
@@ -165,6 +170,7 @@ public class OrderController {
     /**
      * 取消订单
      */
+    @RequiresPermission("orders:delete")
     @PostMapping("/{id}/cancel")
     public ResponseEntity<Map<String, Object>> cancelOrder(@PathVariable Long id) {
         log.info("Cancelling order: {}", id);
@@ -186,6 +192,7 @@ public class OrderController {
     /**
      * 获取订单统计
      */
+    @RequiresPermission("orders:view_stats")
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getOrderStats(@RequestParam Long tenantId) {
         log.info("Fetching order statistics for tenant: {}", tenantId);
@@ -197,6 +204,7 @@ public class OrderController {
     /**
      * 获取今日订单
      */
+    @RequiresPermission("orders:view")
     @GetMapping("/today")
     public ResponseEntity<List<OrderDTO>> getTodayOrders(@RequestParam Long tenantId) {
         log.info("Fetching today's orders for tenant: {}", tenantId);

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,8 +43,8 @@ public class TenantInvitationServiceImpl implements TenantInvitationService {
         invitation.setUsedCount(0);
         invitation.setExpiresAt(createDTO.getExpiresAt());
         invitation.setStatus(TenantInvitation.InvitationStatus.ACTIVE);
-        invitation.setCreatedAt(LocalDateTime.now());
-        invitation.setUpdatedAt(LocalDateTime.now());
+        invitation.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        invitation.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         tenantInvitationMapper.insert(invitation);
         
@@ -54,29 +55,29 @@ public class TenantInvitationServiceImpl implements TenantInvitationService {
     @Override
     public TenantInvitation validateInvitationCode(String invitationCode) {
         log.debug("验证邀请码 - code: {}", invitationCode);
-        
+
         Optional<TenantInvitation> invitationOpt = tenantInvitationMapper.findByInvitationCode(invitationCode);
         if (invitationOpt.isEmpty()) {
             log.warn("邀请码不存在 - code: {}", invitationCode);
-            throw new BusinessException("邀请码不存在");
+            throw new BusinessException("Invitation code does not exist");
         }
-        
+
         TenantInvitation invitation = invitationOpt.get();
-        
+
         if (!invitation.isValid()) {
-            log.warn("邀请码无效 - code: {}, status: {}, usedCount: {}, maxUses: {}, expiresAt: {}", 
-                    invitationCode, invitation.getStatus(), invitation.getUsedCount(), 
+            log.warn("邀请码无效 - code: {}, status: {}, usedCount: {}, maxUses: {}, expiresAt: {}",
+                    invitationCode, invitation.getStatus(), invitation.getUsedCount(),
                     invitation.getMaxUses(), invitation.getExpiresAt());
-            
+
             if (invitation.getStatus() != TenantInvitation.InvitationStatus.ACTIVE) {
-                throw new BusinessException("邀请码已失效");
-            } else if (invitation.getExpiresAt() != null && invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
-                throw new BusinessException("邀请码已过期");
+                throw new BusinessException("Invitation code is inactive");
+            } else if (invitation.getExpiresAt() != null && invitation.getExpiresAt().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
+                throw new BusinessException("Invitation code has expired");
             } else if (invitation.getUsedCount() >= invitation.getMaxUses()) {
-                throw new BusinessException("邀请码使用次数已达上限");
+                throw new BusinessException("Invitation code usage limit reached");
             }
         }
-        
+
         log.debug("邀请码验证通过 - code: {}, tenantId: {}", invitationCode, invitation.getTenantId());
         return invitation;
     }
@@ -93,7 +94,7 @@ public class TenantInvitationServiceImpl implements TenantInvitationService {
         InvitationUsageLog log = new InvitationUsageLog();
         log.setInvitationId(invitationId);
         log.setUserId(userId);
-        log.setUsedAt(LocalDateTime.now());
+        log.setUsedAt(LocalDateTime.now(ZoneOffset.UTC));
         invitationUsageLogMapper.insert(log);
         
         this.log.info("邀请码使用成功 - invitationId: {}, userId: {}", invitationId, userId);

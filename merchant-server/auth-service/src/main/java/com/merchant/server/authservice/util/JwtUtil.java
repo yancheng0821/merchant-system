@@ -82,6 +82,21 @@ public class JwtUtil {
         Claims claims = getAllClaimsFromToken(token);
         return claims.get("userId", Long.class);
     }
+
+    // 从token中提取用户ID（Aspect使用）
+    public Long extractUserId(String token) {
+        return getUserIdFromToken(token);
+    }
+
+    // 从token中提取租户ID
+    public Long extractTenantId(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        Object tenantId = claims.get("tenantId");
+        if (tenantId instanceof Integer) {
+            return ((Integer) tenantId).longValue();
+        }
+        return claims.get("tenantId", Long.class);
+    }
     
     public String getUsernameFromRefreshToken(String refreshToken) {
         return getClaimFromToken(refreshToken, Claims::getSubject);

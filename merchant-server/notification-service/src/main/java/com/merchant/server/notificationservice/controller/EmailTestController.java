@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class EmailTestController {
             result.put("subject", subject);
             result.put("contentLength", content.length());
             result.put("result", success ? "邮件发送成功" : "邮件发送失败");
-            result.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            result.put("timestamp", LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
             
             if (success) {
                 log.info("测试邮件发送成功：{}", email);
@@ -148,7 +149,7 @@ public class EmailTestController {
             
             if (content == null || content.trim().isEmpty()) {
                 content = "这是一封批量发送的测试邮件。\n\n发送时间：" + 
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             }
             
             String[] emailArray = emails.toArray(new String[0]);
@@ -228,7 +229,7 @@ public class EmailTestController {
                "这是一封来自美容院预约系统的测试邮件。\n\n" +
                "如果您收到此邮件，说明邮件服务配置正确，可以正常发送邮件。\n\n" +
                "测试信息：\n" +
-               "- 发送时间：" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n" +
+               "- 发送时间：" + LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "\n" +
                "- 服务提供商：AWS SES\n" +
                "- 邮件类型：纯文本\n\n" +
                "感谢您使用我们的服务！\n\n" +
@@ -267,7 +268,7 @@ public class EmailTestController {
                "            <div class=\"info-box\">" +
                "                <h3>测试信息</h3>" +
                "                <ul>" +
-               "                    <li><strong>发送时间：</strong>" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "</li>" +
+               "                    <li><strong>发送时间：</strong>" + LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "</li>" +
                "                    <li><strong>服务提供商：</strong>AWS SES</li>" +
                "                    <li><strong>邮件类型：</strong>HTML</li>" +
                "                    <li><strong>支持功能：</strong>样式、图片、链接等</li>" +

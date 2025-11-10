@@ -130,15 +130,15 @@
         <include refid="Where_Conditions"/>
     </select>
 
-    <!-- Dashboard 相关查询 -->
+    <!-- Dashboard 查询服务分类统计 - 使用 datetime 范围 (支持时区转换) -->
     <select id="getServiceCategoryStats" resultType="map">
-        SELECT 
+        SELECT
             sc.name as category_name,
             COALESCE(stats.order_count, 0) as order_count,
             COALESCE(stats.total_revenue, 0) as total_revenue
         FROM service_categories sc
         LEFT JOIN (
-            SELECT 
+            SELECT
                 s.category_id,
                 COUNT(DISTINCT o.id) as order_count,
                 COALESCE(SUM(os.price * os.quantity), 0) as total_revenue
@@ -147,7 +147,8 @@
             INNER JOIN orders o ON os.order_id = o.id
                 AND o.tenant_id = #{tenantId}
                 AND o.payment_status = 'paid'
-                AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+                AND o.created_at &gt;= #{startDateTime}
+                AND o.created_at &lt;= #{endDateTime}
             WHERE s.tenant_id = #{tenantId}
             GROUP BY s.category_id
         ) stats ON sc.id = stats.category_id
@@ -155,17 +156,19 @@
         ORDER BY COALESCE(stats.total_revenue, 0) DESC, sc.name
     </select>
 
+    <!-- Dashboard 查询热门服务 - 使用 datetime 范围 (支持时区转换) -->
     <select id="getTopServices" resultType="map">
-        SELECT 
+        SELECT
             s.name as service_name,
             COUNT(DISTINCT CASE WHEN o.id IS NOT NULL THEN os.id END) as order_count,
             COALESCE(SUM(CASE WHEN o.id IS NOT NULL THEN os.price * os.quantity ELSE 0 END), 0) as total_revenue
         FROM services s
         LEFT JOIN order_services os ON s.id = os.service_id
-        LEFT JOIN orders o ON os.order_id = o.id 
+        LEFT JOIN orders o ON os.order_id = o.id
             AND o.tenant_id = #{tenantId}
             AND o.payment_status = 'paid'
-            AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+            AND o.created_at &gt;= #{startDateTime}
+            AND o.created_at &lt;= #{endDateTime}
         WHERE s.tenant_id = #{tenantId} AND s.status = 'ACTIVE'
         GROUP BY s.id, s.name
         HAVING COUNT(DISTINCT CASE WHEN o.id IS NOT NULL THEN os.id END) > 0

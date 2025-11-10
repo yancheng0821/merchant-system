@@ -27,7 +27,19 @@ public interface ResourceMapper {
     void update(Resource resource);
     
     void deleteById(@Param("id") Long id);
-    
+
+    // 检查手机号是否已存在
+    boolean existsByTenantIdAndPhone(@Param("tenantId") Long tenantId, @Param("phone") String phone);
+
+    // 检查邮箱是否已存在
+    boolean existsByTenantIdAndEmail(@Param("tenantId") Long tenantId, @Param("email") String email);
+
+    // 根据租户ID和手机号查询资源
+    Resource selectByTenantIdAndPhone(@Param("tenantId") Long tenantId, @Param("phone") String phone);
+
+    // 根据租户ID和邮箱查询资源
+    Resource selectByTenantIdAndEmail(@Param("tenantId") Long tenantId, @Param("email") String email);
+
     // 根据服务查询可用资源
     List<Resource> findAvailableResourcesByService(@Param("serviceId") Long serviceId, @Param("tenantId") Long tenantId);
     
@@ -67,4 +79,30 @@ public interface ResourceMapper {
                                        @Param("bookingDate") LocalDate bookingDate,
                                        @Param("startTime") LocalTime startTime,
                                        @Param("endTime") LocalTime endTime);
+
+    // 检查资源在指定时间段是否已被预约（排除指定预约）
+    boolean isResourceBookedInTimeSlotExcluding(@Param("resourceId") Long resourceId,
+                                                @Param("bookingDate") LocalDate bookingDate,
+                                                @Param("startTime") LocalTime startTime,
+                                                @Param("endTime") LocalTime endTime,
+                                                @Param("excludeAppointmentId") Long excludeAppointmentId);
+
+    // ========== 新增：多时间段排班管理 ==========
+
+    /**
+     * 根据资源ID和星期几查询可用性记录
+     */
+    List<ResourceAvailability> findAvailabilitiesByResourceIdAndDay(@Param("resourceId") Long resourceId,
+                                                                     @Param("dayOfWeek") Integer dayOfWeek);
+
+    /**
+     * 根据ID删除可用性记录
+     */
+    void deleteAvailabilityById(@Param("id") Long id);
+
+    /**
+     * 根据资源ID和星期几删除可用性记录
+     */
+    void deleteAvailabilitiesByResourceIdAndDay(@Param("resourceId") Long resourceId,
+                                                 @Param("dayOfWeek") Integer dayOfWeek);
 }

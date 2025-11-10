@@ -1,5 +1,8 @@
 package com.merchant.server.businessservice.service;
 
+import com.merchant.server.businessservice.dto.DayAvailabilityDTO;
+import com.merchant.server.businessservice.dto.TimeSegmentDTO;
+import com.merchant.server.businessservice.dto.WeekAvailabilityDTO;
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
 import com.merchant.server.businessservice.entity.ResourceBookingSlot;
@@ -79,4 +82,31 @@ public interface ResourceService {
      * 获取资源的预约时间段
      */
     List<ResourceBookingSlot> getResourceBookingSlots(Long resourceId, LocalDate bookingDate);
+
+    // ========== 新增：多时间段排班管理 ==========
+
+    /**
+     * 获取资源的每周可用性（支持多时间段）
+     */
+    WeekAvailabilityDTO getWeekAvailability(Long resourceId);
+
+    /**
+     * 更新资源的每周可用性（支持多时间段）
+     */
+    void updateWeekAvailability(Long resourceId, WeekAvailabilityDTO weekAvailability);
+
+    /**
+     * 为某一天添加新的时间段
+     */
+    ResourceAvailability addTimeSegment(Long resourceId, Integer dayOfWeek, TimeSegmentDTO segment);
+
+    /**
+     * 删除某个时间段
+     */
+    void deleteTimeSegment(Long availabilityId);
+
+    /**
+     * 复制某一天的排班到其他天
+     */
+    void copyDayAvailability(Long resourceId, Integer sourceDayOfWeek, List<Integer> targetDaysOfWeek);
 }

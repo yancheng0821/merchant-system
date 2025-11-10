@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Auth Service客户端 - 用于获取租户信息
  */
-@FeignClient(name = "auth-service", url = "http://auth-service:8081")
+@FeignClient(name = "auth-service")
 public interface AuthServiceClient {
     
     /**

@@ -67,4 +67,16 @@ public interface AppointmentService {
      * 获取服务名称
      */
     String getServiceName(Long serviceId);
+
+    /**
+     * 处理预约支付
+     */
+    Appointment processPayment(Long appointmentId, String paymentMethod, Integer customerPackageId, Long tenantId, Long verificationCodeId,
+        Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount);
+
+    /**
+     * 处理多服务预约支付
+     */
+    Appointment processMultiServicePayment(Long appointmentId, String paymentMethod, List<Map<String, Object>> servicePayments, Long tenantId,
+        Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount);
 }

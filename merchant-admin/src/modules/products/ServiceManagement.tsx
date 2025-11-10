@@ -20,6 +20,7 @@ import {
   Select,
   Grid,
   Card,
+  CardContent,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -30,7 +31,13 @@ import {
   Alert,
   Snackbar,
   Paper,
+  Tabs,
+  Tab,
+  Fade,
+  Divider,
 } from '@mui/material';
+import { PermissionButton } from '../../components/common/PermissionButton';
+import { PRODUCT_PERMISSIONS } from '../../config/permissions';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -108,23 +115,41 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 import { CurrencyUtils } from '../../config/constants';
 import ServiceDialog from './components/ServiceDialog';
 import ServiceCategoryDialog from './components/ServiceCategoryDialog';
+import { PackageDialog, PackageList } from './components';
+import PackageDetailsDialog from './components/PackageDetailsDialog';
 import CustomDialog from '../../components/common/CustomDialog';
-import { serviceManagementApi, serviceCategoryApi, ServiceManagement as ServiceManagementType, ServiceCategory, handleApiError } from '../../services/api';
+import { serviceManagementApi, serviceCategoryApi, packageApi, ServiceManagement as ServiceManagementType, ServiceCategory, Package, handleApiError } from '../../services/api';
 
 // 使用从API导入的接口类型
 
 const ServiceManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hasPermission } = usePermission();
 
-  // 状态管理
+  // Define tabs with permissions
+  const allTabsConfig = [
+    { key: 'services', permission: 'products:view' as const, label: t('products.services') },
+    { key: 'packages', permission: 'packages:view' as const, label: t('packages.title') },
+  ];
+
+  // Filter tabs based on permissions
+  const tabsConfig = allTabsConfig.filter(tab => hasPermission(tab.permission));
+
+  // Tab状态
+  const [selectedTab, setSelectedTab] = useState(0);
+  const currentTabKey = tabsConfig[selectedTab]?.key;
+
+  // 状态管理 - Services
   const [services, setServices] = useState<ServiceManagementType[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serviceError, setServiceError] = useState<string | null>(null);
+  const [packageError, setPackageError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -133,6 +158,19 @@ const ServiceManagement: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedService, setSelectedService] = useState<ServiceManagementType | null>(null);
+
+  // 状态管理 - Packages
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [packageLoading, setPackageLoading] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [packageDialogOpen, setPackageDialogOpen] = useState(false);
+  const [viewPackageOpen, setViewPackageOpen] = useState(false);
+  const [viewPackage, setViewPackage] = useState<Package | null>(null);
+  const [packageSearchTerm, setPackageSearchTerm] = useState('');
+  const [packageStatusFilter, setPackageStatusFilter] = useState('');
+  const [packageSortBy, setPackageSortBy] = useState<'name' | 'price' | 'discount' | 'created'>('created');
+  const [packageDeleteDialogOpen, setPackageDeleteDialogOpen] = useState(false);
+  const [packageToDelete, setPackageToDelete] = useState<Package | null>(null);
 
   // 对话框状态
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
@@ -147,12 +185,12 @@ const ServiceManagement: React.FC = () => {
   // 加载数据
   const loadData = useCallback(async () => {
     if (!tenantId) {
-      setError('No tenant ID available');
+      setServiceError('No tenant ID available');
       return;
     }
 
     setLoading(true);
-    setError(null);
+    setServiceError(null);
     try {
       // 并行加载分类和服务数据
       const [categoriesResponse, servicesResponse] = await Promise.all([
@@ -171,18 +209,54 @@ const ServiceManagement: React.FC = () => {
       setServices(servicesResponse.data);
       setTotalCount(servicesResponse.total);
     } catch (err) {
-      setError(handleApiError(err));
+      setServiceError(handleApiError(err));
     } finally {
       setLoading(false);
     }
   }, [tenantId, categoryFilter, statusFilter, searchTerm, page, rowsPerPage]);
 
+  // 加载Packages数据
+  const loadPackages = useCallback(async () => {
+    if (!tenantId) return;
+
+    setPackageLoading(true);
+    try {
+      const packagesResponse = await packageApi.getPackages(tenantId);
+      setPackages(packagesResponse);
+    } catch (err) {
+      setPackageError(handleApiError(err));
+    } finally {
+      setPackageLoading(false);
+    }
+  }, [tenantId]);
+
   // 初始加载
   useEffect(() => {
     if (tenantId) {
       loadData();
+      loadPackages();
     }
-  }, [tenantId, page, rowsPerPage, categoryFilter, statusFilter, searchTerm, loadData]);
+  }, [tenantId, page, rowsPerPage, categoryFilter, statusFilter, searchTerm, loadData, loadPackages]);
+
+  // 自动清除服务错误消息
+  useEffect(() => {
+    if (serviceError) {
+      const timer = setTimeout(() => {
+        setServiceError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [serviceError]);
+
+  // 自动清除套餐错误消息
+  useEffect(() => {
+    if (packageError) {
+      const timer = setTimeout(() => {
+        setPackageError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [packageError]);
 
   // 如果没有租户ID，显示错误信息
   if (!tenantId) {
@@ -303,7 +377,7 @@ const ServiceManagement: React.FC = () => {
       setSuccessMessage(t('products.serviceDeletedSuccess'));
       loadData(); // 重新加载数据
     } catch (err) {
-      setError(t('products.serviceDeleteFailed') + ': ' + handleApiError(err));
+      setServiceError(t('products.serviceDeleteFailed') + ': ' + handleApiError(err));
     }
   };
 
@@ -329,10 +403,13 @@ const ServiceManagement: React.FC = () => {
       setSelectedService(null);
       loadData(); // 重新加载数据
     } catch (err) {
-      const errorMessage = selectedService 
-        ? t('products.serviceUpdateFailed') 
+      const errorMessage = selectedService
+        ? t('products.serviceUpdateFailed')
         : t('products.serviceCreateFailed');
-      setError(errorMessage + ': ' + handleApiError(err));
+      setServiceError(errorMessage + ': ' + handleApiError(err));
+      // 关闭对话框以便用户可以看到错误消息
+      setServiceDialogOpen(false);
+      setSelectedService(null);
     }
   };
 
@@ -341,10 +418,106 @@ const ServiceManagement: React.FC = () => {
     try {
       // 这里可以实现批量更新分类的逻辑
       setCategoryDialogOpen(false);
+      setSuccessMessage(t('products.categorySavedSuccess'));
       loadData(); // 重新加载数据
     } catch (err) {
-      setError(handleApiError(err));
+      setServiceError(handleApiError(err));
     }
+  };
+
+  // Package处理函数
+  const handleSavePackage = async (packageData: Partial<Package>) => {
+    try {
+      if (selectedPackage) {
+        await packageApi.updatePackage(selectedPackage.id, packageData);
+        setSuccessMessage(t('packages.packageUpdatedSuccess'));
+      } else {
+        await packageApi.createPackage({
+          ...packageData,
+          tenant_id: tenantId,
+        });
+        setSuccessMessage(t('packages.packageCreatedSuccess'));
+      }
+      setPackageDialogOpen(false);
+      setSelectedPackage(null);
+      loadPackages();
+    } catch (err) {
+      const errorMessage = selectedPackage
+        ? t('packages.packageUpdateFailed')
+        : t('packages.packageCreateFailed');
+      setPackageError(errorMessage + ': ' + handleApiError(err));
+      // 关闭对话框以便用户可以看到错误消息
+      setPackageDialogOpen(false);
+      setSelectedPackage(null);
+    }
+  };
+
+  const handleDeletePackage = (pkg: Package) => {
+    setPackageToDelete(pkg);
+    setPackageDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePackage = async () => {
+    if (!packageToDelete) return;
+
+    try {
+      // 先关闭对话框，避免视觉闪烁
+      setPackageDeleteDialogOpen(false);
+
+      await packageApi.deletePackage(packageToDelete.id, tenantId!);
+      setSuccessMessage(t('packages.packageDeletedSuccess'));
+      setPackageToDelete(null);
+      loadPackages();
+    } catch (err) {
+      // 显示错误消息
+      setPackageError(t('packages.packageDeleteFailed') + ': ' + handleApiError(err));
+      // 错误时也清空选中的包
+      setPackageToDelete(null);
+    }
+  };
+
+  const handleViewPackage = (pkg: Package) => {
+    setViewPackage(pkg);
+    setViewPackageOpen(true);
+  };
+
+  // Filter and sort packages
+  const getFilteredAndSortedPackages = () => {
+    let filtered = [...packages];
+
+    // Apply search filter
+    if (packageSearchTerm) {
+      const searchLower = packageSearchTerm.toLowerCase();
+      filtered = filtered.filter(pkg => {
+        const name = pkg.name || '';
+        return name.toLowerCase().includes(searchLower) ||
+          (pkg.description && pkg.description.toLowerCase().includes(searchLower));
+      });
+    }
+
+    // Apply status filter
+    if (packageStatusFilter) {
+      filtered = filtered.filter(pkg => pkg.status === packageStatusFilter);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (packageSortBy) {
+        case 'name':
+          const aName = a.name || '';
+          const bName = b.name || '';
+          return aName.localeCompare(bName);
+        case 'price':
+          return a.package_price - b.package_price;
+        case 'discount':
+          return (b.discount_percentage || 0) - (a.discount_percentage || 0);
+        case 'created':
+        default:
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      }
+    });
+
+    return filtered;
   };
 
   return (
@@ -373,8 +546,43 @@ const ServiceManagement: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 搜索和筛选区域 */}
-      <Grid container spacing={3} mb={3}>
+      {/* Tab Navigation */}
+      {tabsConfig.length > 0 && (
+        <Box mb={3}>
+          <Tabs
+            value={selectedTab}
+            onChange={(e, v) => setSelectedTab(v)}
+            sx={{
+              borderBottom: '2px solid',
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                fontWeight: 600,
+                fontSize: '1rem',
+                textTransform: 'none',
+                minHeight: 56,
+                '&.Mui-selected': {
+                  color: '#06B6D4',
+                },
+              },
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+                backgroundColor: '#06B6D4',
+              },
+            }}
+          >
+            {tabsConfig.map((tab) => (
+              <Tab key={tab.key} label={tab.label} />
+            ))}
+          </Tabs>
+        </Box>
+      )}
+
+      {/* Services Tab Content */}
+      {currentTabKey === 'services' && (
+        <>
+          {/* 搜索和筛选区域 */}
+          <Grid container spacing={3} mb={3}>
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -392,15 +600,24 @@ const ServiceManagement: React.FC = () => {
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
                 backgroundColor: '#f8fafc',
-                border: '2px solid transparent',
+                '& fieldset': {
+                  borderColor: 'rgba(0, 0, 0, 0.1)',
+                  borderWidth: 1,
+                },
+                '&:hover fieldset': {
+                  borderColor: alpha('#06B6D4', 0.5),
+                  borderWidth: 1,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#06B6D4',
+                  borderWidth: 2,
+                },
                 '&:hover': {
                   backgroundColor: '#f1f5f9',
-                  borderColor: alpha('#06B6D4', 0.3),
                 },
                 '&.Mui-focused': {
                   backgroundColor: 'white',
-                  borderColor: '#06B6D4',
-                  boxShadow: `0 0 0 3px ${alpha('#06B6D4', 0.1)}`,
+                  boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
                 },
               },
             }}
@@ -415,13 +632,25 @@ const ServiceManagement: React.FC = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
               sx={{
                 borderRadius: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: alpha('#06B6D4', 0.5),
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#06B6D4',
-                  },
+                backgroundColor: '#f8fafc',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(0, 0, 0, 0.1)',
+                  borderWidth: 1,
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: alpha('#06B6D4', 0.5),
+                  borderWidth: 1,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#06B6D4',
+                  borderWidth: 2,
+                },
+                '&:hover': {
+                  backgroundColor: '#f1f5f9',
+                },
+                '&.Mui-focused': {
+                  backgroundColor: 'white',
+                  boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
                 },
               }}
             >
@@ -443,13 +672,25 @@ const ServiceManagement: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               sx={{
                 borderRadius: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: alpha('#06B6D4', 0.5),
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#06B6D4',
-                  },
+                backgroundColor: '#f8fafc',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(0, 0, 0, 0.1)',
+                  borderWidth: 1,
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: alpha('#06B6D4', 0.5),
+                  borderWidth: 1,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#06B6D4',
+                  borderWidth: 2,
+                },
+                '&:hover': {
+                  backgroundColor: '#f1f5f9',
+                },
+                '&.Mui-focused': {
+                  backgroundColor: 'white',
+                  boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
                 },
               }}
             >
@@ -461,7 +702,8 @@ const ServiceManagement: React.FC = () => {
         </Grid>
         <Grid item xs={12} md={2}>
           <Box display="flex" gap={1} height="100%">
-            <Button
+            <PermissionButton
+              permission={PRODUCT_PERMISSIONS.CREATE}
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => {
@@ -482,36 +724,45 @@ const ServiceManagement: React.FC = () => {
               }}
             >
               {t('products.addService')}
-            </Button>
+            </PermissionButton>
           </Box>
         </Grid>
       </Grid>
 
       {/* 管理分类按钮 */}
-      <Box mb={3}>
-        <Button
-          variant="outlined"
-          onClick={() => setCategoryDialogOpen(true)}
-          sx={{
-            borderRadius: 3,
-            borderColor: '#06B6D4',
-            color: '#06B6D4',
-            '&:hover': {
-              borderColor: '#0891B2',
-              backgroundColor: alpha('#06B6D4', 0.05),
-            },
-          }}
-        >
-          {t('products.manageCategories')}
-        </Button>
-      </Box>
-
-      {/* 错误提示 */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
+      {hasPermission('product_categories:manage') && (
+        <Box mb={3}>
+          <Button
+            variant="outlined"
+            onClick={() => setCategoryDialogOpen(true)}
+            sx={{
+              borderRadius: 3,
+              borderColor: '#06B6D4',
+              color: '#06B6D4',
+              '&:hover': {
+                borderColor: '#0891B2',
+                backgroundColor: alpha('#06B6D4', 0.05),
+              },
+            }}
+          >
+            {t('products.manageCategories')}
+          </Button>
+        </Box>
       )}
+
+      {/* 错误提示 - 只在 Services tab 显示 */}
+      <Fade in={!!serviceError && currentTabKey === 'services'} timeout={300}>
+        <Box>
+          {serviceError && (
+            <Alert
+              severity="error"
+              sx={{ mb: 3 }}
+            >
+              {serviceError}
+            </Alert>
+          )}
+        </Box>
+      </Fade>
 
 
 
@@ -559,6 +810,9 @@ const ServiceManagement: React.FC = () => {
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {service.name}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                            ID: {service.id}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -666,16 +920,18 @@ const ServiceManagement: React.FC = () => {
           }
         }}
       >
-        <MenuItem
-          onClick={() => {
-            setServiceDialogOpen(true);
-            setMenuAnchorEl(null);
-          }}
-          sx={{ '&:hover': { backgroundColor: alpha('#06B6D4', 0.08) } }}
-        >
-          <EditIcon sx={{ mr: 1, fontSize: 18, color: '#06B6D4' }} />
-          {t('products.editService')}
-        </MenuItem>
+        {hasPermission('products:update') && (
+          <MenuItem
+            onClick={() => {
+              setServiceDialogOpen(true);
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#06B6D4', 0.08) } }}
+          >
+            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#06B6D4' }} />
+            {t('products.editService')}
+          </MenuItem>
+        )}
         <MenuItem
           onClick={() => {
             setViewDetailsDialogOpen(true);
@@ -686,25 +942,25 @@ const ServiceManagement: React.FC = () => {
           <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
           {t('products.viewDetails')}
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setDeleteDialogOpen(true);
-            setMenuAnchorEl(null);
-          }}
-          sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
-        >
-          <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
-          {t('products.deleteService')}
-        </MenuItem>
+        {hasPermission('products:delete') && (
+          <MenuItem
+            onClick={() => {
+              setDeleteDialogOpen(true);
+              setMenuAnchorEl(null);
+            }}
+            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+          >
+            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            {t('products.deleteService')}
+          </MenuItem>
+        )}
       </Menu>
 
       {/* 对话框组件 */}
       <ServiceDialog
         open={serviceDialogOpen}
-        onClose={() => {
-          setServiceDialogOpen(false);
-          setSelectedService(null);
-        }}
+        onClose={() => setServiceDialogOpen(false)}
+        onExited={() => setSelectedService(null)}
         service={selectedService}
         categories={categories}
         mode={selectedService ? 'edit' : 'add'}
@@ -774,295 +1030,370 @@ const ServiceManagement: React.FC = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            bgcolor: 'background.paper',
           }
         }}
       >
-        {/* 现代化对话框标题 */}
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${alpha('#06B6D4', 0.08)}, ${alpha('#0891B2', 0.08)})`,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
-          }}
-        >
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, #06B6D4, #0891B2)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <VisibilityIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {t('products.viewDetails')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedService?.name}
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton 
-              onClick={() => setViewDetailsDialogOpen(false)}
-              sx={{
-                '&:hover': {
-                  backgroundColor: alpha('#06B6D4', 0.1),
-                },
-              }}
-            >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#06B6D4' }}>
+              {t('products.serviceDetails')}
+            </Typography>
+            <IconButton onClick={() => setViewDetailsDialogOpen(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0 }}>
+        <DialogContent dividers>
           {selectedService && (
-            <Box sx={{ p: 3 }}>
-              {/* 基本信息 */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  mb: 3,
-                  border: '1px solid',
-                  borderColor: alpha('#6366F1', 0.2),
-                  borderRadius: 2,
-                  background: alpha('#6366F1', 0.02),
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={2} mb={3}>
-                  <Box
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 2,
-                      background: `linear-gradient(135deg, #6366F1, #8B5CF6)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                    }}
-                  >
-                    <ServiceIcon sx={{ fontSize: 18 }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#6366F1' }}>
-                    {t('services.basicInfo')}
+            <Grid container spacing={3}>
+              {/* Basic Information */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                  {t('services.basicInfo')}
+                </Typography>
+                <Box mb={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('products.serviceName')}
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {selectedService.name}
                   </Typography>
                 </Box>
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t('products.serviceName')}
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {selectedService.name}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t('products.category')}
-                      </Typography>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <Box
-                          sx={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: 1,
-                            background: `linear-gradient(135deg, ${getCategoryColor(selectedService.categoryId)}, ${getCategoryColor(selectedService.categoryId)}80)`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                          }}
-                        >
-                          {getCategoryIcon(selectedService.categoryId)}
-                        </Box>
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          {selectedService.categoryName || categories.find(c => c.id === selectedService.categoryId)?.name}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </Paper>
-
-              {/* 服务详情 */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  mb: 3,
-                  border: '1px solid',
-                  borderColor: alpha('#10B981', 0.2),
-                  borderRadius: 2,
-                  background: alpha('#10B981', 0.02),
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={2} mb={3}>
-                  <Box
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 2,
-                      background: `linear-gradient(135deg, #10B981, #059669)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                    }}
-                  >
-                    <PriceIcon sx={{ fontSize: 18 }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
-                    {t('services.serviceDetails')}
+                <Box mb={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('products.category')}
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {selectedService.categoryName || categories.find(c => c.id === selectedService.categoryId)?.name}
                   </Typography>
                 </Box>
+              </Grid>
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t('products.price')}
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
-                        {CurrencyUtils.formatAmount(selectedService.price)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t('products.duration')}
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
-                        {selectedService.duration} {t('products.minutes')}
-                      </Typography>
-                    </Box>
-                  </Grid>
+              {/* Service Details */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                  {t('services.serviceDetails')}
+                </Typography>
+                <Box mb={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('products.price')}
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {CurrencyUtils.formatAmount(selectedService.price)}
+                  </Typography>
+                </Box>
+                <Box mb={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('products.duration')}
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {selectedService.duration} {t('products.minutes')}
+                  </Typography>
+                </Box>
+              </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t('products.resourceType')}
-                      </Typography>
-                      <Chip
-                        label={selectedService.resourceType}
-                        sx={{
-                          backgroundColor: alpha('#8B5CF6', 0.1),
-                          color: '#8B5CF6',
-                          fontWeight: 600,
-                          fontSize: '0.875rem',
-                          height: 32,
-                        }}
-                      />
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t('products.status')}
-                      </Typography>
-                      {getStatusChip(selectedService.status)}
-                    </Box>
-                  </Grid>
-                </Grid>
-              </Paper>
-
-              {/* 描述信息 */}
-              {selectedService.description && (
-                <Paper
-                  elevation={0}
+              {/* Resource Type and Status */}
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                  {t('products.resourceType')}
+                </Typography>
+                <Chip
+                  label={selectedService.resourceType}
                   sx={{
-                    p: 3,
-                    border: '1px solid',
-                    borderColor: alpha('#EC4899', 0.2),
-                    borderRadius: 2,
-                    background: alpha('#EC4899', 0.02),
+                    backgroundColor: alpha('#06B6D4', 0.1),
+                    color: '#06B6D4',
+                    fontWeight: 600,
                   }}
-                >
-                  <Box display="flex" alignItems="center" gap={2} mb={3}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, #EC4899, #BE185D)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                      }}
-                    >
-                      <EditIcon sx={{ fontSize: 18 }} />
-                    </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+                  size="medium"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                  {t('products.status')}
+                </Typography>
+                {getStatusChip(selectedService.status)}
+              </Grid>
+
+              {/* Description */}
+              {selectedService.description && (
+                <>
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 1 }} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
                       {t('products.description')}
                     </Typography>
-                  </Box>
-                  <Typography 
-                    variant="body1" 
-                    sx={{ 
-                      lineHeight: 1.6,
-                      color: 'text.primary',
-                    }}
-                  >
-                    {selectedService.description}
-                  </Typography>
-                </Paper>
+                    <Typography variant="body2" sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                      {selectedService.description}
+                    </Typography>
+                  </Grid>
+                </>
               )}
-            </Box>
+            </Grid>
           )}
         </DialogContent>
+      </Dialog>
 
-        <DialogActions 
-          sx={{ 
-            p: 3,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            background: alpha('#06B6D4', 0.02),
-          }}
-        >
-          <Button 
-            onClick={() => setViewDetailsDialogOpen(false)}
-            variant="contained"
-            sx={{ 
-              borderRadius: 2,
-              px: 4,
-              background: `linear-gradient(135deg, #06B6D4, #0891B2)`,
-              boxShadow: `0 4px 15px ${alpha('#06B6D4', 0.3)}`,
-              '&:hover': {
-                background: `linear-gradient(135deg, #0891B2, #0E7490)`,
-                boxShadow: `0 6px 20px ${alpha('#06B6D4', 0.4)}`,
-              },
+        </>
+      )}
+
+      {/* Packages Tab Content */}
+      {currentTabKey === 'packages' && (
+        <>
+          {/* 错误提示 - 只在 Packages tab 显示 */}
+          <Fade in={!!packageError} timeout={300}>
+            <Box>
+              {packageError && (
+                <Alert
+                  severity="error"
+                  sx={{ mb: 3 }}
+                >
+                  {packageError}
+                </Alert>
+              )}
+            </Box>
+          </Fade>
+
+          {/* Package Search and Filters - Matching Service Management Style */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder={t('packages.searchPlaceholder')}
+                value={packageSearchTerm}
+                onChange={(e) => setPackageSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#06B6D4' }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: '#f8fafc',
+                    '& fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      borderWidth: 1,
+                    },
+                    '&:hover fieldset': {
+                      borderColor: alpha('#06B6D4', 0.5),
+                      borderWidth: 1,
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#06B6D4',
+                      borderWidth: 2,
+                    },
+                    '&:hover': {
+                      backgroundColor: '#f1f5f9',
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: 'white',
+                      boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
+                    },
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>{t('packages.statusFilter')}</InputLabel>
+                <Select
+                  value={packageStatusFilter}
+                  onChange={(e) => setPackageStatusFilter(e.target.value)}
+                  label={t('packages.statusFilter')}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: '#f8fafc',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      borderWidth: 1,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: alpha('#06B6D4', 0.5),
+                      borderWidth: 1,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#06B6D4',
+                      borderWidth: 2,
+                    },
+                    '&:hover': {
+                      backgroundColor: '#f1f5f9',
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: 'white',
+                      boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
+                    },
+                  }}
+                >
+                  <MenuItem value="">{t('common.all')}</MenuItem>
+                  <MenuItem value="ACTIVE">{t('packages.active')}</MenuItem>
+                  <MenuItem value="INACTIVE">{t('packages.inactive')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>{t('packages.sortBy')}</InputLabel>
+                <Select
+                  value={packageSortBy}
+                  onChange={(e) => setPackageSortBy(e.target.value as any)}
+                  label={t('packages.sortBy')}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: '#f8fafc',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.1)',
+                      borderWidth: 1,
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: alpha('#06B6D4', 0.5),
+                      borderWidth: 1,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#06B6D4',
+                      borderWidth: 2,
+                    },
+                    '&:hover': {
+                      backgroundColor: '#f1f5f9',
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: 'white',
+                      boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
+                    },
+                  }}
+                >
+                  <MenuItem value="created">{t('packages.sortByCreated')}</MenuItem>
+                  <MenuItem value="name">{t('packages.sortByName')}</MenuItem>
+                  <MenuItem value="price">{t('packages.sortByPrice')}</MenuItem>
+                  <MenuItem value="discount">{t('packages.sortByDiscount')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            {hasPermission('packages:create') && (
+              <Grid item xs={12} md={2}>
+                <Box display="flex" gap={1} height="100%">
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      setSelectedPackage(null);
+                      setPackageDialogOpen(true);
+                    }}
+                    sx={{
+                      borderRadius: 3,
+                      background: 'linear-gradient(45deg, #67E8F9, #0891B2)',
+                      boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #0891B2, #0E7490)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 6px 20px rgba(6, 182, 212, 0.4)',
+                      },
+                      transition: 'all 0.3s ease',
+                      flex: 1,
+                    }}
+                  >
+                    {t('packages.createPackage')}
+                  </Button>
+                </Box>
+              </Grid>
+            )}
+          </Grid>
+
+          <PackageList
+            packages={getFilteredAndSortedPackages()}
+            services={services}
+            loading={packageLoading}
+            onEdit={(pkg) => {
+              setSelectedPackage(pkg);
+              setPackageDialogOpen(true);
+            }}
+            onDelete={handleDeletePackage}
+            onView={handleViewPackage}
+            onCreate={() => setPackageDialogOpen(true)}
+          />
+
+          <PackageDialog
+            open={packageDialogOpen}
+            onClose={() => setPackageDialogOpen(false)}
+            onExited={() => setSelectedPackage(null)}
+            packageData={selectedPackage}
+            services={services}
+            onSave={handleSavePackage}
+            mode={selectedPackage ? 'edit' : 'add'}
+          />
+
+          <PackageDetailsDialog
+            open={viewPackageOpen}
+            onClose={() => {
+              setViewPackageOpen(false);
+              setViewPackage(null);
+            }}
+            packageData={viewPackage}
+            services={services}
+          />
+
+          {/* 删除确认对话框 */}
+          <Dialog
+            open={packageDeleteDialogOpen}
+            onClose={() => {
+              setPackageDeleteDialogOpen(false);
+              setPackageToDelete(null);
+            }}
+            PaperProps={{
+              sx: {
+                borderRadius: 3,
+                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+              }
             }}
           >
-            {t('common.close')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogTitle sx={{ pb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
+                {t('packages.confirmDeletePackage')}
+              </Typography>
+            </DialogTitle>
+            <DialogContent>
+              <Typography>
+                {t('packages.confirmDeletePackageMessage', {
+                  packageName: packageToDelete?.name || ''
+                })}
+              </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 1 }}>
+              <Button
+                onClick={() => {
+                  setPackageDeleteDialogOpen(false);
+                  setPackageToDelete(null);
+                }}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={confirmDeletePackage}
+                variant="contained"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  backgroundColor: '#EF4444',
+                  '&:hover': {
+                    backgroundColor: '#DC2626',
+                  },
+                }}
+              >
+                {t('common.delete')}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
 
       {/* 成功提示 */}
       <Snackbar
@@ -1071,9 +1402,9 @@ const ServiceManagement: React.FC = () => {
         onClose={() => setSuccessMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setSuccessMessage(null)} 
-          severity="success" 
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
           sx={{ width: '100%' }}
         >
           {successMessage}

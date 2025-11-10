@@ -48,7 +48,13 @@ public interface CustomerService {
      * 获取客户消费排行
      */
     List<CustomerDTO> getTopSpendingCustomers(Long tenantId, int limit);
-    
+
+    /**
+     * 创建默认 Walk-in 客户
+     * 用于商户注册时自动创建
+     */
+    CustomerDTO createWalkInCustomer(Long tenantId);
+
     /**
      * 客户列表结果
      */

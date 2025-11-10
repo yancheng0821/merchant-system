@@ -4,6 +4,7 @@ import com.merchant.server.businessservice.entity.Customer;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -218,4 +219,12 @@ public interface CustomerMapper {
      * Dashboard 相关查询
      */
     int countNewCustomersByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    // 使用 datetime 范围查询新客户数量 (用于 Dashboard 时区转换)
+    int countNewCustomersByDateTimeRange(@Param("tenantId") Long tenantId, @Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
+
+    /**
+     * 获取客户活跃套餐数量
+     */
+    int countActivePackages(@Param("customerId") Long customerId);
 }

@@ -23,4 +23,9 @@ public interface AppointmentNotificationService {
      * 发送预约提醒通知
      */
     void sendReminderNotification(Appointment appointment);
+
+    /**
+     * 清除商户名称缓存
+     */
+    void clearMerchantNameCache(Long tenantId);
 }

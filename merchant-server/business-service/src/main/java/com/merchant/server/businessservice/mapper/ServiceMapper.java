@@ -68,8 +68,8 @@ public interface ServiceMapper {
                          @Param("searchTerm") String searchTerm);
     
     /**
-     * Dashboard 相关查询
+     * Dashboard 相关查询 - 使用 datetime 范围 (支持时区转换)
      */
-    List<java.util.Map<String, Object>> getServiceCategoryStats(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
-    List<java.util.Map<String, Object>> getTopServices(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate, @Param("limit") int limit);
+    List<java.util.Map<String, Object>> getServiceCategoryStats(@Param("tenantId") Long tenantId, @Param("startDateTime") java.time.LocalDateTime startDateTime, @Param("endDateTime") java.time.LocalDateTime endDateTime);
+    List<java.util.Map<String, Object>> getTopServices(@Param("tenantId") Long tenantId, @Param("startDateTime") java.time.LocalDateTime startDateTime, @Param("endDateTime") java.time.LocalDateTime endDateTime, @Param("limit") int limit);
 }

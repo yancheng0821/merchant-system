@@ -162,12 +162,27 @@ public class MerchantConfigServiceImpl implements MerchantConfigService {
     @Override
     public void updateConfigByKey(Long tenantId, String configKey, String configValue, String description) {
         MerchantConfig existingConfig = merchantConfigMapper.findByTenantIdAndKey(tenantId, configKey);
-        
+
         if (existingConfig != null) {
-            existingConfig.setConfigValue(configValue);
-            existingConfig.setDescription(description);
-            merchantConfigMapper.updateByTenantIdAndKey(existingConfig);
+            // 检查值是否真正发生变化
+            boolean valueChanged = !configValue.equals(existingConfig.getConfigValue());
+            boolean descriptionChanged = description != null && !description.equals(existingConfig.getDescription());
+
+            log.debug("更新配置项 - configKey: {}, valueChanged: {}, descriptionChanged: {}, oldValue: {}, newValue: {}",
+                configKey, valueChanged, descriptionChanged, existingConfig.getConfigValue(), configValue);
+
+            // 只有当值或描述发生变化时才执行更新
+            if (valueChanged || descriptionChanged) {
+                log.info("配置项发生变化，执行更新 - configKey: {}", configKey);
+                existingConfig.setConfigValue(configValue);
+                existingConfig.setDescription(description);
+                merchantConfigMapper.updateByTenantIdAndKey(existingConfig);
+            } else {
+                log.info("配置项未发生变化，跳过更新 - configKey: {}", configKey);
+            }
         } else {
+            // 如果配置项不存在，创建新的配置项
+            log.info("配置项不存在，创建新配置 - configKey: {}", configKey);
             MerchantConfig newConfig = new MerchantConfig();
             newConfig.setTenantId(tenantId);
             newConfig.setConfigKey(configKey);

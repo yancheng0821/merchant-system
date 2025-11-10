@@ -22,6 +22,8 @@ import {
   Autocomplete,
   alpha,
   Paper,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -31,12 +33,14 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Customer, Service, serviceApi } from '../../../services/api';
+import CountryCodeSelector from '../../../components/common/CountryCodeSelector';
 
 interface CustomerDialogProps {
   open: boolean;
   onClose: () => void;
+  onExited?: () => void;
   customer: Customer | null;
-  onSave: (customer: Partial<Customer>) => void;
+  onSave: (customer: Partial<Customer>) => Promise<void>;
 }
 
 
@@ -44,6 +48,7 @@ interface CustomerDialogProps {
 const CustomerDialog: React.FC<CustomerDialogProps> = ({
   open,
   onClose,
+  onExited,
   customer,
   onSave
 }) => {
@@ -60,12 +65,21 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
     status: 'active' as 'active' | 'inactive',
     preferredServiceIds: [] as number[],
     allergies: '',
-    communicationPreference: 'email' as 'phone' | 'email' | 'sms',
+    communicationPreference: 'email' as 'both' | 'email' | 'sms',
     notes: ''
   });
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [countryCode, setCountryCode] = useState<string>('+1-CA');
   const [services, setServices] = useState<Service[]>([]);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
 
   // 加载服务列表
   useEffect(() => {
@@ -103,9 +117,11 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         status: customer.status ? customer.status.toLowerCase() as 'active' | 'inactive' : 'active',
         preferredServiceIds: customer.preferredServiceIds || [],
         allergies: customer.allergies || '',
-        communicationPreference: customer.communicationPreference ? (customer.communicationPreference === 'SMS' ? 'sms' : customer.communicationPreference.toLowerCase()) as 'phone' | 'email' | 'sms' : 'email',
+        communicationPreference: customer.communicationPreference ? (customer.communicationPreference === 'SMS' ? 'sms' : customer.communicationPreference === 'BOTH' ? 'both' : customer.communicationPreference.toLowerCase()) as 'both' | 'email' | 'sms' : 'email',
         notes: customer.notes || ''
       });
+      // 直接使用数据库中的countryCode
+      setCountryCode(customer.countryCode || '+1-CA');
     } else {
       setFormData({
         firstName: '',
@@ -122,8 +138,8 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         communicationPreference: 'email',
         notes: ''
       });
+      setCountryCode('+1-CA');
     }
-    setErrors({});
   }, [customer, open]);
 
   const handleChange = (field: string, value: any) => {
@@ -131,46 +147,73 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       ...prev,
       [field]: value
     }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
   };
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-
-    // 必填字段：firstName, lastName, email, phone
+    // 必填字段：firstName, lastName, email, phone, countryCode
     if (!formData.firstName.trim()) {
-      newErrors.firstName = t('customers.validation.firstNameRequired');
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.firstNameRequired'),
+        severity: 'error',
+      });
+      return false;
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = t('customers.validation.lastNameRequired');
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.lastNameRequired'),
+        severity: 'error',
+      });
+      return false;
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = t('customers.validation.phoneRequired');
-    } else if (!/^\+?[1-9]\d{1,14}$/.test(formData.phone.replace(/[-\s()]/g, ''))) {
-      newErrors.phone = t('customers.validation.phoneInvalid');
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.phoneRequired'),
+        severity: 'error',
+      });
+      return false;
+    } else if (!/^[0-9\s\-()]+$/.test(formData.phone.trim())) {
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.phoneInvalid'),
+        severity: 'error',
+      });
+      return false;
+    }
+
+    if (!countryCode) {
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.countryCodeRequired'),
+        severity: 'error',
+      });
+      return false;
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = t('customers.validation.emailRequired');
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.emailRequired'),
+        severity: 'error',
+      });
+      return false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t('customers.validation.emailInvalid');
+      setSnackbar({
+        open: true,
+        message: t('customers.validation.emailInvalid'),
+        severity: 'error',
+      });
+      return false;
     }
 
-    // 其他字段都是可选的，不需要验证
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
       // 获取用户信息和租户ID
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -198,11 +241,11 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         }
       };
 
-      const convertCommunicationPreference = (pref: string): 'SMS' | 'EMAIL' | 'PHONE' => {
+      const convertCommunicationPreference = (pref: string): 'SMS' | 'EMAIL' | 'BOTH' => {
         switch (pref) {
           case 'sms': return 'SMS';
           case 'email': return 'EMAIL';
-          case 'phone': return 'PHONE';
+          case 'both': return 'BOTH';
           default: return 'EMAIL';
         }
       };
@@ -211,6 +254,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim(),
+        countryCode: countryCode || '+1-CA', // 单独存储国家码，确保有值
         email: formData.email.trim(),
         address: formData.address.trim() || undefined,
         dateOfBirth: dateOfBirth,
@@ -248,8 +292,20 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         }
       });
 
-      onSave(customerData);
-      onClose();
+      try {
+        await onSave(customerData);
+        // 只有在成功保存后才关闭对话框
+        onClose();
+      } catch (error: any) {
+        // 在对话框内部显示错误，这样用户可以直接看到并修改
+        console.error('Failed to save customer:', error);
+        setSnackbar({
+          open: true,
+          message: error.message || t('customers.saveFailed'),
+          severity: 'error',
+        });
+        // 对话框保持打开状态，让用户可以修改后重试
+      }
     }
   };
 
@@ -261,6 +317,9 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      TransitionProps={{
+        onExited: onExited,
+      }}
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -365,8 +424,6 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   label={t('customers.firstName')}
                   value={formData.firstName}
                   onChange={(e) => handleChange('firstName', e.target.value)}
-                  error={!!errors.firstName}
-                  helperText={errors.firstName}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -386,8 +443,6 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   label={t('customers.lastName')}
                   value={formData.lastName}
                   onChange={(e) => handleChange('lastName', e.target.value)}
-                  error={!!errors.lastName}
-                  helperText={errors.lastName}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -402,25 +457,37 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('customers.phone')}
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  error={!!errors.phone}
-                  helperText={errors.phone}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
+                <Grid container spacing={1}>
+                  <Grid item xs={4}>
+                    <CountryCodeSelector
+                      value={countryCode}
+                      onChange={(value) => setCountryCode(value)}
+                      label={t('customers.countryCode', 'Code')}
+                      size="medium"
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={8}>
+                    <TextField
+                      fullWidth
+                      label={t('customers.phone')}
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      placeholder="1234567890"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#EC4899',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#EC4899',
+                          },
+                        },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -429,8 +496,6 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  error={!!errors.email}
-                  helperText={errors.email}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -681,7 +746,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                   >
                     <MenuItem value="email">{t('customers.email')}</MenuItem>
                     <MenuItem value="sms">{t('customers.sms')}</MenuItem>
-                    <MenuItem value="phone">{t('customers.phone')}</MenuItem>
+                    <MenuItem value="both">{t('customers.both')}</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -846,6 +911,26 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
           {customer ? t('customers.updateCustomer') : t('customers.createCustomer')}
         </Button>
       </DialogActions>
+
+      {/* Snackbar for validation errors */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 };

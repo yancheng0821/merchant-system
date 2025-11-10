@@ -1,5 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, userApi, tokenManager, handleApiError, LoginResponse } from '../services/api';
+import { useSnackbar } from 'notistack';
+
+export interface UserPermissions {
+  permissionCodes: string[];
+  permissionMap: Record<string, string[]>;
+  roles: Array<{
+    roleCode: string;
+    displayName: string;
+    level: number;
+  }>;
+  isSuperAdmin: boolean;
+}
 
 export interface User {
   id: number;
@@ -9,17 +21,19 @@ export interface User {
   avatar?: string;
   tenantId: number;
   tenantName?: string;
+  timezone?: string;
   roles?: string[];
-  permissions?: string[];
+  // 权限可以是简单的字符串数组（后端直接返回）或完整的权限对象（从权限API获取）
+  permissions?: string[] | UserPermissions;
   lastLoginTime?: string;
+  createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string, tenantCode?: string) => Promise<boolean>;
+  login: (username: string, password: string, tenantCode?: string) => Promise<boolean | { need2FA: boolean; userId: number; phone: string; tenantId: number }>;
   register: (userData: RegisterData) => Promise<boolean>;
-  loginWithGoogle: (idToken: string) => Promise<boolean>;
   logout: () => void;
   updateUserInfo: (userInfo: Partial<User>) => Promise<boolean>;
   uploadAvatar: (file: File) => Promise<boolean>;
@@ -52,22 +66,26 @@ interface AuthProviderProps {
 }
 
 // 将API用户数据转换为前端用户数据
+// Note: This should only be called after confirming the response is NOT a 2FA response
 const mapApiUserToUser = (apiUser: LoginResponse): User => {
   return {
     id: apiUser.userId,
-    username: apiUser.username,
-    realName: apiUser.realName,
-    email: apiUser.email,
+    username: apiUser.username!,  // Non-null assertion - safe because this is only called for complete login responses
+    realName: apiUser.realName!,
+    email: apiUser.email!,
     avatar: apiUser.avatar,
     tenantId: apiUser.tenantId,
     tenantName: apiUser.tenantName,
+    timezone: apiUser.timezone,
     roles: apiUser.roles,
     permissions: apiUser.permissions,
     lastLoginTime: apiUser.lastLoginTime,
+    createdAt: apiUser.createdAt,
   };
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,15 +121,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const handleSessionExpired = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('Session expired event received:', customEvent.detail);
-      
+
+      console.log('Session expired event received, cleaning up...');
+
+      // 立即停止loading状态
+      setLoading(false);
+
       // 清除用户状态
       setUser(null);
       setError('Session expired. Please login again.');
-      
+
       // 清除本地存储
       tokenManager.clearAll();
       localStorage.removeItem('user');
+
+      // 清除任何导航意图
+      localStorage.removeItem('navigateTo');
     };
 
     window.addEventListener('sessionExpired', handleSessionExpired);
@@ -121,38 +146,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // 定期验证token有效性（每5分钟验证一次）
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    const intervalId = setInterval(async () => {
-      const token = tokenManager.getToken();
-      if (token) {
-        try {
-          const pureToken = token?.startsWith('Bearer ') ? token.slice(7) : token;
-          const response = await authApi.validateToken(pureToken);
-          
-          if (!response.success) {
-            console.log('Token validation failed during periodic check');
-            // 触发session过期事件
-            const event = new CustomEvent('sessionExpired', { 
-              detail: { reason: 'Token validation failed' } 
-            });
-            window.dispatchEvent(event);
-          }
-        } catch (error) {
-          console.error('Failed to validate token:', error);
-          // 如果验证失败，可能是网络问题，不立即登出
-        }
-      }
-    }, 5 * 60 * 1000); // 5分钟
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [user]);
+  // 注意：JWT过期时间设置为30天，无操作超时由SessionContext管理
+  // Token刷新在API请求401时自动处理（见api.ts）
 
   const validateStoredToken = async (token: string) => {
     try {
@@ -174,78 +169,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         tokenManager.clearAll();
         localStorage.removeItem('user');
         setUser(null);
-      } else {
-        // Token有效，尝试获取最新的用户资料
-        try {
-          const profileResp = await userApi.getProfile();
-          if (profileResp.success && profileResp.data) {
-            const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            setUser(completeUser);
-            localStorage.setItem('user', JSON.stringify(completeUser));
-          }
-        } catch (profileError) {
-          console.error('Failed to fetch updated profile:', profileError);
-          // 如果获取资料失败，保持现有用户数据
-        }
       }
+      // Token有效，保持现有用户数据（已从localStorage加载）
     } catch (error) {
       console.error('Token validation failed:', error);
     }
   };
 
-  const login = async (username: string, password: string, tenantCode?: string): Promise<boolean> => {
-    setLoading(true);
+  // 获取用户权限信息
+  const fetchUserPermissions = async (userId: number, tenantId: number) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080'}/api/auth/authorization/user/${userId}/permissions?tenantId=${tenantId}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenManager.getToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          return result.data as UserPermissions;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user permissions:', error);
+    }
+    return null;
+  };
+
+  const login = async (username: string, password: string, tenantCode?: string): Promise<boolean | { need2FA: boolean; userId: number; phone: string; tenantId: number }> => {
     setError(null);
 
     try {
       const response = await authApi.login({ username, password, tenantCode });
 
       if (response.success && response.data) {
+        // 检查是否需要2FA验证
+        if (response.data.need2FA) {
+          // 2FA 场景：不设置任何 loading 状态，让 LoginPage 组件保持挂载
+          return {
+            need2FA: true,
+            userId: response.data.userId,
+            phone: response.data.phone!,  // Non-null assertion - phone is always present when need2FA is true
+            tenantId: response.data.tenantId,
+          };
+        }
+
+        // 正常登录场景
         const userData = mapApiUserToUser(response.data);
 
         // 保存令牌和用户信息
-        tokenManager.setToken(response.data.token);
-        tokenManager.setRefreshToken(response.data.refreshToken);
+        // Safe to use non-null assertion because we've already checked for 2FA above
+        tokenManager.setToken(response.data.token!);
+        tokenManager.setRefreshToken(response.data.refreshToken!);
 
-        // 登录成功后，立即获取完整用户资料
-        try {
-          const profileResp = await userApi.getProfile();
-
-          if (profileResp.success && profileResp.data) {
-            const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            setUser(completeUser);
-            localStorage.setItem('user', JSON.stringify(completeUser));
-          } else {
-            // 如果获取完整资料失败，使用登录返回的基本信息
-            console.warn('Failed to get complete profile, using basic user data');
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-          }
-        } catch (e) {
-          console.error('Failed to fetch complete profile:', e);
-          // 出错时使用登录返回的基本信息
-          setUser(userData);
-          localStorage.setItem('user', JSON.stringify(userData));
-        }
+        // 使用登录响应的数据作为基础，登录响应已经包含所有必要字段（包括createdAt）
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
 
         return true;
       } else {
         console.error('Login failed:', response.message);
         setError(response.message || 'Login failed');
+        setLoading(false);
         return false;
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
       console.error('Login error:', errorMessage);
       setError(errorMessage);
-      return false;
-    } finally {
       setLoading(false);
+      return false;
     }
+    // 注意：不使用 finally 块，因为在 2FA 场景下我们不想触发 setLoading
   };
 
   const register = async (userData: RegisterData): Promise<boolean> => {
-    setLoading(true);
+    // 不设置全局loading状态，避免页面重新渲染导致的刷新效果
+    // setLoading(true);
     setError(null);
 
     try {
@@ -263,29 +265,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = mapApiUserToUser(response.data);
 
         // 保存令牌和用户信息
-        tokenManager.setToken(response.data.token);
-        tokenManager.setRefreshToken(response.data.refreshToken);
+        // Registration always returns complete data with tokens
+        tokenManager.setToken(response.data.token!);
+        tokenManager.setRefreshToken(response.data.refreshToken!);
 
-        // 注册成功后，立即获取完整用户资料
-        try {
-          const profileResp = await userApi.getProfile();
+        // 使用注册响应的数据
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
 
-          if (profileResp.success && profileResp.data) {
-            const completeUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            setUser(completeUser);
-            localStorage.setItem('user', JSON.stringify(completeUser));
-          } else {
-            // 如果获取完整资料失败，使用注册返回的基本信息
-            console.warn('Failed to get complete profile after registration, using basic user data');
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-          }
-        } catch (e) {
-          console.error('Failed to fetch complete profile after registration:', e);
-          // 出错时使用注册返回的基本信息
-          setUser(userData);
-          localStorage.setItem('user', JSON.stringify(userData));
-        }
+        // 设置标记，在登录后显示注册成功消息
+        localStorage.setItem('showRegistrationSuccess', 'true');
 
         return true;
       } else {
@@ -296,57 +285,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const loginWithGoogle = async (idToken: string): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await authApi.googleLogin(idToken);
-
-      if (response.success && response.data) {
-        const userData = mapApiUserToUser(response.data);
-
-        // 保存令牌和用户信息
-        tokenManager.setToken(response.data.token);
-        tokenManager.setRefreshToken(response.data.refreshToken);
-
-        // 获取完整用户资料
-        try {
-          const profileResp = await userApi.getProfile();
-          if (profileResp.success && profileResp.data) {
-            const completeUser = { ...profileResp.data, id: Number(profileResp.data.id) };
-            setUser(completeUser);
-            localStorage.setItem('user', JSON.stringify(completeUser));
-          } else {
-            console.warn('Failed to fetch complete profile, using basic info');
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-          }
-        } catch (e) {
-          console.error('Failed to fetch complete profile:', e);
-          setUser(userData);
-          localStorage.setItem('user', JSON.stringify(userData));
-        }
-
-        return true;
-      } else {
-        console.error('Google login failed:', response.message);
-        setError(response.message || 'Google login failed');
-        return false;
-      }
-    } catch (error) {
-      const errorMessage = handleApiError(error);
-      console.error('Google login error:', errorMessage);
-      setError(errorMessage);
-      return false;
-    } finally {
-      setLoading(false);
-    }
+    // 移除finally块，因为不再设置loading状态
+    // finally {
+    //   setLoading(false);
+    // }
   };
 
   const logout = async () => {
@@ -358,6 +301,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // 清除本地数据
       tokenManager.clearAll();
+      localStorage.removeItem('user');
+      // 清除登录页面状态，避免退出后回到2FA验证页面
+      sessionStorage.removeItem('authPageMode');
       setUser(null);
       setError(null);
     }
@@ -370,9 +316,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      // 确保userId是数字类型
+      // 确保userId是数字类型，并移除permissions字段（不应该通过updateProfile更新）
+      const { permissions, ...userInfoWithoutPermissions } = userInfo;
       const updateData = {
-        ...userInfo,
+        ...userInfoWithoutPermissions,
         userId: userInfo.id || (user.id ? Number(user.id) : undefined)
       };
 
@@ -448,7 +395,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     register,
-    loginWithGoogle,
     logout,
     updateUserInfo,
     uploadAvatar,

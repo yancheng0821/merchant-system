@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -25,47 +26,52 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class BusinessNotificationService {
-    
+
     private final BusinessNotificationMapper notificationMapper;
     private final AppointmentService appointmentService;
+
+    // 系统时区配置 - 使用 UTC
+    private static final ZoneId SYSTEM_ZONE = ZoneId.of("UTC");
+
+    /**
+     * 获取当前 UTC 时间
+     */
+    private LocalDateTime getCurrentTime() {
+        return LocalDateTime.now(SYSTEM_ZONE);
+    }
     
     /**
-     * 创建新预约通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建新预约通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createNewAppointmentNotification(Appointment appointment, Customer customer, String serviceName, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "NEW_APPOINTMENT_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "NEW_APPOINTMENT_CONTENT");
-        
-        String content;
-        if ("en-US".equals(language) || "en".equals(language)) {
-            content = String.format(contentTemplate,
-                customer.getFirstName(), customer.getLastName(),
-                serviceName,
-                appointment.getAppointmentDate(),
-                appointment.getAppointmentTime());
-        } else {
-            content = String.format(contentTemplate,
-                customer.getLastName(), customer.getFirstName(),
-                appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
-                serviceName);
-        }
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "NEW_APPOINTMENT_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "NEW_APPOINTMENT_CONTENT");
+        String contentZh = String.format(contentTemplateZh,
+            customer.getLastName(), customer.getFirstName(),
+            appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
+            serviceName);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "NEW_APPOINTMENT_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "NEW_APPOINTMENT_CONTENT");
+        String contentEn = String.format(contentTemplateEn,
+            customer.getFirstName(), customer.getLastName(),
+            serviceName,
+            appointment.getAppointmentDate(),
+            appointment.getAppointmentTime());
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("NEW_APPOINTMENT")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("INFO")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -75,50 +81,47 @@ public class BusinessNotificationService {
                     LocalDate.parse(appointment.getAppointmentDate().toString()),
                     LocalTime.parse(appointment.getAppointmentTime().toString())))
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created new appointment notification for appointment ID: {}", appointment.getId());
+        log.info("Created new appointment notification (bilingual) for appointment ID: {}", appointment.getId());
     }
     
     /**
-     * 创建预约取消通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建预约取消通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createAppointmentCancelledNotification(Appointment appointment, Customer customer, String serviceName, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_CANCELLED_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_CANCELLED_CONTENT");
-        
-        String content;
-        if ("en-US".equals(language) || "en".equals(language)) {
-            content = String.format(contentTemplate,
-                customer.getFirstName(), customer.getLastName(),
-                serviceName,
-                appointment.getAppointmentDate(),
-                appointment.getAppointmentTime());
-        } else {
-            content = String.format(contentTemplate,
-                customer.getLastName(), customer.getFirstName(),
-                appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
-                serviceName);
-        }
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "APPOINTMENT_CANCELLED_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "APPOINTMENT_CANCELLED_CONTENT");
+        String contentZh = String.format(contentTemplateZh,
+            customer.getLastName(), customer.getFirstName(),
+            appointment.getAppointmentDate() + " " + appointment.getAppointmentTime(),
+            serviceName);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "APPOINTMENT_CANCELLED_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "APPOINTMENT_CANCELLED_CONTENT");
+        String contentEn = String.format(contentTemplateEn,
+            customer.getFirstName(), customer.getLastName(),
+            serviceName,
+            appointment.getAppointmentDate(),
+            appointment.getAppointmentTime());
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("APPOINTMENT_CANCELLED")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("WARNING")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -128,50 +131,47 @@ public class BusinessNotificationService {
                     LocalDate.parse(appointment.getAppointmentDate().toString()),
                     LocalTime.parse(appointment.getAppointmentTime().toString())))
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created appointment cancelled notification for appointment ID: {}", appointment.getId());
+        log.info("Created appointment cancelled notification (bilingual) for appointment ID: {}", appointment.getId());
     }
     
     /**
-     * 创建预约确认通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建预约确认通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createAppointmentConfirmedNotification(Appointment appointment, Customer customer, String serviceName, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_CONFIRMED_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_CONFIRMED_CONTENT");
-        
-        String content;
-        if ("en-US".equals(language) || "en".equals(language)) {
-            content = String.format(contentTemplate,
-                customer.getFirstName(), customer.getLastName(),
-                serviceName,
-                appointment.getAppointmentDate(),
-                appointment.getAppointmentTime());
-        } else {
-            content = String.format(contentTemplate,
-                customer.getLastName(), customer.getFirstName(),
-                serviceName,
-                appointment.getAppointmentDate() + " " + appointment.getAppointmentTime());
-        }
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "APPOINTMENT_CONFIRMED_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "APPOINTMENT_CONFIRMED_CONTENT");
+        String contentZh = String.format(contentTemplateZh,
+            customer.getLastName(), customer.getFirstName(),
+            serviceName,
+            appointment.getAppointmentDate() + " " + appointment.getAppointmentTime());
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "APPOINTMENT_CONFIRMED_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "APPOINTMENT_CONFIRMED_CONTENT");
+        String contentEn = String.format(contentTemplateEn,
+            customer.getFirstName(), customer.getLastName(),
+            serviceName,
+            appointment.getAppointmentDate(),
+            appointment.getAppointmentTime());
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("APPOINTMENT_CONFIRMED")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("SUCCESS")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -181,47 +181,44 @@ public class BusinessNotificationService {
                     LocalDate.parse(appointment.getAppointmentDate().toString()),
                     LocalTime.parse(appointment.getAppointmentTime().toString())))
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created appointment confirmed notification for appointment ID: {}", appointment.getId());
+        log.info("Created appointment confirmed notification (bilingual) for appointment ID: {}", appointment.getId());
     }
     
     /**
-     * 创建预约即将开始提醒（30分钟前）
-     * @param language 语言代码 (zh 或 en)
+     * 创建预约即将开始提醒（30分钟前）（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createAppointmentReminderNotification(Appointment appointment, Customer customer, String serviceName, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "APPOINTMENT_REMINDER_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "APPOINTMENT_REMINDER_CONTENT");
-        
-        String content;
-        if ("en-US".equals(language) || "en".equals(language)) {
-            content = String.format(contentTemplate,
-                customer.getFirstName(), customer.getLastName(),
-                serviceName);
-        } else {
-            content = String.format(contentTemplate,
-                customer.getLastName(), customer.getFirstName(),
-                serviceName);
-        }
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "APPOINTMENT_REMINDER_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "APPOINTMENT_REMINDER_CONTENT");
+        String contentZh = String.format(contentTemplateZh,
+            customer.getLastName(), customer.getFirstName(),
+            serviceName);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "APPOINTMENT_REMINDER_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "APPOINTMENT_REMINDER_CONTENT");
+        String contentEn = String.format(contentTemplateEn,
+            customer.getFirstName(), customer.getLastName(),
+            serviceName);
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(appointment.getTenantId())
                 .notificationType("APPOINTMENT_REMINDER")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("WARNING")
                 .businessId(appointment.getId().toString())
                 .businessType("APPOINTMENT")
@@ -231,150 +228,164 @@ public class BusinessNotificationService {
                     LocalDate.parse(appointment.getAppointmentDate().toString()),
                     LocalTime.parse(appointment.getAppointmentTime().toString())))
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created appointment reminder notification for appointment ID: {}", appointment.getId());
+        log.info("Created appointment reminder notification (bilingual) for appointment ID: {}", appointment.getId());
     }
     
     /**
-     * 创建待确认预约通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建待确认预约通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createPendingConfirmationNotification(Long tenantId, int pendingCount, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "PENDING_CONFIRMATION_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "PENDING_CONFIRMATION_CONTENT");
-        String content = String.format(contentTemplate, pendingCount);
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "PENDING_CONFIRMATION_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "PENDING_CONFIRMATION_CONTENT");
+        String contentZh = String.format(contentTemplateZh, pendingCount);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "PENDING_CONFIRMATION_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "PENDING_CONFIRMATION_CONTENT");
+        String contentEn = String.format(contentTemplateEn, pendingCount);
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(tenantId)
                 .notificationType("PENDING_CONFIRMATION")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("WARNING")
                 .businessType("APPOINTMENT")
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created pending confirmation notification for tenant: {}", tenantId);
+        log.info("Created pending confirmation notification (bilingual) for tenant: {}", tenantId);
     }
     
     /**
-     * 创建支付成功通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建支付成功通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createPaymentSuccessNotification(Long tenantId, String orderId, Double amount, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "PAYMENT_SUCCESS_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "PAYMENT_SUCCESS_CONTENT");
-        String content = String.format(contentTemplate, orderId, amount);
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "PAYMENT_SUCCESS_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "PAYMENT_SUCCESS_CONTENT");
+        String contentZh = String.format(contentTemplateZh, orderId, amount);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "PAYMENT_SUCCESS_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "PAYMENT_SUCCESS_CONTENT");
+        String contentEn = String.format(contentTemplateEn, orderId, amount);
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(tenantId)
                 .notificationType("PAYMENT_SUCCESS")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("SUCCESS")
                 .businessId(orderId)
                 .businessType("ORDER")
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created payment success notification for order: {}", orderId);
+        log.info("Created payment success notification (bilingual) for order: {}", orderId);
     }
-    
+
     /**
-     * 创建支付失败通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建支付失败通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createPaymentFailedNotification(Long tenantId, String orderId, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "PAYMENT_FAILED_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "PAYMENT_FAILED_CONTENT");
-        String content = String.format(contentTemplate, orderId);
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "PAYMENT_FAILED_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "PAYMENT_FAILED_CONTENT");
+        String contentZh = String.format(contentTemplateZh, orderId);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "PAYMENT_FAILED_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "PAYMENT_FAILED_CONTENT");
+        String contentEn = String.format(contentTemplateEn, orderId);
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(tenantId)
                 .notificationType("PAYMENT_FAILED")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("ERROR")
                 .businessId(orderId)
                 .businessType("ORDER")
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created payment failed notification for order: {}", orderId);
+        log.info("Created payment failed notification (bilingual) for order: {}", orderId);
     }
-    
+
     /**
-     * 创建退款成功通知
-     * @param language 语言代码 (zh 或 en)
+     * 创建退款成功通知（同时生成中英文内容）
+     * @param language 语言代码 (不再使用，保留参数以兼容现有调用)
      */
     public void createRefundSuccessNotification(Long tenantId, String orderId, Double amount, String language) {
-        // 使用传入的语言参数，如果为空则使用默认值
-        if (language == null || language.isEmpty()) {
-            language = "zh-CN";
-        }
-        // 将 zh 转换为 zh-CN, en 转换为 en-US
-        if ("zh".equals(language)) {
-            language = "zh-CN";
-        } else if ("en".equals(language)) {
-            language = "en-US";
-        }
-        String title = NotificationTemplates.getTemplate(language, "REFUND_SUCCESS_TITLE");
-        String contentTemplate = NotificationTemplates.getTemplate(language, "REFUND_SUCCESS_CONTENT");
-        String content = String.format(contentTemplate, orderId, amount);
-        
+        // 生成中文标题和内容
+        String titleZh = NotificationTemplates.getTemplate("zh-CN", "REFUND_SUCCESS_TITLE");
+        String contentTemplateZh = NotificationTemplates.getTemplate("zh-CN", "REFUND_SUCCESS_CONTENT");
+        String contentZh = String.format(contentTemplateZh, orderId, amount);
+
+        // 生成英文标题和内容
+        String titleEn = NotificationTemplates.getTemplate("en-US", "REFUND_SUCCESS_TITLE");
+        String contentTemplateEn = NotificationTemplates.getTemplate("en-US", "REFUND_SUCCESS_CONTENT");
+        String contentEn = String.format(contentTemplateEn, orderId, amount);
+
+        LocalDateTime now = getCurrentTime();
         BusinessNotification notification = BusinessNotification.builder()
                 .tenantId(tenantId)
                 .notificationType("REFUND_SUCCESS")
-                .title(title)
-                .content(content)
+                .title(titleEn)  // 默认使用英文
+                .titleEn(titleEn)
+                .titleZh(titleZh)
+                .content(contentEn)  // 默认使用英文
+                .contentEn(contentEn)
+                .contentZh(contentZh)
                 .level("INFO")
                 .businessId(orderId)
                 .businessType("ORDER")
                 .isRead(false)
+                .createdAt(now)
+                .updatedAt(now)
                 .deleted(false)
                 .build();
-        
+
         notificationMapper.insert(notification);
-        log.info("Created refund success notification for order: {}", orderId);
+        log.info("Created refund success notification (bilingual) for order: {}", orderId);
     }
     
     /**
@@ -407,7 +418,8 @@ public class BusinessNotificationService {
             String ids = String.join(",", notificationIds.stream()
                 .map(String::valueOf)
                 .toArray(String[]::new));
-            notificationMapper.markAsRead(tenantId, ids);
+            LocalDateTime now = getCurrentTime();
+            notificationMapper.markAsRead(tenantId, ids, now);
         }
     }
     
@@ -418,7 +430,7 @@ public class BusinessNotificationService {
     @Scheduled(fixedDelay = 300000) // 5分钟
     public void checkUpcomingAppointments() {
         try {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = getCurrentTime();
             LocalDateTime thirtyMinutesLater = now.plusMinutes(30);
             
             // 获取所有30分钟后即将开始的预约
@@ -459,7 +471,7 @@ public class BusinessNotificationService {
      */
     private boolean hasRecentReminder(Long appointmentId) {
         // 检查最近1小时内是否已经发送过提醒
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+        LocalDateTime oneHourAgo = getCurrentTime().minusHours(1);
         List<BusinessNotification> recentReminders = notificationMapper.selectByBusinessIdAndType(
             appointmentId.toString(),
             "APPOINTMENT_REMINDER",

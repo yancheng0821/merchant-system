@@ -5,9 +5,9 @@ spring:
   application:
     name: merchant-service
   datasource:
-    url: jdbc:mysql://localhost:3306/merchant_management?useSSL=false&serverTimezone=America/Vancouver
-    username: root
-    password: 123456
+    url: jdbc:mysql://localhost:3306/merchant_management?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: merchant_app
+    password: MerchantApp@2024
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5         # 开发环境较小的连接池
@@ -28,6 +28,7 @@ mybatis:
   type-aliases-package: com.merchant.server.merchantservice.entity
   configuration:
     map-underscore-to-camel-case: true
+    default-time-zone: UTC
     # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 注释掉SQL日志输出
 
 # 日志配置
@@ -47,8 +48,11 @@ logging:
 
 eureka:
   client:
-    enabled: false  # 禁用Eureka客户端
+    enabled: true  # 启用Eureka客户端
     service-url:
       defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
   instance:
-    prefer-ip-address: true 
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port} 

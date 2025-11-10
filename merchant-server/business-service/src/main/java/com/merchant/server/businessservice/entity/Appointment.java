@@ -35,12 +35,24 @@ public class Appointment {
     private Integer rating;
     
     private String review;
-    
+
+    // 支付相关字段
+    private Boolean paid;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime paidTime;
+
+    private String paymentMethod;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
+
+    // 提醒发送标记
+    private Boolean reminder24hSent = false;  // 24小时提醒是否已发送
+    private Boolean reminder30minSent = false; // 30分钟提醒是否已发送
     
     // 关联对象（如果需要的话）
     private Customer customer;
@@ -71,6 +83,6 @@ public class Appointment {
     
     // 枚举定义
     public enum AppointmentStatus {
-        CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
+        CONFIRMED, CHECKED_IN, COMPLETED, CANCELLED, NO_SHOW
     }
 }

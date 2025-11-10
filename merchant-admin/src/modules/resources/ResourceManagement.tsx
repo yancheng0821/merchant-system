@@ -15,6 +15,7 @@ import {
     Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { usePermission } from '../../hooks/usePermission';
 import StaffResourceManagement from './components/StaffResourceManagement';
 import RoomResourceManagement from './components/RoomResourceManagement';
 import ResourceAvailabilityView from './components/ResourceAvailabilityView';
@@ -46,6 +47,7 @@ function TabPanel(props: TabPanelProps) {
 
 const ResourceManagement: React.FC = () => {
     const { t } = useTranslation();
+    const { hasPermission } = usePermission();
     const [tabValue, setTabValue] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -255,9 +257,19 @@ const ResourceManagement: React.FC = () => {
         const { resourceTypes } = currentConfig;
 
         // 统一DOM结构 - 完美解决闪烁问题
-        const hasMultipleTypes = resourceTypes.length > 1;
-        const hasStaff = resourceTypes.includes('STAFF');
-        const hasRoom = resourceTypes.includes('ROOM');
+        // 结合商户配置和用户权限来决定显示哪些Tab
+        const hasStaff = resourceTypes.includes('STAFF') && hasPermission('staff:view');
+        const hasRoom = resourceTypes.includes('ROOM') && hasPermission('room:view');
+        const hasMultipleTypes = (hasStaff && hasRoom);
+
+        // 如果没有任何资源权限，显示权限不足提示
+        if (!hasStaff && !hasRoom) {
+            return (
+                <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+                    {t('common.noPermission')}
+                </Alert>
+            );
+        }
 
         // 计算Tab索引
         const getTabIndex = (type: 'staff' | 'room' | 'staffAvailability' | 'roomAvailability') => {
@@ -327,6 +339,7 @@ const ResourceManagement: React.FC = () => {
                                         iconPosition="start"
                                     />
                                 )}
+                                {/* Staff Availability */}
                                 {hasStaff && (
                                     <Tab
                                         icon={<ScheduleIcon />}
@@ -334,13 +347,14 @@ const ResourceManagement: React.FC = () => {
                                         iconPosition="start"
                                     />
                                 )}
-                                {hasRoom && (
+                                {/* Room Availability - Temporarily hidden */}
+                                {/* {hasRoom && (
                                     <Tab
                                         icon={<ScheduleIcon />}
                                         label={t('resources.availability.roomAvailability')}
                                         iconPosition="start"
                                     />
-                                )}
+                                )} */}
                             </Tabs>
                         </Card>
                     )}
@@ -356,16 +370,18 @@ const ResourceManagement: React.FC = () => {
                             <RoomResourceManagement />
                         </TabPanel>
                     )}
+                    {/* Staff Availability */}
                     {hasStaff && (
                         <TabPanel value={tabValue} index={getTabIndex('staffAvailability')}>
                             <ResourceAvailabilityView resourceType="STAFF" />
                         </TabPanel>
                     )}
-                    {hasRoom && (
+                    {/* Room Availability - Temporarily hidden */}
+                    {/* {hasRoom && (
                         <TabPanel value={tabValue} index={getTabIndex('roomAvailability')}>
                             <ResourceAvailabilityView resourceType="ROOM" />
                         </TabPanel>
-                    )}
+                    )} */}
                 </Box>
             </Fade>
         );

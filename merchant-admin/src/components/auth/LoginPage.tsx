@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   Container,
   Paper,
@@ -15,6 +16,7 @@ import {
   Fade,
   Slide,
   Grid,
+  Snackbar,
 } from '@mui/material';
 import {
   Visibility,
@@ -24,9 +26,11 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Lock as LockIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
 } from '@mui/icons-material';
-import GoogleLoginButton from './GoogleLoginButton';
 import MerchantRegisterPage from './MerchantRegisterPage';
+import ForgotPasswordPage from './ForgotPasswordPage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../common/LanguageSwitcher';
@@ -34,13 +38,44 @@ import HelpTooltip from '../common/HelpTooltip';
 import CountryCodeSelector from '../common/CountryCodeSelector';
 
 
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  realName: string;
+  phone: string;
+  phoneCountryCode: string;
+  invitationCode: string;
+}
+
 const LoginPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { login, register, loginWithGoogle, loading, error, clearError, setError } = useAuth();
-  const [pageMode, setPageMode] = useState<'login' | 'register' | 'merchantRegister'>('login');
+  const { login, register, loading, error, clearError, setError } = useAuth();
+
+  // 从 sessionStorage 恢复 pageMode，避免刷新后丢失状态
+  const getInitialPageMode = (): 'login' | 'register' | 'merchantRegister' | 'forgotPassword' | '2fa' => {
+    const savedMode = sessionStorage.getItem('authPageMode');
+    if (savedMode && ['login', 'register', 'merchantRegister', 'forgotPassword', '2fa'].includes(savedMode)) {
+      return savedMode as 'login' | 'register' | 'merchantRegister' | 'forgotPassword' | '2fa';
+    }
+    return 'login';
+  };
+
+  const [pageMode, setPageMode] = useState<'login' | 'register' | 'merchantRegister' | 'forgotPassword' | '2fa'>(getInitialPageMode());
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState<string>('');
+  const [displayedError, setDisplayedError] = useState<string>('');
+  const [displayedSuccess, setDisplayedSuccess] = useState<string>('');
+  const [twoFactorData, setTwoFactorData] = useState<{
+    userId: number;
+    phone: string;
+    tenantId: number;
+    verificationId?: string;
+  } | null>(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sending2FA, setSending2FA] = useState(false);
 
   const [loginData, setLoginData] = useState({
     username: '',
@@ -48,7 +83,8 @@ const LoginPage: React.FC = () => {
     tenantCode: ''
   });
 
-  const [registerData, setRegisterData] = useState({
+  // 初始化空的注册表单数据
+  const [registerData, setRegisterData] = useState<RegisterData>({
     username: '',
     email: '',
     password: '',
@@ -59,12 +95,77 @@ const LoginPage: React.FC = () => {
     invitationCode: ''
   });
 
+  // 实时验证状态
+  const [validationErrors, setValidationErrors] = useState({
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  // 跟踪字段是否已被用户触摸过
+  const [touchedFields, setTouchedFields] = useState({
+    email: false,
+    phone: false,
+    password: false,
+    confirmPassword: false,
+  });
+
   // 移除这个会立即清除错误信息的useEffect
   // useEffect(() => {
   //   if (error) {
   //     clearError();
   //   }
   // }, [isLogin, error, clearError]);
+
+  // 保存 pageMode 到 sessionStorage，避免刷新后丢失
+  React.useEffect(() => {
+    sessionStorage.setItem('authPageMode', pageMode);
+  }, [pageMode]);
+
+  // 当 twoFactorData 被设置时，自动切换到 2FA 模式（备用机制）
+  React.useEffect(() => {
+    if (twoFactorData && twoFactorData.verificationId && pageMode !== '2fa') {
+      setPageMode('2fa');
+    }
+  }, [twoFactorData, pageMode]);
+
+  // 同步 error 到 displayedError（用于 Snackbar 显示）
+  React.useEffect(() => {
+    if (error) {
+      setDisplayedError(error);
+    }
+  }, [error]);
+
+  // 同步 success 到 displayedSuccess（用于 Snackbar 显示）
+  React.useEffect(() => {
+    if (success) {
+      setDisplayedSuccess(success);
+    }
+  }, [success]);
+
+  // 错误消息自动消失（3秒后）
+  React.useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
+
+  // 成功消息自动消失（3秒后）
+  React.useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+        // 成功后清除 sessionStorage，因为即将跳转
+        sessionStorage.removeItem('authPageMode');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -78,12 +179,110 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  // 验证函数
+  const validateEmailFormat = (email: string): string => {
+    if (!email) return '';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return t('auth.emailInvalid') || 'Invalid email format';
+    }
+    return '';
+  };
+
+  const validatePhoneFormat = (phone: string): string => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length < 6 || cleaned.length > 15) {
+      return t('auth.phoneInvalid') || 'Phone number must be 6-15 digits';
+    }
+    return '';
+  };
+
+  const validatePasswordStrength = (password: string): string => {
+    if (!password) return '';
+
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const isLongEnough = password.length >= 8;
+
+    if (!isLongEnough) {
+      return t('auth.passwordMinLength') || 'Password must be at least 8 characters';
+    }
+    if (!hasUpperCase) {
+      return t('auth.passwordNeedsUpperCase') || 'Password must contain at least one uppercase letter';
+    }
+    if (!hasLowerCase) {
+      return t('auth.passwordNeedsLowerCase') || 'Password must contain at least one lowercase letter';
+    }
+    if (!hasNumber) {
+      return t('auth.passwordNeedsNumber') || 'Password must contain at least one number';
+    }
+    if (!hasSpecialChar) {
+      return t('auth.passwordNeedsSpecialChar') || 'Password must contain at least one special character';
+    }
+    return '';
+  };
+
+  const validateConfirmPasswordMatch = (password: string, confirmPassword: string): string => {
+    if (!confirmPassword) return '';
+    if (password !== confirmPassword) {
+      return t('auth.passwordMismatch') || 'Passwords do not match';
+    }
+    return '';
+  };
+
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setRegisterData({
+    const fieldName = e.target.name;
+
+    const updatedData = {
       ...registerData,
-      [e.target.name]: newValue
-    });
+      [fieldName]: newValue
+    };
+    setRegisterData(updatedData);
+
+    // 标记字段为已触摸
+    const validationFields = ['email', 'phone', 'password', 'confirmPassword'];
+    if (validationFields.includes(fieldName)) {
+      setTouchedFields(prev => ({
+        ...prev,
+        [fieldName]: true,
+      }));
+    }
+
+    // 实时验证
+    if (fieldName === 'email') {
+      const emailError = validateEmailFormat(newValue);
+      setValidationErrors(prev => ({
+        ...prev,
+        email: emailError,
+      }));
+    } else if (fieldName === 'phone') {
+      const phoneError = validatePhoneFormat(newValue);
+      setValidationErrors(prev => ({
+        ...prev,
+        phone: phoneError,
+      }));
+    } else if (fieldName === 'password') {
+      const passwordError = validatePasswordStrength(newValue);
+      const confirmPasswordError = touchedFields.confirmPassword
+        ? validateConfirmPasswordMatch(newValue, updatedData.confirmPassword)
+        : '';
+      setValidationErrors(prev => ({
+        ...prev,
+        password: passwordError,
+        confirmPassword: confirmPasswordError,
+      }));
+    } else if (fieldName === 'confirmPassword') {
+      const confirmPasswordError = validateConfirmPasswordMatch(updatedData.password, newValue);
+      setValidationErrors(prev => ({
+        ...prev,
+        confirmPassword: confirmPasswordError,
+      }));
+    }
+
     // 只在用户开始输入时清除错误，而不是每次输入都清除
     if (error && newValue.length === 1) {
       clearError();
@@ -118,8 +317,13 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    const success = await login(loginData.username, loginData.password, loginData.tenantCode);
-    if (success) {
+    const result = await login(loginData.username, loginData.password, loginData.tenantCode);
+
+    // 检查是否需要2FA验证
+    if (typeof result === 'object' && result.need2FA) {
+      // 自动发送2FA验证码
+      await send2FACode(result.userId, result.phone, result.tenantId);
+    } else if (result === true) {
       setSuccess(t('auth.loginSuccess') || '登录成功');
     }
   };
@@ -149,6 +353,18 @@ const LoginPage: React.FC = () => {
 
     if (!registerData.realName.trim()) {
       setError(t('auth.realNameRequired') || '真实姓名不能为空');
+      return;
+    }
+
+    if (!registerData.phone.trim()) {
+      setError(t('auth.phoneRequired') || '手机号不能为空');
+      return;
+    }
+
+    // 验证手机号格式
+    const phoneError = validatePhoneFormat(registerData.phone);
+    if (phoneError) {
+      setError(phoneError);
       return;
     }
 
@@ -188,29 +404,167 @@ const LoginPage: React.FC = () => {
 
     if (success) {
       setSuccess(t('auth.registerSuccess') || '注册成功');
+      // 注册成功后，AuthContext 会自动设置 user 状态
+      // App.tsx 会检测到 user 存在并自动显示主应用界面
+      // 不需要手动跳转，避免额外的页面刷新
     }
   };
 
-  const handleGoogleSuccess = async (idToken: string) => {
+
+  // 发送2FA验证码
+  const send2FACode = async (userId: number, phone: string, tenantId: number) => {
+    setSending2FA(true);
+    clearError();
+
     try {
-      const success = await loginWithGoogle(idToken);
-      if (success) {
-        setSuccess(t('auth.googleLoginSuccess') || 'Google登录成功');
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-2fa-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          tenantId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data?.success) {
+        // 使用 flushSync 强制同步更新所有状态
+        flushSync(() => {
+          setTwoFactorData({
+            userId,
+            phone,
+            tenantId,
+            verificationId: result.data.verificationId,
+          });
+          setSuccess(t('auth.verificationCodeSent') || '验证码已发送');
+          setSending2FA(false);
+        });
+
+        // 在单独的 flushSync 中切换页面模式，确保前面的状态都已更新
+        flushSync(() => {
+          setPageMode('2fa');
+        });
+      } else {
+        setError(result.data?.message || result.message || t('auth.sendCodeFailed'));
+        setSending2FA(false);
       }
-    } catch (error) {
-      console.error('Google login callback error:', error);
-      setError('Google login failed');
+    } catch (err) {
+      setError(t('auth.sendCodeError') || '发送验证码失败');
+      setSending2FA(false);
     }
   };
 
-  const handleGoogleError = (error: string) => {
-    console.error('Google login error:', error);
-    setError('Google login failed');
+  // 验证2FA验证码
+  const verify2FACode = async () => {
+    if (!twoFactorData || !verificationCode) {
+      setError(t('auth.codeRequired') || '请输入验证码');
+      return;
+    }
+
+    clearError();
+
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-2fa-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: twoFactorData.userId,
+          code: verificationCode,
+          verificationId: twoFactorData.verificationId,
+          tenantId: twoFactorData.tenantId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        // 保存 token 和 refreshToken
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('refreshToken', result.data.refreshToken);
+
+        // 构建用户对象并保存到 localStorage
+        // LoginResponse 的用户信息直接在 data 中，不是嵌套的
+        const user = {
+          id: result.data.userId,
+          username: result.data.username,
+          realName: result.data.realName,
+          email: result.data.email,
+          avatar: result.data.avatar,
+          tenantId: result.data.tenantId,
+          tenantName: result.data.tenantName,
+          roles: result.data.roles || [],
+          permissions: result.data.permissions || [],
+          lastLoginTime: result.data.lastLoginTime,
+        };
+        localStorage.setItem('user', JSON.stringify(user));
+
+        setSuccess(t('auth.loginSuccess') || '登录成功');
+
+        // 延迟刷新，让用户看到成功消息
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 500);
+      } else {
+        // 优化错误消息显示
+        let errorMessage = result.message || t('auth.verificationFailed');
+
+        // 如果有剩余尝试次数，显示更友好的提示
+        if (result.remainingAttempts !== undefined && result.remainingAttempts > 0) {
+          errorMessage = result.message || `${t('auth.incorrectCode')} ${t('auth.attemptsRemaining')}: ${result.remainingAttempts}`;
+        } else if (result.remainingAttempts === 0) {
+          errorMessage = result.message || t('auth.maxAttemptsExceeded');
+        }
+
+        setError(errorMessage);
+      }
+    } catch (err: any) {
+      console.error('2FA verification error:', err);
+
+      // 尝试从错误对象中提取有用的信息
+      let errorMessage = t('auth.verificationError') || '验证失败';
+
+      if (err.message) {
+        // 检查是否包含JSON格式的错误信息（支持嵌套JSON）
+        // 匹配最后一个完整的JSON对象
+        const jsonMatch = err.message.match(/\{(?:[^{}]|\{[^{}]*\})*\}$/);
+        if (jsonMatch) {
+          try {
+            const errorData = JSON.parse(jsonMatch[0]);
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          } catch (parseErr) {
+            console.error('Failed to parse error JSON:', parseErr);
+          }
+        } else {
+          // 如果没有找到JSON，尝试直接从消息中提取有用部分
+          // 查找是否包含中文错误消息
+          const chineseMatch = err.message.match(/["']([^"']*[\u4e00-\u9fa5]+[^"']*)["']/);
+          if (chineseMatch) {
+            errorMessage = chineseMatch[1];
+          }
+        }
+      }
+
+      setError(errorMessage);
+    }
   };
 
   // 如果是商户注册模式，直接返回商户注册页面
   if (pageMode === 'merchantRegister') {
     return <MerchantRegisterPage onBack={() => setPageMode('login')} />;
+  }
+
+  // 如果是忘记密码模式，直接返回忘记密码页面
+  if (pageMode === 'forgotPassword') {
+    return <ForgotPasswordPage onBack={() => setPageMode('login')} />;
   }
 
   return (
@@ -254,7 +608,32 @@ const LoginPage: React.FC = () => {
                 display: { xs: 'none', md: 'block' },
               }}
             >
-              <BusinessIcon sx={{ fontSize: 80, mb: 2, opacity: 0.9 }} />
+              {/* VA Logo */}
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  sx={{
+                    fontSize: '6rem',
+                    fontWeight: 800,
+                    fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    letterSpacing: '-0.04em',
+                    lineHeight: 1,
+                    color: '#ffffff',
+                    textShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  VA
+                </Typography>
+                <Box
+                  sx={{
+                    width: '120px',
+                    height: '4px',
+                    background: '#ffffff',
+                    borderRadius: '2px',
+                    margin: '0 auto',
+                    mt: 1,
+                  }}
+                />
+              </Box>
               <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
                 {t('auth.brandTitle')}
               </Typography>
@@ -281,41 +660,22 @@ const LoginPage: React.FC = () => {
             >
               <Box textAlign="center" mb={4}>
                 <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-                  {pageMode === 'login' ? t('auth.login') : t('auth.register')}
+                  {pageMode === 'login'
+                    ? t('auth.login')
+                    : pageMode === '2fa'
+                    ? t('auth.twoFactorAuth') || '二次验证'
+                    : t('auth.register')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  {pageMode === 'login' ? t('auth.loginSubtitle') : t('auth.registerSubtitle')}
+                  {pageMode === 'login'
+                    ? t('auth.loginSubtitle')
+                    : pageMode === '2fa'
+                    ? t('auth.enterVerificationCode') || '请输入发送到您手机的验证码'
+                    : t('auth.registerSubtitle')}
                 </Typography>
               </Box>
 
-              {/* Google登录按钮 - 已隐藏 */}
-              {false && (
-                <>
-                  <Box sx={{
-                    mb: 3,
-                    minHeight: '48px', // 固定最小高度，防止布局变化
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}>
-                    <GoogleLoginButton
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      disabled={loading}
-                      variant="themed" // 使用主题化样式
-                    />
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Divider sx={{ flex: 1 }} />
-                    <Typography variant="body2" sx={{ px: 2, color: 'text.secondary' }}>
-                      {t('auth.orDivider')}
-                    </Typography>
-                    <Divider sx={{ flex: 1 }} />
-                  </Box>
-                </>
-              )}
-
-              {pageMode === 'login' ? (
+{pageMode === 'login' ? (
                 /* 登录表单 */
                 <form onSubmit={handleLoginSubmit}>
                   <TextField
@@ -407,18 +767,6 @@ const LoginPage: React.FC = () => {
                     }}
                   />
 
-                  {error && (
-                    <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
-                      {error}
-                    </Alert>
-                  )}
-
-                  {success && (
-                    <Alert severity="success" sx={{ mt: 2, borderRadius: 2 }}>
-                      {success}
-                    </Alert>
-                  )}
-
                   <Button
                     type="submit"
                     fullWidth
@@ -427,7 +775,9 @@ const LoginPage: React.FC = () => {
                     sx={{
                       mt: 3,
                       mb: 2,
-                      py: 1.5,
+                      py: 1.25,
+                      textTransform: 'none',
+                      fontWeight: 500,
                       borderRadius: 2,
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       '&:hover': {
@@ -437,10 +787,86 @@ const LoginPage: React.FC = () => {
                   >
                     {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.loginButton')}
                   </Button>
+
+                  {/* 忘记密码链接 */}
+                  <Box textAlign="center">
+                    <Button
+                      variant="text"
+                      onClick={() => setPageMode('forgotPassword')}
+                      sx={{
+                        textTransform: 'none',
+                        color: '#667eea',
+                        '&:hover': {
+                          backgroundColor: 'transparent',
+                          color: '#5a67d8',
+                        },
+                      }}
+                    >
+                      {t('auth.forgotPassword')}
+                    </Button>
+                  </Box>
                 </form>
+              ) : pageMode === '2fa' ? (
+                /* 2FA验证码输入界面 */
+                <Box>
+                  <Typography variant="body2" color="text.secondary" textAlign="center" mb={3}>
+                    {t('auth.verificationCodeSentTo', { phone: twoFactorData?.phone })}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    label={t('auth.verificationCode')}
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    margin="normal"
+                    required
+                    autoFocus
+                    inputProps={{ maxLength: 6 }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={verify2FACode}
+                    disabled={loading || !verificationCode}
+                    sx={{
+                      mt: 3,
+                      mb: 2,
+                      py: 1.25,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      },
+                    }}
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.verify')}
+                  </Button>
+
+                  <Button
+                    fullWidth
+                    variant="text"
+                    onClick={() => {
+                      setPageMode('login');
+                      setTwoFactorData(null);
+                      setVerificationCode('');
+                      clearError();
+                      setSuccess('');
+                    }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {t('auth.backToLogin')}
+                  </Button>
+                </Box>
               ) : (
                 /* 注册表单 */
-                <form onSubmit={handleRegisterSubmit}>
+                <form onSubmit={handleRegisterSubmit} noValidate>
                   <TextField
                     fullWidth
                     label={t('auth.username')}
@@ -450,6 +876,7 @@ const LoginPage: React.FC = () => {
                     margin="normal"
                     required
                     autoFocus
+                    helperText={t('auth.usernameHelp')}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -493,6 +920,8 @@ const LoginPage: React.FC = () => {
                     onChange={handleRegisterChange}
                     margin="normal"
                     required
+                    error={touchedFields.email && !!validationErrors.email}
+                    helperText={touchedFields.email ? validationErrors.email : ''}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -511,7 +940,7 @@ const LoginPage: React.FC = () => {
                       <Grid item xs={5}>
                         <CountryCodeSelector
                           value={registerData.phoneCountryCode}
-                          onChange={(code) => setRegisterData(prev => ({ ...prev, phoneCountryCode: code }))}
+                          onChange={(code) => setRegisterData((prev) => ({ ...prev, phoneCountryCode: code }))}
                           label={t('common.countryCode')}
                           size="medium"
                           fullWidth
@@ -524,6 +953,9 @@ const LoginPage: React.FC = () => {
                           name="phone"
                           value={registerData.phone}
                           onChange={handleRegisterChange}
+                          required
+                          error={touchedFields.phone && !!validationErrors.phone}
+                          helperText={touchedFields.phone ? validationErrors.phone : ''}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
@@ -574,38 +1006,145 @@ const LoginPage: React.FC = () => {
                       },
                     }}
                   />
-                  <TextField
-                    fullWidth
-                    label={t('auth.password')}
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={registerData.password}
-                    onChange={handleRegisterChange}
-                    margin="normal"
-                    required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      },
-                    }}
-                  />
+                  <Box>
+                    <TextField
+                      fullWidth
+                      label={t('auth.password')}
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={registerData.password}
+                      onChange={handleRegisterChange}
+                      onFocus={() => setTouchedFields(prev => ({ ...prev, password: true }))}
+                      margin="normal"
+                      required
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockIcon sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                        },
+                      }}
+                    />
+                    {/* 只有在用户点击密码框且未全部满足时才显示密码要求 */}
+                    {touchedFields.password && !(
+                      registerData.password &&
+                      registerData.password.length >= 8 &&
+                      /[A-Z]/.test(registerData.password) &&
+                      /[a-z]/.test(registerData.password) &&
+                      /[0-9]/.test(registerData.password) &&
+                      /[!@#$%^&*(),.?":{}|<>]/.test(registerData.password)
+                    ) && (
+                      <Fade in={true}>
+                        <Box sx={{ mt: 0.5, mb: 1, px: 1 }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500 }}>
+                            {t('auth.passwordRequirements')}:
+                          </Typography>
+                          <Box sx={{ mt: 0.5 }}>
+                            {/* 至少8位 */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                              {registerData.password.length >= 8 ? (
+                                <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                              ) : (
+                                <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                              )}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: registerData.password.length >= 8 ? 'success.main' : 'text.secondary',
+                                  fontSize: '0.7rem'
+                                }}
+                              >
+                                {t('auth.passwordMinLength')}
+                              </Typography>
+                            </Box>
+                            {/* 大写字母 */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                              {/[A-Z]/.test(registerData.password) ? (
+                                <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                              ) : (
+                                <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                              )}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: /[A-Z]/.test(registerData.password) ? 'success.main' : 'text.secondary',
+                                  fontSize: '0.7rem'
+                                }}
+                              >
+                                {t('auth.passwordNeedsUpperCase')}
+                              </Typography>
+                            </Box>
+                            {/* 小写字母 */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                              {/[a-z]/.test(registerData.password) ? (
+                                <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                              ) : (
+                                <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                              )}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: /[a-z]/.test(registerData.password) ? 'success.main' : 'text.secondary',
+                                  fontSize: '0.7rem'
+                                }}
+                              >
+                                {t('auth.passwordNeedsLowerCase')}
+                              </Typography>
+                            </Box>
+                            {/* 数字 */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                              {/[0-9]/.test(registerData.password) ? (
+                                <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                              ) : (
+                                <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                              )}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: /[0-9]/.test(registerData.password) ? 'success.main' : 'text.secondary',
+                                  fontSize: '0.7rem'
+                                }}
+                              >
+                                {t('auth.passwordNeedsNumber')}
+                              </Typography>
+                            </Box>
+                            {/* 特殊字符 */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                              {/[!@#$%^&*(),.?":{}|<>]/.test(registerData.password) ? (
+                                <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                              ) : (
+                                <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                              )}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: /[!@#$%^&*(),.?":{}|<>]/.test(registerData.password) ? 'success.main' : 'text.secondary',
+                                  fontSize: '0.7rem'
+                                }}
+                              >
+                                {t('auth.passwordNeedsSpecialChar')}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                      </Fade>
+                    )}
+                  </Box>
                   <TextField
                     fullWidth
                     label={t('auth.confirmPassword')}
@@ -615,6 +1154,8 @@ const LoginPage: React.FC = () => {
                     onChange={handleRegisterChange}
                     margin="normal"
                     required
+                    error={touchedFields.confirmPassword && !!validationErrors.confirmPassword}
+                    helperText={touchedFields.confirmPassword ? validationErrors.confirmPassword : ''}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -639,18 +1180,6 @@ const LoginPage: React.FC = () => {
                     }}
                   />
 
-                  {error && (
-                    <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
-                      {error}
-                    </Alert>
-                  )}
-
-                  {success && (
-                    <Alert severity="success" sx={{ mt: 2, borderRadius: 2 }}>
-                      {success}
-                    </Alert>
-                  )}
-
                   <Button
                     type="submit"
                     fullWidth
@@ -659,7 +1188,9 @@ const LoginPage: React.FC = () => {
                     sx={{
                       mt: 3,
                       mb: 2,
-                      py: 1.5,
+                      py: 1.25,
+                      textTransform: 'none',
+                      fontWeight: 500,
                       borderRadius: 2,
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       '&:hover': {
@@ -696,7 +1227,8 @@ const LoginPage: React.FC = () => {
                     <Button
                       variant="text"
                       onClick={() => {
-                        setPageMode(pageMode === 'login' ? 'register' : 'login');
+                        const newMode = pageMode === 'login' ? 'register' : 'login';
+                        setPageMode(newMode);
                         setSuccess('');
                       }}
                       sx={{
@@ -795,6 +1327,38 @@ const LoginPage: React.FC = () => {
           </Slide>
         </Box>
       </Container>
+
+      {/* Snackbar for error messages */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={clearError}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={clearError}
+          severity="error"
+          sx={{ width: '100%' }}
+        >
+          {displayedError}
+        </Alert>
+      </Snackbar>
+
+      {/* Snackbar for success messages */}
+      <Snackbar
+        open={!!success}
+        autoHideDuration={6000}
+        onClose={() => setSuccess('')}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSuccess('')}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          {displayedSuccess}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -25,7 +25,9 @@ public class Customer {
     
     @NotBlank
     private String phone;
-    
+
+    private String countryCode = "+1-CA"; // 国家码，默认加拿大
+
     @Email
     private String email;
     
@@ -83,7 +85,7 @@ public class Customer {
     }
     
     public enum CommunicationPreference {
-        SMS, EMAIL, PHONE
+        SMS, EMAIL, BOTH
     }
     
 

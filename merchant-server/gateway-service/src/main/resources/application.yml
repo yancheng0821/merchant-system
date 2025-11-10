@@ -43,21 +43,27 @@ spring:
           uri: http://localhost:5001  # 直接路由到 Python AI 服务
           predicates:
             - Path=/api/ai/**
-        - id: analytics-service
-          uri: lb://analytics-service
-          predicates:
-            - Path=/api/analytics/**
         - id: notification-service
           uri: lb://notification-service
           predicates:
             - Path=/api/notification/**
-        - id: file-service
-          uri: lb://file-service
+        # 注释掉file-service，改用静态资源服务
+        # - id: file-service
+        #   uri: lb://file-service
+        #   predicates:
+        #     - Path=/api/files/**
+        - id: static-resources
+          uri: lb://auth-service
           predicates:
-            - Path=/api/files/**
+            - Path=/static/uploads/**
   redis:
     host: localhost
     port: 6379
+
+# JWT Configuration
+jwt:
+  secret: merchant-system-jwt-secret-key-2024
+  expiration: 86400000
 
 eureka:
   client:

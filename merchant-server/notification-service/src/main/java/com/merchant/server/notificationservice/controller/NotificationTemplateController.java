@@ -1,5 +1,7 @@
 package com.merchant.server.notificationservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
+import com.merchant.server.common.annotation.Auditable;
 import com.merchant.server.notificationservice.entity.NotificationTemplate;
 import com.merchant.server.notificationservice.service.TemplateService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import java.util.List;
 @RequestMapping("/api/notification/templates")
 @RequiredArgsConstructor
 @Slf4j
+@RequiresPermission("notifications:manage_template")
 public class NotificationTemplateController {
 
     private final TemplateService templateService;
@@ -43,6 +46,7 @@ public class NotificationTemplateController {
     /**
      * 创建通知模板
      */
+    @Auditable(resource = "NOTIFICATION_TEMPLATE", action = "CREATE", recordOldValue = true, description = "Create notification template")
     @PostMapping
     public ResponseEntity<NotificationTemplate> createTemplate(@Valid @RequestBody NotificationTemplate template) {
         log.info("Creating notification template: {}", template.getTemplateCode());
@@ -53,6 +57,7 @@ public class NotificationTemplateController {
     /**
      * 更新通知模板
      */
+    @Auditable(resource = "NOTIFICATION_TEMPLATE", action = "UPDATE", resourceIdParam = "id", recordOldValue = true, description = "Update notification template")
     @PutMapping("/{id}")
     public ResponseEntity<NotificationTemplate> updateTemplate(
             @PathVariable Long id,
@@ -65,7 +70,10 @@ public class NotificationTemplateController {
 
     /**
      * 删除通知模板
+     * 需要特殊权限：只有超级管理员才能删除模板
      */
+    @RequiresPermission("notifications:delete_template")
+    @Auditable(resource = "NOTIFICATION_TEMPLATE", action = "DELETE", resourceIdParam = "id", recordOldValue = true, description = "Delete notification template")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTemplate(@PathVariable Long id) {
         log.info("Deleting notification template: {}", id);

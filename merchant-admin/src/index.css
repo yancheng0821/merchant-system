@@ -42,4 +42,24 @@ code {
 .MuiInputBase-root,
 .MuiFormLabel-root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
-} 
+}
+
+/* ===== 移除浏览器默认的蓝色outline ===== */
+
+/* 只移除input元素的浏览器默认outline，保留自定义边框 */
+.MuiInputBase-input:focus {
+  outline: none !important;
+}
+
+.MuiInputBase-input:focus-visible {
+  outline: none !important;
+}
+
+/* Remove autofill yellow background for MUI inputs */
+.MuiInputBase-input:-webkit-autofill,
+.MuiInputBase-input:-webkit-autofill:hover,
+.MuiInputBase-input:-webkit-autofill:focus,
+.MuiInputBase-input:-webkit-autofill:active {
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 5000s ease-in-out 0s;
+}

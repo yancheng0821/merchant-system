@@ -1,7 +1,7 @@
 {
-  "short_name": "Merchant System",
-  "name": "Merchant System - 商户管理平台",
-  "description": "专业的商户管理平台，提供客户管理、预约管理等功能",
+  "short_name": "VA Merchant",
+  "name": "VA Merchant System - 商户管理平台",
+  "description": "VA Merchant System - 专业的商户管理平台，提供客户管理、预约管理等功能",
   "icons": [
     {
       "src": "apple-touch-icon.png",
@@ -11,7 +11,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#667eea",
+  "theme_color": "#6366F1",
   "background_color": "#ffffff",
   "orientation": "portrait-primary"
 }

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.AppointmentWaitlistMapper">
+
+    <resultMap id="AppointmentWaitlistResultMap" type="com.merchant.server.businessservice.entity.AppointmentWaitlist">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="service_id" property="serviceId"/>
+        <result column="preferred_resource_id" property="preferredResourceId"/>
+        <result column="preferred_date" property="preferredDate"/>
+        <result column="preferred_time_start" property="preferredTimeStart"/>
+        <result column="preferred_time_end" property="preferredTimeEnd"/>
+        <result column="flexible_date" property="flexibleDate"/>
+        <result column="flexible_time" property="flexibleTime"/>
+        <result column="status" property="status"/>
+        <result column="priority" property="priority"/>
+        <result column="matched_appointment_id" property="matchedAppointmentId"/>
+        <result column="matched_at" property="matchedAt"/>
+        <result column="notified_at" property="notifiedAt"/>
+        <result column="expires_at" property="expiresAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="notes" property="notes"/>
+    </resultMap>
+
+    <select id="findById" resultMap="AppointmentWaitlistResultMap">
+        SELECT * FROM appointment_waitlist WHERE id = #{id}
+    </select>
+
+    <select id="findByCustomerId" resultMap="AppointmentWaitlistResultMap">
+        SELECT * FROM appointment_waitlist
+        WHERE customer_id = #{customerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findActiveByCustomerId" resultMap="AppointmentWaitlistResultMap">
+        SELECT * FROM appointment_waitlist
+        WHERE customer_id = #{customerId}
+        AND status IN ('WAITING', 'NOTIFIED')
+        ORDER BY priority DESC, created_at
+    </select>
+
+    <select id="findActiveByTenantId" resultMap="AppointmentWaitlistResultMap">
+        SELECT * FROM appointment_waitlist
+        WHERE tenant_id = #{tenantId}
+        AND status IN ('WAITING', 'NOTIFIED')
+        AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
+        ORDER BY priority DESC, created_at
+    </select>
+
+    <select id="findMatchingWaitlist" resultMap="AppointmentWaitlistResultMap">
+        SELECT * FROM appointment_waitlist
+        WHERE tenant_id = #{tenantId}
+        AND service_id = #{serviceId}
+        AND status = 'WAITING'
+        AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
+        AND (
+            (preferred_date = #{availableDate} OR flexible_date = 1)
+            AND (
+                (preferred_time_start IS NULL)
+                OR (#{availableTime} BETWEEN preferred_time_start AND preferred_time_end)
+                OR flexible_time = 1
+            )
+        )
+        AND (preferred_resource_id IS NULL OR preferred_resource_id = #{resourceId})
+        ORDER BY priority DESC, created_at
+        LIMIT 10
+    </select>
+
+    <select id="findExpiredWaitlist" resultMap="AppointmentWaitlistResultMap">
+        SELECT * FROM appointment_waitlist
+        WHERE status IN ('WAITING', 'NOTIFIED')
+        AND expires_at IS NOT NULL
+        AND expires_at &lt;= UTC_TIMESTAMP()
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment_waitlist (
+            tenant_id, customer_id, service_id, preferred_resource_id,
+            preferred_date, preferred_time_start, preferred_time_end,
+            flexible_date, flexible_time, status, priority,
+            expires_at, created_at, notes
+        ) VALUES (
+            #{tenantId}, #{customerId}, #{serviceId}, #{preferredResourceId},
+            #{preferredDate}, #{preferredTimeStart}, #{preferredTimeEnd},
+            #{flexibleDate}, #{flexibleTime}, #{status}, #{priority},
+            #{expiresAt}, UTC_TIMESTAMP(), #{notes}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE appointment_waitlist SET
+            preferred_resource_id = #{preferredResourceId},
+            preferred_date = #{preferredDate},
+            preferred_time_start = #{preferredTimeStart},
+            preferred_time_end = #{preferredTimeEnd},
+            flexible_date = #{flexibleDate},
+            flexible_time = #{flexibleTime},
+            status = #{status},
+            priority = #{priority},
+            expires_at = #{expiresAt},
+            notes = #{notes}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE appointment_waitlist SET
+            status = #{status},
+            matched_appointment_id = #{matchedAppointmentId},
+            matched_at = #{matchedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="markAsNotified">
+        UPDATE appointment_waitlist SET
+            status = 'NOTIFIED',
+            notified_at = UTC_TIMESTAMP()
+        WHERE id = #{id}
+    </update>
+
+    <update id="markAsMatched">
+        UPDATE appointment_waitlist SET
+            status = 'MATCHED',
+            matched_appointment_id = #{appointmentId},
+            matched_at = UTC_TIMESTAMP()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateExpiredWaitlists">
+        UPDATE appointment_waitlist SET
+            status = 'EXPIRED'
+        WHERE status IN ('WAITING', 'NOTIFIED')
+        AND expires_at IS NOT NULL
+        AND expires_at &lt;= UTC_TIMESTAMP()
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM appointment_waitlist WHERE id = #{id}
+    </delete>
+
+    <select id="countActiveByServiceId" resultType="int">
+        SELECT COUNT(*) FROM appointment_waitlist
+        WHERE service_id = #{serviceId}
+        AND status IN ('WAITING', 'NOTIFIED')
+        AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
+    </select>
+
+</mapper>

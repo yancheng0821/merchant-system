@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -242,7 +243,7 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 .status(mapStripeStatusToPOSStatus(paymentIntent.getStatus()).getStatus())
                 .message("Payment initiated successfully")
                 .actionRequired(paymentIntent.getStatus().equals("requires_action") ? "insert_card" : null)
-                .initiatedAt(LocalDateTime.now())
+                .initiatedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
                 
         } catch (StripeException e) {
@@ -254,7 +255,7 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 .transactionId(failedTransactionId)
                 .status("failed")
                 .message("Payment initiation failed: " + e.getMessage())
-                .initiatedAt(LocalDateTime.now())
+                .initiatedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
         }
     }
@@ -522,7 +523,7 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 .status(reader.getStatus())
                 .connected("online".equals(reader.getStatus()))
                 .firmwareVersion(reader.getDeviceSwVersion())
-                .lastHeartbeat(LocalDateTime.now())
+                .lastHeartbeat(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
         } catch (StripeException e) {
             log.error("Failed to get terminal status", e);
@@ -530,7 +531,7 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 .terminalId(terminalId)
                 .status("offline")
                 .connected(false)
-                .lastHeartbeat(LocalDateTime.now())
+                .lastHeartbeat(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
         }
     }
@@ -720,17 +721,17 @@ public class StripeTerminalClient extends AbstractPOSClient {
                 terminal.setLocationId(reader.getLocation());
                 terminal.setStatus(reader.getStatus());
                 terminal.setIpAddress(reader.getIpAddress());
-                terminal.setLastSeenAt(LocalDateTime.now());
-                terminal.setCreatedAt(LocalDateTime.now());
-                terminal.setUpdatedAt(LocalDateTime.now());
+                terminal.setLastSeenAt(LocalDateTime.now(ZoneOffset.UTC));
+                terminal.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+                terminal.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 terminal.setDeleted(false);
                 
                 stripeTerminalMapper.insert(terminal);
             } else {
                 // 更新现有记录
                 existing.setStatus(reader.getStatus());
-                existing.setLastSeenAt(LocalDateTime.now());
-                existing.setUpdatedAt(LocalDateTime.now());
+                existing.setLastSeenAt(LocalDateTime.now(ZoneOffset.UTC));
+                existing.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 stripeTerminalMapper.updateById(existing);
             }
         } catch (Exception e) {

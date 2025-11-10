@@ -40,7 +40,6 @@ public class SmsService {
                         .region(Region.of(awsConfig.getRegion()))
                         .credentialsProvider(DefaultCredentialsProvider.create())
                         .build();
-                    log.info("AWS SNS客户端初始化成功（使用本地凭证），区域：{}", awsConfig.getRegion());
                 } else {
                     // 验证凭证配置
                     if (awsConfig.getAccessKeyId() == null || awsConfig.getAccessKeyId().trim().isEmpty()) {
@@ -59,7 +58,6 @@ public class SmsService {
                         .region(Region.of(awsConfig.getRegion()))
                         .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
                         .build();
-                    log.info("AWS SNS客户端初始化成功（使用配置凭证），区域：{}", awsConfig.getRegion());
                 }
             } catch (Exception e) {
                 log.error("初始化AWS SNS客户端失败", e);
@@ -127,7 +125,7 @@ public class SmsService {
             
             // 检查短信内容长度（SMS限制为160个字符）
             if (content.length() > 160) {
-                log.warn("短信内容超过160字符，可能会被分割发送，长度：{}", content.length());
+                log.warn("⚠️  短信超长 - {}字符，将分割发送", content.length());
             }
             
             // 确保电话号码格式正确（包含国家代码）
@@ -161,29 +159,21 @@ public class SmsService {
                 .message(content)
                 .messageAttributes(smsAttributes)
                 .build();
-            
-            log.info("准备发送AWS SNS短信，手机号：{}，内容长度：{}，区域：{}", 
-                formattedPhoneNumber, content.length(), notificationConfig.getAws().getRegion());
-            
+
+            log.info("📱 发送短信 - 手机号: {}, 内容: {}", formattedPhoneNumber, content);
+
             PublishResponse response = getSnsClient().publish(request);
-            
-            log.info("AWS SNS短信发送成功，手机号：{}，MessageId：{}，响应：{}", 
-                phoneNumber, response.messageId(), response.toString());
-            
-            // 添加额外的成功信息
-            log.info("短信发送详情 - 原始手机号：{}，格式化手机号：{}，消息类型：{}，发送者ID：{}", 
-                phoneNumber, formattedPhoneNumber, 
-                notificationConfig.getAws().getSns().getDefaultMessageType(),
-                notificationConfig.getAws().getSns().getDefaultSenderId());
-            
+
+            log.info("✅ 短信已发送 - AWS SNS [MessageId: {}]", response.messageId());
+
             return true;
             
         } catch (SnsException e) {
-            log.error("AWS SNS服务异常，手机号：{}，错误代码：{}，错误信息：{}", 
-                phoneNumber, e.awsErrorDetails().errorCode(), e.awsErrorDetails().errorMessage(), e);
+            log.error("❌ AWS SNS错误 - 手机号: {}, 错误: {} ({})",
+                phoneNumber, e.awsErrorDetails().errorMessage(), e.awsErrorDetails().errorCode());
             return false;
         } catch (Exception e) {
-            log.error("AWS SNS短信发送失败，手机号：{}", phoneNumber, e);
+            log.error("❌ 短信发送异常 - 手机号: {}, 错误: {}", phoneNumber, e.getMessage());
             return false;
         }
     }

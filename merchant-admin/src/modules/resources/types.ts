@@ -6,6 +6,7 @@ export interface StaffResource extends Omit<Resource, 'type' | 'status' | 'capac
     status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' | 'VACATION' | 'DELETED';
     // 员工特有属性
     phone?: string;
+    countryCode?: string; // 国家码
     email?: string;
     position?: string;
     skills?: string;

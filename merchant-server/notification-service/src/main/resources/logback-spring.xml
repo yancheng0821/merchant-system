@@ -3,22 +3,23 @@
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-NO_TRACE}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <!-- 文件输出 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/notification-service.log</file>
+        <file>/Users/aisenyc/merchant-system/merchant-server/logs/notification-service.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/notification-service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>/Users/aisenyc/merchant-system/merchant-server/logs/notification-service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
+                <maxFileSize>200MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
-            <maxHistory>30</maxHistory>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-NO_TRACE}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -26,19 +27,41 @@
     <logger name="com.merchant.server.notificationservice.mapper" level="WARN"/>
     <logger name="org.apache.ibatis" level="WARN"/>
     <logger name="java.sql" level="WARN"/>
-    <logger name="org.mybatis" level="WARN"/>
-    
+    <logger name="org.mybatis" level="ERROR"/>
+    <logger name="org.mybatis.spring.mapper.ClassPathMapperScanner" level="ERROR"/>
+
     <!-- 设置应用程序的日志级别 -->
     <logger name="com.merchant.server.notificationservice" level="INFO"/>
-    
+
     <!-- 设置Spring相关日志级别 -->
     <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.security" level="WARN"/>
+    <logger name="org.springframework.context.support" level="ERROR"/>
+    <logger name="org.springframework.context.support.PostProcessorRegistrationDelegate" level="ERROR"/>
     <logger name="org.apache.catalina" level="WARN"/>
     <logger name="org.apache.coyote" level="WARN"/>
     <logger name="org.apache.tomcat" level="WARN"/>
-    
+
+    <!-- 减少Spring Cloud LoadBalancer相关日志 -->
+    <logger name="org.springframework.cloud" level="WARN"/>
+    <logger name="org.springframework.cloud.loadbalancer" level="ERROR"/>
+    <logger name="org.springframework.cloud.loadbalancer.cache" level="ERROR"/>
+    <logger name="org.springframework.cloud.client" level="ERROR"/>
+    <logger name="org.springframework.cloud.commons" level="ERROR"/>
+
+    <!-- 减少Eureka相关日志 -->
+    <logger name="com.netflix" level="WARN"/>
+    <logger name="com.netflix.discovery" level="WARN"/>
+    <logger name="com.netflix.eureka" level="WARN"/>
+
+    <!-- 减少Hibernate Validator日志 -->
+    <logger name="org.hibernate.validator" level="ERROR"/>
+
+    <!-- 减少Apache Commons Logging警告 -->
+    <logger name="org.apache.commons.logging" level="ERROR"/>
+
     <!-- AWS SDK日志 -->
-    <logger name="software.amazon.awssdk" level="INFO"/>
+    <logger name="software.amazon.awssdk" level="WARN"/>
     
     <!-- 根日志级别 -->
     <root level="INFO">

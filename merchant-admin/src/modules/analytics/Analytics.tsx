@@ -36,7 +36,9 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 import { analyticsApi, appointmentApi } from '../../services/api';
+import { getMerchantNow } from '../../utils/timezoneUtils';
 import {
   AreaChart,
   Area,
@@ -58,23 +60,10 @@ import AiBusinessInsights from './components/AiBusinessInsights';
 // 颜色主题 - 使用现代化配色
 const COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
-  return (
-    <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-};
-
 const Analytics: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hasPermission } = usePermission();
   const [timeRange, setTimeRange] = useState('30days');
   const [selectedTab, setSelectedTab] = useState(0);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -82,6 +71,46 @@ const Analytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [heatmapData, setHeatmapData] = useState<any>({});
   const [heatmapView, setHeatmapView] = useState<'week' | 'month'>('week');
+
+  // 定义所有tabs及其对应的权限
+  const allTabsConfig = [
+    {
+      key: 'revenue',
+      label: t('analytics.tabs.revenueTrend'),
+      icon: <TrendingUpIcon />,
+      permission: 'analytics:view_revenue' as const,
+    },
+    {
+      key: 'service',
+      label: t('analytics.tabs.serviceAnalysis'),
+      icon: <AssessmentIcon />,
+      permission: 'analytics:view_service' as const,
+    },
+    {
+      key: 'staff',
+      label: t('analytics.tabs.staffPerformance'),
+      icon: <PeopleIcon />,
+      permission: 'analytics:view_performance' as const,
+    },
+    {
+      key: 'heatmap',
+      label: t('analytics.tabs.appointmentHeatmap'),
+      icon: <CalendarIcon />,
+      permission: 'analytics:view_heatmap' as const,
+    },
+    {
+      key: 'ai',
+      label: t('analytics.tabs.aiBusinessInsights'),
+      icon: <AiIcon />,
+      permission: 'analytics:view_insights' as const,
+    },
+  ];
+
+  // 根据权限过滤tabs
+  const tabsConfig = allTabsConfig.filter(tab => hasPermission(tab.permission));
+
+  // 获取当前选中tab的key
+  const currentTabKey = tabsConfig[selectedTab]?.key;
 
   const handleTimeRangeChange = (event: any) => {
     setTimeRange(event.target.value);
@@ -494,16 +523,20 @@ const Analytics: React.FC = () => {
               },
             }}
           >
-            <Tab icon={<TrendingUpIcon />} iconPosition="start" label={t('analytics.tabs.revenueTrend')} />
-            <Tab icon={<AssessmentIcon />} iconPosition="start" label={t('analytics.tabs.serviceAnalysis')} />
-            <Tab icon={<PeopleIcon />} iconPosition="start" label={t('analytics.tabs.staffPerformance')} />
-            <Tab icon={<CalendarIcon />} iconPosition="start" label={t('analytics.tabs.appointmentHeatmap')} />
-            <Tab icon={<AiIcon />} iconPosition="start" label={t('analytics.tabs.aiBusinessInsights')} />
+            {tabsConfig.map((tab, index) => (
+              <Tab
+                key={index}
+                icon={tab.icon}
+                iconPosition="start"
+                label={tab.label}
+              />
+            ))}
           </Tabs>
         </Box>
 
         {/* 收入趋势 */}
-        <TabPanel value={selectedTab} index={0}>
+        {currentTabKey === 'revenue' && (
+        <Box sx={{ pt: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Box display="flex" alignItems="center" mb={3}>
@@ -566,10 +599,12 @@ const Analytics: React.FC = () => {
               </ResponsiveContainer>
             </Grid>
           </Grid>
-        </TabPanel>
+        </Box>
+        )}
 
         {/* 服务分析 */}
-        <TabPanel value={selectedTab} index={1}>
+        {currentTabKey === 'service' && (
+        <Box sx={{ pt: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Box display="flex" alignItems="center" mb={3}>
@@ -647,10 +682,12 @@ const Analytics: React.FC = () => {
               </ResponsiveContainer>
             </Grid>
           </Grid>
-        </TabPanel>
+        </Box>
+        )}
 
         {/* 员工表现 */}
-        <TabPanel value={selectedTab} index={2}>
+        {currentTabKey === 'staff' && (
+        <Box sx={{ pt: 3 }}>
           <Box display="flex" alignItems="center" mb={3}>
             <Box
               sx={{
@@ -761,10 +798,12 @@ const Analytics: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </TabPanel>
+        </Box>
+        )}
 
         {/* 预约热力图 */}
-        <TabPanel value={selectedTab} index={3}>
+        {currentTabKey === 'heatmap' && (
+        <Box sx={{ pt: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Card
@@ -886,7 +925,7 @@ const Analytics: React.FC = () => {
                       // 月视图
                       <Box>
                         <Typography variant="h6" sx={{ mb: 3, textAlign: 'center' }}>
-                          {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
+                          {getMerchantNow().toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
                         </Typography>
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
                           {/* 星期标题 */}
@@ -1035,12 +1074,15 @@ const Analytics: React.FC = () => {
               </Card>
             </Grid>
           </Grid>
-        </TabPanel>
+        </Box>
+        )}
 
         {/* AI 业务洞察 */}
-        <TabPanel value={selectedTab} index={4}>
+        {currentTabKey === 'ai' && (
+        <Box sx={{ pt: 3 }}>
           <AiBusinessInsights />
-        </TabPanel>
+        </Box>
+        )}
       </Card>
     </Box>
   );

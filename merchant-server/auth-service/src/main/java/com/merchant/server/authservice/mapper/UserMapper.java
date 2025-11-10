@@ -32,6 +32,8 @@ public interface UserMapper {
     boolean existsByUsernameAndTenantId(@Param("username") String username, @Param("tenantId") Long tenantId);
     
     boolean existsByEmail(String email);
-    
+
     boolean existsByEmailAndTenantId(@Param("email") String email, @Param("tenantId") Long tenantId);
+
+    String findUsernameById(Long id);
 } 

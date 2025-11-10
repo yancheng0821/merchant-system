@@ -6,9 +6,9 @@ spring:
   application:
     name: merchant-service
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_management?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/merchant_management?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:merchant_app}
+    password: ${DB_PASSWORD:MerchantApp@2024}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 8         # 最大连接数
@@ -33,7 +33,17 @@ mybatis:
 
 eureka:
   client:
-    enabled: false  # 生产环境禁用Eureka
+    enabled: true
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    appname: ${spring.application.name}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
 
 # Actuator配置
 management:

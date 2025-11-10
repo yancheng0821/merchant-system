@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.OnlineBookingConfigMapper">
+
+    <resultMap id="OnlineBookingConfigResultMap" type="com.merchant.server.businessservice.entity.OnlineBookingConfig">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="booking_url" property="bookingUrl"/>
+        <result column="advance_booking_days" property="advanceBookingDays"/>
+        <result column="min_advance_hours" property="minAdvanceHours"/>
+        <result column="allow_customer_cancel" property="allowCustomerCancel"/>
+        <result column="cancel_deadline_hours" property="cancelDeadlineHours"/>
+        <result column="allow_customer_reschedule" property="allowCustomerReschedule"/>
+        <result column="reschedule_deadline_hours" property="rescheduleDeadlineHours"/>
+        <result column="auto_confirm_booking" property="autoConfirmBooking"/>
+        <result column="require_deposit" property="requireDeposit"/>
+        <result column="deposit_type" property="depositType"/>
+        <result column="deposit_amount" property="depositAmount"/>
+        <result column="enable_waitlist" property="enableWaitlist"/>
+        <result column="show_technician_photos" property="showTechnicianPhotos"/>
+        <result column="show_technician_ratings" property="showTechnicianRatings"/>
+        <result column="booking_widget_color" property="bookingWidgetColor"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findByTenantId" resultMap="OnlineBookingConfigResultMap">
+        SELECT * FROM online_booking_config WHERE tenant_id = #{tenantId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO online_booking_config (
+            tenant_id, booking_url, advance_booking_days, min_advance_hours,
+            allow_customer_cancel, cancel_deadline_hours, allow_customer_reschedule,
+            reschedule_deadline_hours, auto_confirm_booking, require_deposit,
+            deposit_type, deposit_amount, enable_waitlist, show_technician_photos,
+            show_technician_ratings, booking_widget_color, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{bookingUrl}, #{advanceBookingDays}, #{minAdvanceHours},
+            #{allowCustomerCancel}, #{cancelDeadlineHours}, #{allowCustomerReschedule},
+            #{rescheduleDeadlineHours}, #{autoConfirmBooking}, #{requireDeposit},
+            #{depositType}, #{depositAmount}, #{enableWaitlist}, #{showTechnicianPhotos},
+            #{showTechnicianRatings}, #{bookingWidgetColor}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE online_booking_config SET
+            booking_url = #{bookingUrl},
+            advance_booking_days = #{advanceBookingDays},
+            min_advance_hours = #{minAdvanceHours},
+            allow_customer_cancel = #{allowCustomerCancel},
+            cancel_deadline_hours = #{cancelDeadlineHours},
+            allow_customer_reschedule = #{allowCustomerReschedule},
+            reschedule_deadline_hours = #{rescheduleDeadlineHours},
+            auto_confirm_booking = #{autoConfirmBooking},
+            require_deposit = #{requireDeposit},
+            deposit_type = #{depositType},
+            deposit_amount = #{depositAmount},
+            enable_waitlist = #{enableWaitlist},
+            show_technician_photos = #{showTechnicianPhotos},
+            show_technician_ratings = #{showTechnicianRatings},
+            booking_widget_color = #{bookingWidgetColor},
+            updated_at = UTC_TIMESTAMP()
+        WHERE tenant_id = #{tenantId}
+    </update>
+
+    <delete id="deleteByTenantId">
+        DELETE FROM online_booking_config WHERE tenant_id = #{tenantId}
+    </delete>
+
+    <select id="existsByTenantId" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM online_booking_config WHERE tenant_id = #{tenantId}
+    </select>
+
+</mapper>

@@ -29,11 +29,21 @@ public class OrderCreateDTO {
     
     @Min(value = 0, message = "Tax rate must be non-negative")
     private Double taxRate = 0.0;
-    
+
+    @Min(value = 0, message = "Tip amount must be non-negative")
+    private Double tipAmount = 0.0;
+
     @Min(value = 0, message = "Tip percentage must be non-negative")
     private Double tipPercentage = 0.0;
-    
+
+    // Subtotal and totalAmount from frontend (already calculated excluding package payments)
+    @Min(value = 0, message = "Subtotal must be non-negative")
+    private Double subtotal;
+
+    @Min(value = 0, message = "Total amount must be non-negative")
+    private Double totalAmount;
+
     private String paymentMethod; // 支付方式
-    
+
     private String notes;
 }

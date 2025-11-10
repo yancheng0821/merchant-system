@@ -2,12 +2,15 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.entity.BusinessNotification;
 import com.merchant.server.businessservice.service.BusinessNotificationService;
+import com.merchant.server.businessservice.service.StaffNotificationService;
+import com.merchant.server.common.annotation.RequiresPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -20,9 +23,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/business/notifications")
 @RequiredArgsConstructor
+@RequiresPermission("notifications:view")
 public class BusinessNotificationController {
-    
+
     private final BusinessNotificationService notificationService;
+    private final StaffNotificationService staffNotificationService;
     
     /**
      * 获取最近的通知
@@ -73,6 +78,7 @@ public class BusinessNotificationController {
     /**
      * 标记通知为已读
      */
+    @RequiresPermission("notifications:update")
     @PostMapping("/mark-read")
     public ResponseEntity<Void> markAsRead(
             @RequestParam Long tenantId,
@@ -106,6 +112,35 @@ public class BusinessNotificationController {
         } catch (Exception e) {
             log.error("Error getting dashboard notifications", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 手动触发员工每日汇总邮件
+     * 可以指定日期，如果不指定则默认为今天
+     */
+    @RequiresPermission("notifications:send")
+    @PostMapping("/staff-daily-summary/trigger")
+    public ResponseEntity<Map<String, Object>> triggerStaffDailySummary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            LocalDate targetDate = date != null ? date : LocalDate.now();
+            log.info("Manually triggering staff daily summary for date: {}", targetDate);
+
+            staffNotificationService.sendDailySummaryForDate(targetDate);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("message", "Staff daily summary emails triggered successfully");
+            result.put("date", targetDate.toString());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error triggering staff daily summary", e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", e.getMessage());
+            return ResponseEntity.internalServerError().body(error);
         }
     }
 }

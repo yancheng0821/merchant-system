@@ -1,0 +1,55 @@
+# 本地测试环境配置
+# 用于测试AWS SES和SNS服务
+
+notification:
+  # 禁用Mock模式以使用真实AWS服务
+  mock:
+    enabled: false
+
+  # 短信和邮件配置
+  sms:
+    provider: aws
+    enabled: true
+
+  email:
+    provider: aws
+    from: yancheng0723@gmail.com
+    fromName: VA Merchant System Test
+    enabled: true
+
+  # AWS配置
+  aws:
+    region: ca-central-1
+    useLocalCredentials: true  # 使用本地AWS CLI配置的凭证
+    maxRetries: 3
+    retryDelayMs: 1000
+
+    # 使用本地AWS CLI凭证，不需要在这里配置
+    # 或者通过环境变量设置：
+    # export AWS_ACCESS_KEY_ID=your-key
+    # export AWS_SECRET_ACCESS_KEY=your-secret
+    accessKeyId: ${AWS_ACCESS_KEY_ID:}
+    secretAccessKey: ${AWS_SECRET_ACCESS_KEY:}
+
+    # SES配置
+    ses:
+      fromEmail: noreply@vamerchant.app
+      fromName: VA Merchant System
+      configurationSetName:  # 可选，留空即可
+
+    # SNS配置
+    sns:
+      defaultSenderId: VAMerchant
+      defaultMessageType: Transactional
+
+# 日志配置 - 只保留核心业务日志
+logging:
+  level:
+    com.merchant.server.notificationservice: INFO
+    com.merchant.server.notificationservice.mq: INFO
+    com.merchant.server.notificationservice.processor: INFO
+    com.merchant.server.notificationservice.service: INFO
+    software.amazon.awssdk: WARN
+    software.amazon.awssdk.request: WARN
+    software.amazon.awssdk.http: WARN
+    root: INFO

@@ -1,7 +1,11 @@
 package com.merchant.server.authservice.service.impl;
 
 import com.merchant.server.authservice.entity.User;
+import com.merchant.server.authservice.entity.Role;
+import com.merchant.server.authservice.entity.Permission;
 import com.merchant.server.authservice.mapper.UserMapper;
+import com.merchant.server.authservice.mapper.RoleMapper;
+import com.merchant.server.authservice.mapper.PermissionMapper;
 import com.merchant.server.authservice.service.UserService;
 import com.merchant.server.authservice.dto.UserProfileRequest;
 import com.merchant.server.authservice.dto.UserProfileResponse;
@@ -12,6 +16,8 @@ import com.merchant.server.authservice.entity.Tenant;
 import com.merchant.server.authservice.mapper.TenantMapper;
 import com.merchant.server.authservice.dto.ChangePasswordRequest;
 import com.merchant.server.authservice.util.PasswordUtil;
+import com.merchant.server.authservice.client.MerchantServiceClient;
+import com.merchant.server.common.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +30,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 @Service
@@ -49,7 +58,16 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private MessageUtil messageUtil;
-    
+
+    @Autowired
+    private RoleMapper roleMapper;
+
+    @Autowired
+    private PermissionMapper permissionMapper;
+
+    @Autowired
+    private MerchantServiceClient merchantServiceClient;
+
     @Value("${app.avatar.upload.path:/tmp/avatars}")
     private String avatarUploadPath;
     
@@ -186,7 +204,7 @@ public class UserServiceImpl implements UserService {
         Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
-            throw new RuntimeException("用户不存在");
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
         }
         
         User user = userOpt.get();
@@ -202,73 +220,128 @@ public class UserServiceImpl implements UserService {
         response.setTenantName(tenant != null ? tenant.getTenantName() : null);
         response.setLastLoginTime(user.getLastLoginAt());
         response.setUpdateTime(user.getUpdatedAt());
-        
-        // 设置角色和权限（这里简化处理，实际应该从数据库查询）
-        response.setRoles(List.of("ROLE_MERCHANT_ADMIN"));
-        response.setPermissions(List.of("READ", "WRITE"));
-        
-        logger.info("获取用户信息成功 - userId: {}", user.getId());
+
+        // 获取商户时区信息
+        try {
+            ApiResponse<Map<String, Object>> merchantResponse = merchantServiceClient.getMerchantByTenantId(user.getTenantId());
+            if (merchantResponse != null && merchantResponse.isSuccess() && merchantResponse.getData() != null) {
+                String timezone = (String) merchantResponse.getData().get("timezone");
+                if (timezone != null && !timezone.isEmpty()) {
+                    response.setTimezone(timezone);
+                    logger.debug("设置商户时区: {}", timezone);
+                } else {
+                    response.setTimezone("America/Vancouver");
+                    logger.warn("商户时区为空，使用默认时区: America/Vancouver");
+                }
+            } else {
+                response.setTimezone("America/Vancouver");
+                logger.warn("获取商户信息失败，使用默认时区: America/Vancouver");
+            }
+        } catch (Exception e) {
+            logger.error("获取商户时区失败: {}", e.getMessage(), e);
+            response.setTimezone("America/Vancouver");
+        }
+
+        // 查询用户角色
+        logger.debug("查询用户角色 - userId: {}", user.getId());
+        List<Role> userRoles = roleMapper.selectByUserId(user.getId());
+        List<String> roleCodes = (userRoles != null && !userRoles.isEmpty()) ?
+            userRoles.stream().map(Role::getRoleCode).collect(Collectors.toList()) :
+            new java.util.ArrayList<>();
+        response.setRoles(roleCodes);
+        logger.debug("用户角色数量: {}, 角色: {}", roleCodes.size(), roleCodes);
+
+        // 查询用户权限
+        logger.debug("查询用户权限 - userId: {}, tenantId: {}", user.getId(), user.getTenantId());
+        List<Permission> userPermissions = permissionMapper.selectByUserId(user.getId(), user.getTenantId());
+        List<String> permissionCodes = (userPermissions != null && !userPermissions.isEmpty()) ?
+            userPermissions.stream().map(Permission::getPermissionCode).collect(Collectors.toList()) :
+            new java.util.ArrayList<>();
+        response.setPermissions(permissionCodes);
+        logger.debug("用户权限数量: {}", permissionCodes.size());
+
+        logger.info("获取用户信息成功 - userId: {}, roles: {}, permissions: {}",
+                    user.getId(), roleCodes.size(), permissionCodes.size());
         return response;
     }
     
     @Override
     public UserProfileResponse updateUserProfile(String token, UserProfileRequest request) {
-        logger.debug("更新用户信息 - userId: {}, token: {}", request.getUserId(), 
-                    token.substring(0, Math.min(20, token.length())) + "...");
-        
-        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
-        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findById(userId);
-        
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException("用户不存在");
-        }
-        
-        User user = userOpt.get();
-        
-        // 详细日志
-        logger.info("token userId: {}, request userId: {}", userId, request.getUserId());
-        
-        // 验证用户ID是否匹配
-        if (!user.getId().equals(request.getUserId())) {
-            throw new RuntimeException("用户ID不匹配");
-        }
-        
-        // 用户名不允许修改，忽略请求中的用户名
-        // 保持原有的用户名不变
-        
-        // 检查邮箱是否已被其他用户使用
-        if (!user.getEmail().equals(request.getEmail())) {
-            Optional<User> existingUser = findByEmail(request.getEmail());
-            if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
-                throw new RuntimeException("邮箱已被使用");
+        try {
+            logger.info("开始更新用户信息 - 请求userId: {}, email: {}, realName: {}",
+                       request.getUserId(), request.getEmail(), request.getRealName());
+
+            // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
+            Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+            logger.debug("从token提取的userId: {}", userId);
+
+            Optional<User> userOpt = findById(userId);
+
+            if (userOpt.isEmpty()) {
+                logger.error("用户不存在 - userId: {}", userId);
+                throw new RuntimeException(messageUtil.getMessage("user.not.found"));
             }
+
+            User user = userOpt.get();
+
+            // 详细日志
+            logger.info("token userId: {}, request userId: {}, 匹配检查", userId, request.getUserId());
+
+            // 验证用户ID是否匹配
+            if (!user.getId().equals(request.getUserId())) {
+                logger.error("用户ID不匹配 - token userId: {}, request userId: {}", userId, request.getUserId());
+                throw new RuntimeException(messageUtil.getMessage("error.user.id.mismatch"));
+            }
+
+            // 用户名不允许修改，忽略请求中的用户名
+            // 保持原有的用户名不变
+
+            // 检查邮箱是否已被其他用户使用（在同一租户内）
+            logger.debug("检查邮箱 - 当前邮箱: {}, 新邮箱: {}, 租户ID: {}", user.getEmail(), request.getEmail(), user.getTenantId());
+            if (!user.getEmail().equals(request.getEmail())) {
+                // 使用 selectByEmailAndTenantId 避免跨租户冲突
+                User existingUser = userMapper.selectByEmailAndTenantId(request.getEmail(), user.getTenantId());
+                if (existingUser != null && !existingUser.getId().equals(user.getId())) {
+                    logger.error("Email already in use - email: {}, existing user ID: {}, tenant ID: {}",
+                                request.getEmail(), existingUser.getId(), user.getTenantId());
+                    throw new RuntimeException(messageUtil.getMessage("error.user.email.already.in.use"));
+                }
+            }
+
+            // 更新用户信息（不更新用户名）
+            logger.debug("更新用户信息 - realName: {} -> {}, email: {} -> {}",
+                        user.getRealName(), request.getRealName(),
+                        user.getEmail(), request.getEmail());
+            user.setRealName(request.getRealName());
+            user.setEmail(request.getEmail());
+            user.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
+
+            logger.debug("保存用户信息到数据库");
+            save(user);
+
+            // 构建响应
+            logger.debug("构建响应数据");
+            Tenant tenant = tenantMapper.selectById(user.getTenantId());
+            UserProfileResponse response = new UserProfileResponse();
+            response.setUserId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setRealName(user.getRealName());
+            response.setEmail(user.getEmail());
+            response.setAvatar(user.getAvatarUrl());
+            response.setTenantId(user.getTenantId());
+            response.setTenantName(tenant != null ? tenant.getTenantName() : null);
+            response.setLastLoginTime(user.getLastLoginAt());
+            response.setUpdateTime(user.getUpdatedAt());
+            response.setRoles(List.of("ROLE_MERCHANT_ADMIN"));
+            response.setPermissions(List.of("READ", "WRITE"));
+
+            logger.info("更新用户信息成功 - userId: {}", user.getId());
+            return response;
+        } catch (Exception e) {
+            logger.error("更新用户信息异常 - 请求userId: {}, 错误类型: {}, 错误信息: {}",
+                        request.getUserId(), e.getClass().getName(), e.getMessage(), e);
+            throw e;
         }
-        
-        // 更新用户信息（不更新用户名）
-        user.setRealName(request.getRealName());
-        user.setEmail(request.getEmail());
-        user.setUpdatedAt(LocalDateTime.now());
-        
-        save(user);
-        
-        // 构建响应
-        Tenant tenant = tenantMapper.selectById(user.getTenantId());
-        UserProfileResponse response = new UserProfileResponse();
-        response.setUserId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setRealName(user.getRealName());
-        response.setEmail(user.getEmail());
-        response.setAvatar(user.getAvatarUrl());
-        response.setTenantId(user.getTenantId());
-        response.setTenantName(tenant != null ? tenant.getTenantName() : null);
-        response.setLastLoginTime(user.getLastLoginAt());
-        response.setUpdateTime(user.getUpdatedAt());
-        response.setRoles(List.of("ROLE_MERCHANT_ADMIN"));
-        response.setPermissions(List.of("READ", "WRITE"));
-        
-        logger.info("更新用户信息成功 - userId: {}", user.getId());
-        return response;
     }
     
     @Override
@@ -280,7 +353,7 @@ public class UserServiceImpl implements UserService {
         Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
-            throw new RuntimeException("用户不存在");
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
         }
         
         User user = userOpt.get();
@@ -288,12 +361,12 @@ public class UserServiceImpl implements UserService {
         // 验证文件类型
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
-            throw new RuntimeException("只支持图片文件");
+            throw new RuntimeException(messageUtil.getMessage("error.file.invalid.type"));
         }
         
         // 验证文件大小（5MB）
         if (file.getSize() > 5 * 1024 * 1024) {
-            throw new RuntimeException("文件大小不能超过5MB");
+            throw new RuntimeException(messageUtil.getMessage("error.file.too.large", new Object[]{5}));
         }
         
         try {
@@ -318,7 +391,7 @@ public class UserServiceImpl implements UserService {
             // 更新用户头像信息
             String avatarUrl = avatarUrlPrefix + filename;
             user.setAvatarUrl(avatarUrl);
-            user.setUpdatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             save(user);
             
             // 构建响应
@@ -333,8 +406,8 @@ public class UserServiceImpl implements UserService {
             return response;
             
         } catch (IOException e) {
-            logger.error("头像上传失败: {}", e.getMessage());
-            throw new RuntimeException("头像上传失败: " + e.getMessage());
+            logger.error("头像上传失败: {}", e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.file.upload.failed", new Object[]{e.getMessage()}));
         }
     }
 
@@ -347,14 +420,14 @@ public class UserServiceImpl implements UserService {
         Optional<User> userOpt = findById(userId);
         
         if (userOpt.isEmpty()) {
-            throw new RuntimeException("用户不存在");
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
         }
         
         User user = userOpt.get();
         
         // 更新用户头像信息
         user.setAvatarUrl(avatarUrl);
-        user.setUpdatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         save(user);
         
         // 构建响应
@@ -395,7 +468,18 @@ public class UserServiceImpl implements UserService {
         String newHash = passwordUtil.hashPassword(request.getNewPassword(), newSalt);
         user.setSalt(newSalt);
         user.setPasswordHash(newHash);
-        user.setUpdatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(java.time.LocalDateTime.now(ZoneOffset.UTC));
         save(user);
+    }
+
+    @Override
+    public void updateUserStatus(Long userId, User.UserStatus status) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
+        }
+        user.setStatus(status);
+        user.setUpdatedAt(java.time.LocalDateTime.now(ZoneOffset.UTC));
+        userMapper.update(user);
     }
 } 

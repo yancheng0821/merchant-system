@@ -1,6 +1,8 @@
 package com.merchant.server.authservice.exception;
 
+import com.merchant.server.authservice.util.MessageUtil;
 import com.merchant.server.common.dto.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -15,25 +17,29 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     @Autowired
     private MessageSource messageSource;
+
+    @Autowired
+    private MessageUtil messageUtil;
     
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException e) {
+        log.warn("Runtime exception: {}", e.getMessage());
         String message = e.getMessage();
-        // 如果消息是国际化key，则获取对应的本地化消息
-        if (message != null && !message.contains(" ")) {
-            try {
-                message = messageSource.getMessage(message, null, message, LocaleContextHolder.getLocale());
-            } catch (Exception ex) {
-                // 如果获取国际化消息失败，使用原始消息
-            }
+
+        // 使用MessageUtil处理，它内部已经有fallback机制
+        // 如果message是key则返回国际化消息，否则返回原message
+        if (message != null && messageUtil != null) {
+            message = messageUtil.getMessage(message);
         }
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error(message != null ? message : "Bad Request"));
     }
     
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -78,7 +84,10 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception e) {
+        log.error("Unhandled exception occurred", e);
+        // 使用国际化消息
+        String message = messageUtil.getMessage("error.system.internal");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("服务器内部错误"));
+                .body(ApiResponse.error(message));
     }
 } 

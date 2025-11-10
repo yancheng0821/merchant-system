@@ -1,6 +1,7 @@
 package com.merchant.server.businessservice.entity;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class CustomerImportTemp {
     
@@ -19,7 +20,7 @@ public class CustomerImportTemp {
     
     // 构造函数
     public CustomerImportTemp() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneOffset.UTC);
     }
     
     // Getters and Setters

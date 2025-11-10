@@ -5,9 +5,9 @@ spring:
   application:
     name: business-service
   datasource:
-    url: jdbc:mysql://localhost:3306/merchant_business?useSSL=false&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
+    url: jdbc:mysql://localhost:3306/merchant_business?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&zeroDateTimeBehavior=convertToNull
+    username: merchant_app
+    password: MerchantApp@2024
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5         # 开发环境较小的连接池
@@ -15,17 +15,47 @@ spring:
       connection-timeout: 30000    # 连接超时时间（30秒）
       idle-timeout: 300000         # 空闲连接超时时间（5分钟）
       max-lifetime: 900000         # 连接最大生存时间（15分钟）
+      connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
   rabbitmq:
     host: localhost
     port: 5672
-    username: guest
-    password: guest
+    username: merchant_app
+    password: MerchantApp@2024
+    virtual-host: merchant_vhost
+    connection-name-strategy: com.merchant.server.businessservice.config.RabbitMQConnectionNameStrategy
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 3000    # 初始重试间隔3秒
+          max-attempts: 3            # 最大重试3次
+          multiplier: 2              # 重试间隔倍数
+        acknowledge-mode: manual     # 手动确认模式
   # 文件上传配置
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
+  # HTTP编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  # 异步任务配置
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 100
+        keep-alive: 60s
+      thread-name-prefix: async-task-
+    scheduling:
+      pool:
+        size: 5
+      thread-name-prefix: scheduled-task-
 
 # MyBatis配置
 mybatis:
@@ -33,6 +63,7 @@ mybatis:
   type-aliases-package: com.merchant.server.businessservice.entity
   configuration:
     map-underscore-to-camel-case: true
+    default-time-zone: UTC
     # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 注释掉SQL日志输出
 
 # 日志配置
@@ -49,18 +80,30 @@ logging:
 
 eureka:
   client:
-    enabled: false  # 禁用Eureka客户端
+    enabled: true  # 启用Eureka客户端
     service-url:
       defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
 
 # 通知服务配置
 notification:
+  use-mq: true  # 是否使用MQ发送通知（false则使用Feign降级）
   service:
-    # url: http://notification-service  # 使用服务发现名称
-    url: http://localhost:8084      # 本地开发时使用直接URL
+    url: http://notification-service  # 使用服务发现名称（通过Eureka和LoadBalanced RestTemplate）
+
+# 验证码配置
+verification:
+  code:
+    length: 6                          # 验证码长度
+    expiry-minutes: 5                  # 验证码过期时间（分钟）
+    max-attempts: 3                    # 最大验证尝试次数
+    rate-limit:
+      recipient-per-hour: 5            # 每个接收者每小时最多发送次数
+      ip-per-hour: 20                  # 每个IP每小时最多发送次数
 
 # 商家信息配置
 business:

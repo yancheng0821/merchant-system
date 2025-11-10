@@ -3,6 +3,7 @@ package com.merchant.server.notificationservice.controller;
 import com.merchant.server.notificationservice.dto.SendNotificationRequest;
 import com.merchant.server.notificationservice.entity.NotificationLog;
 import com.merchant.server.notificationservice.service.NotificationService;
+import com.merchant.server.notificationservice.service.TemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final TemplateService templateService;
 
     /**
      * 发送单个通知
@@ -61,10 +63,11 @@ public class NotificationController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String recipient,
-            @RequestParam(required = false) String businessId) {
+            @RequestParam(required = false) String businessId,
+            @RequestParam(required = false) String businessType) {
         log.info("Getting notifications for tenant: {}, page: {}, size: {}", tenantId, page, size);
         List<NotificationLog> logs = notificationService.getNotificationsByTenantIdWithFilters(
-            tenantId, page, size, templateCode, type, status, recipient, businessId);
+            tenantId, page, size, templateCode, type, status, recipient, businessId, businessType);
         return ResponseEntity.ok(logs);
     }
 
@@ -76,5 +79,23 @@ public class NotificationController {
         log.info("Retrying failed notifications");
         notificationService.retryFailedNotifications();
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 初始化默认模板（内部调用，不需要权限验证）
+     * 用于商户注册时自动初始化通知模板
+     */
+    @PostMapping("/templates/init")
+    public com.merchant.server.common.dto.ApiResponse<String> initDefaultTemplates(
+            @RequestParam Long tenantId,
+            @RequestParam(defaultValue = "en") String language) {
+        log.info("Initializing default templates for tenant: {} with language: {}", tenantId, language);
+        try {
+            templateService.initDefaultTemplates(tenantId, language);
+            return com.merchant.server.common.dto.ApiResponse.success("Default templates initialized successfully");
+        } catch (Exception e) {
+            log.error("Failed to initialize default templates for tenant: {}", tenantId, e);
+            return com.merchant.server.common.dto.ApiResponse.error("Failed to initialize templates: " + e.getMessage());
+        }
     }
 }

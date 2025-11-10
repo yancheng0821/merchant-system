@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CustomerPackageUsageLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.CustomerPackageUsageLog">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="customerPackageId" column="customer_package_id"/>
+        <result property="packageId" column="package_id"/>
+        <result property="packageName" column="package_name"/>
+        <result property="serviceId" column="service_id"/>
+        <result property="serviceName" column="service_name"/>
+        <result property="appointmentId" column="appointment_id"/>
+        <result property="usageType" column="usage_type"/>
+        <result property="quantity" column="quantity"/>
+        <result property="remainingBefore" column="remaining_before"/>
+        <result property="remainingAfter" column="remaining_after"/>
+        <result property="usageDate" column="usage_date"/>
+        <result property="staffId" column="staff_id"/>
+        <result property="staffName" column="staff_name"/>
+        <result property="notes" column="notes"/>
+        <result property="verificationCodeId" column="verification_code_id"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.CustomerPackageUsageLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_package_usage_log (
+            tenant_id, customer_id, customer_package_id, package_id, package_name,
+            service_id, service_name, appointment_id, usage_type, quantity,
+            remaining_before, remaining_after, usage_date, staff_id, staff_name,
+            notes, verification_code_id, created_at
+        ) VALUES (
+            #{tenantId}, #{customerId}, #{customerPackageId}, #{packageId}, #{packageName},
+            #{serviceId}, #{serviceName}, #{appointmentId}, #{usageType}, #{quantity},
+            #{remainingBefore}, #{remainingAfter}, #{usageDate}, #{staffId}, #{staffName},
+            #{notes}, #{verificationCodeId}, #{createdAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM customer_package_usage_log WHERE id = #{id}
+    </select>
+
+    <select id="selectByCustomerId" resultMap="BaseResultMap">
+        SELECT * FROM customer_package_usage_log
+        WHERE tenant_id = #{tenantId}
+          AND customer_id = #{customerId}
+        ORDER BY usage_date DESC, created_at DESC
+    </select>
+
+    <select id="selectByCustomerPackageId" resultMap="BaseResultMap">
+        SELECT * FROM customer_package_usage_log
+        WHERE customer_package_id = #{customerPackageId}
+        ORDER BY usage_date DESC, created_at DESC
+    </select>
+
+    <select id="selectByAppointmentId" resultMap="BaseResultMap">
+        SELECT * FROM customer_package_usage_log
+        WHERE appointment_id = #{appointmentId}
+        ORDER BY usage_date DESC, created_at DESC
+    </select>
+
+    <select id="selectByDateRange" resultMap="BaseResultMap">
+        SELECT * FROM customer_package_usage_log
+        WHERE tenant_id = #{tenantId}
+          AND customer_id = #{customerId}
+          AND usage_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY usage_date DESC, created_at DESC
+    </select>
+
+    <select id="countByCustomerId" resultType="int">
+        SELECT COUNT(*)
+        FROM customer_package_usage_log
+        WHERE tenant_id = #{tenantId}
+          AND customer_id = #{customerId}
+          AND usage_type = 'DEDUCT'
+    </select>
+
+    <select id="countByPackageId" resultType="int">
+        SELECT COUNT(*)
+        FROM customer_package_usage_log
+        WHERE tenant_id = #{tenantId}
+          AND package_id = #{packageId}
+          AND usage_type = 'DEDUCT'
+    </select>
+
+</mapper>

@@ -2,6 +2,8 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.dto.CustomerImportDTO;
 import com.merchant.server.businessservice.service.CustomerImportService;
+import com.merchant.server.businessservice.util.MessageUtil;
+import com.merchant.server.common.annotation.RequiresPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +19,17 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/business/customers/import")
+@RequiresPermission("customers:import")
 public class CustomerImportController {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(CustomerImportController.class);
-    
+
     @Autowired
     private CustomerImportService customerImportService;
-    
+
+    @Autowired
+    private MessageUtil messageUtil;
+
     /**
      * 上传文件
      */
@@ -37,18 +43,18 @@ public class CustomerImportController {
                        tenantId, file.getOriginalFilename(), file.getSize());
             
             if (file.isEmpty()) {
-                throw new RuntimeException("文件不能为空");
+                throw new RuntimeException(messageUtil.getMessage("error.import.file.empty"));
             }
-            
+
             // 检查文件大小 (限制为10MB)
             if (file.getSize() > 10 * 1024 * 1024) {
-                throw new RuntimeException("文件大小不能超过10MB");
+                throw new RuntimeException(messageUtil.getMessage("error.import.file.too.large"));
             }
-            
+
             // 检查文件类型
             String fileName = file.getOriginalFilename();
             if (fileName == null || (!fileName.endsWith(".csv") && !fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
-                throw new RuntimeException("只支持 CSV 和 Excel 文件格式");
+                throw new RuntimeException(messageUtil.getMessage("error.import.file.invalid.format"));
             }
             
             CustomerImportDTO.UploadResponse response = customerImportService.uploadFile(tenantId, file);
@@ -58,7 +64,7 @@ public class CustomerImportController {
             
         } catch (Exception e) {
             logger.error("文件上传失败: {}", e.getMessage(), e);
-            throw new RuntimeException("文件上传失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.upload.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -83,13 +89,14 @@ public class CustomerImportController {
             
         } catch (Exception e) {
             logger.error("数据验证失败: {}", e.getMessage(), e);
-            throw new RuntimeException("数据验证失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.validation.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
     /**
      * 执行导入
      */
+    @RequiresPermission("customers:import")
     @PostMapping("/execute")
     public ResponseEntity<CustomerImportDTO.ImportResult> executeImport(
             @RequestParam Long tenantId,
@@ -108,7 +115,7 @@ public class CustomerImportController {
             
         } catch (Exception e) {
             logger.error("导入执行失败: {}", e.getMessage(), e);
-            throw new RuntimeException("导入执行失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.execution.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -128,7 +135,7 @@ public class CustomerImportController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            throw new RuntimeException("获取导入日志失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.log.get.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -145,7 +152,7 @@ public class CustomerImportController {
             return ResponseEntity.ok(log);
             
         } catch (Exception e) {
-            throw new RuntimeException("获取导入详情失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.details.get.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -169,7 +176,7 @@ public class CustomerImportController {
                 .body(report);
                 
         } catch (Exception e) {
-            throw new RuntimeException("下载错误报告失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.report.download.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -188,7 +195,7 @@ public class CustomerImportController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            throw new RuntimeException("清理临时数据失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.cleanup.failed", new Object[]{e.getMessage()}), e);
         }
     }
     

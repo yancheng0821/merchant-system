@@ -25,6 +25,7 @@ public class BusinessNotification {
     
     /**
      * 通知类型
+     * SYSTEM_NOTIFICATION - 系统通知
      * NEW_APPOINTMENT - 新预约
      * APPOINTMENT_REMINDER - 预约提醒
      * APPOINTMENT_CANCELLED - 预约取消
@@ -37,14 +38,34 @@ public class BusinessNotification {
     private String notificationType;
     
     /**
-     * 通知标题
+     * 通知标题（默认/兜底）
      */
     private String title;
-    
+
     /**
-     * 通知内容
+     * 英文标题
+     */
+    private String titleEn;
+
+    /**
+     * 中文标题
+     */
+    private String titleZh;
+
+    /**
+     * 通知内容（默认/兜底）
      */
     private String content;
+
+    /**
+     * 英文内容
+     */
+    private String contentEn;
+
+    /**
+     * 中文内容
+     */
+    private String contentZh;
     
     /**
      * 通知级别

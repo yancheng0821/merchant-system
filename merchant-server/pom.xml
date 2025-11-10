@@ -32,7 +32,6 @@
         <module>auth-service</module>
         <module>merchant-service</module>
         <module>business-service</module>
-        <module>analytics-service</module>
         <module>notification-service</module>
         <module>gateway-service</module>
     </modules>

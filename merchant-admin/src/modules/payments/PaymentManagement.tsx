@@ -2,16 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Tab,
-  Tabs,
   Card,
   Grid,
   CardContent,
   alpha,
 } from '@mui/material';
 import {
-  Payment as PaymentIcon,
-  Receipt as ReceiptIcon,
   AttachMoney as MoneyIcon,
   CreditCard as CreditCardIcon,
   ShoppingCart as OrdersIcon,
@@ -20,29 +16,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { CurrencyUtils } from '../../config/constants';
-import PaymentProcess from './components/PaymentProcess';
+// 支付功能已迁移，暂时注释
+// import PaymentProcess from './components/PaymentProcess';
 import OrderHistory from './components/OrderHistory';
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`payment-tabpanel-${index}`}
-      aria-labelledby={`payment-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
-    </div>
-  );
-}
 
 interface PaymentManagementProps {
   onNavigate?: (item: string) => void;
@@ -51,7 +27,8 @@ interface PaymentManagementProps {
 const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [tabValue, setTabValue] = useState(0);
+  // 支付功能已迁移，不再需要 tab 切换
+  // const [tabValue, setTabValue] = useState(0);
   const [stats, setStats] = useState({
     todayRevenue: 0,
     todayOrders: 0,
@@ -91,9 +68,10 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
     return () => clearInterval(interval);
   }, [user]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+  // 支付功能已迁移，不再需要 tab 切换
+  // const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  //   setTabValue(newValue);
+  // };
 
   return (
     <Box>
@@ -288,7 +266,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
         </Grid>
       </Grid>
 
-      {/* 标签页 */}
+      {/* 订单历史 - 支付功能已迁移到其他模块 */}
       <Card
         sx={{
           borderRadius: 3,
@@ -296,45 +274,9 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
           overflow: 'hidden',
         }}
       >
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc' }}>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange}
-            sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                minWidth: 180,
-                '&.Mui-selected': {
-                  color: '#10B981',
-                },
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#10B981',
-                height: 3,
-              },
-            }}
-          >
-            <Tab 
-              icon={<PaymentIcon sx={{ fontSize: 20 }} />} 
-              iconPosition="start" 
-              label={t('payments.paymentProcess')} 
-            />
-            <Tab 
-              icon={<ReceiptIcon sx={{ fontSize: 20 }} />} 
-              iconPosition="start" 
-              label={t('payments.orderHistory')} 
-            />
-          </Tabs>
-        </Box>
-
-        <TabPanel value={tabValue} index={0}>
-          <PaymentProcess onNavigate={onNavigate} />
-        </TabPanel>
-        <TabPanel value={tabValue} index={1}>
+        <Box sx={{ p: 3 }}>
           <OrderHistory />
-        </TabPanel>
+        </Box>
       </Card>
     </Box>
   );

@@ -38,9 +38,10 @@ import {
   Phone as PhoneIcon,
   Lock as LockIcon,
   LocationOn as LocationIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
   Schedule as ScheduleIcon,
   ContentCopy as CopyIcon,
-  CheckCircle as CheckCircleIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -127,7 +128,122 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [copiedInvitationCode, setCopiedInvitationCode] = useState(false);
   const [copiedTenantCode, setCopiedTenantCode] = useState(false);
-  
+
+  // 实时验证状态
+  const [validationErrors, setValidationErrors] = useState({
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    contactEmail: '',
+    contactPhone: '',
+  });
+
+  // 跟踪字段是否已被用户触摸过
+  const [touchedFields, setTouchedFields] = useState({
+    email: false,
+    phone: false,
+    password: false,
+    confirmPassword: false,
+    contactEmail: false,
+    contactPhone: false,
+  });
+
+  // 根据用户当前时区检测并选择最合适的时区
+  const detectUserTimezone = (): string => {
+    try {
+      // 获取用户浏览器时区
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      // 定义支持的时区列表
+      const supportedTimezones = [
+        'America/St_Johns', 'America/Halifax', 'America/Toronto',
+        'America/Winnipeg', 'America/Edmonton', 'America/Vancouver',
+        'America/New_York', 'America/Chicago', 'America/Denver',
+        'America/Los_Angeles', 'America/Phoenix', 'America/Anchorage',
+        'Pacific/Honolulu', 'Europe/London', 'Europe/Paris',
+        'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid',
+        'Europe/Amsterdam', 'Europe/Moscow', 'Asia/Dubai',
+        'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dhaka',
+        'Asia/Bangkok', 'Asia/Singapore', 'Asia/Hong_Kong',
+        'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul',
+        'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane',
+        'Australia/Perth', 'Pacific/Auckland'
+      ];
+
+      // 检查用户时区是否在我们的列表中
+      if (supportedTimezones.includes(userTimezone)) {
+        return userTimezone;
+      }
+
+      // 如果不在列表中，尝试匹配相似的时区
+      const timezoneMap: { [key: string]: string } = {
+        // 加拿大东部时区
+        'America/Montreal': 'America/Toronto',
+        'America/Nipigon': 'America/Toronto',
+        'America/Thunder_Bay': 'America/Toronto',
+        'America/Iqaluit': 'America/Toronto',
+        'America/Pangnirtung': 'America/Toronto',
+
+        // 加拿大中部时区
+        'America/Regina': 'America/Winnipeg',
+        'America/Rainy_River': 'America/Winnipeg',
+        'America/Rankin_Inlet': 'America/Winnipeg',
+
+        // 加拿大山地时区
+        'America/Cambridge_Bay': 'America/Edmonton',
+        'America/Yellowknife': 'America/Edmonton',
+        'America/Inuvik': 'America/Edmonton',
+
+        // 加拿大太平洋时区
+        'America/Dawson': 'America/Vancouver',
+        'America/Whitehorse': 'America/Vancouver',
+
+        // 美国东部时区
+        'America/Detroit': 'America/New_York',
+        'America/Kentucky/Louisville': 'America/New_York',
+        'America/Kentucky/Monticello': 'America/New_York',
+        'America/Indiana/Indianapolis': 'America/New_York',
+        'America/Indiana/Vincennes': 'America/New_York',
+        'America/Indiana/Winamac': 'America/New_York',
+        'America/Indiana/Marengo': 'America/New_York',
+        'America/Indiana/Petersburg': 'America/New_York',
+        'America/Indiana/Vevay': 'America/New_York',
+
+        // 美国太平洋时区
+        'America/Tijuana': 'America/Los_Angeles',
+
+        // 欧洲时区
+        'Europe/Dublin': 'Europe/London',
+        'Europe/Belfast': 'Europe/London',
+        'Europe/Berlin': 'Europe/Paris',
+        'Europe/Brussels': 'Europe/Paris',
+        'Europe/Amsterdam': 'Europe/Paris',
+        'Europe/Rome': 'Europe/Paris',
+        'Europe/Madrid': 'Europe/Paris',
+
+        // 中国其他城市
+        'Asia/Chongqing': 'Asia/Shanghai',
+        'Asia/Harbin': 'Asia/Shanghai',
+        'Asia/Hong_Kong': 'Asia/Shanghai',
+        'Asia/Macau': 'Asia/Shanghai',
+      };
+
+      if (timezoneMap[userTimezone]) {
+        const mappedTimezone = timezoneMap[userTimezone];
+        console.log('📍 时区映射:', userTimezone, '->', mappedTimezone);
+        return mappedTimezone;
+      }
+
+      // 如果无法匹配，返回默认时区（伦敦）
+      console.log('⚠️ 未找到匹配时区，使用默认值: Europe/London');
+      return 'Europe/London';
+    } catch (error) {
+      console.error('❌ 时区检测失败:', error);
+      return 'Europe/London';
+    }
+  };
+
   const [formData, setFormData] = useState<MerchantRegisterData>({
     username: '',
     password: '',
@@ -147,8 +263,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     province: '',
     city: '',
     postCode: '',
-    timezone: 'America/Toronto',
-    resourceTypes: [],
+    timezone: detectUserTimezone(), // 自动检测用户时区
+    resourceTypes: ['STAFF'],
   });
 
   const steps = [
@@ -159,6 +275,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
   const businessCategories = [
     { value: 'beauty', label: t('auth.merchantRegisterPage.businessCategories.beauty') },
+    { value: 'spa', label: t('auth.merchantRegisterPage.businessCategories.spa') },
     { value: 'fitness', label: t('auth.merchantRegisterPage.businessCategories.fitness') },
     { value: 'medical', label: t('auth.merchantRegisterPage.businessCategories.medical') },
     { value: 'education', label: t('auth.merchantRegisterPage.businessCategories.education') },
@@ -173,10 +290,50 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
   ];
 
   const timezones = [
+    // 加拿大时区（从东到西）
+    { value: 'America/St_Johns', label: t('auth.merchantRegisterPage.timezones.america_st_johns') },
+    { value: 'America/Halifax', label: t('auth.merchantRegisterPage.timezones.america_halifax') },
     { value: 'America/Toronto', label: t('auth.merchantRegisterPage.timezones.america_toronto') },
-    { value: 'America/Vancouver', label: t('auth.merchantRegisterPage.timezones.america_vancouver') },
+    { value: 'America/Winnipeg', label: t('auth.merchantRegisterPage.timezones.america_winnipeg') },
     { value: 'America/Edmonton', label: t('auth.merchantRegisterPage.timezones.america_edmonton') },
-    { value: 'America/Winnipeg', label: t('auth.merchantRegisterPage.timezones.america_winnipeg') }
+    { value: 'America/Vancouver', label: t('auth.merchantRegisterPage.timezones.america_vancouver') },
+
+    // 美国主要时区
+    { value: 'America/New_York', label: t('auth.merchantRegisterPage.timezones.america_new_york') },
+    { value: 'America/Chicago', label: t('auth.merchantRegisterPage.timezones.america_chicago') },
+    { value: 'America/Denver', label: t('auth.merchantRegisterPage.timezones.america_denver') },
+    { value: 'America/Los_Angeles', label: t('auth.merchantRegisterPage.timezones.america_los_angeles') },
+    { value: 'America/Phoenix', label: t('auth.merchantRegisterPage.timezones.america_phoenix') },
+    { value: 'America/Anchorage', label: t('auth.merchantRegisterPage.timezones.america_anchorage') },
+    { value: 'Pacific/Honolulu', label: t('auth.merchantRegisterPage.timezones.pacific_honolulu') },
+
+    // 欧洲主要时区
+    { value: 'Europe/London', label: t('auth.merchantRegisterPage.timezones.europe_london') },
+    { value: 'Europe/Paris', label: t('auth.merchantRegisterPage.timezones.europe_paris') },
+    { value: 'Europe/Berlin', label: t('auth.merchantRegisterPage.timezones.europe_berlin') },
+    { value: 'Europe/Rome', label: t('auth.merchantRegisterPage.timezones.europe_rome') },
+    { value: 'Europe/Madrid', label: t('auth.merchantRegisterPage.timezones.europe_madrid') },
+    { value: 'Europe/Amsterdam', label: t('auth.merchantRegisterPage.timezones.europe_amsterdam') },
+    { value: 'Europe/Moscow', label: t('auth.merchantRegisterPage.timezones.europe_moscow') },
+
+    // 亚洲主要时区
+    { value: 'Asia/Dubai', label: t('auth.merchantRegisterPage.timezones.asia_dubai') },
+    { value: 'Asia/Karachi', label: t('auth.merchantRegisterPage.timezones.asia_karachi') },
+    { value: 'Asia/Kolkata', label: t('auth.merchantRegisterPage.timezones.asia_kolkata') },
+    { value: 'Asia/Dhaka', label: t('auth.merchantRegisterPage.timezones.asia_dhaka') },
+    { value: 'Asia/Bangkok', label: t('auth.merchantRegisterPage.timezones.asia_bangkok') },
+    { value: 'Asia/Singapore', label: t('auth.merchantRegisterPage.timezones.asia_singapore') },
+    { value: 'Asia/Hong_Kong', label: t('auth.merchantRegisterPage.timezones.asia_hong_kong') },
+    { value: 'Asia/Shanghai', label: t('auth.merchantRegisterPage.timezones.asia_shanghai') },
+    { value: 'Asia/Tokyo', label: t('auth.merchantRegisterPage.timezones.asia_tokyo') },
+    { value: 'Asia/Seoul', label: t('auth.merchantRegisterPage.timezones.asia_seoul') },
+
+    // 澳大利亚和太平洋时区
+    { value: 'Australia/Sydney', label: t('auth.merchantRegisterPage.timezones.australia_sydney') },
+    { value: 'Australia/Melbourne', label: t('auth.merchantRegisterPage.timezones.australia_melbourne') },
+    { value: 'Australia/Brisbane', label: t('auth.merchantRegisterPage.timezones.australia_brisbane') },
+    { value: 'Australia/Perth', label: t('auth.merchantRegisterPage.timezones.australia_perth') },
+    { value: 'Pacific/Auckland', label: t('auth.merchantRegisterPage.timezones.pacific_auckland') }
   ];
 
   const canadianProvinces = [
@@ -195,15 +352,125 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     { value: 'Yukon', label: t('auth.merchantRegisterPage.provinces.Yukon') }
   ];
 
+  // 验证邮箱格式
+  const validateEmail = (email: string, showError: boolean = true): string => {
+    if (!email || !showError) return '';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return t('auth.merchantRegisterPage.validation.emailInvalid');
+    }
+    return '';
+  };
+
+  // 验证手机号格式（支持多国格式）
+  const validatePhone = (phone: string, showError: boolean = true): string => {
+    if (!phone || !showError) return '';
+    // 移除所有非数字字符
+    const cleaned = phone.replace(/\D/g, '');
+    // 手机号应该在6-15位之间（满足大部分国家）
+    if (cleaned.length < 6 || cleaned.length > 15) {
+      return t('auth.merchantRegisterPage.validation.phoneInvalid');
+    }
+    return '';
+  };
+
+  // 验证密码强度
+  const validatePassword = (password: string, showError: boolean = true): string => {
+    if (!password || !showError) return '';
+
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const isLongEnough = password.length >= 8;
+
+    if (!isLongEnough) {
+      return t('auth.merchantRegisterPage.validation.passwordMinLength');
+    }
+    if (!hasUpperCase) {
+      return t('auth.merchantRegisterPage.validation.passwordNeedsUpperCase');
+    }
+    if (!hasLowerCase) {
+      return t('auth.merchantRegisterPage.validation.passwordNeedsLowerCase');
+    }
+    if (!hasNumber) {
+      return t('auth.merchantRegisterPage.validation.passwordNeedsNumber');
+    }
+    if (!hasSpecialChar) {
+      return t('auth.merchantRegisterPage.validation.passwordNeedsSpecialChar');
+    }
+    return '';
+  };
+
+  // 验证确认密码
+  const validateConfirmPassword = (password: string, confirmPassword: string, showError: boolean = true): string => {
+    if (!confirmPassword || !showError) return '';
+    if (password !== confirmPassword) {
+      return t('auth.merchantRegisterPage.validation.passwordMismatch');
+    }
+    return '';
+  };
+
   const handleInputChange = (field: keyof MerchantRegisterData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
     const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+
+    const updatedFormData = { ...formData, [field]: value };
+    setFormData(updatedFormData);
     setError(null);
+
+    // 标记字段为已触摸
+    const validationFields = ['email', 'phone', 'password', 'confirmPassword', 'contactEmail', 'contactPhone'];
+    if (validationFields.includes(field)) {
+      setTouchedFields(prev => ({
+        ...prev,
+        [field]: true,
+      }));
+    }
+
+    // 实时验证
+    if (field === 'email') {
+      const emailError = validateEmail(value);
+      setValidationErrors(prev => ({
+        ...prev,
+        email: emailError,
+      }));
+    } else if (field === 'phone') {
+      const phoneError = validatePhone(value);
+      setValidationErrors(prev => ({
+        ...prev,
+        phone: phoneError,
+      }));
+    } else if (field === 'password') {
+      const passwordError = validatePassword(value);
+      const confirmPasswordError = touchedFields.confirmPassword
+        ? validateConfirmPassword(value, updatedFormData.confirmPassword)
+        : '';
+      setValidationErrors(prev => ({
+        ...prev,
+        password: passwordError,
+        confirmPassword: confirmPasswordError,
+      }));
+    } else if (field === 'confirmPassword') {
+      const confirmPasswordError = validateConfirmPassword(updatedFormData.password, value);
+      setValidationErrors(prev => ({
+        ...prev,
+        confirmPassword: confirmPasswordError,
+      }));
+    } else if (field === 'contactEmail') {
+      const contactEmailError = validateEmail(value);
+      setValidationErrors(prev => ({
+        ...prev,
+        contactEmail: contactEmailError,
+      }));
+    } else if (field === 'contactPhone') {
+      const contactPhoneError = validatePhone(value);
+      setValidationErrors(prev => ({
+        ...prev,
+        contactPhone: contactPhoneError,
+      }));
+    }
   };
 
   const handleResourceTypeChange = (event: any) => {
@@ -212,18 +479,6 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
       ...prev,
       resourceTypes: value
     }));
-  };
-
-  // 验证邮箱格式
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // 验证手机号格式（简单验证）
-  const validatePhone = (phone: string): boolean => {
-    const phoneRegex = /^\d{10,15}$/;
-    return phoneRegex.test(phone.replace(/\D/g, ''));
   };
 
   // 验证用户名格式
@@ -247,24 +502,31 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           setError(t('auth.merchantRegisterPage.validation.emailRequired'));
           return false;
         }
-        if (!validateEmail(formData.email)) {
-          setError(t('auth.merchantRegisterPage.validation.emailInvalid'));
+        const emailError = validateEmail(formData.email);
+        if (emailError) {
+          setError(emailError);
           return false;
         }
         if (!formData.realName.trim()) {
           setError(t('auth.merchantRegisterPage.validation.realNameRequired'));
           return false;
         }
-        if (formData.phone && !validatePhone(formData.phone)) {
-          setError(t('auth.merchantRegisterPage.validation.phoneInvalid'));
+        if (!formData.phone.trim()) {
+          setError(t('auth.merchantRegisterPage.validation.phoneRequired') || 'Phone number is required');
+          return false;
+        }
+        const phoneError = validatePhone(formData.phone);
+        if (phoneError) {
+          setError(phoneError);
           return false;
         }
         if (!formData.password) {
           setError(t('auth.merchantRegisterPage.validation.passwordRequired'));
           return false;
         }
-        if (formData.password.length < 6) {
-          setError(t('auth.merchantRegisterPage.validation.passwordMinLength'));
+        const passwordError = validatePassword(formData.password);
+        if (passwordError) {
+          setError(passwordError);
           return false;
         }
         if (formData.password !== formData.confirmPassword) {
@@ -272,7 +534,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           return false;
         }
         break;
-        
+
       case 1: // 商户信息
         if (!formData.merchantName.trim()) {
           setError(t('auth.merchantRegisterPage.validation.merchantNameRequired'));
@@ -290,21 +552,22 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           setError(t('auth.merchantRegisterPage.validation.contactPhoneRequired'));
           return false;
         }
-        if (!validatePhone(formData.contactPhone)) {
-          setError(t('auth.merchantRegisterPage.validation.contactPhoneInvalid'));
+        const contactPhoneError = validatePhone(formData.contactPhone);
+        if (contactPhoneError) {
+          setError(contactPhoneError);
           return false;
         }
-        if (formData.contactEmail && !validateEmail(formData.contactEmail)) {
-          setError(t('auth.merchantRegisterPage.validation.contactEmailInvalid'));
-          return false;
+        if (formData.contactEmail) {
+          const contactEmailError = validateEmail(formData.contactEmail);
+          if (contactEmailError) {
+            setError(contactEmailError);
+            return false;
+          }
         }
         break;
-        
+
       case 2: // 业务配置
-        if (formData.resourceTypes.length === 0) {
-          setError(t('auth.merchantRegisterPage.validation.resourceTypesRequired'));
-          return false;
-        }
+        // 资源类型已默认设置为 STAFF，无需验证
         break;
     }
     return true;
@@ -421,8 +684,13 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
   const handleGoToLogin = () => {
     setShowSuccessDialog(false);
-    // 通过 window.location 跳转到登录页面，因为这是一个独立的页面
-    window.location.href = '/';
+    // 使用 onBack 回调返回登录页面
+    if (onBack) {
+      onBack();
+    } else {
+      // 如果没有 onBack 回调，则刷新页面回到登录界面
+      window.location.href = '/';
+    }
   };
 
   const renderStepContent = (step: number) => {
@@ -437,6 +705,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 value={formData.username}
                 onChange={handleInputChange('username')}
                 required
+                helperText={t('auth.usernameHelp')}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -472,6 +741,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 value={formData.email}
                 onChange={handleInputChange('email')}
                 required
+                error={touchedFields.email && !!validationErrors.email}
+                helperText={touchedFields.email && validationErrors.email ? validationErrors.email : '\u00A0'}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -483,64 +754,187 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Box sx={{ mt: 2, mb: 1 }}>
-                <Grid container spacing={1}>
-                  <Grid item xs={5}>
-                    <CountryCodeSelector
-                      value={formData.phoneCountryCode}
-                      onChange={(code) => setFormData(prev => ({ ...prev, phoneCountryCode: code }))}
-                      label={t('common.countryCode')}
-                      size="medium"
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={7}>
-                    <TextField
-                      fullWidth
-                      label={t('auth.merchantRegisterPage.adminInfo.phone')}
-                      value={formData.phone}
-                      onChange={handleInputChange('phone')}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <PhoneIcon sx={{ color: '#667eea' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={textFieldSx}
-                    />
-                  </Grid>
+              <Grid container spacing={1}>
+                <Grid item xs={5}>
+                  <CountryCodeSelector
+                    value={formData.phoneCountryCode}
+                    onChange={(code) => setFormData(prev => ({ ...prev, phoneCountryCode: code }))}
+                    label={t('common.countryCode')}
+                    size="medium"
+                    fullWidth
+                  />
                 </Grid>
-              </Box>
+                <Grid item xs={7}>
+                  <TextField
+                    fullWidth
+                    label={t('auth.merchantRegisterPage.adminInfo.phone')}
+                    value={formData.phone}
+                    onChange={handleInputChange('phone')}
+                    required
+                    error={touchedFields.phone && !!validationErrors.phone}
+                    helperText={touchedFields.phone && validationErrors.phone ? validationErrors.phone : '\u00A0'}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon sx={{ color: '#667eea' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={textFieldSx}
+                  />
+                </Grid>
+              </Grid>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t('auth.merchantRegisterPage.adminInfo.password')}
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={handleInputChange('password')}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockIcon sx={{ color: '#667eea' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        sx={{ color: '#667eea' }}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={textFieldSx}
-              />
+              <Box>
+                <TextField
+                  fullWidth
+                  label={t('auth.merchantRegisterPage.adminInfo.password')}
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleInputChange('password')}
+                  onFocus={() => setTouchedFields(prev => ({ ...prev, password: true }))}
+                  required
+                  error={touchedFields.password && !!validationErrors.password}
+                  helperText={touchedFields.password && validationErrors.password ? validationErrors.password : '\u00A0'}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: '#667eea' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          sx={{ color: '#667eea' }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={textFieldSx}
+                />
+                {/* 密码要求提示框 - 使用固定高度避免布局跳动 */}
+                <Box sx={{
+                  minHeight: touchedFields.password && !(
+                    formData.password &&
+                    formData.password.length >= 8 &&
+                    /[A-Z]/.test(formData.password) &&
+                    /[a-z]/.test(formData.password) &&
+                    /[0-9]/.test(formData.password) &&
+                    /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)
+                  ) ? '140px' : '0px',
+                  transition: 'min-height 0.3s ease-in-out',
+                  overflow: 'hidden'
+                }}>
+                  {touchedFields.password && !(
+                    formData.password &&
+                    formData.password.length >= 8 &&
+                    /[A-Z]/.test(formData.password) &&
+                    /[a-z]/.test(formData.password) &&
+                    /[0-9]/.test(formData.password) &&
+                    /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)
+                  ) && (
+                    <Fade in={true}>
+                      <Box sx={{ mt: 0.5, mb: 1, px: 1 }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500 }}>
+                          {t('auth.passwordRequirements')}:
+                        </Typography>
+                        <Box sx={{ mt: 0.5 }}>
+                          {/* 至少8位 */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                            {formData.password.length >= 8 ? (
+                              <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                            ) : (
+                              <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: formData.password.length >= 8 ? 'success.main' : 'text.secondary',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              {t('auth.passwordMinLength')}
+                            </Typography>
+                          </Box>
+                          {/* 大写字母 */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                            {/[A-Z]/.test(formData.password) ? (
+                              <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                            ) : (
+                              <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: /[A-Z]/.test(formData.password) ? 'success.main' : 'text.secondary',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              {t('auth.passwordNeedsUpperCase')}
+                            </Typography>
+                          </Box>
+                          {/* 小写字母 */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                            {/[a-z]/.test(formData.password) ? (
+                              <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                            ) : (
+                              <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: /[a-z]/.test(formData.password) ? 'success.main' : 'text.secondary',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              {t('auth.passwordNeedsLowerCase')}
+                            </Typography>
+                          </Box>
+                          {/* 数字 */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                            {/[0-9]/.test(formData.password) ? (
+                              <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                            ) : (
+                              <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: /[0-9]/.test(formData.password) ? 'success.main' : 'text.secondary',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              {t('auth.passwordNeedsNumber')}
+                            </Typography>
+                          </Box>
+                          {/* 特殊字符 */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                            {/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? (
+                              <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                            ) : (
+                              <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'success.main' : 'text.secondary',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              {t('auth.passwordNeedsSpecialChar')}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Fade>
+                  )}
+                </Box>
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -550,6 +944,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 value={formData.confirmPassword}
                 onChange={handleInputChange('confirmPassword')}
                 required
+                error={touchedFields.confirmPassword && !!validationErrors.confirmPassword}
+                helperText={touchedFields.confirmPassword && validationErrors.confirmPassword ? validationErrors.confirmPassword : '\u00A0'}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -655,6 +1051,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                       value={formData.contactPhone}
                       onChange={handleInputChange('contactPhone')}
                       required
+                      error={touchedFields.contactPhone && !!validationErrors.contactPhone}
+                      helperText={touchedFields.contactPhone && validationErrors.contactPhone ? validationErrors.contactPhone : '\u00A0'}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -676,6 +1074,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   type="email"
                   value={formData.contactEmail}
                   onChange={handleInputChange('contactEmail')}
+                  error={touchedFields.contactEmail && !!validationErrors.contactEmail}
+                  helperText={touchedFields.contactEmail && validationErrors.contactEmail ? validationErrors.contactEmail : '\u00A0'}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -765,43 +1165,33 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               </FormControl>
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth required sx={selectSx}>
-                <InputLabel>{t('auth.merchantRegisterPage.businessConfig.resourceTypes')}</InputLabel>
-                <Select
-                  multiple
-                  value={formData.resourceTypes}
-                  onChange={handleResourceTypeChange}
-                  label={t('auth.merchantRegisterPage.businessConfig.resourceTypes')}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => {
-                        const option = resourceTypeOptions.find(opt => opt.value === value);
-                        return (
-                          <Chip 
-                            key={value} 
-                            label={option?.label} 
-                            size="small"
-                            sx={{
-                              backgroundColor: alpha('#667eea', 0.1),
-                              color: '#667eea',
-                              fontWeight: 500,
-                            }}
-                          />
-                        );
-                      })}
-                    </Box>
-                  )}
-                >
-                  {resourceTypeOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                {t('auth.merchantRegisterPage.businessConfig.resourceTypesHelp')}
-              </Typography>
+              <Box sx={{
+                p: 3,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: alpha('#667eea', 0.2),
+                background: alpha('#667eea', 0.03)
+              }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                  {t('auth.merchantRegisterPage.businessConfig.resourceTypes')}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Chip
+                    label={t('auth.merchantRegisterPage.resourceTypes.staff')}
+                    size="medium"
+                    sx={{
+                      backgroundColor: alpha('#667eea', 0.15),
+                      color: '#667eea',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      px: 1,
+                    }}
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  {t('auth.merchantRegisterPage.businessConfig.resourceTypesInfo')}
+                </Typography>
+              </Box>
             </Grid>
           </Grid>
         );
@@ -826,15 +1216,15 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     >
       <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
         <Box sx={{ mb: 2 }}>
-          <CheckCircleIcon 
-            sx={{ 
-              fontSize: 64, 
+          <CheckCircleIcon
+            sx={{
+              fontSize: 64,
               color: 'success.main',
               filter: 'drop-shadow(0 4px 8px rgba(76, 175, 80, 0.3))'
-            }} 
+            }}
           />
         </Box>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
+        <Typography variant="h4" component="div" sx={{ fontWeight: 700, color: 'success.main' }}>
           {t('auth.merchantRegisterPage.success.title')}
         </Typography>
       </DialogTitle>
@@ -1065,7 +1455,37 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   borderBottom: '1px solid rgba(0,0,0,0.08)',
                 }}
               >
-                <BusinessIcon sx={{ fontSize: 40, mb: 1.5, color: '#667eea' }} />
+                {/* VA Logo */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    sx={{
+                      fontSize: '3rem',
+                      fontWeight: 800,
+                      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                      letterSpacing: '-0.04em',
+                      lineHeight: 1,
+                      background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      MozBackgroundClip: 'text',
+                      MozTextFillColor: 'transparent',
+                      display: 'inline-block',
+                    }}
+                  >
+                    VA
+                  </Typography>
+                  <Box
+                    sx={{
+                      width: '60px',
+                      height: '3px',
+                      background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+                      borderRadius: '1.5px',
+                      margin: '0 auto',
+                      mt: 0.5,
+                    }}
+                  />
+                </Box>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
                   {t('auth.merchantRegisterPage.title')}
                 </Typography>
@@ -1229,19 +1649,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                         onClick={handleSubmit}
                         disabled={loading}
                         sx={{
-                          px: 4,
-                          py: 1.5,
-                          borderRadius: 2,
+                          px: 3,
+                          py: 1,
                           textTransform: 'none',
-                          fontWeight: 600,
-                          fontSize: '1rem',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                          },
-                          '&:disabled': {
-                            background: alpha('#667eea', 0.3),
-                          }
+                          fontWeight: 500,
                         }}
                       >
                         {loading ? t('auth.merchantRegisterPage.registering') : t('auth.merchantRegisterPage.finish')}
@@ -1251,16 +1662,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                         variant="contained"
                         onClick={handleNext}
                         sx={{
-                          px: 4,
-                          py: 1.5,
-                          borderRadius: 2,
+                          px: 3,
+                          py: 1,
                           textTransform: 'none',
-                          fontWeight: 600,
-                          fontSize: '1rem',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                          },
+                          fontWeight: 500,
                         }}
                       >
                         {t('common.next')}
@@ -1281,8 +1686,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 4,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+            borderRadius: 2,
           }
         }}
       >
@@ -1292,11 +1696,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               sx={{
                 fontSize: 64,
                 color: 'success.main',
-                filter: 'drop-shadow(0 4px 8px rgba(76, 175, 80, 0.3))'
               }}
             />
           </Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
+          <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: 'text.primary' }}>
             {t('auth.merchantRegisterPage.success.title')}
           </Typography>
         </DialogTitle>
@@ -1314,29 +1717,39 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             {t('auth.merchantRegisterPage.success.message')}
           </Alert>
 
+          {/* 审核提示 */}
+          <Alert
+            severity="warning"
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              textAlign: 'left',
+              '& .MuiAlert-icon': {
+                fontSize: '1.5rem',
+              }
+            }}
+          >
+            {t('auth.merchantRegisterPage.success.approvalNotice')}
+          </Alert>
+
           {/* 租户代码 */}
           <Box sx={{
             p: 3,
-            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-            borderRadius: 3,
+            backgroundColor: '#f8fafc',
+            borderRadius: 2,
             mb: 2,
-            border: '2px dashed #0ea5e9',
-            position: 'relative',
-            overflow: 'hidden',
+            border: '1px solid #e2e8f0',
           }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
               {t('auth.merchantRegisterPage.success.tenantCodeLabel')}
             </Typography>
             <Typography
-              variant="h5"
+              variant="h6"
               sx={{
                 fontFamily: 'monospace',
-                fontWeight: 700,
-                color: '#0ea5e9',
-                letterSpacing: 2,
+                fontWeight: 600,
+                color: 'text.primary',
                 mb: 2,
-                position: 'relative',
-                zIndex: 1,
               }}
             >
               {tenantCode || 'Loading...'}
@@ -1349,33 +1762,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 handleCopyTenantCode();
               }}
               variant={copiedTenantCode ? "contained" : "outlined"}
-              size="medium"
+              size="small"
               color={copiedTenantCode ? 'success' : 'primary'}
               disabled={copiedTenantCode || !tenantCode}
               sx={{
-                borderRadius: 2,
                 textTransform: 'none',
-                fontWeight: 600,
-                px: 3,
-                position: 'relative',
-                zIndex: 1,
-                transition: 'all 0.2s ease-in-out',
-                ...(copiedTenantCode ? {
-                  backgroundColor: 'success.main',
-                  color: 'white',
-                  '&:disabled': {
-                    backgroundColor: 'success.main',
-                    color: 'white',
-                    opacity: 1,
-                  }
-                } : {
-                  borderColor: '#0ea5e9',
-                  color: '#0ea5e9',
-                  '&:hover': {
-                    borderColor: '#0284c7',
-                    backgroundColor: alpha('#0ea5e9', 0.04),
-                  }
-                })
+                fontWeight: 500,
               }}
             >
               {copiedTenantCode ? t('common.copied') : t('auth.merchantRegisterPage.success.copyTenantCode')}
@@ -1385,26 +1777,21 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           {/* 邀请码 */}
           <Box sx={{
             p: 3,
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            borderRadius: 3,
+            backgroundColor: '#f8fafc',
+            borderRadius: 2,
             mb: 3,
-            border: '2px dashed #667eea',
-            position: 'relative',
-            overflow: 'hidden',
+            border: '1px solid #e2e8f0',
           }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
               {t('auth.merchantRegisterPage.success.invitationCodeLabel')}
             </Typography>
             <Typography
-              variant="h5"
+              variant="h6"
               sx={{
                 fontFamily: 'monospace',
-                fontWeight: 700,
-                color: '#667eea',
-                letterSpacing: 2,
+                fontWeight: 600,
+                color: 'text.primary',
                 mb: 2,
-                position: 'relative',
-                zIndex: 1,
               }}
             >
               {invitationCode || 'Loading...'}
@@ -1417,33 +1804,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 handleCopyInvitationCode();
               }}
               variant={copiedInvitationCode ? "contained" : "outlined"}
-              size="medium"
+              size="small"
               color={copiedInvitationCode ? 'success' : 'primary'}
               disabled={copiedInvitationCode || !invitationCode}
               sx={{
-                borderRadius: 2,
                 textTransform: 'none',
-                fontWeight: 600,
-                px: 3,
-                position: 'relative',
-                zIndex: 1,
-                transition: 'all 0.2s ease-in-out',
-                ...(copiedInvitationCode ? {
-                  backgroundColor: 'success.main',
-                  color: 'white',
-                  '&:disabled': {
-                    backgroundColor: 'success.main',
-                    color: 'white',
-                    opacity: 1,
-                  }
-                } : {
-                  borderColor: '#667eea',
-                  color: '#667eea',
-                  '&:hover': {
-                    borderColor: '#5a6fd8',
-                    backgroundColor: alpha('#667eea', 0.04),
-                  }
-                })
+                fontWeight: 500,
               }}
             >
               {copiedInvitationCode ? t('common.copied') : t('auth.merchantRegisterPage.success.copyInvitationCode')}
@@ -1454,31 +1820,16 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             {t('auth.merchantRegisterPage.success.confirmCopiedMessage')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', p: 4, pt: 2 }}>
+        <DialogActions sx={{ justifyContent: 'center', p: 3 }}>
           <Button
             onClick={handleGoToLogin}
             variant="contained"
             disabled={!copiedInvitationCode || !copiedTenantCode}
-            size="large"
             sx={{
               px: 4,
-              py: 1.5,
-              borderRadius: 2,
+              py: 1,
               textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '1.1rem',
-              background: (copiedInvitationCode && copiedTenantCode)
-                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                : alpha('#667eea', 0.3),
-              '&:hover': {
-                background: (copiedInvitationCode && copiedTenantCode)
-                  ? 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)'
-                  : alpha('#667eea', 0.3),
-              },
-              '&:disabled': {
-                background: alpha('#667eea', 0.3),
-                color: 'rgba(255, 255, 255, 0.5)',
-              }
+              fontWeight: 500,
             }}
           >
             {t('auth.merchantRegisterPage.success.goToLogin')}

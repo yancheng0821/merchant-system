@@ -12,26 +12,27 @@ import {
   Container,
   IconButton,
   Button,
-  Menu,
-  MenuItem,
   Avatar,
-  Divider,
   Collapse,
   ListItemButton,
   alpha,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Person as PersonIcon,
   ExitToApp as LogoutIcon,
   ExpandLess,
   ExpandMore,
+  ChevronLeft as ChevronLeftIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useSnackbar } from 'notistack';
 import { BrowserRouter as Router, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { TaxProvider } from './contexts/TaxContext';
 import { SessionProvider } from './contexts/SessionContext';
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { LoginPage, UserProfile } from './components';
 import {
   Dashboard,
@@ -44,21 +45,33 @@ import {
   ResourceManagement
 } from './modules';
 import NotificationManagement from './modules/notifications/NotificationManagement';
+import ScheduleManagement from './modules/schedule/components/ShiftManagement';
+import { RBACManagement } from './modules/rbac';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
 import { getFullImageUrl } from './services/api';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
+import NotificationBar from './components/common/NotificationBar';
+import { filterMenus } from './utils/menuFilter';
+import { usePermission } from './hooks/usePermission';
+import { canAccessRoute, ROUTE_PERMISSIONS } from './utils/routePermissions';
 
 const drawerWidth = 260;
 
 const MainAppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, logout, loading } = useAuth();
+  const { isDrawerOpen, setDrawerOpen } = useNavigation();
+  const { userPermissions, isSuperAdmin } = usePermission();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // 用于跟踪权限是否已经初始化过
+  const permissionsInitialized = React.useRef(false);
   
   // 从URL路径获取初始选中项
   const getInitialSelectedItem = () => {
@@ -76,32 +89,96 @@ const MainAppContent: React.FC = () => {
   };
   
   const [selectedItem, setSelectedItem] = useState(getInitialSelectedItem());
-  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
   // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
 
+  // 标记权限已初始化
+  // 只要用户登录了，权限就应该已经加载（即使是空权限）
+  useEffect(() => {
+    if (user && user.permissions !== undefined) {
+      permissionsInitialized.current = true;
+    }
+  }, [user]);
+
+  // 检查并显示注册成功消息
+  useEffect(() => {
+    if (user) {
+      const showRegistrationSuccess = localStorage.getItem('showRegistrationSuccess');
+      if (showRegistrationSuccess === 'true') {
+        // 清除标记
+        localStorage.removeItem('showRegistrationSuccess');
+        // 显示成功消息（使用 MUI Alert 样式）
+        enqueueSnackbar(t('auth.registrationSuccess', 'Registration successful! Welcome to the system!'), {
+          variant: 'success',
+          autoHideDuration: 3000,
+          anchorOrigin: { vertical: 'top', horizontal: 'center' },
+          content: (key, message) => (
+            <Alert
+              severity="success"
+              onClose={() => closeSnackbar(key)}
+              sx={{
+                width: '100%',
+                minWidth: '400px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              {message}
+            </Alert>
+          ),
+        });
+      }
+    }
+  }, [user, enqueueSnackbar, closeSnackbar, t]);
+
   // 监听URL变化并同步selectedItem
   useEffect(() => {
+    // 如果用户未登录，不进行任何路由处理
+    if (!user) {
+      return;
+    }
+
     const path = location.pathname.slice(1) || 'dashboard';
+
+    // 只有在权限数据已加载时才进行权限检查
+    // 避免在刷新页面时，权限未加载导致误判
+    if (permissionsInitialized.current) {
+      // 通用权限检查：检查用户是否有权限访问当前路由
+      const hasAccess = canAccessRoute(
+        path,
+        userPermissions.permissionCodes,
+        userPermissions.isSuperAdmin
+      );
+
+      if (!hasAccess) {
+        console.log(`Access denied: route "${path}" requires permissions, staying on current page`);
+        // 保持在当前页面，不进行路由跳转
+        // 使用 navigate(-1) 会返回到上一个页面
+        navigate(-1);
+        return;
+      }
+    }
+
     setSelectedItem(path);
-    
+
     // 特殊处理Stripe回调
     if (path === 'settings' && searchParams.get('tab') === 'payment') {
       // 确保Settings组件接收到正确的tab参数
       setSelectedItem('settings');
     }
-  }, [location, searchParams]);
+  }, [location, searchParams, userPermissions, navigate, user]);
 
-  // 当selectedItem变化时，更新URL
+  // 当selectedItem变化时，更新URL（但不触发导航如果已经在正确的路径）
   useEffect(() => {
     if (selectedItem) {
-      // 不要在初始加载时更新URL
-      if (location.pathname !== `/${selectedItem}`) {
+      const currentPath = location.pathname.slice(1) || 'dashboard';
+      // 只有当 selectedItem 不是从 URL 同步来的时候才导航
+      // 这避免了循环：URL变化 -> setSelectedItem -> 这里导航 -> URL变化...
+      if (selectedItem !== currentPath) {
         navigate(`/${selectedItem}`, { replace: false });
       }
     }
-  }, [selectedItem, navigate, location.pathname]);
+  }, [selectedItem]);
 
   // 获取商户配置和初始化预加载器
   useEffect(() => {
@@ -119,42 +196,72 @@ const MainAppContent: React.FC = () => {
 
         // 根据商户配置生成导航菜单
         const dynamicMenuItems = generateNavigationConfig(mockConfig);
-        setMenuItems(dynamicMenuItems);
+
+        // 只有当权限已初始化时才进行过滤
+        // 如果权限未初始化，显示所有菜单（避免空白）
+        if (permissionsInitialized.current) {
+          console.log('Filtering menus with permissions:', {
+            permissionCount: userPermissions.permissionCodes.length,
+            roleCount: userPermissions.roles.length,
+            isSuperAdmin: userPermissions.isSuperAdmin,
+            roles: userPermissions.roles,
+            samplePermissions: userPermissions.permissionCodes.slice(0, 5)
+          });
+
+          console.log('Dynamic menu items before filter:', dynamicMenuItems.map(m => ({ id: m.id, permission: m.permission })));
+
+          const userRoleCodes = userPermissions.roles.map(role => role.roleCode);
+          const filteredMenuItems = filterMenus(
+            dynamicMenuItems,
+            userPermissions.permissionCodes,
+            userRoleCodes as any,
+            userPermissions.isSuperAdmin
+          );
+
+          console.log('Filtered menu items:', filteredMenuItems.length, filteredMenuItems);
+          setMenuItems(filteredMenuItems);
+        } else {
+          console.log('Permissions not initialized yet, showing all menus temporarily');
+          // 暂时显示所有菜单，等待权限加载
+          setMenuItems(dynamicMenuItems);
+        }
       } catch (error) {
         console.error('Failed to fetch merchant config:', error);
         // 使用默认配置
         const defaultMenuItems = generateNavigationConfig();
-        setMenuItems(defaultMenuItems);
+
+        // 只有当权限已初始化时才进行过滤
+        if (permissionsInitialized.current) {
+          const userRoleCodes = userPermissions.roles.map(role => role.roleCode);
+          const filteredMenuItems = filterMenus(
+            defaultMenuItems,
+            userPermissions.permissionCodes,
+            userRoleCodes as any,
+            userPermissions.isSuperAdmin
+          );
+          setMenuItems(filteredMenuItems);
+        } else {
+          // 暂时显示所有菜单，等待权限加载
+          setMenuItems(defaultMenuItems);
+        }
       }
     };
 
     if (user) {
       fetchMerchantConfig();
     }
-  }, [user]);
+  }, [user, userPermissions]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-
-
-  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setUserMenuAnchor(event.currentTarget);
-  };
-
-  const handleUserMenuClose = () => {
-    setUserMenuAnchor(null);
-  };
-
   const handleLogout = () => {
     logout();
-    handleUserMenuClose();
   };
 
   const navigateToProfile = () => {
     setSelectedItem('profile');
-    handleUserMenuClose();
   };
 
   const handleMenuToggle = (menuId: string) => {
@@ -179,34 +286,89 @@ const MainAppContent: React.FC = () => {
       <Box
         sx={{
           p: 3,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
+          background: '#ffffff',
+          borderBottom: '1px solid rgba(99, 102, 241, 0.1)',
           position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%)',
-            backgroundSize: '20px 20px',
-          }
         }}
       >
-        <Typography
-          variant="h6"
-          component="div"
+        <Box
           sx={{
-            fontWeight: 700,
-            position: 'relative',
-            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
           }}
         >
-          {t('nav.title')}
-        </Typography>
+          {/* Modern Minimalist Logo */}
+          <Box
+            sx={{
+              position: 'relative',
+              width: 'auto',
+              height: 'auto',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '1.8rem',
+                fontWeight: 700,
+                fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                letterSpacing: '-0.04em',
+                lineHeight: 1,
+                background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: '-2px',
+                  left: '0',
+                  right: '0',
+                  height: '3px',
+                  background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+                  borderRadius: '2px',
+                  opacity: 0.6,
+                }
+              }}
+            >
+              VA
+            </Typography>
+          </Box>
 
+          {/* System Name */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: 700,
+                fontSize: '1rem',
+                color: '#1e293b',
+                lineHeight: 1.2,
+                letterSpacing: '-0.02em',
+                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {t('nav.title')}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#94a3b8',
+                fontSize: '0.7rem',
+                display: 'block',
+                letterSpacing: '0.03em',
+                fontWeight: 500,
+                textTransform: 'uppercase',
+              }}
+            >
+              Merchant System
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
       {/* 现代化菜单列表 */}
@@ -303,6 +465,35 @@ const MainAppContent: React.FC = () => {
           </React.Fragment>
         ))}
       </List>
+
+      {/* 隐藏导航栏按钮 */}
+      <Box sx={{ p: 2, mt: 'auto' }}>
+        <Button
+          fullWidth
+          startIcon={<ChevronLeftIcon />}
+          onClick={() => setDrawerOpen(false)}
+          sx={{
+            justifyContent: 'flex-start',
+            color: 'text.secondary',
+            textTransform: 'none',
+            borderRadius: 2,
+            py: 1.5,
+            px: 2,
+            fontWeight: 500,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              bgcolor: alpha('#667eea', 0.08),
+              color: '#667eea',
+              transform: 'translateX(-4px)',
+              '& .MuiSvgIcon-root': {
+                transform: 'translateX(-4px)',
+              }
+            },
+          }}
+        >
+          {t('nav.hideMenu', 'Hide Menu')}
+        </Button>
+      </Box>
     </Box>
   );
 
@@ -315,29 +506,10 @@ const MainAppContent: React.FC = () => {
           justifyContent: 'center',
           alignItems: 'center',
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundColor: '#f8fafc',
         }}
       >
-        <Box sx={{ textAlign: 'center', color: 'white' }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            {t('common.loading')}
-          </Typography>
-          <Box sx={{ width: 200, height: 4, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2 }}>
-            <Box
-              sx={{
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'white',
-                borderRadius: 2,
-                animation: 'loading 1.5s ease-in-out infinite',
-                '@keyframes loading': {
-                  '0%': { transform: 'translateX(-100%)' },
-                  '100%': { transform: 'translateX(100%)' },
-                },
-              }}
-            />
-          </Box>
-        </Box>
+        <CircularProgress size={40} />
       </Box>
     );
   }
@@ -352,154 +524,170 @@ const MainAppContent: React.FC = () => {
           <AppBar
             position="fixed"
             sx={{
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
-              ml: { sm: `${drawerWidth}px` },
+              width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
+              ml: { sm: isDrawerOpen ? `${drawerWidth}px` : 0 },
               background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%)',
               backdropFilter: 'blur(10px)',
               boxShadow: '0 1px 20px rgba(0,0,0,0.08)',
               borderBottom: '1px solid rgba(0,0,0,0.08)',
+              transition: 'width 0.3s ease, margin 0.3s ease',
             }}
           >
             <Toolbar sx={{ justifyContent: 'space-between' }}>
-              <IconButton
-                color="inherit"
-                edge="start"
-                onClick={handleDrawerToggle}
-                sx={{ mr: 2, display: { sm: 'none' }, color: 'text.primary' }}
-              >
-                <MenuIcon />
-              </IconButton>
+              {/* 左侧：菜单按钮 + 通知栏 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+                {/* 移动端菜单按钮 */}
+                <IconButton
+                  color="inherit"
+                  edge="start"
+                  onClick={handleDrawerToggle}
+                  sx={{ display: { sm: 'none' }, color: 'text.primary' }}
+                >
+                  <MenuIcon />
+                </IconButton>
 
+                {/* 桌面端显示导航栏按钮（仅在导航栏隐藏时显示） */}
+                {!isDrawerOpen && (
+                  <IconButton
+                    color="inherit"
+                    edge="start"
+                    onClick={() => setDrawerOpen(true)}
+                    sx={{
+                      display: { xs: 'none', sm: 'flex' },
+                      color: 'text.primary',
+                      bgcolor: alpha('#3B82F6', 0.1),
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: alpha('#3B82F6', 0.2),
+                        transform: 'scale(1.1)',
+                      }
+                    }}
+                  >
+                    <MenuIcon />
+                  </IconButton>
+                )}
+
+                {/* 通知栏 */}
+                <Box sx={{ display: { xs: 'none', md: 'block' }, flex: 1, minWidth: 0 }}>
+                  <NotificationBar />
+                </Box>
+              </Box>
+
+              {/* 右侧：语言切换、欢迎文字、用户头像、退出按钮 */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {/* 语言切换组件 */}
                 <LanguageSwitcher variant="default" size="medium" />
 
-                {/* 用户头像和菜单 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography
-                    variant="body2"
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#64748B',
+                    fontWeight: 400,
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.01em',
+                    display: { xs: 'none', md: 'block' },
+                    '& span': {
+                      color: '#475569',
+                      fontWeight: 600,
+                      marginLeft: '4px',
+                    }
+                  }}
+                >
+                  {t('auth.welcome')}, <span>{user?.realName || user?.username}</span>
+                </Typography>
+
+                {/* 直接点击进入用户资料页 */}
+                <IconButton
+                  onClick={navigateToProfile}
+                  sx={{
+                    p: 0,
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'transform 0.2s ease',
+                  }}
+                >
+                  <Avatar
+                    src={getFullImageUrl(user?.avatar)}
                     sx={{
-                      color: 'text.primary',
-                      fontWeight: 500,
-                      display: { xs: 'none', md: 'block' }
+                      width: 40,
+                      height: 40,
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                      cursor: 'pointer',
                     }}
                   >
-                    {t('auth.welcome')}, {user?.username}
-                  </Typography>
-                  <IconButton
-                    onClick={handleUserMenuClick}
-                    sx={{
-                      p: 0,
-                      ml: 1,
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                      },
-                      transition: 'transform 0.2s ease',
-                    }}
-                  >
-                    <Avatar
-                      src={getFullImageUrl(user?.avatar)}
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      }}
-                    >
-                      {user?.username?.charAt(0).toUpperCase()}
-                    </Avatar>
-                  </IconButton>
-                </Box>
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </Avatar>
+                </IconButton>
+
+                {/* 退出按钮 - 简洁图标风格 */}
+                <IconButton
+                  onClick={handleLogout}
+                  sx={{
+                    color: '#94A3B8',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 2,
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      color: '#64748B',
+                      backgroundColor: alpha('#94A3B8', 0.1),
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 2px 8px rgba(148, 163, 184, 0.2)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0)',
+                    },
+                  }}
+                >
+                  <LogoutIcon sx={{ fontSize: 20 }} />
+                </IconButton>
               </Box>
             </Toolbar>
           </AppBar>
 
 
-
-          {/* 用户菜单 */}
-          <Menu
-            anchorEl={userMenuAnchor}
-            open={Boolean(userMenuAnchor)}
-            onClose={handleUserMenuClose}
-            PaperProps={{
-              sx: {
-                borderRadius: 2,
-                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                border: '1px solid rgba(0,0,0,0.08)',
-                mt: 1,
-              }
-            }}
-          >
-            <MenuItem
-              onClick={navigateToProfile}
-              sx={{
-                minWidth: 150,
-                '&:hover': {
-                  background: alpha('#6366F1', 0.08),
-                }
-              }}
-            >
-              <ListItemIcon>
-                <PersonIcon fontSize="small" sx={{ color: '#6366F1' }} />
-              </ListItemIcon>
-              {t('nav.userProfile')}
-            </MenuItem>
-            <Divider />
-            <MenuItem
-              onClick={handleLogout}
-              sx={{
-                '&:hover': {
-                  background: alpha('#EF4444', 0.08),
-                }
-              }}
-            >
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" sx={{ color: '#EF4444' }} />
-              </ListItemIcon>
-              <Typography sx={{ color: '#EF4444' }}>
-                {t('nav.logout')}
-              </Typography>
-            </MenuItem>
-          </Menu>
-
           {/* 现代化侧边栏 */}
-          <Box
-            component="nav"
-            sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-          >
-            <Drawer
-              variant="temporary"
-              open={mobileOpen}
-              onClose={handleDrawerToggle}
-              ModalProps={{ keepMounted: true }}
-              sx={{
-                display: { xs: 'block', sm: 'none' },
-                '& .MuiDrawer-paper': {
-                  boxSizing: 'border-box',
-                  width: drawerWidth,
-                  background: '#ffffff',
-                  boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-                },
-              }}
+          {isDrawerOpen && (
+            <Box
+              component="nav"
+              sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
             >
-              {drawer}
-            </Drawer>
-            <Drawer
-              variant="permanent"
-              sx={{
-                display: { xs: 'none', sm: 'block' },
-                '& .MuiDrawer-paper': {
-                  boxSizing: 'border-box',
-                  width: drawerWidth,
-                  background: '#ffffff',
-                  boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-                  borderRight: 'none',
-                },
-              }}
-              open
-            >
-              {drawer}
-            </Drawer>
-          </Box>
+              <Drawer
+                variant="temporary"
+                open={mobileOpen}
+                onClose={handleDrawerToggle}
+                ModalProps={{ keepMounted: true }}
+                sx={{
+                  display: { xs: 'block', sm: 'none' },
+                  '& .MuiDrawer-paper': {
+                    boxSizing: 'border-box',
+                    width: drawerWidth,
+                    background: '#ffffff',
+                    boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+                  },
+                }}
+              >
+                {drawer}
+              </Drawer>
+              <Drawer
+                variant="permanent"
+                sx={{
+                  display: { xs: 'none', sm: 'block' },
+                  '& .MuiDrawer-paper': {
+                    boxSizing: 'border-box',
+                    width: drawerWidth,
+                    background: '#ffffff',
+                    boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+                    borderRight: 'none',
+                  },
+                }}
+                open
+              >
+                {drawer}
+              </Drawer>
+            </Box>
+          )}
 
           {/* 现代化内容区域 */}
           <Box
@@ -507,22 +695,25 @@ const MainAppContent: React.FC = () => {
             sx={{
               flexGrow: 1,
               p: 3,
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
+              width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
               minHeight: '100vh',
               background: '#f8fafc',
+              transition: 'width 0.3s ease',
             }}
           >
             <Toolbar />
             <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
               {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
               {selectedItem === 'products' && <ServiceManagement />}
-              {selectedItem === 'payments' && <PaymentManagement onNavigate={setSelectedItem} />}
+              {selectedItem === 'orders' && <PaymentManagement onNavigate={setSelectedItem} />}
               {selectedItem === 'customers' && <CustomerManagement />}
               {selectedItem === 'appointments' && <AppointmentManagement />}
               {selectedItem === 'resources' && <ResourceManagement />}
+              {selectedItem === 'schedule' && <ScheduleManagement />}
               {selectedItem === 'notifications' && <NotificationManagement />}
               {selectedItem === 'analytics' && <Analytics />}
               {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}
+              {selectedItem === 'rbac' && <RBACManagement />}
               {selectedItem === 'profile' && <UserProfile />}
             </Container>
           </Box>
@@ -536,8 +727,10 @@ const MainAppContent: React.FC = () => {
 
 const MainApp: React.FC = () => {
   return (
-    <Router>
-      <MainAppContent />
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <NavigationProvider>
+        <MainAppContent />
+      </NavigationProvider>
     </Router>
   );
 };

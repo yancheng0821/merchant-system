@@ -31,6 +31,8 @@ import {
     Alert,
     CircularProgress,
     Snackbar,
+    Popover,
+    Tooltip,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -42,16 +44,21 @@ import {
     Phone as PhoneIcon,
     Email as EmailIcon,
     Work as WorkIcon,
-    PersonOff as PersonOffIcon,
-    PersonAdd as PersonAddIcon,
+    Build as SkillIcon,
+    MoreHoriz as MoreHorizIcon,
+    Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import StaffDialog from './StaffDialog';
+import StaffAvailabilityEditor from './StaffAvailabilityEditor';
 import { StaffResource, convertToStaffResource, convertStaffToResource } from '../types';
 import { getFullImageUrl } from '../../../services/api';
+import { usePermission } from '../../../hooks/usePermission';
+import { format, parseISO } from 'date-fns';
 
 const StaffResourceManagement: React.FC = () => {
     const { t } = useTranslation();
+    const { hasPermission } = usePermission();
     const [staff, setStaff] = useState<StaffResource[]>([]);
     const [filteredStaff, setFilteredStaff] = useState<StaffResource[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -63,12 +70,25 @@ const StaffResourceManagement: React.FC = () => {
     // 对话框状态
     const [staffDialogOpen, setStaffDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [expertisePopoverAnchor, setExpertisePopoverAnchor] = useState<null | HTMLElement>(null);
+    const [selectedStaffIdForExpertise, setSelectedStaffIdForExpertise] = useState<number | null>(null);
+    const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(null);
+    const [selectedStaffForStatus, setSelectedStaffForStatus] = useState<StaffResource | null>(null);
 
     // 加载状态
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // 服务专长数据
+    const [staffExpertise, setStaffExpertise] = useState<Record<number, Array<{
+        serviceId: number;
+        serviceName: string;
+        skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT' | 'MASTER';
+    }>>>({});
+    const [services, setServices] = useState<any[]>([]);
 
     // 主题色
     const themeColor = '#3B82F6';
@@ -79,20 +99,39 @@ const StaffResourceManagement: React.FC = () => {
         return Number(user.tenantId || 1);
     }, []);
 
+    // 格式化日期（纯日期字段，不涉及时区转换）
+    const formatDate = (dateString: string | undefined): string => {
+        if (!dateString) return '-';
+        try {
+            // parseISO 会将 "2025-11-09" 解析为本地时区的日期，不做时区转换
+            const date = parseISO(dateString);
+            return format(date, 'MMM d, yyyy'); // 例如: Nov 9, 2025
+        } catch (e) {
+            return dateString;
+        }
+    };
+
     // 获取员工数据
     useEffect(() => {
         const fetchStaffData = async () => {
             try {
                 setLoading(true);
-                const { resourceApi } = await import('../../../services/api');
-                const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
+                const { resourceApi, serviceApi } = await import('../../../services/api');
+
+                // 并行加载员工和服务数据
+                const [response, servicesData] = await Promise.all([
+                    resourceApi.getResourcesByType(tenantId, 'STAFF'),
+                    serviceApi.getServices(tenantId.toString())
+                ]);
+
                 const staffData = (response || []).map(convertToStaffResource);
                 // 按创建时间倒序排序，新创建的在最上面
                 staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 setStaff(staffData);
+                setServices(servicesData || []);
             } catch (err) {
-                console.error('获取员工数据失败:', err);
-                setError(err instanceof Error ? err.message : '获取员工数据失败');
+                console.error('Failed to fetch staff data:', err);
+                setError(err instanceof Error ? err.message : 'Failed to fetch staff data');
                 setStaff([]);
             } finally {
                 setLoading(false);
@@ -101,6 +140,49 @@ const StaffResourceManagement: React.FC = () => {
 
         fetchStaffData();
     }, [tenantId]);
+
+    // 加载所有员工的服务专长
+    useEffect(() => {
+        const loadStaffExpertise = async () => {
+            if (staff.length === 0 || services.length === 0) {
+                return;
+            }
+
+            try {
+                const { resourceApi } = await import('../../../services/api');
+                const expertiseMap: Record<number, Array<{
+                    serviceId: number;
+                    serviceName: string;
+                    skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT' | 'MASTER';
+                }>> = {};
+
+                await Promise.all(
+                    staff.map(async (staffMember) => {
+                        try {
+                            const expertise = await resourceApi.getResourceServices(staffMember.id);
+                            expertiseMap[staffMember.id] = expertise.map((e: any) => {
+                                const service = services.find(s => s.id === e.serviceId);
+                                return {
+                                    serviceId: e.serviceId,
+                                    serviceName: service?.name || 'Unknown Service',
+                                    skillLevel: e.skillLevel || 'INTERMEDIATE',
+                                };
+                            });
+                        } catch (error) {
+                            console.error(`Failed to load expertise for staff ${staffMember.id}:`, error);
+                            expertiseMap[staffMember.id] = [];
+                        }
+                    })
+                );
+
+                setStaffExpertise(expertiseMap);
+            } catch (error) {
+                console.error('Failed to load staff expertise:', error);
+            }
+        };
+
+        loadStaffExpertise();
+    }, [staff, services]);
 
     // 筛选员工
     useEffect(() => {
@@ -122,28 +204,43 @@ const StaffResourceManagement: React.FC = () => {
         setPage(0);
     }, [staff, searchTerm, statusFilter]);
 
-    const getStatusChip = (status: string) => {
+    // 获取状态Chip（可点击）
+    const getStatusChip = (staffMember: StaffResource) => {
         const statusConfig = {
             ACTIVE: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('staff.statusOptions.active') },
             INACTIVE: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('staff.statusOptions.inactive') },
-            MAINTENANCE: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('staff.statusOptions.maintenance') },
             VACATION: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('staff.statusOptions.vacation') },
         };
 
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.ACTIVE;
+        const config = statusConfig[staffMember.status as keyof typeof statusConfig] || statusConfig.ACTIVE;
 
         return (
             <Chip
                 label={config.label}
+                onClick={hasPermission('staff:update') ? (e) => {
+                    e.stopPropagation();
+                    setStatusMenuAnchor(e.currentTarget);
+                    setSelectedStaffForStatus(staffMember);
+                } : undefined}
                 sx={{
                     backgroundColor: config.bg,
                     color: config.color,
                     fontWeight: 600,
                     fontSize: '0.75rem',
                     height: 24,
+                    cursor: hasPermission('staff:update') ? 'pointer' : 'default',
+                    transition: 'all 0.2s',
                     '& .MuiChip-label': {
                         px: 2,
                     },
+                    ...(hasPermission('staff:update') && {
+                        '&:hover': {
+                            backgroundColor: config.color,
+                            color: 'white',
+                            transform: 'translateY(-1px)',
+                            boxShadow: `0 2px 8px ${alpha(config.color, 0.3)}`,
+                        },
+                    }),
                 }}
             />
         );
@@ -155,35 +252,69 @@ const StaffResourceManagement: React.FC = () => {
         return colors[index];
     };
 
+    // 根据技能等级获取颜色
+    const getSkillLevelColor = (level: string) => {
+        switch (level) {
+            case 'BEGINNER':
+                return '#94a3b8'; // 灰色
+            case 'INTERMEDIATE':
+                return '#3b82f6'; // 蓝色
+            case 'EXPERT':
+                return '#f59e0b'; // 橙色
+            case 'MASTER':
+                return '#ef4444'; // 红色
+            default:
+                return '#94a3b8';
+        }
+    };
+
+    // 获取技能等级显示文本
+    const getSkillLevelText = (level: string) => {
+        switch (level) {
+            case 'BEGINNER':
+                return 'Beginner';
+            case 'INTERMEDIATE':
+                return 'Intermediate';
+            case 'EXPERT':
+                return 'Expert';
+            case 'MASTER':
+                return 'Master';
+            default:
+                return level;
+        }
+    };
+
     // 保存员工
     const handleSaveStaff = async (staffData: Partial<StaffResource>) => {
         try {
             const { resourceApi } = await import('../../../services/api');
-            
+
             // 检查是否是新建员工（通过isNewStaff标识）
             const isNewStaff = (staffData as any).isNewStaff || !selectedStaff;
-            
+
             if (selectedStaff && !isNewStaff) {
                 // 更新员工
                 const resourceData = convertStaffToResource(staffData);
                 await resourceApi.updateResource(selectedStaff.id, resourceData);
             }
             // 新建员工的情况已经在StaffDialog中处理了，这里只需要刷新数据
-            
+
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
             const staffDataList = (response || []).map(convertToStaffResource);
             // 按创建时间倒序排序，新创建的在最上面
             staffDataList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setStaff(staffDataList);
-            
+
+            // 只有成功时才关闭对话框
             setStaffDialogOpen(false);
             setSelectedStaff(null);
-            
+
             // 显示成功消息
             setSuccessMessage(isNewStaff ? t('staff.createSuccess') : t('staff.updateSuccess'));
         } catch (err) {
-            console.error('保存员工失败:', err);
+            console.error('Failed to save staff:', err);
+            // 不关闭对话框，让用户看到错误信息并可以修改后重试
             throw err;
         }
     };
@@ -209,67 +340,33 @@ const StaffResourceManagement: React.FC = () => {
             // 显示成功消息
             setSuccessMessage(t('staff.deleteSuccess'));
         } catch (err) {
-            console.error('删除员工失败:', err);
-            setError('删除员工失败');
+            console.error('Failed to delete staff:', err);
+            setError(t('staff.deleteError'));
         }
     };
 
-    // 将员工设置为Inactive
-    const handleSetInactive = async () => {
-        if (!selectedStaff) return;
-        
+    // 更改员工状态
+    const handleStatusChange = async (staffMember: StaffResource, newStatus: string) => {
         try {
             const { resourceApi } = await import('../../../services/api');
             const updatedStaff = convertStaffToResource({
-                ...selectedStaff,
-                status: 'INACTIVE'
+                ...staffMember,
+                status: newStatus as 'ACTIVE' | 'INACTIVE' | 'VACATION'
             });
-            
-            await resourceApi.updateResource(selectedStaff.id, updatedStaff);
-            
+
+            await resourceApi.updateResource(staffMember.id, updatedStaff);
+
             // 重新获取数据
             const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
             const staffData = (response || []).map(convertToStaffResource);
             // 按创建时间倒序排序，新创建的在最上面
             staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setStaff(staffData);
-            
-            setSelectedStaff(null);
-            
-            // 显示成功消息
-            setSuccessMessage(t('staff.statusUpdateSuccess'));
-        } catch (err) {
-            console.error('设置员工为Inactive失败:', err);
-            setError(t('staff.statusUpdateError'));
-        }
-    };
 
-    // 将员工设置为Active
-    const handleSetActive = async () => {
-        if (!selectedStaff) return;
-        
-        try {
-            const { resourceApi } = await import('../../../services/api');
-            const updatedStaff = convertStaffToResource({
-                ...selectedStaff,
-                status: 'ACTIVE'
-            });
-            
-            await resourceApi.updateResource(selectedStaff.id, updatedStaff);
-            
-            // 重新获取数据
-            const response = await resourceApi.getResourcesByType(tenantId, 'STAFF');
-            const staffData = (response || []).map(convertToStaffResource);
-            // 按创建时间倒序排序，新创建的在最上面
-            staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setStaff(staffData);
-            
-            setSelectedStaff(null);
-            
             // 显示成功消息
             setSuccessMessage(t('staff.statusUpdateSuccess'));
         } catch (err) {
-            console.error('设置员工为Active失败:', err);
+            console.error('Failed to update staff status:', err);
             setError(t('staff.statusUpdateError'));
         }
     };
@@ -361,23 +458,19 @@ const StaffResourceManagement: React.FC = () => {
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: themeColor }} />
+                                    <SearchIcon sx={{ color: 'text.secondary' }} />
                                 </InputAdornment>
                             ),
                         }}
                         sx={{
                             '& .MuiOutlinedInput-root': {
-                                borderRadius: 3,
-                                backgroundColor: '#f8fafc',
-                                border: '2px solid transparent',
-                                '&:hover': {
-                                    backgroundColor: '#f1f5f9',
-                                    borderColor: alpha(themeColor, 0.3),
+                                borderRadius: 2,
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(0,0,0,0.23)',
                                 },
-                                '&.Mui-focused': {
-                                    backgroundColor: 'white',
+                                '&.Mui-focused fieldset': {
                                     borderColor: themeColor,
-                                    boxShadow: `0 0 0 3px ${alpha(themeColor, 0.1)}`,
+                                    borderWidth: '2px',
                                 },
                             },
                         }}
@@ -391,50 +484,50 @@ const StaffResourceManagement: React.FC = () => {
                             label={t('staff.status')}
                             onChange={(e) => setStatusFilter(e.target.value)}
                             sx={{
-                                borderRadius: 3,
-                                '& .MuiOutlinedInput-root': {
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: alpha(themeColor, 0.5),
-                                    },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: themeColor,
-                                    },
+                                borderRadius: 2,
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'rgba(0,0,0,0.23)',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: themeColor,
+                                    borderWidth: '2px',
                                 },
                             }}
                         >
                             <MenuItem value="all">{t('staff.allStatuses')}</MenuItem>
                             <MenuItem value="ACTIVE">{t('staff.statusOptions.active')}</MenuItem>
                             <MenuItem value="INACTIVE">{t('staff.statusOptions.inactive')}</MenuItem>
-                            <MenuItem value="MAINTENANCE">{t('staff.statusOptions.maintenance')}</MenuItem>
                             <MenuItem value="VACATION">{t('staff.statusOptions.vacation')}</MenuItem>
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} md={3}>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => {
-                            setSelectedStaff(null);
-                            setStaffDialogOpen(true);
-                        }}
-                        sx={{
-                            borderRadius: 3,
-                            background: `linear-gradient(45deg, ${themeColor}, #3B82F6)`,
-                            boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
-                            height: '56px',
-                            width: '100%',
-                            '&:hover': {
-                                background: `linear-gradient(45deg, #1D4ED8, ${themeColor})`,
-                                transform: 'translateY(-1px)',
-                                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
-                            },
-                            transition: 'all 0.3s ease',
-                        }}
-                    >
-                        {t('staff.addStaff')}
-                    </Button>
-                </Grid>
+                {hasPermission('staff:create') && (
+                    <Grid item xs={12} md={3}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => {
+                                setSelectedStaff(null);
+                                setStaffDialogOpen(true);
+                            }}
+                            sx={{
+                                borderRadius: 3,
+                                background: `linear-gradient(45deg, ${themeColor}, #3B82F6)`,
+                                boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+                                height: '56px',
+                                width: '100%',
+                                '&:hover': {
+                                    background: `linear-gradient(45deg, #1D4ED8, ${themeColor})`,
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                                },
+                                transition: 'all 0.3s ease',
+                            }}
+                        >
+                            {t('staff.addStaff')}
+                        </Button>
+                    </Grid>
+                )}
             </Grid>
 
             {/* 错误提示 */}
@@ -467,7 +560,9 @@ const StaffResourceManagement: React.FC = () => {
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.staff')}</TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.contact')}</TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.position')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.skills')}</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                    {t('staff.serviceExpertise', 'Service Expertise')}
+                                </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.status')}</TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.actions')}</TableCell>
                             </TableRow>
@@ -516,8 +611,11 @@ const StaffResourceManagement: React.FC = () => {
                                                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                                             {staffMember.name}
                                                         </Typography>
+                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                                                            ID: {staffMember.id}
+                                                        </Typography>
                                                         <Typography variant="caption" color="text.secondary">
-                                                            {t('staff.hiredOn')} {staffMember.startDate ? new Date(staffMember.startDate).toLocaleDateString() : '-'}
+                                                            {t('staff.hiredOn')} {formatDate(staffMember.startDate)}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -527,7 +625,9 @@ const StaffResourceManagement: React.FC = () => {
                                                     {staffMember.phone && (
                                                         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                                                             <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                                            <Typography variant="body2">{staffMember.phone}</Typography>
+                                                            <Typography variant="body2">
+                                                                {staffMember.countryCode && `${staffMember.countryCode.replace(/-[A-Z]{2}$/, '')} `}{staffMember.phone}
+                                                            </Typography>
                                                         </Box>
                                                     )}
                                                     {staffMember.email && (
@@ -542,12 +642,116 @@ const StaffResourceManagement: React.FC = () => {
                                                 <Typography variant="body2">{staffMember.position || '-'}</Typography>
                                             </TableCell>
                                             <TableCell>
-                                                <Typography variant="body2" sx={{ maxWidth: 200 }}>
-                                                    {staffMember.skills || '-'}
-                                                </Typography>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 0.5,
+                                                        maxWidth: 280,
+                                                    }}
+                                                >
+                                                    {staffExpertise[staffMember.id] && staffExpertise[staffMember.id].length > 0 ? (
+                                                        <>
+                                                            {/* 显示前3个服务 */}
+                                                            {staffExpertise[staffMember.id].slice(0, 3).map((expertise) => (
+                                                                <Box
+                                                                    key={expertise.serviceId}
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1,
+                                                                    }}
+                                                                >
+                                                                    {/* 技能等级圆点 */}
+                                                                    <Box
+                                                                        sx={{
+                                                                            width: 8,
+                                                                            height: 8,
+                                                                            borderRadius: '50%',
+                                                                            bgcolor: getSkillLevelColor(expertise.skillLevel),
+                                                                            flexShrink: 0,
+                                                                        }}
+                                                                    />
+                                                                    {/* 服务名称 */}
+                                                                    <Typography
+                                                                        variant="body2"
+                                                                        sx={{
+                                                                            fontSize: '0.8rem',
+                                                                            color: 'text.primary',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            whiteSpace: 'nowrap',
+                                                                            flex: 1,
+                                                                        }}
+                                                                    >
+                                                                        {expertise.serviceName}
+                                                                    </Typography>
+                                                                    {/* 技能等级标签 */}
+                                                                    <Typography
+                                                                        variant="caption"
+                                                                        sx={{
+                                                                            fontSize: '0.65rem',
+                                                                            color: getSkillLevelColor(expertise.skillLevel),
+                                                                            fontWeight: 600,
+                                                                            px: 0.75,
+                                                                            py: 0.25,
+                                                                            borderRadius: 0.5,
+                                                                            bgcolor: alpha(getSkillLevelColor(expertise.skillLevel), 0.1),
+                                                                            flexShrink: 0,
+                                                                        }}
+                                                                    >
+                                                                        {getSkillLevelText(expertise.skillLevel).substring(0, 3)}
+                                                                    </Typography>
+                                                                </Box>
+                                                            ))}
+                                                            {/* 如果超过3个，显示"查看更多"按钮 */}
+                                                            {staffExpertise[staffMember.id].length > 3 && (
+                                                                <Box
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setExpertisePopoverAnchor(e.currentTarget);
+                                                                        setSelectedStaffIdForExpertise(staffMember.id);
+                                                                    }}
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 0.5,
+                                                                        cursor: 'pointer',
+                                                                        mt: 0.5,
+                                                                        py: 0.5,
+                                                                        '&:hover': {
+                                                                            '& .more-text': {
+                                                                                color: themeColor,
+                                                                                textDecoration: 'underline',
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <MoreHorizIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                                    <Typography
+                                                                        className="more-text"
+                                                                        variant="caption"
+                                                                        sx={{
+                                                                            fontSize: '0.75rem',
+                                                                            color: 'text.secondary',
+                                                                            fontWeight: 500,
+                                                                            transition: 'all 0.2s',
+                                                                        }}
+                                                                    >
+                                                                        {staffExpertise[staffMember.id].length - 3} more services
+                                                                    </Typography>
+                                                                </Box>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
+                                                            No services
+                                                        </Typography>
+                                                    )}
+                                                </Box>
                                             </TableCell>
                                             <TableCell>
-                                                {getStatusChip(staffMember.status)}
+                                                {getStatusChip(staffMember)}
                                             </TableCell>
                                             <TableCell>
                                                 <IconButton
@@ -586,58 +790,48 @@ const StaffResourceManagement: React.FC = () => {
                 open={Boolean(menuAnchorEl)}
                 onClose={() => setMenuAnchorEl(null)}
             >
-                <MenuItem
-                    onClick={() => {
-                        setStaffDialogOpen(true);
-                        setMenuAnchorEl(null);
-                    }}
-                >
-                    <EditIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t('staff.editStaff')}
-                </MenuItem>
-                {selectedStaff?.status === 'ACTIVE' && (
+                {hasPermission('staff:update') && (
                     <MenuItem
                         onClick={() => {
-                            handleSetInactive();
+                            setStaffDialogOpen(true);
                             setMenuAnchorEl(null);
                         }}
-                        sx={{ color: 'warning.main' }}
                     >
-                        <PersonOffIcon sx={{ mr: 1, fontSize: 18 }} />
-                        {t('staff.setInactive')}
+                        <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+                        {t('staff.editStaff')}
                     </MenuItem>
                 )}
-                {(selectedStaff?.status === 'INACTIVE' || selectedStaff?.status === 'MAINTENANCE' || selectedStaff?.status === 'VACATION') && (
+                {hasPermission('staff:manage_availability') && (
                     <MenuItem
                         onClick={() => {
-                            handleSetActive();
+                            setAvailabilityEditorOpen(true);
                             setMenuAnchorEl(null);
                         }}
-                        sx={{ color: 'success.main' }}
+                        sx={{ color: themeColor }}
                     >
-                        <PersonAddIcon sx={{ mr: 1, fontSize: 18 }} />
-                        {t('staff.setActive')}
+                        <ScheduleIcon sx={{ mr: 1, fontSize: 18 }} />
+                        {t('staff.advancedScheduleManagement')}
                     </MenuItem>
                 )}
-                <MenuItem
-                    onClick={() => {
-                        setDeleteDialogOpen(true);
-                        setMenuAnchorEl(null);
-                    }}
-                    sx={{ color: 'error.main' }}
-                >
-                    <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t('staff.deleteStaff')}
-                </MenuItem>
+                {hasPermission('staff:delete') && (
+                    <MenuItem
+                        onClick={() => {
+                            setDeleteDialogOpen(true);
+                            setMenuAnchorEl(null);
+                        }}
+                        sx={{ color: 'error.main' }}
+                    >
+                        <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+                        {t('staff.deleteStaff')}
+                    </MenuItem>
+                )}
             </Menu>
 
             {/* 员工对话框 */}
             <StaffDialog
                 open={staffDialogOpen}
-                onClose={() => {
-                    setStaffDialogOpen(false);
-                    setSelectedStaff(null);
-                }}
+                onClose={() => setStaffDialogOpen(false)}
+                onExited={() => setSelectedStaff(null)}
                 staff={selectedStaff}
                 onSave={handleSaveStaff}
             />
@@ -695,6 +889,209 @@ const StaffResourceManagement: React.FC = () => {
                     {successMessage}
                 </Alert>
             </Snackbar>
+
+            {/* 服务专长详情 Popover */}
+            <Popover
+                open={Boolean(expertisePopoverAnchor)}
+                anchorEl={expertisePopoverAnchor}
+                onClose={() => {
+                    setExpertisePopoverAnchor(null);
+                    setSelectedStaffIdForExpertise(null);
+                }}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                }}
+                PaperProps={{
+                    sx: {
+                        mt: 1,
+                        borderRadius: 3,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                        border: '1px solid #e5e7eb',
+                        maxWidth: 380,
+                        minWidth: 300,
+                    },
+                }}
+            >
+                <Box sx={{ p: 2.5 }}>
+                    {/* 标题 */}
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.95rem' }}>
+                            Service Expertise
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                            {selectedStaffIdForExpertise && staffExpertise[selectedStaffIdForExpertise]?.length > 0
+                                ? `${staffExpertise[selectedStaffIdForExpertise].length} services`
+                                : 'No services'}
+                        </Typography>
+                    </Box>
+
+                    {/* 服务列表 */}
+                    {selectedStaffIdForExpertise && staffExpertise[selectedStaffIdForExpertise] && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 360, overflowY: 'auto' }}>
+                            {staffExpertise[selectedStaffIdForExpertise].map((expertise) => (
+                                <Box
+                                    key={expertise.serviceId}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        p: 1.25,
+                                        borderRadius: 2,
+                                        backgroundColor: '#f8fafc',
+                                        border: '1px solid #e5e7eb',
+                                        transition: 'all 0.2s',
+                                        '&:hover': {
+                                            backgroundColor: '#f1f5f9',
+                                            borderColor: alpha(themeColor, 0.3),
+                                        }
+                                    }}
+                                >
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            fontWeight: 500,
+                                            color: 'text.primary',
+                                            fontSize: '0.85rem',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                            flex: 1,
+                                            mr: 1.5,
+                                        }}
+                                    >
+                                        {expertise.serviceName}
+                                    </Typography>
+                                    <Chip
+                                        label={getSkillLevelText(expertise.skillLevel)}
+                                        size="small"
+                                        sx={{
+                                            height: 22,
+                                            fontSize: '0.7rem',
+                                            fontWeight: 600,
+                                            backgroundColor: alpha(getSkillLevelColor(expertise.skillLevel), 0.1),
+                                            color: getSkillLevelColor(expertise.skillLevel),
+                                            border: `1px solid ${alpha(getSkillLevelColor(expertise.skillLevel), 0.3)}`,
+                                            '& .MuiChip-label': {
+                                                px: 1.25,
+                                            },
+                                        }}
+                                    />
+                                </Box>
+                            ))}
+                        </Box>
+                    )}
+                </Box>
+            </Popover>
+
+            {/* Advanced Schedule Management Editor */}
+            {selectedStaff && (
+                <StaffAvailabilityEditor
+                    open={availabilityEditorOpen}
+                    onClose={() => {
+                        setAvailabilityEditorOpen(false);
+                        setSelectedStaff(null);
+                    }}
+                    staffId={selectedStaff.id}
+                    staffName={selectedStaff.name}
+                    onSave={() => {
+                        // Optionally refresh staff list
+                        setSuccessMessage(t('staff.availabilityEditor.messages.saveSuccess'));
+                        setTimeout(() => setSuccessMessage(null), 2000);
+                    }}
+                />
+            )}
+
+            {/* 状态切换菜单 */}
+            <Menu
+                anchorEl={statusMenuAnchor}
+                open={Boolean(statusMenuAnchor)}
+                onClose={() => {
+                    setStatusMenuAnchor(null);
+                    setSelectedStaffForStatus(null);
+                }}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                        minWidth: 180,
+                    },
+                }}
+            >
+                <MenuItem
+                    onClick={() => {
+                        if (selectedStaffForStatus) {
+                            handleStatusChange(selectedStaffForStatus, 'ACTIVE');
+                        }
+                        setStatusMenuAnchor(null);
+                        setSelectedStaffForStatus(null);
+                    }}
+                    disabled={selectedStaffForStatus?.status === 'ACTIVE'}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                        <Box
+                            sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                bgcolor: '#10B981',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <Typography variant="body2">{t('staff.statusOptions.active')}</Typography>
+                    </Box>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        if (selectedStaffForStatus) {
+                            handleStatusChange(selectedStaffForStatus, 'INACTIVE');
+                        }
+                        setStatusMenuAnchor(null);
+                        setSelectedStaffForStatus(null);
+                    }}
+                    disabled={selectedStaffForStatus?.status === 'INACTIVE'}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                        <Box
+                            sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                bgcolor: '#EF4444',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <Typography variant="body2">{t('staff.statusOptions.inactive')}</Typography>
+                    </Box>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        if (selectedStaffForStatus) {
+                            handleStatusChange(selectedStaffForStatus, 'VACATION');
+                        }
+                        setStatusMenuAnchor(null);
+                        setSelectedStaffForStatus(null);
+                    }}
+                    disabled={selectedStaffForStatus?.status === 'VACATION'}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                        <Box
+                            sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                bgcolor: '#8B5CF6',
+                                flexShrink: 0,
+                            }}
+                        />
+                        <Typography variant="body2">{t('staff.statusOptions.vacation')}</Typography>
+                    </Box>
+                </MenuItem>
+            </Menu>
         </Box>
     );
 };

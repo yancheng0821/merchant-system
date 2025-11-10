@@ -46,7 +46,7 @@
             os.service_id as serviceId,
             os.service_name as serviceName,
             os.service_category as serviceCategory,
-            DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
+            DATE(o.created_at) as statDate,
             COUNT(*) as orderCount,
             SUM(os.quantity) as totalQuantity,
             SUM(os.price * os.quantity) as totalRevenue,
@@ -54,9 +54,9 @@
         FROM order_services os
         JOIN orders o ON os.order_id = o.id
         WHERE o.tenant_id = #{tenantId}
-        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND DATE(o.created_at) BETWEEN #{startDate} AND #{endDate}
         AND o.payment_status = 'paid'
-        GROUP BY os.service_id, os.service_name, os.service_category, DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver'))
+        GROUP BY os.service_id, os.service_name, os.service_category, DATE(o.created_at)
         ORDER BY statDate, totalRevenue DESC
     </select>
 
@@ -64,7 +64,7 @@
         SELECT 
             COALESCE(os.assigned_resource_id, o.resource_id) as staffId,
             COALESCE(r.name, 'Unknown Staff') as staffName,
-            DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) as statDate,
+            DATE(o.created_at) as statDate,
             COUNT(*) as orderCount,
             SUM(os.price * os.quantity) as totalRevenue,
             AVG(4.5) as avgRating,
@@ -75,10 +75,10 @@
         JOIN orders o ON os.order_id = o.id
         LEFT JOIN resources r ON COALESCE(os.assigned_resource_id, o.resource_id) = r.id
         WHERE o.tenant_id = #{tenantId}
-        AND DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver')) BETWEEN #{startDate} AND #{endDate}
+        AND DATE(o.created_at) BETWEEN #{startDate} AND #{endDate}
         AND o.payment_status = 'paid'
         AND (os.assigned_resource_id IS NOT NULL OR o.resource_id IS NOT NULL)
-        GROUP BY COALESCE(os.assigned_resource_id, o.resource_id), COALESCE(r.name, 'Unknown Staff'), DATE(CONVERT_TZ(o.created_at, '+00:00', 'America/Vancouver'))
+        GROUP BY COALESCE(os.assigned_resource_id, o.resource_id), COALESCE(r.name, 'Unknown Staff'), DATE(o.created_at)
         ORDER BY statDate, totalRevenue DESC
     </select>
 

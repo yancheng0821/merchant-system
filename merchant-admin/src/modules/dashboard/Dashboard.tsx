@@ -55,12 +55,15 @@ import {
   ExpandLess as ExpandLessIcon,
   Refresh as RefreshIcon,
   Room as RoomIcon,
+  Store as StoreIcon,
+  Badge as BadgeIcon,
 } from '@mui/icons-material';
 import IconButton from '@mui/material/IconButton';
 import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, getFullImageUrl } from '../../services/api';
+import { getMerchantNow } from '../../utils/timezoneUtils';
 
 // 时间范围类型
 type TimeRange = '7days' | '30days' | '6months' | '1year';
@@ -110,7 +113,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
@@ -142,6 +145,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       case '1year': return 365;
       default: return 30;
     }
+  };
+
+  // 根据当前语言获取通知标题和内容
+  const getLocalizedText = (notification: any) => {
+    const isZh = i18n.language === 'zh' || i18n.language === 'zh-CN';
+    return {
+      title: isZh
+        ? (notification.titleZh || notification.title)
+        : (notification.titleEn || notification.title),
+      content: isZh
+        ? (notification.contentZh || notification.content)
+        : (notification.contentEn || notification.content),
+    };
   };
 
   // 请求浏览器通知权限
@@ -181,34 +197,40 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       
       const { notifications: businessNotifications, unreadCount } = data || { notifications: [], unreadCount: 0 };
 
-      if (businessNotifications.length > 0) {
+      // 过滤掉系统维度的通知，只显示业务通知
+      const filteredNotifications = businessNotifications.filter(
+        (notification: any) => notification.notificationType !== 'SYSTEM_NOTIFICATION'
+      );
+
+      if (filteredNotifications.length > 0) {
         // 找出新通知
-        const newNotifications = lastNotificationTime 
-          ? businessNotifications.filter((notification: any) => new Date(notification.createdAt) > lastNotificationTime)
+        const newNotifications = lastNotificationTime
+          ? filteredNotifications.filter((notification: any) => new Date(notification.createdAt) > lastNotificationTime)
           : [];
 
         if (newNotifications.length > 0) {
           // 更新未读计数
           setUnreadNotificationCount(unreadCount);
-          
+
           // 显示浏览器通知（只显示最新的一条）
           const latestNotification = newNotifications[0];
+          const localizedLatest = getLocalizedText(latestNotification);
           let notificationTitle = t('dashboard.newNotifications');
-          let notificationBody = latestNotification.recipient || latestNotification.content?.substring(0, 100);
-          
+          let notificationBody = latestNotification.recipient || localizedLatest.content?.substring(0, 100);
+
           if (latestNotification.templateCode?.includes('appointment_created')) {
             notificationTitle = t('dashboard.newAppointmentAlert');
           } else if (latestNotification.templateCode?.includes('reminder')) {
             notificationTitle = t('dashboard.upcomingAppointmentAlert');
           }
-          
+
           showBrowserNotification(notificationTitle, notificationBody);
         }
 
         // 更新通知列表和最后通知时间 - 限制最多50条
-        setNotifications(businessNotifications.slice(0, 50));
-        if (businessNotifications.length > 0) {
-          setLastNotificationTime(new Date(businessNotifications[0].createdAt));
+        setNotifications(filteredNotifications.slice(0, 50));
+        if (filteredNotifications.length > 0) {
+          setLastNotificationTime(new Date(filteredNotifications[0].createdAt));
         }
       }
     } catch (error) {
@@ -290,7 +312,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           },
         }).then(res => res.json())
           .then((data: any) => {
-            return data?.notifications || [];
+            // 过滤掉系统维度的通知，只保留业务通知
+            const allNotifications = data?.notifications || [];
+            return allNotifications.filter((n: any) => n.notificationType !== 'SYSTEM_NOTIFICATION');
           })
           .catch((error) => {
             console.error('Failed to fetch initial notifications:', error);
@@ -376,42 +400,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       
       // 处理员工状态数据（仅在资源类型包含员工时）
       if ((resourceType === 'STAFF' || resourceType === 'BOTH') && staffList && staffList.length > 0) {
+        const now = new Date();
+        // 使用本地日期，而不是UTC日期
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
+        const currentTime = now.toTimeString().slice(0, 5); // HH:mm
+
         const staffWithStatus = staffList.map((staff: any) => {
           // 根据员工的当前预约情况判断状态
-          const now = new Date();
-          const today = now.toISOString().split('T')[0];
-          const currentTime = now.toTimeString().slice(0, 5); // HH:mm
-          
-          // 查找当前的预约（排除已取消的）
+
+          // 查找当前正在进行的预约
           const currentAppointments = appointments.filter((apt: any) => {
-            // 排除已取消的预约
-            if (apt.status === 'CANCELLED' || apt.status === 'CANCELED') return false;
+            // 排除已取消、未出现和已完成的预约
+            if (apt.status === 'CANCELLED' || apt.status === 'CANCELED' || apt.status === 'NO_SHOW' || apt.status === 'COMPLETED') return false;
             if (apt.appointmentDate !== today) return false;
             const aptTime = apt.appointmentTime;
             const duration = apt.duration || 60; // 默认60分钟
             const aptEndTime = new Date(`${today} ${aptTime}`);
             aptEndTime.setMinutes(aptEndTime.getMinutes() + duration);
             const aptEndTimeStr = aptEndTime.toTimeString().slice(0, 5);
-            
+
             // 检查是否有员工分配 - 使用resourceId作为员工ID
-            let hasStaff = apt.appointmentServices?.some((svc: any) => 
+            let hasStaff = apt.appointmentServices?.some((svc: any) =>
               svc.staffId === staff.id || svc.resourceId === staff.id
             ) || apt.staffId === staff.id || apt.resourceId === staff.id;
-            
+
             // 也检查appointmentResources数组
             if (!hasStaff && apt.appointmentResources && apt.appointmentResources.length > 0) {
-              hasStaff = apt.appointmentResources.some((res: any) => 
+              hasStaff = apt.appointmentResources.some((res: any) =>
                 res.resourceId === staff.id && res.resourceType === 'STAFF'
               );
             }
-            
-            return hasStaff && aptTime <= currentTime && aptEndTimeStr > currentTime;
+
+            const isInTimeRange = aptTime <= currentTime && aptEndTimeStr > currentTime;
+
+            return hasStaff && isInTimeRange;
           });
           
           let status = 'offline';
           let currentService = null;
           let endTime = null;
-          
+
           // 资源对象的status字段
           if (staff.status === 'ACTIVE') {
             if (currentAppointments.length > 0) {
@@ -428,7 +459,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           } else if (staff.status === 'MAINTENANCE') {
             status = 'maintenance';
           }
-          
+
           return {
             name: staff.name || staff.resourceName,
             avatar: staff.images?.[0] || staff.avatar || staff.photo,
@@ -447,30 +478,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         const roomWithStatus = roomList.map((room: any) => {
           // 根据房间的当前预约情况判断状态
           const now = new Date();
-          const today = now.toISOString().split('T')[0];
+          // 使用本地日期，而不是UTC日期
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const today = `${year}-${month}-${day}`;
           const currentTime = now.toTimeString().slice(0, 5); // HH:mm
           
-          // 查找当前的预约（排除已取消的）
+          // 查找当前正在进行的预约
           const currentAppointments = appointments.filter((apt: any) => {
-            // 排除已取消的预约
-            if (apt.status === 'CANCELLED' || apt.status === 'CANCELED') return false;
+            // 排除已取消、未出现和已完成的预约
+            if (apt.status === 'CANCELLED' || apt.status === 'CANCELED' || apt.status === 'NO_SHOW' || apt.status === 'COMPLETED') return false;
             if (apt.appointmentDate !== today) return false;
             const aptTime = apt.appointmentTime;
             const duration = apt.duration || 60; // 默认60分钟
             const aptEndTime = new Date(`${today} ${aptTime}`);
             aptEndTime.setMinutes(aptEndTime.getMinutes() + duration);
             const aptEndTimeStr = aptEndTime.toTimeString().slice(0, 5);
-            
+
             // 检查是否使用这个房间
             let hasRoom = apt.roomId === room.id || apt.resourceId === room.id;
-            
+
             // 也检查appointmentResources数组
             if (!hasRoom && apt.appointmentResources && apt.appointmentResources.length > 0) {
-              hasRoom = apt.appointmentResources.some((res: any) => 
+              hasRoom = apt.appointmentResources.some((res: any) =>
                 res.resourceId === room.id && res.resourceType === 'ROOM'
               );
             }
-            
+
             return hasRoom && aptTime <= currentTime && aptEndTimeStr > currentTime;
           });
           
@@ -661,13 +696,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   return (
     <Box>
-      {/* 加载状态 */}
-      <Backdrop
-        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={loading}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
           <Typography 
@@ -904,46 +932,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 {notifications.length > 0 ? notifications
                   .slice(0, isNotificationExpanded ? 50 : 3)
                   .map((notification: any, index: number) => {
+                  // 获取多语言文本
+                  const localizedText = getLocalizedText(notification);
+
                   // 根据通知类型设置图标和颜色
                   let icon, color, title;
-                  
+
                   // 使用业务通知类型
                   if (notification.notificationType === 'NEW_APPOINTMENT') {
                     icon = <AddCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
                     color = '#10B981';
-                    title = notification.title || t('dashboard.newAppointmentAlert');
+                    title = localizedText.title || t('dashboard.newAppointmentAlert');
                   } else if (notification.notificationType === 'APPOINTMENT_REMINDER') {
                     icon = <ScheduleIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
                     color = '#F59E0B';
-                    title = notification.title || t('dashboard.upcomingAppointmentAlert');
+                    title = localizedText.title || t('dashboard.upcomingAppointmentAlert');
                   } else if (notification.notificationType === 'APPOINTMENT_CANCELLED') {
                     icon = <WarningIcon sx={{ fontSize: 18, color: '#EF4444' }} />;
                     color = '#EF4444';
-                    title = notification.title || t('dashboard.appointmentCancelledAlert');
+                    title = localizedText.title || t('dashboard.appointmentCancelledAlert');
                   } else if (notification.notificationType === 'APPOINTMENT_CONFIRMED') {
                     icon = <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
                     color = '#10B981';
-                    title = notification.title || t('dashboard.appointmentConfirmedAlert');
+                    title = localizedText.title || t('dashboard.appointmentConfirmedAlert');
                   } else if (notification.notificationType === 'PENDING_CONFIRMATION') {
                     icon = <ScheduleIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
                     color = '#F59E0B';
-                    title = notification.title || t('dashboard.pendingConfirmation');
+                    title = localizedText.title || t('dashboard.pendingConfirmation');
                   } else if (notification.level === 'ERROR') {
                     icon = <WarningIcon sx={{ fontSize: 18, color: '#EF4444' }} />;
                     color = '#EF4444';
-                    title = notification.title || t('dashboard.error');
+                    title = localizedText.title || t('dashboard.error');
                   } else if (notification.level === 'WARNING') {
                     icon = <WarningIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
                     color = '#F59E0B';
-                    title = notification.title || t('dashboard.warning');
+                    title = localizedText.title || t('dashboard.warning');
                   } else if (notification.level === 'SUCCESS') {
                     icon = <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
                     color = '#10B981';
-                    title = notification.title || t('dashboard.success');
+                    title = localizedText.title || t('dashboard.success');
                   } else {
                     icon = <InfoIcon sx={{ fontSize: 18, color: '#6366F1' }} />;
                     color = '#6366F1';
-                    title = notification.title || t('dashboard.notification');
+                    title = localizedText.title || t('dashboard.notification');
                   }
                   
                   // 计算时间差
@@ -951,12 +982,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   const now = new Date();
                   const diffMinutes = Math.floor((now.getTime() - createdTime.getTime()) / (1000 * 60));
                   let timeAgo = '';
-                  if (diffMinutes < 60) {
-                    timeAgo = `${diffMinutes}${t('dashboard.minutesAgo')}`;
+
+                  // 处理负数时间差（时区问题或未来时间）
+                  if (diffMinutes < 0) {
+                    timeAgo = t('dashboard.justNow');
+                  } else if (diffMinutes < 1) {
+                    timeAgo = t('dashboard.justNow');
+                  } else if (diffMinutes < 60) {
+                    timeAgo = `${diffMinutes} ${t('dashboard.minutesAgo')}`;
                   } else if (diffMinutes < 1440) {
-                    timeAgo = `${Math.floor(diffMinutes / 60)}${t('dashboard.hoursAgo')}`;
+                    timeAgo = `${Math.floor(diffMinutes / 60)} ${t('dashboard.hoursAgo')}`;
                   } else {
-                    timeAgo = `${Math.floor(diffMinutes / 1440)}${t('dashboard.daysAgo')}`;
+                    timeAgo = `${Math.floor(diffMinutes / 1440)} ${t('dashboard.daysAgo')}`;
                   }
                   
                   return (
@@ -983,7 +1020,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             {title}
                           </Typography>
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                            {notification.content || t('dashboard.notificationContent')}
+                            {localizedText.content || t('dashboard.notificationContent')}
                           </Typography>
                           <Typography variant="caption" color="text.disabled">
                             {timeAgo}
@@ -1037,29 +1074,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* 快捷操作按钮 */}
               <Grid container spacing={2}>
                 {[
-                  { 
-                    icon: <AddCircleIcon />, 
-                    label: t('dashboard.createAppointment'), 
-                    color: '#8B5CF6', // Purple - Appointments theme
-                    onClick: () => onNavigate?.('appointments')
+                  {
+                    icon: <CalendarTodayIcon />,
+                    label: t('dashboard.viewSchedule'),
+                    color: '#3B82F6', // Blue - Schedule theme
+                    onClick: () => onNavigate?.('schedule')
                   },
-                  { 
-                    icon: <CalendarTodayIcon />, 
-                    label: t('dashboard.todaySchedule'), 
-                    color: '#8B5CF6', // Purple - Appointments theme
-                    onClick: () => onNavigate?.('appointments')
-                  },
-                  { 
-                    icon: <PersonPinIcon />, 
-                    label: t('dashboard.addCustomer'), 
+                  {
+                    icon: <PersonPinIcon />,
+                    label: t('dashboard.addCustomer'),
                     color: '#EC4899', // Pink - Customers theme
                     onClick: () => onNavigate?.('customers')
                   },
-                  { 
-                    icon: <ListAltIcon />, 
-                    label: t('dashboard.viewOrders'), 
-                    color: '#10B981', // Green - Orders theme
-                    onClick: () => onNavigate?.('payments')
+                  {
+                    icon: <StoreIcon />,
+                    label: t('dashboard.manageServices'),
+                    color: '#06B6D4', // Cyan - Products/Services theme
+                    onClick: () => onNavigate?.('products')
+                  },
+                  {
+                    icon: <BadgeIcon />,
+                    label: t('dashboard.manageStaff'),
+                    color: '#3B82F6', // Blue - Resources theme
+                    onClick: () => onNavigate?.('resources')
                   },
                 ].map((action, index) => (
                   <Grid item xs={6} key={index}>
@@ -1082,8 +1119,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         transition: 'all 0.2s',
                       }}
                     >
-                      {React.cloneElement(action.icon, { 
-                        sx: { fontSize: 28, mb: 1, color: action.color } 
+                      {React.cloneElement(action.icon, {
+                        sx: { fontSize: 28, mb: 1, color: action.color }
                       })}
                       <Typography variant="caption" sx={{ fontWeight: 500 }}>
                         {action.label}
@@ -1232,20 +1269,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     outerRadius={120}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, value }) => `${name} ${value.toFixed(1)}%`}
                     labelLine={false}
                   >
                     {categoryData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
+                      <Cell
+                        key={`cell-${index}`}
                         fill={`url(#gradient${index})`}
                         stroke="white"
                         strokeWidth={2}
                       />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    formatter={(value: number) => [`${value}%`, '占比']}
+                  <Tooltip
+                    formatter={(value: number) => [`${value.toFixed(1)}%`, t('dashboard.percentage')]}
                     contentStyle={{
                       backgroundColor: 'rgba(255,255,255,0.95)',
                       border: 'none',
@@ -1565,12 +1602,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   { name: t('dashboard.noResourceData'), avatar: '', status: 'offline', currentService: null, endTime: null, type: 'staff' },
                 ]).map((resource, index) => {
                   const statusConfig = {
-                    busy: { color: '#EF4444', label: t('dashboard.busy'), icon: '🔴' },
+                    busy: { color: '#F59E0B', label: t('dashboard.busy'), icon: '🟡' },
                     available: { color: '#10B981', label: t('dashboard.available'), icon: '🟢' },
                     break: { color: '#F59E0B', label: t('dashboard.onBreak'), icon: '🟡' },
                     maintenance: { color: '#F59E0B', label: t('dashboard.maintenance'), icon: '🔧' },
                     offline: { color: '#6B7280', label: t('dashboard.offline'), icon: '⚫' },
-                  }[resource.status as 'busy' | 'available' | 'break' | 'maintenance' | 'offline'] || 
+                  }[resource.status as 'busy' | 'available' | 'break' | 'maintenance' | 'offline'] ||
                   { color: '#6B7280', label: t('dashboard.offline'), icon: '⚫' };
 
                   return (
@@ -1590,11 +1627,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           },
                         }}
                       >
-                        <Box display="flex" alignItems="center" gap={2} mb={1}>
-                          <Avatar 
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar
                             src={getFullImageUrl(resource.avatar)}
-                            sx={{ 
-                              width: 40, 
+                            sx={{
+                              width: 40,
                               height: 40,
                               bgcolor: alpha(statusConfig.color, 0.2),
                               color: statusConfig.color,
@@ -1603,58 +1640,85 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           >
                             {resource.type === 'room' ? <RoomIcon /> : (resource.name?.[0] || '?')}
                           </Avatar>
-                          <Box flex={1}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                {resource.name}
-                              </Typography>
-                              {resource.type === 'room' && (
-                                <Chip
-                                  label={t('dashboard.room')}
-                                  size="small"
-                                  sx={{
-                                    height: 18,
-                                    fontSize: '0.7rem',
-                                    bgcolor: alpha('#8B5CF6', 0.1),
-                                    color: '#8B5CF6',
-                                    fontWeight: 600,
-                                  }}
-                                />
-                              )}
-                            </Box>
-                            <Box>
+                          <Box flex={1} display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0 }}>
+                            {/* 左侧：员工姓名和状态 */}
+                            <Box flex={resource.currentService ? '0 0 auto' : 1}>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                  {resource.name}
+                                </Typography>
+                                {resource.type === 'room' && (
+                                  <Chip
+                                    label={t('dashboard.room')}
+                                    size="small"
+                                    sx={{
+                                      height: 18,
+                                      fontSize: '0.7rem',
+                                      bgcolor: alpha('#8B5CF6', 0.1),
+                                      color: '#8B5CF6',
+                                      fontWeight: 600,
+                                    }}
+                                  />
+                                )}
+                              </Box>
                               <Box display="flex" alignItems="center" gap={0.5}>
                                 <Typography variant="caption">{statusConfig.icon}</Typography>
-                                <Typography 
-                                  variant="caption" 
-                                  sx={{ 
+                                <Typography
+                                  variant="caption"
+                                  sx={{
                                     color: statusConfig.color,
                                     fontWeight: 500,
                                   }}
                                 >
                                   {statusConfig.label}
                                 </Typography>
-                              </Box>
-                              {resource.type === 'room' && resource.capacity && (
-                                <Box display="flex" alignItems="center" gap={0.5}>
+                                {resource.type === 'room' && resource.capacity && (
                                   <Typography variant="caption" color="text.secondary">
-                                    {t('dashboard.capacity')}: {resource.capacity}
+                                    • {t('dashboard.capacity')}: {resource.capacity}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+
+                            {/* 竖杠分隔 + 右侧：服务信息 */}
+                            {resource.currentService && (
+                              <>
+                                <Box
+                                  sx={{
+                                    width: '1px',
+                                    height: '32px',
+                                    bgcolor: alpha(statusConfig.color, 0.3),
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <Box flex={1} sx={{ minWidth: 0 }}>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                      display: 'block',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {resource.currentService}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: 'block',
+                                      color: statusConfig.color,
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {t('dashboard.until')} {resource.endTime}
                                   </Typography>
                                 </Box>
-                              )}
-                            </Box>
+                              </>
+                            )}
                           </Box>
                         </Box>
-                        {resource.currentService && (
-                          <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${alpha(statusConfig.color, 0.1)}` }}>
-                            <Typography variant="caption" color="text.secondary">
-                              {resource.currentService}
-                            </Typography>
-                            <Typography variant="caption" display="block" sx={{ color: statusConfig.color, fontWeight: 500 }}>
-                              {t('dashboard.until')} {resource.endTime}
-                            </Typography>
-                          </Box>
-                        )}
                         {resource.type === 'room' && resource.location && (
                           <Box sx={{ mt: 0.5 }}>
                             <Typography variant="caption" color="text.secondary">
@@ -1677,7 +1741,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#EF4444' }} />
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#F59E0B' }} />
                   <Typography variant="caption">
                     {t('dashboard.busy')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'busy').length}
                   </Typography>
@@ -1859,11 +1923,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </Box>
                 </Box>
                 <Box display="flex" gap={1}>
-                  <Chip 
+                  <Chip
                     icon={<CalendarTodayIcon sx={{ fontSize: 16 }} />}
-                    label={new Date().toLocaleDateString()} 
+                    label={getMerchantNow().toLocaleDateString()}
                     size="small"
-                    sx={{ 
+                    sx={{
                       bgcolor: alpha('#06B6D4', 0.1),
                       color: '#06B6D4',
                       fontWeight: 600,
@@ -1987,11 +2051,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           currentTimeInserted = true;
                         }
                         
-                        // 渲染预约
+                        // 渲染预约 - 状态完全基于预约的实际状态，不基于时间
                         const isCompleted = appointment.status === 'COMPLETED';
-                        const isCurrent = appointment.status === 'IN_PROGRESS';
+                        const isCurrent = appointment.status === 'CHECKED_IN' || appointment.status === 'IN_PROGRESS';
+                        const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
                         const isPending = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
-                        const isPast = appointmentTimeStr < currentTimeStr && !isCompleted && !isCurrent;
                         
                         elements.push(
                         <React.Fragment key={appointment.id}>
@@ -2016,27 +2080,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               width: 14,
                               height: 14,
                               borderRadius: '50%',
-                              bgcolor: isCompleted ? '#10B981' : 
-                                      isCurrent ? '#F59E0B' : 
-                                      isPast ? '#6B7280' :
+                              bgcolor: isCompleted ? '#10B981' :
+                                      isCurrent ? '#F59E0B' :
+                                      isCancelled ? '#EF4444' :
                                       '#3B82F6',
                               border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 'none',
                               zIndex: 1,
                             }} />
-                            
+
                             {/* 预约信息 */}
                             <Box sx={{
                               ml: 2,
                               p: 2.5,
                               borderRadius: 2,
-                              background: isCompleted ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02))' : 
-                                        isCurrent ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02))' : 
-                                        isPast ? 'linear-gradient(135deg, rgba(107, 114, 128, 0.05), rgba(107, 114, 128, 0.02))' :
+                              background: isCompleted ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02))' :
+                                        isCurrent ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02))' :
+                                        isCancelled ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.02))' :
                                         'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
                               border: `1px solid ${
-                                isCompleted ? alpha('#10B981', 0.2) : 
-                                isCurrent ? alpha('#F59E0B', 0.3) : 
-                                isPast ? alpha('#6B7280', 0.1) :
+                                isCompleted ? alpha('#10B981', 0.2) :
+                                isCurrent ? alpha('#F59E0B', 0.3) :
+                                isCancelled ? alpha('#EF4444', 0.2) :
                                 alpha('#3B82F6', 0.2)
                               }`,
                               transition: 'all 0.3s ease',
@@ -2054,9 +2118,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 </Box>
                                 <Chip
                                   label={
-                                    appointment.status === 'COMPLETED' ? t('dashboard.completed') : 
-                                    appointment.status === 'IN_PROGRESS' ? t('dashboard.inProgress') : 
-                                    isPast ? t('dashboard.overdue') :
+                                    isCompleted ? t('dashboard.completed') :
+                                    isCurrent ? t('dashboard.inProgress') :
+                                    isCancelled ? (appointment.status === 'NO_SHOW' ? t('dashboard.noShow') : t('dashboard.cancelled')) :
                                     t('dashboard.pending')
                                   }
                                   size="small"
@@ -2064,13 +2128,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                     height: 22,
                                     fontSize: '0.75rem',
                                     fontWeight: 600,
-                                    bgcolor: isCompleted ? alpha('#10B981', 0.15) : 
-                                            isCurrent ? alpha('#F59E0B', 0.15) : 
-                                            isPast ? alpha('#6B7280', 0.15) :
+                                    bgcolor: isCompleted ? alpha('#10B981', 0.15) :
+                                            isCurrent ? alpha('#F59E0B', 0.15) :
+                                            isCancelled ? alpha('#EF4444', 0.15) :
                                             alpha('#3B82F6', 0.15),
-                                    color: isCompleted ? '#10B981' : 
-                                          isCurrent ? '#F59E0B' : 
-                                          isPast ? '#6B7280' :
+                                    color: isCompleted ? '#10B981' :
+                                          isCurrent ? '#F59E0B' :
+                                          isCancelled ? '#EF4444' :
                                           '#3B82F6',
                                     border: 'none',
                                   }}

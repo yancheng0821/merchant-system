@@ -23,66 +23,42 @@ const getApiBaseUrl = (): string => {
 // 工具函数：获取完整的文件URL
 export const getFullImageUrl = (imageUrl?: string): string | undefined => {
   if (!imageUrl) return undefined;
-  
+
   // 如果已经是完整URL，检查是否需要修正域名
   if (imageUrl.startsWith('http')) {
     // 修正错误的域名
-    if (imageUrl.startsWith('https://swiftmerchantplatform.com/api/') || 
+    if (imageUrl.startsWith('https://swiftmerchantplatform.com/api/') ||
         imageUrl.startsWith('http://swiftmerchantplatform.com/api/')) {
       // 替换为正确的API域名
       return imageUrl.replace(/https?:\/\/swiftmerchantplatform\.com\/api\//, 'https://api.swiftmerchantplatform.com/api/');
     }
     return imageUrl;
   }
-  
+
   // data: 和 blob: URL直接返回
   if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return imageUrl;
   }
-  
-  // 处理旧的头像路径格式，将 /api/users/avatar 改为 /api/auth/users/avatar
-  let processedUrl = imageUrl;
-  if (imageUrl.includes('/api/users/avatar/')) {
-    processedUrl = imageUrl.replace('/api/users/avatar/', '/api/auth/users/avatar/');
+
+  // 如果是静态资源路径（/static/uploads/），直接拼接完整URL
+  if (imageUrl.startsWith('/static/uploads/')) {
+    const apiBaseUrl = getApiBaseUrl();
+    return `${apiBaseUrl}${imageUrl}`;
   }
-  
-  // 使用正确的API基础URL
+
+  // 其他路径，拼接API基础URL
   const apiBaseUrl = getApiBaseUrl();
-  
-  // 通过gateway访问文件
-  return `${apiBaseUrl}${processedUrl}`;
+  return `${apiBaseUrl}${imageUrl}`;
 };
 
-// 文件上传API
+// 文件上传API - 保留房间图标上传功能
 export const fileUploadApi = {
-    // 上传头像
-    uploadAvatar: async (file: File, tenantId: number): Promise<string> => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('tenantId', tenantId.toString());
-        
-        const response = await fetch(`${API_BASE_URL}/api/auth/files/upload/avatar`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-        });
-        
-        if (!response.ok) {
-            throw new Error('Upload failed');
-        }
-        
-        const result = await response.json();
-        return result.url; // 返回文件访问URL
-    },
-    
     // 上传房间图标
     uploadRoomIcon: async (file: File, tenantId: number): Promise<string> => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('tenantId', tenantId.toString());
-        
+
         const response = await fetch(`${API_BASE_URL}/api/auth/files/upload/room-icon`, {
             method: 'POST',
             body: formData,
@@ -90,29 +66,13 @@ export const fileUploadApi = {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
         });
-        
+
         if (!response.ok) {
             throw new Error('Upload failed');
         }
-        
+
         const result = await response.json();
         return result.url; // 返回文件访问URL
-    },
-    
-    // 删除文件
-    deleteFile: async (fileUrl: string): Promise<void> => {
-        const response = await fetch(`${API_BASE_URL}/api/auth/files/delete`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify({ fileUrl }),
-        });
-        
-        if (!response.ok) {
-            throw new Error('Delete failed');
-        }
     },
 };
 
@@ -221,11 +181,31 @@ export const merchantConfigApi = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch all configs');
     }
-    
+
+    return response.json();
+  },
+
+  // 获取单个配置项
+  getConfigByKey: async (tenantId: number, configKey: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/merchant/config/${tenantId}/config/${configKey}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null; // 配置不存在
+      }
+      throw new Error('Failed to fetch config by key');
+    }
+
     return response.json();
   },
 
@@ -260,8 +240,23 @@ export const merchantConfigApi = {
   },
 };
 
+// 用于防止重复刷新token的标志
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: Function; reject: Function }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // 请求拦截器
-const createRequest = async (url: string, options: RequestInit = {}) => {
+const createRequest = async (url: string, options: RequestInit = {}, isRetry: boolean = false): Promise<any> => {
   const token = localStorage.getItem('token');
 
   // 对于文件上传，不设置Content-Type，让浏览器自动设置
@@ -272,7 +267,7 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
     ...(token && { 'Authorization': `Bearer ${token}` }),
     'Accept-Language': i18n.language === 'zh-CN' ? 'zh' : 'en',
   };
-  
+
 
 
   const config: RequestInit = {
@@ -290,31 +285,101 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
     // 添加超时控制
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
-    
+
     const response = await fetch(`${API_BASE_URL}${url}`, {
       ...config,
       signal: controller.signal
     });
-    
+
     clearTimeout(timeoutId);
 
     // 检查是否是401未授权响应（session过期）
-    if (response.status === 401) {
-      console.log('Session expired - 401 response received');
-      // 清除本地存储的认证信息
-      tokenManager.clearAll();
-      localStorage.removeItem('user');
-      
-      // 触发session过期事件
-      const event = new CustomEvent('sessionExpired', { 
-        detail: { reason: 'Unauthorized API response' } 
-      });
-      window.dispatchEvent(event);
-      
-      // 抛出错误以停止后续处理
-      const error = new Error('Session expired');
-      (error as any).status = 401;
-      throw error;
+    if (response.status === 401 && !isRetry) {
+      console.log('Received 401, attempting to refresh token...');
+
+      const refreshToken = tokenManager.getRefreshToken();
+
+      if (!refreshToken) {
+        console.log('No refresh token available');
+        // 没有refresh token，直接登出
+        // 清除所有待处理请求
+        processQueue(new Error('Session expired'), null);
+        isRefreshing = false;
+
+        tokenManager.clearAll();
+        localStorage.removeItem('user');
+        const event = new CustomEvent('sessionExpired', {
+          detail: { reason: 'No refresh token available' }
+        });
+        window.dispatchEvent(event);
+        const error = new Error('Session expired');
+        (error as any).status = 401;
+        throw error;
+      }
+
+      // 如果正在刷新token，将当前请求加入队列
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          // 使用新token重试请求
+          return createRequest(url, options, true);
+        }).catch(error => {
+          // 如果refresh失败，不再重试
+          throw error;
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        // 尝试刷新token
+        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshResponse.ok) {
+          const result = await refreshResponse.json();
+          if (result.success && result.data) {
+            // 更新token
+            tokenManager.setToken(result.data.token);
+            tokenManager.setRefreshToken(result.data.refreshToken);
+            console.log('Token refreshed successfully, retrying original request');
+
+            // 处理队列中的请求
+            processQueue(null, result.data.token);
+            isRefreshing = false;
+
+            // 使用新token重试原始请求
+            return createRequest(url, options, true);
+          }
+        }
+
+        // 刷新失败
+        throw new Error('Token refresh failed');
+      } catch (refreshError) {
+        console.error('Failed to refresh token:', refreshError);
+
+        // 清除所有待处理请求
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
+        // 清除认证信息并登出
+        tokenManager.clearAll();
+        localStorage.removeItem('user');
+        localStorage.removeItem('navigateTo');
+
+        const event = new CustomEvent('sessionExpired', {
+          detail: { reason: 'Token refresh failed' }
+        });
+        window.dispatchEvent(event);
+
+        const error = new Error('Session expired');
+        (error as any).status = 401;
+        throw error;
+      }
     }
 
     // 尝试解析响应数据
@@ -345,8 +410,10 @@ const createRequest = async (url: string, options: RequestInit = {}) => {
       console.error('Request Config:', config);
       console.error('Response Status:', response.status);
       console.error('Response Headers:', Object.fromEntries(response.headers.entries()));
-      
-      const error = new Error(responseData.message || `HTTP error! status: ${response.status}`);
+
+      // Try to get error message from different possible fields
+      const errorMessage = responseData.error || responseData.message || `HTTP error! status: ${response.status}`;
+      const error = new Error(errorMessage);
       (error as any).response = response;
       (error as any).responseData = responseData;
       (error as any).status = response.status;
@@ -426,19 +493,25 @@ export interface MerchantRegisterResponse {
 }
 
 export interface LoginResponse {
-  token: string;
-  refreshToken: string;
+  // When 2FA is required, these fields will be missing
+  token?: string;
+  refreshToken?: string;
   userId: number;
-  username: string;
-  realName: string;
-  email: string;
+  username?: string;
+  realName?: string;
+  email?: string;
   avatar?: string;
   tenantId: number;
   tenantName?: string;
+  timezone?: string;
   roles?: string[];
   permissions?: string[];
   tokenExpireTime?: string;
   lastLoginTime?: string;
+  createdAt?: string;
+  // 2FA related fields - present when 2FA is required
+  need2FA?: boolean;
+  phone?: string;
 }
 
 export interface User {
@@ -466,15 +539,7 @@ export const authApi = {
     });
   },
 
-  // Google登录
-  googleLogin: async (idToken: string): Promise<ApiResponse<LoginResponse>> => {
-    return createRequest('/api/auth/google', {
-      method: 'POST',
-      body: JSON.stringify({ idToken }),
-    });
-  },
-
-  // 注册
+// 注册
   register: async (data: RegisterRequest): Promise<ApiResponse<LoginResponse>> => {
     return createRequest('/api/auth/register', {
       method: 'POST',
@@ -574,26 +639,61 @@ export const handleApiError = (error: any): string => {
     const details = Object.entries(error.responseData.details)
       .map(([field, message]) => `${field}: ${message}`)
       .join(', ');
-    return `验证失败: ${details}`;
+    return i18n.t('errors.validationFailed', { details });
   }
 
-  // 检查是否有响应数据
+  // 检查是否有响应数据中的error字段（后端RuntimeException返回格式）
+  if (error.responseData?.error) {
+    return error.responseData.error;
+  }
+
+  // 检查是否有响应数据中的message字段
   if (error.responseData?.message) {
     return error.responseData.message;
   }
 
   // 检查错误消息
   if (error.message) {
+    // 如果是网络错误
+    if (error.message === 'Network Error' || error.message.includes('Failed to fetch')) {
+      return i18n.t('errors.networkError');
+    }
     return error.message;
   }
 
-  // 检查响应对象
+  // 检查响应对象中的error字段
+  if (error.response?.data?.error) {
+    return error.response.data.error;
+  }
+
+  // 检查响应对象中的message字段
   if (error.response?.data?.message) {
     return error.response.data.message;
   }
 
+  // 检查HTTP状态码
+  if (error.response?.status === 503 || error.status === 503) {
+    return i18n.t('errors.serviceUnavailable');
+  }
+
+  if (error.response?.status === 500 || error.status === 500) {
+    return i18n.t('errors.serverError');
+  }
+
+  if (error.response?.status === 404 || error.status === 404) {
+    return i18n.t('errors.notFound');
+  }
+
+  if (error.response?.status === 403 || error.status === 403) {
+    return i18n.t('errors.forbidden');
+  }
+
+  if (error.response?.status === 401 || error.status === 401) {
+    return i18n.t('errors.unauthorized');
+  }
+
   // 默认错误消息
-  return 'An unexpected error occurred';
+  return i18n.t('errors.unexpectedError');
 };
 
 // 服务相关类型定义
@@ -623,6 +723,7 @@ export interface Customer {
   firstName: string;
   lastName: string;
   phone: string;
+  countryCode?: string; // 国家码，如 +1-CA, +1-US, +86
   email?: string;
   address?: string;
   dateOfBirth?: string;
@@ -633,7 +734,7 @@ export interface Customer {
   status?: 'ACTIVE' | 'INACTIVE';
   notes?: string;
   allergies?: string;
-  communicationPreference?: 'SMS' | 'EMAIL' | 'PHONE';
+  communicationPreference?: 'SMS' | 'EMAIL' | 'BOTH';
   lastVisit?: string;
   avatar?: string;
   createdAt?: string;
@@ -643,6 +744,24 @@ export interface Customer {
   totalAppointments?: number;
   completedAppointments?: number;
   averageRating?: number;
+  activePackageCount?: number;
+  activePackages?: {
+    id: number;
+    packageId: number;
+    name: string;
+    purchaseDate: string;
+    expiryDate: string;
+    totalServices: number;
+    usedServices: number;
+    remainingServices: number;
+    services: {
+      serviceId: number;
+      serviceName: string;
+      totalCount: number;
+      usedCount: number;
+      remainingCount: number;
+    }[];
+  }[];
 }
 
 export interface CustomerStats {
@@ -759,6 +878,7 @@ export const customerApi = {
       firstName: customer.firstName,
       lastName: customer.lastName,
       phone: customer.phone,
+      countryCode: customer.countryCode,
       email: customer.email,
       tenantId: customer.tenantId,
       // 可选字段 - 保持原值，包括空字符串
@@ -901,6 +1021,54 @@ export const customerApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // 购买套餐
+  purchasePackage: async (customerId: number, data: {
+    packageId: number;
+    paymentMethod: string;
+    notes?: string;
+    tenantId: number;
+    subtotal?: number;
+    taxRate?: number;
+    taxAmount?: number;
+    totalAmount?: number;
+    merchantName?: string;
+  }): Promise<any> => {
+    const response = await createRequest('/api/business/customer-packages/purchase', {
+      method: 'POST',
+      body: JSON.stringify({
+        customer_id: customerId,
+        package_id: data.packageId,
+        tenant_id: data.tenantId,
+        purchase_price: 0, // Will be set by backend based on package
+        payment_status: 'PAID',
+        payment_method: data.paymentMethod,
+        notes: data.notes || '',
+        subtotal: data.subtotal,
+        tax_rate: data.taxRate,
+        tax_amount: data.taxAmount,
+        total_amount: data.totalAmount,
+        merchant_name: data.merchantName
+      }),
+    });
+    return response;
+  },
+
+  // 获取客户的套餐列表
+  getCustomerPackages: async (customerId: number): Promise<any[]> => {
+    const response = await createRequest(`/api/business/customer-packages/customer/${customerId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取客户的活跃套餐
+  getCustomerActivePackages: async (customerId: number, tenantId: number): Promise<any[]> => {
+    const response = await createRequest(`/api/business/customer-packages/customer/${customerId}/active?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
   },
 };
 
@@ -1119,7 +1287,7 @@ export interface Appointment {
   appointmentTime: string;
   duration: number;
   totalAmount: number;
-  status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   notes?: string;
   rating?: number;
   review?: string;
@@ -1229,6 +1397,35 @@ export const appointmentApi = {
     await createRequest(`/api/business/appointments/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  // 处理预约支付
+  processAppointmentPayment: async (appointmentId: number, paymentData: {
+    paymentMethod: string;
+    customerPackageId?: number;
+    verificationCodeId?: number;
+    servicePackageMap?: Record<number, number>; // 服务-套餐映射（多服务场景 - 已废弃，使用 servicePayments）
+    servicePayments?: Array<{
+      serviceId: number;
+      paymentMethod: string;
+      customerPackageId?: number;
+      verificationCodeId?: number;
+    }>; // 多服务支付（每个服务独立选择支付方式）
+    tenantId: number;
+    taxInfo?: {
+      taxRate: number;
+      taxAmount: number;
+      tipAmount: number;
+      tipPercentage: number;
+      subtotal: number;
+      totalAmount: number;
+    }; // 税率和小费信息
+  }): Promise<Appointment> => {
+    const response = await createRequest(`/api/business/appointments/${appointmentId}/payment`, {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+    return response;
   },
 
   // 订单相关API
@@ -1352,6 +1549,7 @@ export interface Resource {
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' | 'VACATION' | 'DELETED';
   // 员工特有字段
   phone?: string;
+  countryCode?: string; // 国家码（员工专用），如 +1-CA, +1-US, +86
   email?: string;
   position?: string;
   startDate?: string;
@@ -1524,6 +1722,100 @@ export const resourceApi = {
       method: 'GET',
     });
     return response;
+  },
+
+  // ========== 员工-服务关联 API ==========
+
+  // 获取员工的所有服务专长
+  getResourceServices: async (resourceId: number): Promise<any[]> => {
+    const response = await createRequest(`/api/business/resources/${resourceId}/services`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 批量设置员工的服务关联
+  setResourceServices: async (resourceId: number, expertiseList: any[]): Promise<void> => {
+    await createRequest(`/api/business/resources/${resourceId}/services`, {
+      method: 'PUT',
+      body: JSON.stringify(expertiseList),
+    });
+  },
+
+  // 添加员工-服务关联
+  addResourceService: async (resourceId: number, expertise: any): Promise<void> => {
+    await createRequest(`/api/business/resources/${resourceId}/services`, {
+      method: 'POST',
+      body: JSON.stringify(expertise),
+    });
+  },
+
+  // 删除员工-服务关联
+  deleteResourceService: async (resourceId: number, serviceId: number): Promise<void> => {
+    await createRequest(`/api/business/resources/${resourceId}/services/${serviceId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 获取提供某个服务的所有员工
+  getResourcesByService: async (serviceId: number): Promise<Resource[]> => {
+    const response = await createRequest(`/api/business/resources/service/${serviceId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // ========== 新增：多时间段排班管理 API ==========
+
+  // 获取资源的每周可用性（支持多时间段）
+  getWeekAvailability: async (resourceId: number): Promise<any> => {
+    const response = await createRequest(`/api/business/resources/${resourceId}/availability/week`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 更新资源的每周可用性（支持多时间段）
+  updateWeekAvailability: async (resourceId: number, weekAvailability: any): Promise<void> => {
+    await createRequest(`/api/business/resources/${resourceId}/availability/week`, {
+      method: 'PUT',
+      body: JSON.stringify(weekAvailability),
+    });
+  },
+
+  // 为某一天添加新的时间段
+  addTimeSegment: async (resourceId: number, dayOfWeek: number, segment: any): Promise<any> => {
+    const response = await createRequest(`/api/business/resources/${resourceId}/availability/day/${dayOfWeek}/segment`, {
+      method: 'POST',
+      body: JSON.stringify(segment),
+    });
+    return response;
+  },
+
+  // 删除某个时间段
+  deleteTimeSegment: async (availabilityId: number): Promise<void> => {
+    await createRequest(`/api/business/resources/availability/${availabilityId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 复制某一天的排班到其他天
+  copyDayAvailability: async (resourceId: number, sourceDayOfWeek: number, targetDaysOfWeek: number[]): Promise<void> => {
+    const queryParams = new URLSearchParams({
+      sourceDayOfWeek: sourceDayOfWeek.toString(),
+      targetDaysOfWeek: targetDaysOfWeek.join(','),
+    });
+    await createRequest(`/api/business/resources/${resourceId}/availability/copy?${queryParams.toString()}`, {
+      method: 'POST',
+    });
+  },
+
+  // 应用排班模板
+  applyAvailabilityTemplate: async (resourceId: number, templateName: string): Promise<void> => {
+    const queryParams = new URLSearchParams({ templateName });
+    await createRequest(`/api/business/resources/${resourceId}/availability/apply-template?${queryParams.toString()}`, {
+      method: 'POST',
+    });
   },
 };
 
@@ -1715,6 +2007,13 @@ export const notificationApi = {
     });
   },
 
+  // 重试单条通知
+  retrySingleNotification: async (logId: number): Promise<void> => {
+    await createRequest(`/api/notification/retry/${logId}`, {
+      method: 'POST',
+    });
+  },
+
   // 初始化默认模板
   initDefaultTemplates: async (tenantId: number, language: string = 'zh'): Promise<void> => {
     await createRequest(`/api/notification/templates/init-default?tenantId=${tenantId}&language=${language}`, {
@@ -1723,6 +2022,41 @@ export const notificationApi = {
   },
 
   // 注意：预约通知现在在预约创建时自动发送，不需要单独调用
+};
+
+// 业务通知 API
+export const businessNotificationApi = {
+  // 获取最近的通知
+  getRecentNotifications: async (tenantId: number, limit: number = 10): Promise<any[]> => {
+    const response = await createRequest(`/api/business/notifications/recent?tenantId=${tenantId}&limit=${limit}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取未读通知数量
+  getUnreadCount: async (tenantId: number): Promise<number> => {
+    const response = await createRequest(`/api/business/notifications/unread-count?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 标记通知为已读
+  markAsRead: async (tenantId: number, notificationIds: number[]): Promise<void> => {
+    await createRequest(`/api/business/notifications/mark-read?tenantId=${tenantId}`, {
+      method: 'POST',
+      body: JSON.stringify(notificationIds),
+    });
+  },
+
+  // 获取Dashboard通知概览
+  getDashboardNotifications: async (tenantId: number): Promise<{ notifications: any[], unreadCount: number }> => {
+    const response = await createRequest(`/api/business/notifications/dashboard?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
 };
 
 // Combined API export for convenience
@@ -1968,6 +2302,156 @@ export const aiApi = {
     const response = await createRequest(`/api/ai/market-insights`, {
       method: 'GET',
     });
+    return response;
+  },
+};
+
+// Package-related interface
+export interface PackageService {
+  service_id: number;
+  count: number;
+}
+
+export interface Package {
+  id: number;
+  tenant_id: number;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  services: PackageService[] | string;  // JSON field
+  original_price: number;
+  package_price: number;
+  discount_percentage?: number;
+  validity_days: number;
+  max_shared_users: number;
+  terms?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Package API
+export const packageApi = {
+  // Get all packages for a tenant
+  getPackages: async (tenantId: number): Promise<Package[]> => {
+    const response = await createRequest(`/api/business/packages?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // Create package
+  createPackage: async (data: Partial<Package>): Promise<Package> => {
+    const response = await createRequest('/api/business/packages', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response;
+  },
+
+  // Update package
+  updatePackage: async (id: number, data: Partial<Package>): Promise<Package> => {
+    const response = await createRequest(`/api/business/packages/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response;
+  },
+
+  // Delete package
+  deletePackage: async (id: number, tenantId: number): Promise<void> => {
+    await createRequest(`/api/business/packages/${id}?tenantId=${tenantId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get package by ID
+  getPackageById: async (id: number): Promise<Package> => {
+    const response = await createRequest(`/api/business/packages/${id}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};
+
+// 验证码API
+export const verificationApi = {
+  // 发送验证码
+  sendCode: async (data: {
+    tenantId: number;
+    businessType: string;
+    businessId?: string;
+    recipientType: string;
+    recipient: string;
+    metadata?: string;
+  }): Promise<{
+    verificationId: number;
+    success: boolean;
+    message: string;
+    expiresInMinutes?: number;
+  }> => {
+    const response = await createRequest('/api/business/verification/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response;
+  },
+
+  // 验证验证码
+  verifyCode: async (data: {
+    verificationId: number;
+    code: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    remainingAttempts?: number;
+  }> => {
+    const response = await createRequest('/api/business/verification/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return response;
+  },
+};
+
+// 套餐使用记录API
+export const packageUsageApi = {
+  // 获取客户的套餐使用记录
+  getCustomerUsageLogs: async (customerId: number, tenantId: number): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/package-usage/customer/${customerId}?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  // 获取指定套餐的使用记录
+  getPackageUsageLogs: async (packageId: number): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/package-usage/package/${packageId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  // 获取预约相关的套餐使用记录
+  getAppointmentUsageLogs: async (appointmentId: number): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/package-usage/appointment/${appointmentId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  // 统计客户总使用次数
+  countCustomerUsage: async (customerId: number, tenantId: number): Promise<number> => {
+    const response = await createRequest(
+      `/api/business/package-usage/customer/${customerId}/count?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
     return response;
   },
 };

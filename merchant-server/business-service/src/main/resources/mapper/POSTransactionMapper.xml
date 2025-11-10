@@ -31,7 +31,7 @@
 
     <select id="selectPendingRetry" resultMap="BaseResultMap">
         SELECT * FROM pos_transactions WHERE transaction_status = 'pending' 
-        AND retry_count &lt; 3 AND next_retry_time &lt;= NOW()
+        AND retry_count &lt; 3 AND next_retry_time &lt;= UTC_TIMESTAMP()
     </select>
 
     <update id="updateById" parameterType="com.merchant.server.businessservice.entity.POSTransaction">

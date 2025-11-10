@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.dto.PaymentRequestDTO;
 import com.merchant.server.businessservice.dto.PaymentResponseDTO;
 import com.merchant.server.businessservice.dto.pos.POSTransactionStatus;
@@ -29,6 +30,7 @@ public class PaymentController {
     /**
      * 发起支付
      */
+    @RequiresPermission("orders:payment")
     @PostMapping("/orders/{orderId}/pay")
     public ResponseEntity<PaymentResponseDTO> initiatePayment(
             @PathVariable Long orderId,
@@ -53,6 +55,7 @@ public class PaymentController {
     /**
      * 现金支付
      */
+    @RequiresPermission("orders:payment")
     @PostMapping("/orders/{orderId}/cash")
     public ResponseEntity<PaymentResponseDTO> processCashPayment(
             @PathVariable Long orderId,
@@ -77,6 +80,7 @@ public class PaymentController {
     /**
      * 查询支付状态
      */
+    @RequiresPermission("orders:view")
     @GetMapping("/transactions/{transactionId}/status")
     public ResponseEntity<POSTransactionStatus> queryPaymentStatus(
             @PathVariable String transactionId) {
@@ -100,6 +104,7 @@ public class PaymentController {
     /**
      * 取消支付
      */
+    @RequiresPermission("orders:payment")
     @PostMapping("/orders/{orderId}/cancel")
     public ResponseEntity<Map<String, Object>> cancelPayment(@PathVariable Long orderId) {
         log.info("Cancelling payment for order: {}", orderId);
@@ -123,6 +128,7 @@ public class PaymentController {
      * @param reason 退款原因，前端传来的枚举值（如 DUPLICATE_CHARGE）
      * @param language 语言偏好（可选，默认为zh）
      */
+    @RequiresPermission("orders:refund")
     @PostMapping("/orders/{orderId}/refund")
     public ResponseEntity<Map<String, Object>> initiateRefund(
             @PathVariable Long orderId,
@@ -177,6 +183,7 @@ public class PaymentController {
     /**
      * 重试支付
      */
+    @RequiresPermission("orders:payment")
     @PostMapping("/orders/{orderId}/retry")
     public ResponseEntity<PaymentResponseDTO> retryPayment(@PathVariable Long orderId) {
         log.info("Retrying payment for order: {}", orderId);

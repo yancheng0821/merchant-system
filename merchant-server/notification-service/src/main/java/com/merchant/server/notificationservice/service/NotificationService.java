@@ -7,7 +7,12 @@ import com.merchant.server.notificationservice.entity.NotificationTemplate;
 import java.util.List;
 
 public interface NotificationService {
-    
+
+    /**
+     * 根据ID查询通知日志（用于审计）
+     */
+    NotificationLog getNotificationLogById(Long id);
+
     /**
      * 发送通知
      */
@@ -22,7 +27,12 @@ public interface NotificationService {
      * 重试失败的通知
      */
     void retryFailedNotifications();
-    
+
+    /**
+     * 重试单条通知
+     */
+    NotificationLog retrySingleNotification(Long logId);
+
     /**
      * 根据业务ID查询通知日志
      */
@@ -36,6 +46,6 @@ public interface NotificationService {
     /**
      * 根据租户ID和筛选条件查询通知日志
      */
-    List<NotificationLog> getNotificationsByTenantIdWithFilters(Long tenantId, int page, int size, 
-        String templateCode, String type, String status, String recipient, String businessId);
+    List<NotificationLog> getNotificationsByTenantIdWithFilters(Long tenantId, int page, int size,
+        String templateCode, String type, String status, String recipient, String businessId, String businessType);
 }

@@ -44,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTax } from '../../contexts/TaxContext';
 import { useSession } from '../../contexts/SessionContext';
+import { usePermission } from '../../hooks/usePermission';
 import { merchantConfigApi } from '../../services/api';
 import StripeConnectTab from './StripeConnectTab';
 
@@ -96,39 +97,83 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   const { user } = useAuth();
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
+  const { hasPermission } = usePermission();
   const location = useLocation();
   
-  // 初始化tab，优先使用prop，然后是localStorage
-  const getInitialTab = () => {
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  // 权限过滤后的tabs配置
+  const allTabsConfig = [
+    {
+      key: 'basic',
+      label: t('settings.tabs.basic'),
+      icon: <BusinessIcon />,
+      color: '#6366F1',
+      permission: 'settings:update_merchant' as const,
+    },
+    {
+      key: 'tax',
+      label: t('settings.tabs.tax'),
+      icon: <TaxIcon />,
+      color: '#F59E0B',
+      permission: 'settings:update_tax' as const,
+    },
+    {
+      key: 'system',
+      label: t('settings.tabs.system'),
+      icon: <TuneIcon />,
+      color: '#8B5CF6',
+      permission: 'settings:update_system' as const,
+    },
+    // {
+    //   key: 'payment',
+    //   label: t('settings.tabs.payment'),
+    //   icon: <PaymentIcon />,
+    //   color: '#10B981',
+    //   permission: 'settings:manage_stripe' as const,
+    // },
+  ];
+
+  const tabsConfig = allTabsConfig.filter(tab => hasPermission(tab.permission));
+
+  // 主题色
+  const primaryColor = '#6366F1';
+
+  // 统一的输入框样式
+  const inputFieldStyles = {
+    '& .MuiOutlinedInput-root': {
+      '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: primaryColor,
+      },
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: primaryColor,
+      },
+    },
+    '& .MuiInputLabel-root.Mui-focused': {
+      color: primaryColor,
+    },
+  };
+
+  // 处理初始tab选择
+  useEffect(() => {
     // 如果从prop传入了tab（如Stripe回调）
     if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
-      return 3; // 支付设置是第4个tab (index 3)
+      const paymentTabIndex = tabsConfig.findIndex(tab => tab.key === 'payment');
+      if (paymentTabIndex >= 0) {
+        setSelectedTab(paymentTabIndex);
+      }
+    } else {
+      // 检查localStorage
+      const settingsTab = localStorage.getItem('settingsTab');
+      if (settingsTab === 'payment' || settingsTab === 'stripe') {
+        const paymentTabIndex = tabsConfig.findIndex(tab => tab.key === 'payment');
+        if (paymentTabIndex >= 0) {
+          setSelectedTab(paymentTabIndex);
+        }
+        localStorage.removeItem('settingsTab');
+      }
     }
-    
-    // 否则检查localStorage
-    const settingsTab = localStorage.getItem('settingsTab');
-    if (settingsTab === 'payment' || settingsTab === 'stripe') {
-      return 3;
-    }
-    return 0;
-  };
-  
-  const [selectedTab, setSelectedTab] = useState(getInitialTab());
-  
-  // 监听prop变化
-  useEffect(() => {
-    if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
-      setSelectedTab(3);
-    }
-  }, [propInitialTab]);
-  
-  // 组件挂载后清理 localStorage
-  useEffect(() => {
-    const settingsTab = localStorage.getItem('settingsTab');
-    if (settingsTab === 'payment' || settingsTab === 'stripe') {
-      localStorage.removeItem('settingsTab');
-    }
-  }, []);
+  }, [propInitialTab, tabsConfig]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [merchantInfo, setMerchantInfo] = useState<MerchantInfo>({
@@ -382,6 +427,14 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       // 保存商户基础信息
       await merchantConfigApi.updateMerchantBasicInfo(user.tenantId, merchantInfo);
 
+      // 更新 localStorage 中的 timezone
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        userData.timezone = merchantInfo.timezone;
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+
       // 保存税务设置
       await merchantConfigApi.updateConfig(user.tenantId, 'gst_rate', finalGstRate.toString(), 'GST/HST税率');
       await merchantConfigApi.updateConfig(user.tenantId, 'pst_rate', finalPstRate.toString(), 'PST税率');
@@ -417,12 +470,8 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
     setNotification(prev => ({ ...prev, open: false }));
   };
 
-  const tabsConfig = [
-    { label: t('settings.tabs.basic'), icon: <BusinessIcon />, color: '#6366F1' },
-    { label: t('settings.tabs.tax'), icon: <TaxIcon />, color: '#F59E0B' },
-    { label: t('settings.tabs.system'), icon: <TuneIcon />, color: '#8B5CF6' },
-    { label: t('settings.tabs.payment'), icon: <PaymentIcon />, color: '#10B981' },
-  ];
+  // 获取当前选中tab的key
+  const currentTabKey = tabsConfig[selectedTab]?.key;
 
   return (
     <Box>
@@ -515,7 +564,9 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         </Box>
 
         {/* 基础设置 */}
-        <TabPanel value={selectedTab} index={0}>
+        {currentTabKey === 'basic' && (
+        <Fade in={currentTabKey === 'basic'} timeout={300}>
+          <Box sx={{ p: 3 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
               <CircularProgress />
@@ -562,8 +613,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           value={merchantInfo.merchantName}
                           onChange={(e) => handleMerchantInfoChange('merchantName', e.target.value)}
                           sx={{
+                            ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             },
                           }}
                         />
@@ -583,14 +641,21 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             ),
                           }}
                           sx={{
+                            ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             },
                           }}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth>
+                        <FormControl fullWidth sx={inputFieldStyles}>
                           <InputLabel>{t('settings.province')}</InputLabel>
                           <Select
                             value={merchantInfo.province}
@@ -603,6 +668,12 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             }
                             sx={{
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             }}
                           >
                             <MenuItem value="Alberta">{t('settings.provinces.Alberta')}</MenuItem>
@@ -636,8 +707,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             ),
                           }}
                           sx={{
+                            ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             },
                           }}
                         />
@@ -657,8 +735,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             ),
                           }}
                           sx={{
+                            ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             },
                           }}
                         />
@@ -678,8 +763,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             ),
                           }}
                           sx={{
+                            ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             },
                           }}
                         />
@@ -699,8 +791,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             ),
                           }}
                           sx={{
+                            ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
                             },
                           }}
                         />
@@ -755,6 +854,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                               control={
                                 <Checkbox
                                   checked={resourceTypes.includes('STAFF')}
+                                  disabled
                                   onChange={(e) => {
                                     if (e.target.checked) {
                                       setResourceTypes(prev => [...prev.filter(t => t !== 'STAFF'), 'STAFF']);
@@ -786,6 +886,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                               control={
                                 <Checkbox
                                   checked={resourceTypes.includes('ROOM')}
+                                  disabled
                                   onChange={(e) => {
                                     if (e.target.checked) {
                                       setResourceTypes(prev => [...prev.filter(t => t !== 'ROOM'), 'ROOM']);
@@ -836,10 +937,14 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
               </Grid>
             </Grid>
           )}
-        </TabPanel>
+          </Box>
+        </Fade>
+        )}
 
         {/* 税务设置 */}
-        <TabPanel value={selectedTab} index={1}>
+        {currentTabKey === 'tax' && (
+        <Fade in={currentTabKey === 'tax'} timeout={300}>
+          <Box sx={{ p: 3 }}>
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
               <Card
@@ -898,8 +1003,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           ),
                         }}
                         sx={{
+                          ...inputFieldStyles,
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
                           },
                         }}
                       />
@@ -929,8 +1041,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           ),
                         }}
                         sx={{
+                          ...inputFieldStyles,
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
                           },
                         }}
                       />
@@ -940,12 +1059,14 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
               </Card>
             </Grid>
           </Grid>
-        </TabPanel>
-
-
+          </Box>
+        </Fade>
+        )}
 
         {/* 系统设置 */}
-        <TabPanel value={selectedTab} index={2}>
+        {currentTabKey === 'system' && (
+        <Fade in={currentTabKey === 'system'} timeout={300}>
+          <Box sx={{ p: 3 }}>
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
               <Card
@@ -980,7 +1101,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
                   <Grid container spacing={3}>
                     <Grid item xs={12}>
-                      <FormControl fullWidth>
+                      <FormControl fullWidth sx={inputFieldStyles}>
                         <InputLabel>{t('settings.timezone')}</InputLabel>
                         <Select
                           value={merchantInfo.timezone}
@@ -988,20 +1109,62 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           label={t('settings.timezone')}
                           sx={{
                             borderRadius: 2,
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
                           }}
                         >
-                          <MenuItem value="Asia/Shanghai">{t('settings.timezones.beijing')}</MenuItem>
-                          <MenuItem value="America/New_York">{t('settings.timezones.newYork')}</MenuItem>
-                          <MenuItem value="America/Vancouver">{t('settings.timezones.vancouver')}</MenuItem>
-                          <MenuItem value="America/Toronto">{t('settings.timezones.toronto')}</MenuItem>
-                          <MenuItem value="Europe/London">{t('settings.timezones.london')}</MenuItem>
-                          <MenuItem value="Asia/Tokyo">{t('settings.timezones.tokyo')}</MenuItem>
-                          <MenuItem value="Australia/Sydney">{t('settings.timezones.sydney')}</MenuItem>
-                          <MenuItem value="Europe/Paris">{t('settings.timezones.paris')}</MenuItem>
+                          {/* 加拿大时区（从东到西） */}
+                          <MenuItem value="America/St_Johns">{t('settings.timezones.america_st_johns')}</MenuItem>
+                          <MenuItem value="America/Halifax">{t('settings.timezones.america_halifax')}</MenuItem>
+                          <MenuItem value="America/Toronto">{t('settings.timezones.america_toronto')}</MenuItem>
+                          <MenuItem value="America/Winnipeg">{t('settings.timezones.america_winnipeg')}</MenuItem>
+                          <MenuItem value="America/Edmonton">{t('settings.timezones.america_edmonton')}</MenuItem>
+                          <MenuItem value="America/Vancouver">{t('settings.timezones.america_vancouver')}</MenuItem>
+
+                          {/* 美国主要时区 */}
+                          <MenuItem value="America/New_York">{t('settings.timezones.america_new_york')}</MenuItem>
+                          <MenuItem value="America/Chicago">{t('settings.timezones.america_chicago')}</MenuItem>
+                          <MenuItem value="America/Denver">{t('settings.timezones.america_denver')}</MenuItem>
+                          <MenuItem value="America/Los_Angeles">{t('settings.timezones.america_los_angeles')}</MenuItem>
+                          <MenuItem value="America/Phoenix">{t('settings.timezones.america_phoenix')}</MenuItem>
+                          <MenuItem value="America/Anchorage">{t('settings.timezones.america_anchorage')}</MenuItem>
+                          <MenuItem value="Pacific/Honolulu">{t('settings.timezones.pacific_honolulu')}</MenuItem>
+
+                          {/* 欧洲主要时区 */}
+                          <MenuItem value="Europe/London">{t('settings.timezones.europe_london')}</MenuItem>
+                          <MenuItem value="Europe/Paris">{t('settings.timezones.europe_paris')}</MenuItem>
+                          <MenuItem value="Europe/Berlin">{t('settings.timezones.europe_berlin')}</MenuItem>
+                          <MenuItem value="Europe/Rome">{t('settings.timezones.europe_rome')}</MenuItem>
+                          <MenuItem value="Europe/Madrid">{t('settings.timezones.europe_madrid')}</MenuItem>
+                          <MenuItem value="Europe/Amsterdam">{t('settings.timezones.europe_amsterdam')}</MenuItem>
+                          <MenuItem value="Europe/Moscow">{t('settings.timezones.europe_moscow')}</MenuItem>
+
+                          {/* 亚洲主要时区 */}
+                          <MenuItem value="Asia/Dubai">{t('settings.timezones.asia_dubai')}</MenuItem>
+                          <MenuItem value="Asia/Karachi">{t('settings.timezones.asia_karachi')}</MenuItem>
+                          <MenuItem value="Asia/Kolkata">{t('settings.timezones.asia_kolkata')}</MenuItem>
+                          <MenuItem value="Asia/Dhaka">{t('settings.timezones.asia_dhaka')}</MenuItem>
+                          <MenuItem value="Asia/Bangkok">{t('settings.timezones.asia_bangkok')}</MenuItem>
+                          <MenuItem value="Asia/Singapore">{t('settings.timezones.asia_singapore')}</MenuItem>
+                          <MenuItem value="Asia/Hong_Kong">{t('settings.timezones.asia_hong_kong')}</MenuItem>
+                          <MenuItem value="Asia/Shanghai">{t('settings.timezones.asia_shanghai')}</MenuItem>
+                          <MenuItem value="Asia/Tokyo">{t('settings.timezones.asia_tokyo')}</MenuItem>
+                          <MenuItem value="Asia/Seoul">{t('settings.timezones.asia_seoul')}</MenuItem>
+
+                          {/* 澳大利亚和太平洋时区 */}
+                          <MenuItem value="Australia/Sydney">{t('settings.timezones.australia_sydney')}</MenuItem>
+                          <MenuItem value="Australia/Melbourne">{t('settings.timezones.australia_melbourne')}</MenuItem>
+                          <MenuItem value="Australia/Brisbane">{t('settings.timezones.australia_brisbane')}</MenuItem>
+                          <MenuItem value="Australia/Perth">{t('settings.timezones.australia_perth')}</MenuItem>
+                          <MenuItem value="Pacific/Auckland">{t('settings.timezones.pacific_auckland')}</MenuItem>
                         </Select>
                       </FormControl>
                     </Grid>
-                    
+
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
@@ -1027,8 +1190,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           ),
                         }}
                         sx={{
+                          ...inputFieldStyles,
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: primaryColor,
+                            },
                           },
                         }}
                       />
@@ -1038,42 +1208,42 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
               </Card>
             </Grid>
           </Grid>
-        </TabPanel>
+          </Box>
+        </Fade>
+        )}
 
         {/* Payment Settings - Stripe Connect */}
-        <TabPanel value={selectedTab} index={3}>
-          <StripeConnectTab />
-        </TabPanel>
+        {/* {currentTabKey === 'payment' && (
+        <Fade in={currentTabKey === 'payment'} timeout={300}>
+          <Box sx={{ p: 3 }}>
+            <StripeConnectTab />
+          </Box>
+        </Fade>
+        )} */}
       </Card>
 
-      {/* 现代化保存按钮 - 仅在非支付设置页显示 */}
-      {selectedTab !== 3 && (
+      {/* 保存按钮 - 仅在非支付设置页显示 */}
+      {currentTabKey !== 'payment' && (
       <Box mt={4} display="flex" justifyContent="flex-end">
         <Button
           variant="contained"
-          size="large"
           startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           onClick={handleSaveSettings}
           disabled={saving}
           sx={{
-            borderRadius: 3,
-            px: 4,
-            py: 1.5,
-            background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)',
-            fontSize: '1rem',
-            fontWeight: 600,
+            px: 3,
+            py: 1,
+            textTransform: 'none',
+            fontWeight: 500,
+            borderRadius: 2,
+            backgroundColor: '#6366f1',
             '&:hover': {
-              background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-              transform: 'translateY(-2px)',
-              boxShadow: '0 8px 30px rgba(99, 102, 241, 0.4)',
+              backgroundColor: '#4f46e5',
             },
             '&:disabled': {
-              background: 'linear-gradient(135deg, #9CA3AF, #6B7280)',
-              transform: 'none',
-              boxShadow: 'none',
+              backgroundColor: '#e5e7eb',
+              color: '#9ca3af',
             },
-            transition: 'all 0.3s ease',
           }}
         >
           {saving ? t('settings.saving') : t('settings.saveSettings')}
@@ -1091,17 +1261,9 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         <Alert
           onClose={handleCloseNotification}
           severity={notification.severity}
-          variant="filled"
           sx={{
+            width: '100%',
             borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            '& .MuiAlert-icon': {
-              fontSize: '1.2rem',
-            },
-            '& .MuiAlert-message': {
-              fontSize: '0.9rem',
-              fontWeight: 500,
-            },
           }}
         >
           {notification.message}

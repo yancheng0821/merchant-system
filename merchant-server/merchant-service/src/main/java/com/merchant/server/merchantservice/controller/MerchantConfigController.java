@@ -1,5 +1,8 @@
 package com.merchant.server.merchantservice.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.merchant.server.common.annotation.RequiresPermission;
+import com.merchant.server.common.annotation.Auditable;
 import com.merchant.server.merchantservice.dto.MerchantConfigDTO;
 import com.merchant.server.merchantservice.entity.Merchant;
 import com.merchant.server.merchantservice.entity.MerchantConfig;
@@ -12,21 +15,22 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/merchant/config")
 @RequiredArgsConstructor
 public class MerchantConfigController {
-    
+
     private final MerchantConfigService merchantConfigService;
     private final MerchantService merchantService;
     private final ObjectMapper objectMapper;
+    private final com.merchant.server.merchantservice.client.BusinessServiceClient businessServiceClient;
     
     /**
      * 获取商户完整配置
      */
+    @RequiresPermission("settings:view")
     @GetMapping("/{tenantId}")
     public ResponseEntity<MerchantConfigDTO> getMerchantConfig(@PathVariable Long tenantId) {
         log.info("接收到获取商户配置请求，tenantId: {}", tenantId);
@@ -43,6 +47,7 @@ public class MerchantConfigController {
     /**
      * 获取商户资源类型配置
      */
+    @RequiresPermission("settings:view")
     @GetMapping("/{tenantId}/resource-types")
     public ResponseEntity<List<String>> getResourceTypes(@PathVariable Long tenantId) {
         try {
@@ -57,6 +62,7 @@ public class MerchantConfigController {
     /**
      * 批量创建商户设置（用于商户注册）
      */
+    @RequiresPermission("settings:update_merchant")
     @PostMapping("/{tenantId}/batch")
     public ResponseEntity<Void> createMerchantSettings(
             @PathVariable Long tenantId,
@@ -95,6 +101,8 @@ public class MerchantConfigController {
     /**
      * 更新商户配置
      */
+    @RequiresPermission("settings:update_merchant")
+    @Auditable(resource = "MERCHANT_CONFIG", action = "UPDATE", resourceIdParam = "tenantId", recordOldValue = true, description = "Update merchant config")
     @PutMapping("/{tenantId}")
     public ResponseEntity<Void> updateMerchantConfig(
             @PathVariable Long tenantId,
@@ -112,15 +120,19 @@ public class MerchantConfigController {
     /**
      * 获取指定配置项
      */
+    @RequiresPermission("settings:view")
     @GetMapping("/{tenantId}/config/{configKey}")
     public ResponseEntity<MerchantConfig> getConfigByKey(
             @PathVariable Long tenantId,
             @PathVariable String configKey) {
         try {
+            log.info("获取配置项 - tenantId: {}, configKey: {}", tenantId, configKey);
             MerchantConfig config = merchantConfigService.getConfigByKey(tenantId, configKey);
             if (config != null) {
+                log.info("配置项查询成功 - configKey: {}, configValue: {}", configKey, config.getConfigValue());
                 return ResponseEntity.ok(config);
             } else {
+                log.warn("配置项不存在 - tenantId: {}, configKey: {}", tenantId, configKey);
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
@@ -132,6 +144,8 @@ public class MerchantConfigController {
     /**
      * 更新指定配置项
      */
+    @RequiresPermission("settings:update_merchant")
+    @Auditable(resource = "MERCHANT_CONFIG_ITEM", action = "UPDATE", resourceIdParam = "tenantId", recordOldValue = true, description = "Update merchant config item")
     @PutMapping("/{tenantId}/config/{configKey}")
     public ResponseEntity<Void> updateConfigByKey(
             @PathVariable Long tenantId,
@@ -149,6 +163,7 @@ public class MerchantConfigController {
     /**
      * 获取所有配置项
      */
+    @RequiresPermission("settings:view")
     @GetMapping("/{tenantId}/all")
     public ResponseEntity<List<MerchantConfig>> getAllConfigs(@PathVariable Long tenantId) {
         try {
@@ -163,6 +178,7 @@ public class MerchantConfigController {
     /**
      * 获取商户基础信息
      */
+    @RequiresPermission("settings:view")
     @GetMapping("/{tenantId}/basic")
     public ResponseEntity<Merchant> getMerchantBasicInfo(@PathVariable Long tenantId) {
         try {
@@ -181,6 +197,8 @@ public class MerchantConfigController {
     /**
      * 更新商户基础信息
      */
+    @RequiresPermission("settings:update_merchant")
+    @Auditable(resource = "MERCHANT", action = "UPDATE", resourceIdParam = "tenantId", recordOldValue = true, description = "Update merchant basic info")
     @PutMapping("/{tenantId}/basic")
     public ResponseEntity<Void> updateMerchantBasicInfo(
             @PathVariable Long tenantId,
@@ -188,6 +206,17 @@ public class MerchantConfigController {
         try {
             merchant.setTenantId(tenantId);
             merchantService.updateMerchantInfo(merchant);
+
+            // 清除 business-service 中的商户名称缓存
+            try {
+                businessServiceClient.clearMerchantNameCache(tenantId);
+                log.info("Cleared merchant name cache in business-service for tenantId: {}", tenantId);
+            } catch (Exception cacheEx) {
+                // 缓存清除失败不影响主流程
+                log.warn("Failed to clear merchant name cache in business-service for tenantId {}: {}",
+                        tenantId, cacheEx.getMessage());
+            }
+
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("更新商户基础信息失败: {}", e.getMessage(), e);

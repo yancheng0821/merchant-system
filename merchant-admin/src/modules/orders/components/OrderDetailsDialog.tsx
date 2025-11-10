@@ -24,10 +24,12 @@ import {
   CreditCard as CreditCardIcon,
   AccountBalanceWallet as WalletIcon,
   Payment as PaymentIcon,
+  CompareArrows as MixedPaymentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Order } from '../OrderManagement';
 import { CurrencyUtils } from '../../../config/constants';
+import { smartFormatDateTime } from '../../../utils/timezoneUtils';
 
 interface OrderDetailsDialogProps {
   open: boolean;
@@ -49,7 +51,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-CA');
+    return smartFormatDateTime(dateString, 'yyyy-MM-dd HH:mm:ss');
   };
 
   const getPaymentMethodIcon = (method: string) => {
@@ -58,6 +60,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
       case 'credit_card': return <CreditCardIcon />;
       case 'debit_card': return <PaymentIcon />;
       case 'mobile_pay': return <WalletIcon />;
+      case 'mixed': return <MixedPaymentIcon />;
       default: return <PaymentIcon />;
     }
   };

@@ -18,7 +18,7 @@ import java.util.UUID;
 @RequestMapping("/api/auth/files")
 public class FileUploadController {
 
-    @Value("${file.upload.path:/usr/share/nginx/html/files}")
+    @Value("${file.upload.path:/tmp/uploads}")
     private String uploadBasePath;
 
     @Value("${server.port:8080}")
@@ -82,8 +82,8 @@ public class FileUploadController {
             System.out.println("Saving file to: " + filePath.toString());
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 生成访问URL - 使用统一的文件服务路径，根据subDir决定路径
-            String fileUrl = String.format("/api/files/%s/%s/%s", subDir, tenantDir, filename);
+            // 生成访问URL - 使用静态资源路径
+            String fileUrl = String.format("/static/uploads/%s/%s/%s", subDir, tenantDir, filename);
 
             Map<String, String> response = new HashMap<>();
             response.put("url", fileUrl);
@@ -99,65 +99,44 @@ public class FileUploadController {
         }
     }
 
-    // 注释掉这个方法，因为文件读取由file-service负责
-    // @GetMapping("/{subDir}/{tenantDir}/{filename}")
-    // public ResponseEntity<byte[]> getFile(
-    //         @PathVariable String subDir,
-    //         @PathVariable String tenantDir,
-    //         @PathVariable String filename) {
-    //     
-    //     try {
-    //         Path filePath = Paths.get(uploadBasePath, subDir, tenantDir, filename);
-    //         
-    //         if (!Files.exists(filePath)) {
-    //             return ResponseEntity.notFound().build();
-    //         }
-    //
-    //         byte[] fileContent = Files.readAllBytes(filePath);
-    //         
-    //         // 根据文件扩展名设置Content-Type
-    //         String contentType = Files.probeContentType(filePath);
-    //         if (contentType == null) {
-    //             contentType = "application/octet-stream";
-    //         }
-    //
-    //         return ResponseEntity.ok()
-    //                 .header("Content-Type", contentType)
-    //                 .header("Cache-Control", "max-age=3600") // 缓存1小时
-    //                 .body(fileContent);
-    //
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //         return ResponseEntity.internalServerError().build();
-    //     }
-    // }
+    // 文件读取由Spring Boot的WebConfig静态资源处理器负责，无需此方法
 
     @DeleteMapping("/delete")
     public ResponseEntity<Map<String, String>> deleteFile(@RequestBody Map<String, String> request) {
         try {
             String fileUrl = request.get("fileUrl");
-            if (fileUrl == null || !fileUrl.startsWith("/api/auth/files/")) {
-                return ResponseEntity.badRequest().body(createErrorResponse("无效的文件URL"));
+            if (fileUrl == null) {
+                return ResponseEntity.badRequest().body(createErrorResponse("文件URL不能为空"));
             }
 
-            // 解析文件路径: /api/auth/files/{subDir}/{tenantDir}/{filename}
-            String[] pathParts = fileUrl.split("/");
-            if (pathParts.length < 7) {
-                return ResponseEntity.badRequest().body(createErrorResponse("无效的文件路径"));
+            // 支持两种URL格式:
+            // 1. /static/uploads/{subDir}/{tenantDir}/{filename}
+            // 2. 完整的HTTP URL
+            String relativePath;
+            if (fileUrl.startsWith("/static/uploads/")) {
+                relativePath = fileUrl.substring("/static/uploads/".length());
+            } else if (fileUrl.contains("/static/uploads/")) {
+                int index = fileUrl.indexOf("/static/uploads/");
+                relativePath = fileUrl.substring(index + "/static/uploads/".length());
+            } else {
+                return ResponseEntity.badRequest().body(createErrorResponse("无效的文件URL格式"));
             }
 
-            String tenantDir = pathParts[5];
-            String filename = pathParts[6];
+            Path filePath = Paths.get(uploadBasePath, relativePath);
 
-            Path filePath = Paths.get(uploadBasePath, tenantDir, filename);
-            
+            // 安全检查：确保文件路径在上传目录内
+            if (!filePath.normalize().startsWith(Paths.get(uploadBasePath).normalize())) {
+                return ResponseEntity.badRequest().body(createErrorResponse("非法的文件路径"));
+            }
+
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "文件删除成功");
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.notFound().build();
             }
-
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "文件删除成功");
-            return ResponseEntity.ok(response);
 
         } catch (IOException e) {
             e.printStackTrace();

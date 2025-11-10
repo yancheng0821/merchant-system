@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.BusinessNotificationMapper">
+
+    <!-- Result Map for BusinessNotification -->
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.BusinessNotification">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="notification_type" property="notificationType"/>
+        <result column="title" property="title"/>
+        <result column="title_en" property="titleEn"/>
+        <result column="title_zh" property="titleZh"/>
+        <result column="content" property="content"/>
+        <result column="content_en" property="contentEn"/>
+        <result column="content_zh" property="contentZh"/>
+        <result column="level" property="level"/>
+        <result column="business_id" property="businessId"/>
+        <result column="business_type" property="businessType"/>
+        <result column="related_person" property="relatedPerson"/>
+        <result column="related_service" property="relatedService"/>
+        <result column="related_time" property="relatedTime"/>
+        <result column="is_read" property="isRead"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- Get recent notifications (last 7 days) -->
+    <select id="getRecentNotifications" resultMap="BaseResultMap">
+        SELECT * FROM business_notifications
+        WHERE tenant_id = #{tenantId}
+        AND deleted = 0
+        AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- Get unread count -->
+    <select id="getUnreadCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM business_notifications
+        WHERE tenant_id = #{tenantId}
+        AND is_read = 0
+        AND deleted = 0
+    </select>
+
+    <!-- Get notifications after specific time -->
+    <select id="getNotificationsAfter" resultMap="BaseResultMap">
+        SELECT * FROM business_notifications
+        WHERE tenant_id = #{tenantId}
+        AND created_at > #{afterTime}
+        AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- ================== 系统通知相关查询 ==================  -->
+
+    <!-- Get all system notifications (tenant_id is null) -->
+    <select id="getSystemNotifications" resultMap="BaseResultMap">
+        SELECT * FROM business_notifications
+        WHERE tenant_id IS NULL
+        AND notification_type = 'SYSTEM_NOTIFICATION'
+        AND deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- Get system notification by ID -->
+    <select id="getSystemNotificationById" resultMap="BaseResultMap">
+        SELECT * FROM business_notifications
+        WHERE id = #{id}
+        AND tenant_id IS NULL
+        AND deleted = 0
+    </select>
+
+    <!-- Update system notification -->
+    <update id="updateSystemNotification">
+        UPDATE business_notifications
+        SET title = #{title},
+            title_en = #{titleEn},
+            title_zh = #{titleZh},
+            content = #{content},
+            content_en = #{contentEn},
+            content_zh = #{contentZh},
+            level = #{level},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+        AND tenant_id IS NULL
+    </update>
+
+    <!-- Update system notification copies for all tenants -->
+    <update id="updateSystemNotificationCopies">
+        UPDATE business_notifications
+        SET title = #{title},
+            title_en = #{titleEn},
+            title_zh = #{titleZh},
+            content = #{content},
+            content_en = #{contentEn},
+            content_zh = #{contentZh},
+            level = #{level},
+            updated_at = #{updatedAt}
+        WHERE tenant_id IS NOT NULL
+        AND notification_type = 'SYSTEM_NOTIFICATION'
+        AND title_en = #{titleEn}
+        AND title_zh = #{titleZh}
+        AND deleted = 0
+    </update>
+
+    <!-- Update system notification copies by original title -->
+    <update id="updateSystemNotificationCopiesByOriginalTitle">
+        UPDATE business_notifications
+        SET title = #{title},
+            title_en = #{titleEn},
+            title_zh = #{titleZh},
+            content = #{content},
+            content_en = #{contentEn},
+            content_zh = #{contentZh},
+            level = #{level},
+            updated_at = #{updatedAt}
+        WHERE tenant_id IS NOT NULL
+        AND notification_type = 'SYSTEM_NOTIFICATION'
+        AND title_en = #{originalTitleEn}
+        AND title_zh = #{originalTitleZh}
+        AND deleted = 0
+    </update>
+
+    <!-- Update system notification copies by business_id (精确匹配) -->
+    <update id="updateSystemNotificationCopiesByBusinessId">
+        UPDATE business_notifications
+        SET title = #{title},
+            title_en = #{titleEn},
+            title_zh = #{titleZh},
+            content = #{content},
+            content_en = #{contentEn},
+            content_zh = #{contentZh},
+            level = #{level},
+            updated_at = #{updatedAt}
+        WHERE tenant_id IS NOT NULL
+        AND notification_type = 'SYSTEM_NOTIFICATION'
+        AND business_id = #{businessId}
+        AND deleted = 0
+    </update>
+
+    <!-- Delete system notification (soft delete) -->
+    <update id="deleteSystemNotification">
+        UPDATE business_notifications
+        SET deleted = 1,
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+        AND tenant_id IS NULL
+    </update>
+
+    <!-- Delete system notification copies (soft delete) -->
+    <update id="deleteSystemNotificationCopiesByTitleAndContent">
+        UPDATE business_notifications
+        SET deleted = 1,
+            updated_at = #{updatedAt}
+        WHERE tenant_id IS NOT NULL
+        AND notification_type = 'SYSTEM_NOTIFICATION'
+        AND title_en = #{titleEn}
+        AND title_zh = #{titleZh}
+        AND content_en = #{contentEn}
+        AND content_zh = #{contentZh}
+        AND deleted = 0
+    </update>
+
+    <!-- Delete system notification copies by business_id (soft delete, 精确匹配) -->
+    <update id="deleteSystemNotificationCopiesByBusinessId">
+        UPDATE business_notifications
+        SET deleted = 1,
+            updated_at = #{updatedAt}
+        WHERE tenant_id IS NOT NULL
+        AND notification_type = 'SYSTEM_NOTIFICATION'
+        AND business_id = #{businessId}
+        AND deleted = 0
+    </update>
+
+</mapper>

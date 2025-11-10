@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.authservice.mapper.RolePermissionMapper">
+
+    <!-- Result Map -->
+    <resultMap id="BaseResultMap" type="com.merchant.server.authservice.entity.RolePermission">
+        <id column="id" property="id"/>
+        <result column="role_id" property="roleId"/>
+        <result column="permission_id" property="permissionId"/>
+        <result column="scope_override" property="scopeOverride"/>
+        <result column="constraints" property="constraints"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- Base Column List -->
+    <sql id="Base_Column_List">
+        id, role_id, permission_id, scope_override, constraints, created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM role_permissions
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据角色ID查询所有权限关联 -->
+    <select id="selectByRoleId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM role_permissions
+        WHERE role_id = #{roleId}
+        ORDER BY id
+    </select>
+
+    <!-- 根据权限ID查询所有角色关联 -->
+    <select id="selectByPermissionId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM role_permissions
+        WHERE permission_id = #{permissionId}
+        ORDER BY id
+    </select>
+
+    <!-- 根据角色ID和权限ID查询 -->
+    <select id="selectByRoleIdAndPermissionId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM role_permissions
+        WHERE role_id = #{roleId}
+          AND permission_id = #{permissionId}
+        LIMIT 1
+    </select>
+
+    <!-- 插入角色权限关联 -->
+    <insert id="insert" parameterType="com.merchant.server.authservice.entity.RolePermission" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO role_permissions (
+            role_id, permission_id, scope_override, constraints
+        ) VALUES (
+            #{roleId}, #{permissionId}, #{scopeOverride}, #{constraints}
+        )
+    </insert>
+
+    <!-- 更新角色权限关联 -->
+    <update id="update" parameterType="com.merchant.server.authservice.entity.RolePermission">
+        UPDATE role_permissions
+        SET scope_override = #{scopeOverride},
+            constraints = #{constraints}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除角色权限关联 -->
+    <delete id="deleteById">
+        DELETE FROM role_permissions WHERE id = #{id}
+    </delete>
+
+    <!-- 根据角色ID删除所有关联 -->
+    <delete id="deleteByRoleId">
+        DELETE FROM role_permissions WHERE role_id = #{roleId}
+    </delete>
+
+    <!-- 根据权限ID删除所有关联 -->
+    <delete id="deleteByPermissionId">
+        DELETE FROM role_permissions WHERE permission_id = #{permissionId}
+    </delete>
+
+    <!-- 批量插入角色权限关联 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO role_permissions (
+            role_id, permission_id, scope_override, constraints
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.roleId}, #{item.permissionId}, #{item.scopeOverride}, #{item.constraints}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 批量删除角色权限关联 -->
+    <delete id="batchDelete">
+        DELETE FROM role_permissions
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 检查角色是否拥有指定权限 -->
+    <select id="checkRoleHasPermission" resultType="int">
+        SELECT COUNT(*)
+        FROM role_permissions
+        WHERE role_id = #{roleId}
+          AND permission_id = #{permissionId}
+    </select>
+
+    <!-- 获取角色的权限ID列表 -->
+    <select id="selectPermissionIdsByRoleId" resultType="long">
+        SELECT permission_id
+        FROM role_permissions
+        WHERE role_id = #{roleId}
+        ORDER BY permission_id
+    </select>
+
+</mapper>

@@ -283,19 +283,17 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
             
             <Box
               sx={{
-                border: '2px dashed #d1d5db',
-                borderRadius: 3,
+                border: '2px dashed',
+                borderColor: 'divider',
+                borderRadius: 2,
                 p: 6,
                 textAlign: 'center',
                 mt: 3,
                 cursor: 'pointer',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                transition: 'all 0.3s ease',
+                bgcolor: 'grey.50',
                 '&:hover': {
-                  borderColor: '#667eea',
-                  backgroundColor: 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 25px rgba(102, 126, 234, 0.15)',
+                  borderColor: 'primary.main',
+                  bgcolor: 'action.hover',
                 }
               }}
               onClick={() => document.getElementById('file-input')?.click()}
@@ -307,7 +305,7 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
                 style={{ display: 'none' }}
                 onChange={handleFileSelect}
               />
-              <CloudUpload sx={{ fontSize: 64, color: '#667eea', mb: 3 }} />
+              <CloudUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
               <Typography variant="body1">
                 {selectedFile ? selectedFile.name : t('customers.import.clickToSelect')}
               </Typography>
@@ -454,51 +452,36 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
               <>
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                   <Grid item xs={4}>
-                    <Card sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      borderRadius: 3,
-                      boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-                    }}>
-                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>
                           {previewResponse.totalRecords}
                         </Typography>
-                        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        <Typography variant="body2" color="text.secondary">
                           {t('customers.import.totalRecords')}
                         </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                   <Grid item xs={4}>
-                    <Card sx={{ 
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: 'white',
-                      borderRadius: 3,
-                      boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
-                    }}>
-                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'success.main' }}>
                           {previewResponse.validRecords}
                         </Typography>
-                        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        <Typography variant="body2" color="text.secondary">
                           {t('customers.import.validRecords')}
                         </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                   <Grid item xs={4}>
-                    <Card sx={{ 
-                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                      color: 'white',
-                      borderRadius: 3,
-                      boxShadow: '0 8px 25px rgba(239, 68, 68, 0.3)',
-                    }}>
-                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'error.main' }}>
                           {previewResponse.invalidRecords}
                         </Typography>
-                        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        <Typography variant="body2" color="text.secondary">
                           {t('customers.import.invalidRecords')}
                         </Typography>
                       </CardContent>
@@ -588,51 +571,36 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
 
                 <Grid container spacing={3}>
                   <Grid item xs={4}>
-                    <Card sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      borderRadius: 3,
-                      boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-                    }}>
-                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>
                           {importResult.totalRecords}
                         </Typography>
-                        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        <Typography variant="body2" color="text.secondary">
                           {t('customers.import.totalRecords')}
                         </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                   <Grid item xs={4}>
-                    <Card sx={{ 
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: 'white',
-                      borderRadius: 3,
-                      boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
-                    }}>
-                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'success.main' }}>
                           {importResult.successRecords}
                         </Typography>
-                        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        <Typography variant="body2" color="text.secondary">
                           {t('customers.import.successRecords')}
                         </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
                   <Grid item xs={4}>
-                    <Card sx={{ 
-                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                      color: 'white',
-                      borderRadius: 3,
-                      boxShadow: '0 8px 25px rgba(239, 68, 68, 0.3)',
-                    }}>
-                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'error.main' }}>
                           {importResult.failedRecords}
                         </Typography>
-                        <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        <Typography variant="body2" color="text.secondary">
                           {t('customers.import.failedRecords')}
                         </Typography>
                       </CardContent>
@@ -644,25 +612,12 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
                   <Box sx={{ mt: 3, textAlign: 'center' }}>
                     <Button
                       variant="outlined"
+                      color="error"
                       startIcon={<Download />}
                       onClick={() => {
                         if (uploadResponse && user?.tenantId) {
                           customerApi.downloadCustomerImportErrorReport(user.tenantId.toString(), uploadResponse.importSessionId);
                         }
-                      }}
-                      sx={{
-                        borderRadius: 2,
-                        py: 1.5,
-                        px: 4,
-                        borderColor: '#ef4444',
-                        color: '#ef4444',
-                        borderWidth: 2,
-                        '&:hover': {
-                          borderColor: '#dc2626',
-                          backgroundColor: 'rgba(239, 68, 68, 0.04)',
-                          transform: 'translateY(-1px)',
-                        },
-                        transition: 'all 0.3s ease',
                       }}
                     >
                       {t('customers.import.downloadErrorReport')}
@@ -688,48 +643,15 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
             onClick={handleFileUpload}
             disabled={!selectedFile || loading}
             startIcon={loading ? <CircularProgress size={20} /> : <CloudUpload />}
-            sx={{
-              borderRadius: 2,
-              py: 1.5,
-              px: 3,
-              background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-              boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4F46E5, #3730A3)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 6px 20px rgba(99, 102, 241, 0.4)',
-              },
-              '&:disabled': {
-                background: '#E5E7EB',
-                color: '#9CA3AF',
-                transform: 'none',
-                boxShadow: 'none',
-              },
-              transition: 'all 0.3s ease',
-            }}
           >
             {loading ? t('customers.import.uploading') : t('customers.import.uploadFile')}
           </Button>
         );
-      
+
       case 1:
         return (
           <>
-            <Button 
-              onClick={() => setActiveStep(0)}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                px: 3,
-                borderColor: '#6B7280',
-                color: '#6B7280',
-                '&:hover': {
-                  borderColor: '#4B5563',
-                  backgroundColor: 'rgba(107, 114, 128, 0.04)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
+            <Button onClick={() => setActiveStep(0)}>
               {t('common.back')}
             </Button>
             <Button
@@ -737,49 +659,16 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
               onClick={handleMappingValidation}
               disabled={Object.keys(fieldMapping).length === 0 || loading}
               startIcon={loading ? <CircularProgress size={20} /> : undefined}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                px: 3,
-                background: 'linear-gradient(135deg, #10B981, #059669)',
-                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #059669, #047857)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
-                },
-                '&:disabled': {
-                  background: '#E5E7EB',
-                  color: '#9CA3AF',
-                  transform: 'none',
-                  boxShadow: 'none',
-                },
-                transition: 'all 0.3s ease',
-              }}
             >
               {loading ? t('customers.import.validating') : t('customers.import.validateData')}
             </Button>
           </>
         );
-      
+
       case 2:
         return (
           <>
-            <Button 
-              onClick={() => setActiveStep(1)}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                px: 3,
-                borderColor: '#6B7280',
-                color: '#6B7280',
-                '&:hover': {
-                  borderColor: '#4B5563',
-                  backgroundColor: 'rgba(107, 114, 128, 0.04)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
+            <Button onClick={() => setActiveStep(1)}>
               {t('common.back')}
             </Button>
             <Button
@@ -787,74 +676,24 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
               onClick={handleExecuteImport}
               disabled={!previewResponse || previewResponse.validRecords === 0 || loading}
               startIcon={loading ? <CircularProgress size={20} /> : undefined}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                px: 3,
-                background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
-                },
-                '&:disabled': {
-                  background: '#E5E7EB',
-                  color: '#9CA3AF',
-                  transform: 'none',
-                  boxShadow: 'none',
-                },
-                transition: 'all 0.3s ease',
-              }}
             >
               {loading ? t('customers.import.importing') : t('customers.import.executeImport')}
             </Button>
           </>
         );
-      
+
       case 3:
         return (
           <>
-            <Button 
-              onClick={handleReset} 
-              startIcon={<Refresh />}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                px: 3,
-                borderColor: '#6366F1',
-                color: '#6366F1',
-                '&:hover': {
-                  borderColor: '#4F46E5',
-                  backgroundColor: 'rgba(99, 102, 241, 0.04)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
+            <Button onClick={handleReset} startIcon={<Refresh />}>
               {t('customers.import.reimport')}
             </Button>
-            <Button 
-              variant="contained" 
-              onClick={handleClose}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                px: 3,
-                background: 'linear-gradient(135deg, #10B981, #059669)',
-                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #059669, #047857)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
+            <Button variant="contained" onClick={handleClose}>
               {t('common.confirm')}
             </Button>
           </>
         );
-      
+
       default:
         return null;
     }
@@ -867,140 +706,37 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { 
+        sx: {
           minHeight: '75vh',
-          borderRadius: 4,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          overflow: 'hidden',
+          borderRadius: 3,
         }
       }}
     >
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          borderRadius: 0,
-          py: 4,
-          px: 5,
-          position: 'relative',
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-          }
-        }}
-      >
+      <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box display="flex" alignItems="center" gap={3}>
-            <Box
-              sx={{
-                background: 'rgba(255,255,255,0.2)',
-                borderRadius: '50%',
-                p: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <UploadIcon sx={{ fontSize: 32, color: 'white' }} />
-            </Box>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {t('customers.import.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 300 }}>
-                {t(`customers.import.steps.${steps[activeStep]}`)}
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton 
-            onClick={handleClose}
-            sx={{
-              color: 'white',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '50%',
-              p: 1.5,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                transform: 'scale(1.05)',
-              },
-              transition: 'all 0.3s ease',
-            }}
-          >
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+            {t('customers.import.title')}
+          </Typography>
+          <IconButton onClick={handleClose}>
             <Close />
           </IconButton>
         </Box>
       </DialogTitle>
       
-      <DialogContent sx={{ p: 5, background: '#fafbfc' }}>
-        <Box sx={{ mb: 6, mt: 2 }}>
-          <Stepper 
-            activeStep={activeStep} 
-            sx={{ 
-              background: 'white',
-              borderRadius: 3,
-              p: 3,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-              '& .MuiStepLabel-root .Mui-completed': {
-                color: '#10B981',
-              },
-              '& .MuiStepLabel-root .Mui-active': {
-                color: '#667eea',
-              },
-              '& .MuiStepLabel-root .Mui-disabled': {
-                color: '#9ca3af',
-              },
-              '& .MuiStepConnector-line': {
-                borderColor: '#e5e7eb',
-                borderWidth: 2,
-              },
-              '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': {
-                borderColor: '#10B981',
-                borderWidth: 2,
-              },
-              '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': {
-                borderColor: '#667eea',
-                borderWidth: 2,
-              },
-              '& .MuiStepIcon-root': {
-                fontSize: '1.5rem',
-              },
-            }}
-          >
+      <DialogContent dividers>
+        <Box sx={{ mb: 4 }}>
+          <Stepper activeStep={activeStep}>
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel>
-                  <Typography variant="body1" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                    {t(`customers.import.steps.${label}`)}
-                  </Typography>
-                </StepLabel>
+                <StepLabel>{t(`customers.import.steps.${label}`)}</StepLabel>
               </Step>
             ))}
           </Stepper>
         </Box>
 
-        <Box sx={{ 
-          background: 'white', 
-          borderRadius: 3, 
-          p: 4, 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          border: '1px solid #f3f4f6'
-        }}>
+        <Box>
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 3,
-                borderRadius: 2,
-                '& .MuiAlert-icon': {
-                  fontSize: 24,
-                }
-              }}
-            >
+            <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
@@ -1009,13 +745,7 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ 
-        p: 4, 
-        gap: 2, 
-        borderTop: '1px solid #e5e7eb',
-        background: '#f9fafb',
-        justifyContent: 'flex-end'
-      }}>
+      <DialogActions>
         {getStepActions()}
       </DialogActions>
     </Dialog>

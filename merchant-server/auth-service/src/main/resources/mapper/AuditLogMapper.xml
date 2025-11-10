@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.authservice.mapper.AuditLogMapper">
+
+    <!-- 动态条件查询审计日志 -->
+    <select id="findByConditions" parameterType="map" resultType="map">
+        SELECT
+            id,
+            user_id AS userId,
+            tenant_id AS tenantId,
+            resource,
+            action,
+            resource_id AS resourceId,
+            old_value AS oldValue,
+            new_value AS newValue,
+            ip_address AS ipAddress,
+            user_agent AS userAgent,
+            status,
+            error_message AS errorMessage,
+            created_at AS createdAt
+        FROM audit_logs
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="resource != null and resource != ''">
+                AND resource = #{resource}
+            </if>
+            <if test="resourceId != null">
+                AND resource_id = #{resourceId}
+            </if>
+            <if test="action != null and action != ''">
+                AND action = #{action}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="statusList != null and statusList.size() > 0">
+                AND status IN
+                <foreach collection="statusList" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="search != null and search != ''">
+                AND (
+                    resource LIKE #{search}
+                    OR action LIKE #{search}
+                    OR CAST(resource_id AS CHAR) LIKE #{search}
+                    OR ip_address LIKE #{search}
+                )
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND created_at >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND created_at &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+        <if test="offset == null and limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 统计符合条件的日志总数 -->
+    <select id="countByConditions" parameterType="map" resultType="long">
+        SELECT COUNT(*)
+        FROM audit_logs
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="resource != null and resource != ''">
+                AND resource = #{resource}
+            </if>
+            <if test="resourceId != null">
+                AND resource_id = #{resourceId}
+            </if>
+            <if test="action != null and action != ''">
+                AND action = #{action}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="statusList != null and statusList.size() > 0">
+                AND status IN
+                <foreach collection="statusList" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="search != null and search != ''">
+                AND (
+                    resource LIKE #{search}
+                    OR action LIKE #{search}
+                    OR CAST(resource_id AS CHAR) LIKE #{search}
+                    OR ip_address LIKE #{search}
+                )
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND created_at >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND created_at &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 按操作类型统计 -->
+    <select id="countByAction" parameterType="map" resultType="map">
+        SELECT
+            action,
+            COUNT(*) as count
+        FROM audit_logs
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND created_at >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND created_at &lt;= #{endDate}
+            </if>
+        </where>
+        GROUP BY action
+        ORDER BY count DESC
+    </select>
+
+    <!-- 按资源类型统计 -->
+    <select id="countByResource" parameterType="map" resultType="map">
+        SELECT
+            resource,
+            COUNT(*) as count
+        FROM audit_logs
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND created_at >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND created_at &lt;= #{endDate}
+            </if>
+        </where>
+        GROUP BY resource
+        ORDER BY count DESC
+    </select>
+
+</mapper>

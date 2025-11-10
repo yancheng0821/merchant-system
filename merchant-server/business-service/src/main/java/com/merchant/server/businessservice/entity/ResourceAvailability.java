@@ -22,7 +22,9 @@ public class ResourceAvailability {
     private LocalTime endTime;
     
     private Boolean isAvailable = true;
-    
+
+    private Integer segmentOrder = 0; // 时间段顺序，支持每天多个时间段(0,1,2...)
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     

@@ -7,12 +7,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface TemplateService {
-    
+
+    /**
+     * 根据ID查询模板（用于审计）
+     */
+    NotificationTemplate getTemplateById(Long id);
+
     /**
      * 根据租户ID查询所有模板
      */
     List<NotificationTemplate> getTemplatesByTenantId(Long tenantId);
-    
+
     /**
      * 根据租户ID和模板代码查询模板
      */

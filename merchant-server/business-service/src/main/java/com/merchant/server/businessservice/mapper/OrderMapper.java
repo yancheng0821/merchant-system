@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.mapper;
 import com.merchant.server.businessservice.entity.Order;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -36,9 +37,11 @@ public interface OrderMapper {
                                   @Param("customerId") Long customerId,
                                   @Param("startDate") String startDate,
                                   @Param("endDate") String endDate,
+                                  @Param("startDateTime") LocalDateTime startDateTime,
+                                  @Param("endDateTime") LocalDateTime endDateTime,
                                   @Param("offset") int offset,
                                   @Param("limit") int limit);
-    
+
     /**
      * 统计订单数量
      */
@@ -48,7 +51,9 @@ public interface OrderMapper {
                          @Param("orderStatus") String orderStatus,
                          @Param("customerId") Long customerId,
                          @Param("startDate") String startDate,
-                         @Param("endDate") String endDate);
+                         @Param("endDate") String endDate,
+                         @Param("startDateTime") LocalDateTime startDateTime,
+                         @Param("endDateTime") LocalDateTime endDateTime);
     
     /**
      * 根据订单号查询
@@ -80,6 +85,9 @@ public interface OrderMapper {
      */
     List<java.util.Map<String, Object>> selectOrdersByDate(@Param("tenantId") Long tenantId, @Param("date") String date);
     List<java.util.Map<String, Object>> selectOrdersByDateRange(@Param("tenantId") Long tenantId, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    // 使用 datetime 范围查询订单 (用于 Dashboard 时区转换)
+    List<java.util.Map<String, Object>> selectOrdersByDateTimeRange(@Param("tenantId") Long tenantId, @Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
     
     /**
      * 获取订单统计数据用于分析
@@ -98,7 +106,12 @@ public interface OrderMapper {
     /**
      * 获取资源统计数据用于分析
      */
-    List<java.util.Map<String, Object>> getResourceStatsForAnalytics(@Param("tenantId") Long tenantId, 
-                                                                     @Param("startDate") String startDate, 
+    List<java.util.Map<String, Object>> getResourceStatsForAnalytics(@Param("tenantId") Long tenantId,
+                                                                     @Param("startDate") String startDate,
                                                                      @Param("endDate") String endDate);
+
+    /**
+     * 根据预约ID查询订单（用于员工通知）
+     */
+    Order selectByAppointmentId(@Param("appointmentId") Long appointmentId);
 }

@@ -1,17 +1,20 @@
 package com.merchant.server.businessservice.service.impl;
 
+import com.merchant.server.businessservice.client.MerchantServiceClient;
 import com.merchant.server.businessservice.mapper.OrderMapper;
 import com.merchant.server.businessservice.mapper.CustomerMapper;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
 import com.merchant.server.businessservice.mapper.ServiceMapper;
 import com.merchant.server.businessservice.service.DashboardService;
-import com.merchant.server.common.util.TimeZoneUtils; 
+import com.merchant.server.common.util.TimeZoneUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,35 +26,57 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
-    
+
     private final OrderMapper orderMapper;
     private final CustomerMapper customerMapper;
     private final AppointmentMapper appointmentMapper;
     private final ServiceMapper serviceMapper;
-    
+    private final MerchantServiceClient merchantServiceClient;
+
+    /**
+     * 获取商户时区
+     */
+    private String getMerchantTimezone(Long tenantId) {
+        try {
+            var response = merchantServiceClient.getMerchantByTenantId(tenantId);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                String timezone = (String) response.getData().get("timezone");
+                if (timezone != null && !timezone.isEmpty()) {
+                    return timezone;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get merchant timezone for tenantId: {}, using default", tenantId, e);
+        }
+        return "America/Toronto";
+    }
+
     @Override
     public Map<String, Object> getDashboardStats(Long tenantId, int days) {
         Map<String, Object> stats = new HashMap<>();
-        
+
         try {
-            // 获取日期范围
-            LocalDate endDate = TimeZoneUtils.getCurrentVancouverDate();
+            // 获取商户时区
+            String merchantTimezone = getMerchantTimezone(tenantId);
+
+            // 使用商户时区计算日期范围
+            LocalDate endDate = LocalDate.now(ZoneId.of(merchantTimezone));
             LocalDate startDate = endDate.minusDays(days - 1);
             
             // 订单统计
-            Map<String, Object> orderStats = getOrderStatistics(tenantId, startDate, endDate);
+            Map<String, Object> orderStats = getOrderStatistics(tenantId, startDate, endDate, merchantTimezone);
             stats.putAll(orderStats);
-            
+
             // 客户统计
-            Map<String, Object> customerStats = getCustomerStatistics(tenantId, startDate, endDate);
+            Map<String, Object> customerStats = getCustomerStatistics(tenantId, startDate, endDate, merchantTimezone);
             stats.putAll(customerStats);
-            
-            // 预约统计
+
+            // 预约统计 (appointment_date 是商户本地日期，不需要转换)
             Map<String, Object> appointmentStats = getAppointmentStatistics(tenantId, startDate, endDate);
             stats.putAll(appointmentStats);
-            
+
             // 收入统计
-            Map<String, Object> revenueStats = getRevenueStatistics(tenantId, startDate, endDate);
+            Map<String, Object> revenueStats = getRevenueStatistics(tenantId, startDate, endDate, merchantTimezone);
             stats.putAll(revenueStats);
             
         } catch (Exception e) {
@@ -74,19 +99,27 @@ public class DashboardServiceImpl implements DashboardService {
     public Map<String, Object> getSalesTrend(Long tenantId, int days) {
         Map<String, Object> result = new HashMap<>();
         List<Map<String, Object>> trendData = new ArrayList<>();
-        
+
         try {
-            LocalDate endDate = TimeZoneUtils.getCurrentVancouverDate();
+            // 获取商户时区
+            String merchantTimezone = getMerchantTimezone(tenantId);
+
+            // 使用商户时区计算日期范围
+            LocalDate endDate = LocalDate.now(ZoneId.of(merchantTimezone));
             LocalDate startDate = endDate.minusDays(days - 1);
-            
+
             // 按日期分组获取真实销售数据
             for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
                 Map<String, Object> dayData = new HashMap<>();
                 String dateStr = date.format(DateTimeFormatter.ofPattern("MM-dd"));
-                
-                // 获取当天的订单数据
-                List<Map<String, Object>> dayOrders = orderMapper.selectOrdersByDate(tenantId, date.toString());
-                
+
+                // 将商户本地日期转换为 UTC 时间范围
+                LocalDateTime startDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(date, merchantTimezone);
+                LocalDateTime endDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(date, merchantTimezone);
+
+                // 获取当天的订单数据 (使用 UTC 时间范围查询)
+                List<Map<String, Object>> dayOrders = orderMapper.selectOrdersByDateTimeRange(tenantId, startDateTime, endDateTime);
+
                 int orderCount = dayOrders.size();
                 double revenue = dayOrders.stream()
                     .filter(order -> "paid".equals(order.get("payment_status")))
@@ -98,14 +131,14 @@ public class DashboardServiceImpl implements DashboardService {
                         return 0.0;
                     })
                     .sum();
-                
-                // 获取当天的预约数据（作为访客数据的代理）
+
+                // 获取当天的预约数据（排除已取消的预约）
                 int appointments = appointmentMapper.countAppointmentsByDate(tenantId, date.toString());
-                
+
                 dayData.put("date", dateStr);
                 dayData.put("orders", orderCount);
                 dayData.put("sales", Math.round(revenue));
-                dayData.put("visitors", appointments * 2); // 假设每个预约代表2个访客
+                dayData.put("visitors", appointments); // 使用真实预约数量作为访客数
                 
                 trendData.add(dayData);
             }
@@ -127,13 +160,21 @@ public class DashboardServiceImpl implements DashboardService {
     public Map<String, Object> getServiceCategoryStats(Long tenantId, int days) {
         Map<String, Object> result = new HashMap<>();
         List<Map<String, Object>> categoryData = new ArrayList<>();
-        
+
         try {
-            LocalDate endDate = TimeZoneUtils.getCurrentVancouverDate();
+            // 获取商户时区
+            String merchantTimezone = getMerchantTimezone(tenantId);
+
+            // 使用商户时区计算日期范围
+            LocalDate endDate = LocalDate.now(ZoneId.of(merchantTimezone));
             LocalDate startDate = endDate.minusDays(days - 1);
-            
-            // 获取真实的服务分类统计
-            List<Map<String, Object>> categoryStats = serviceMapper.getServiceCategoryStats(tenantId, startDate.toString(), endDate.toString());
+
+            // 将商户本地日期转换为 UTC 时间范围
+            LocalDateTime startDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(startDate, merchantTimezone);
+            LocalDateTime endDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(endDate, merchantTimezone);
+
+            // 获取真实的服务分类统计 (使用 UTC 时间范围)
+            List<Map<String, Object>> categoryStats = serviceMapper.getServiceCategoryStats(tenantId, startDateTime, endDateTime);
             
             log.debug("Category stats for tenant {}: {}", tenantId, categoryStats);
             
@@ -207,15 +248,23 @@ public class DashboardServiceImpl implements DashboardService {
     public Map<String, Object> getTopServices(Long tenantId, int days, int limit) {
         Map<String, Object> result = new HashMap<>();
         List<Map<String, Object>> topServices = new ArrayList<>();
-        
+
         try {
-            LocalDate endDate = TimeZoneUtils.getCurrentVancouverDate();
+            // 获取商户时区
+            String merchantTimezone = getMerchantTimezone(tenantId);
+
+            // 使用商户时区计算日期范围
+            LocalDate endDate = LocalDate.now(ZoneId.of(merchantTimezone));
             LocalDate startDate = endDate.minusDays(days - 1);
-            
+
+            // 将商户本地日期转换为 UTC 时间范围
+            LocalDateTime startDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(startDate, merchantTimezone);
+            LocalDateTime endDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(endDate, merchantTimezone);
+
             log.debug("Fetching top services for tenant: {}, date range: {} to {}, limit: {}", tenantId, startDate, endDate, limit);
-            
-            // 获取真实的热门服务统计
-            List<Map<String, Object>> serviceStats = serviceMapper.getTopServices(tenantId, startDate.toString(), endDate.toString(), limit);
+
+            // 获取真实的热门服务统计 (使用 UTC 时间范围)
+            List<Map<String, Object>> serviceStats = serviceMapper.getTopServices(tenantId, startDateTime, endDateTime, limit);
             
             log.debug("Found {} service stats for tenant: {}", serviceStats.size(), tenantId);
             
@@ -264,11 +313,15 @@ public class DashboardServiceImpl implements DashboardService {
         return result;
     }
     
-    private Map<String, Object> getOrderStatistics(Long tenantId, LocalDate startDate, LocalDate endDate) {
+    private Map<String, Object> getOrderStatistics(Long tenantId, LocalDate startDate, LocalDate endDate, String merchantTimezone) {
         Map<String, Object> stats = new HashMap<>();
-        
-        // 获取期间内的真实订单数据
-        List<Map<String, Object>> orders = orderMapper.selectOrdersByDateRange(tenantId, startDate.toString(), endDate.toString());
+
+        // 将商户本地日期转换为 UTC 时间范围
+        LocalDateTime startDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(startDate, merchantTimezone);
+        LocalDateTime endDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(endDate, merchantTimezone);
+
+        // 获取期间内的真实订单数据 (使用 UTC 时间范围查询)
+        List<Map<String, Object>> orders = orderMapper.selectOrdersByDateTimeRange(tenantId, startDateTime, endDateTime);
         
         int totalOrders = orders.size();
         double totalRevenue = orders.stream()
@@ -284,8 +337,12 @@ public class DashboardServiceImpl implements DashboardService {
         // 计算增长率（与上一期间对比）
         LocalDate prevStartDate = startDate.minusDays(endDate.toEpochDay() - startDate.toEpochDay() + 1);
         LocalDate prevEndDate = startDate.minusDays(1);
-        
-        List<Map<String, Object>> prevOrders = orderMapper.selectOrdersByDateRange(tenantId, prevStartDate.toString(), prevEndDate.toString());
+
+        // 将前一期间的日期也转换为 UTC 时间范围
+        LocalDateTime prevStartDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(prevStartDate, merchantTimezone);
+        LocalDateTime prevEndDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(prevEndDate, merchantTimezone);
+
+        List<Map<String, Object>> prevOrders = orderMapper.selectOrdersByDateTimeRange(tenantId, prevStartDateTime, prevEndDateTime);
         int prevTotalOrders = prevOrders.size();
         double prevTotalRevenue = prevOrders.stream()
             .filter(order -> "paid".equals(order.get("payment_status")))
@@ -307,17 +364,26 @@ public class DashboardServiceImpl implements DashboardService {
         return stats;
     }
     
-    private Map<String, Object> getCustomerStatistics(Long tenantId, LocalDate startDate, LocalDate endDate) {
+    private Map<String, Object> getCustomerStatistics(Long tenantId, LocalDate startDate, LocalDate endDate, String merchantTimezone) {
         Map<String, Object> stats = new HashMap<>();
-        
+
         // 获取真实的客户数据
         int totalCustomers = (int)customerMapper.countByTenantId(tenantId);
-        int newCustomers = customerMapper.countNewCustomersByDateRange(tenantId, startDate.toString(), endDate.toString());
-        
+
+        // 将商户本地日期转换为 UTC 时间范围
+        LocalDateTime startDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(startDate, merchantTimezone);
+        LocalDateTime endDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(endDate, merchantTimezone);
+
+        int newCustomers = customerMapper.countNewCustomersByDateTimeRange(tenantId, startDateTime, endDateTime);
+
         // 计算客户增长率
-        int prevNewCustomers = customerMapper.countNewCustomersByDateRange(tenantId, 
-            startDate.minusDays(endDate.toEpochDay() - startDate.toEpochDay() + 1).toString(), 
-            startDate.minusDays(1).toString());
+        LocalDate prevStartDate = startDate.minusDays(endDate.toEpochDay() - startDate.toEpochDay() + 1);
+        LocalDate prevEndDate = startDate.minusDays(1);
+
+        LocalDateTime prevStartDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(prevStartDate, merchantTimezone);
+        LocalDateTime prevEndDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(prevEndDate, merchantTimezone);
+
+        int prevNewCustomers = customerMapper.countNewCustomersByDateTimeRange(tenantId, prevStartDateTime, prevEndDateTime);
         
         double customerGrowth = prevNewCustomers > 0 ? ((double) newCustomers - prevNewCustomers) / prevNewCustomers * 100 : 0.0;
         
@@ -330,9 +396,9 @@ public class DashboardServiceImpl implements DashboardService {
     
     private Map<String, Object> getAppointmentStatistics(Long tenantId, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> stats = new HashMap<>();
-        
-        // 获取今天的日期
-        LocalDate today = TimeZoneUtils.getCurrentVancouverDate();
+
+        // 获取今天的日期（使用 UTC 时间）
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalDate yesterday = today.minusDays(1);
         
         // 获取今天的预约数据
@@ -356,12 +422,12 @@ public class DashboardServiceImpl implements DashboardService {
         return stats;
     }
     
-    private Map<String, Object> getRevenueStatistics(Long tenantId, LocalDate startDate, LocalDate endDate) {
+    private Map<String, Object> getRevenueStatistics(Long tenantId, LocalDate startDate, LocalDate endDate, String merchantTimezone) {
         Map<String, Object> stats = new HashMap<>();
-        
+
         // 这里可以添加更详细的收入统计逻辑
         // 目前在 getOrderStatistics 中已经包含了基本的收入统计
-        
+
         return stats;
     }
 }

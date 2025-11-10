@@ -40,11 +40,14 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     const handleApiSessionExpired = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('API session expired event received:', customEvent.detail);
-      
-      // 设置session过期状态
-      setIsSessionExpired(true);
-      setShowSessionDialog(true);
+
+      // 立即清理所有session状态
       setLastActivity(null);
+      setIsSessionExpired(true);
+      setWarningShown(false);
+
+      // 显示提示对话框
+      setShowSessionDialog(true);
     };
 
     window.addEventListener('sessionExpired', handleApiSessionExpired);

@@ -1,27 +1,38 @@
 package com.merchant.server.authservice.service.impl;
 
-import com.merchant.server.authservice.dto.GoogleLoginRequest;
 import com.merchant.server.authservice.dto.LoginRequest;
 import com.merchant.server.authservice.dto.LoginResponse;
 import com.merchant.server.authservice.dto.RegisterRequest;
 import com.merchant.server.authservice.entity.Tenant;
 import com.merchant.server.authservice.entity.TenantInvitation;
 import com.merchant.server.authservice.entity.User;
+import com.merchant.server.authservice.entity.Role;
+import com.merchant.server.authservice.entity.Permission;
+import com.merchant.server.authservice.entity.UserRole;
+import com.merchant.server.authservice.mapper.RoleMapper;
+import com.merchant.server.authservice.mapper.PermissionMapper;
+import com.merchant.server.authservice.mapper.UserRoleMapper;
 import com.merchant.server.authservice.service.AuthService;
-import com.merchant.server.authservice.service.GoogleOAuthService;
 import com.merchant.server.authservice.service.TenantInvitationService;
 import com.merchant.server.authservice.service.TenantService;
 import com.merchant.server.authservice.service.UserService;
+import com.merchant.server.authservice.client.MerchantServiceClient;
 import com.merchant.server.authservice.util.JwtUtil;
 import com.merchant.server.authservice.util.MessageUtil;
 import com.merchant.server.authservice.util.PasswordUtil;
+import com.merchant.server.common.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -42,16 +53,25 @@ public class AuthServiceImpl implements AuthService {
     
     @Autowired
     private MessageUtil messageUtil;
-    
+
     @Autowired
-    private GoogleOAuthService googleOAuthService;
-    
+    private RoleMapper roleMapper;
+
+    @Autowired
+    private PermissionMapper permissionMapper;
+
+    @Autowired
+    private UserRoleMapper userRoleMapper;
+
     @Autowired
     private TenantInvitationService tenantInvitationService;
+
+    @Autowired
+    private MerchantServiceClient merchantServiceClient;
     
     @Override
-    public LoginResponse login(LoginRequest loginRequest) {
-        logger.debug("开始处理登录请求 - 用户名: {}, 租户代码: {}", loginRequest.getUsername(), loginRequest.getTenantCode());
+    public LoginResponse login(LoginRequest loginRequest, String clientIp) {
+        logger.debug("开始处理登录请求 - 用户名: {}, 租户代码: {}, IP: {}", loginRequest.getUsername(), loginRequest.getTenantCode(), clientIp);
         
         // 首先验证租户代码
         if (loginRequest.getTenantCode() == null || loginRequest.getTenantCode().trim().isEmpty()) {
@@ -67,8 +87,14 @@ public class AuthServiceImpl implements AuthService {
         }
         
         Tenant tenant = tenantOpt.get();
-        logger.debug("找到租户: tenantId={}, tenantName={}", tenant.getId(), tenant.getTenantName());
-        
+        logger.debug("找到租户: tenantId={}, tenantName={}, status={}", tenant.getId(), tenant.getTenantName(), tenant.getStatus());
+
+        // 检查租户状态
+        if (tenant.getStatus() != Tenant.TenantStatus.ACTIVE) {
+            logger.warn("登录失败 - 租户状态非活跃: {} (状态: {})", tenant.getTenantCode(), tenant.getStatus());
+            throw new RuntimeException(messageUtil.getMessage("tenant.not.active"));
+        }
+
         // 在指定租户下查找用户
         Optional<User> userOpt = userService.findByUsernameAndTenantId(loginRequest.getUsername(), tenant.getId());
         if (userOpt.isEmpty()) {
@@ -92,61 +118,146 @@ public class AuthServiceImpl implements AuthService {
             logger.warn("登录失败 - 用户状态非活跃: {} (状态: {})", loginRequest.getUsername(), user.getStatus());
             throw new RuntimeException(messageUtil.getMessage("user.account.disabled"));
         }
-        
+
+        // 检查是否需要二次验证（2FA）
+        if (user.getPhone() != null && !user.getPhone().trim().isEmpty()) {
+            logger.info("用户{}需要进行二次验证", loginRequest.getUsername());
+            // 返回需要2FA的响应，不生成JWT token
+            return LoginResponse.needTwoFactorAuth(user, tenant.getId());
+        }
+
+        // 如果用户没有电话号码，记录警告并继续登录流程
+        logger.warn("用户{}没有设置电话号码，跳过二次验证", loginRequest.getUsername());
+
         // 更新最后登录信息
-        logger.debug("更新用户登录信息");
-        user.setLastLoginAt(LocalDateTime.now());
-        user.setLastLoginIp(loginRequest.getUsername()); // 这里应该获取真实IP
+        logger.debug("更新用户登录信息 - IP: {}", clientIp);
+        user.setLastLoginAt(LocalDateTime.now(ZoneOffset.UTC));
+        user.setLastLoginIp(clientIp);
         user.setLoginAttempts(0);
         userService.save(user);
-        
+
+        // 重新查询用户以获取数据库中的完整信息（包括 created_at 等字段）
+        Optional<User> updatedUserOpt = userService.findById(user.getId());
+        if (updatedUserOpt.isPresent()) {
+            user = updatedUserOpt.get();
+            logger.debug("重新查询用户信息 - createdAt: {}, lastLoginAt: {}", user.getCreatedAt(), user.getLastLoginAt());
+        }
+
         // 生成JWT令牌
         logger.debug("生成JWT令牌");
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-        
+
+        // 查询用户角色
+        logger.debug("查询用户角色 - userId: {}", user.getId());
+        List<Role> userRoles = null;
+        try {
+            userRoles = roleMapper.selectByUserId(user.getId());
+            logger.debug("角色查询成功，结果: {}", userRoles);
+        } catch (Exception e) {
+            logger.error("查询用户角色失败 - userId: {}, 错误: {}", user.getId(), e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.role.query.failed", new Object[]{e.getMessage()}), e);
+        }
+        List<String> roleCodes = (userRoles != null && !userRoles.isEmpty()) ?
+            userRoles.stream()
+                .map(Role::getRoleCode)
+                .collect(Collectors.toList()) :
+            new java.util.ArrayList<>();
+        logger.debug("用户角色数量: {}, 角色: {}", roleCodes.size(), roleCodes);
+
+        // 查询用户权限
+        logger.debug("查询用户权限 - userId: {}, tenantId: {}", user.getId(), user.getTenantId());
+        List<Permission> userPermissions = null;
+        try {
+            userPermissions = permissionMapper.selectByUserId(user.getId(), user.getTenantId());
+            logger.debug("权限查询成功，结果数量: {}", userPermissions != null ? userPermissions.size() : 0);
+        } catch (Exception e) {
+            logger.error("查询用户权限失败 - userId: {}, tenantId: {}, 错误: {}", user.getId(), user.getTenantId(), e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.permission.query.failed", new Object[]{e.getMessage()}), e);
+        }
+        List<String> permissionCodes = (userPermissions != null && !userPermissions.isEmpty()) ?
+            userPermissions.stream()
+                .map(Permission::getPermissionCode)
+                .collect(Collectors.toList()) :
+            new java.util.ArrayList<>();
+        logger.debug("用户权限数量: {}, 前5个权限: {}", permissionCodes.size(),
+                     permissionCodes.stream().limit(5).collect(Collectors.toList()));
+
         LoginResponse response = new LoginResponse(accessToken, refreshToken, user);
-        logger.info("用户登录成功 - userId: {}, username: {}", user.getId(), user.getUsername());
-        logger.debug("登录响应生成完成 - accessToken长度: {}, refreshToken长度: {}", 
+        response.setRoles(roleCodes);
+        response.setPermissions(permissionCodes);
+        response.setTenantName(tenant.getTenantName());
+
+        // 获取商户时区信息
+        try {
+            ApiResponse<Map<String, Object>> merchantResponse = merchantServiceClient.getMerchantByTenantId(user.getTenantId());
+            if (merchantResponse != null && merchantResponse.isSuccess() && merchantResponse.getData() != null) {
+                String timezone = (String) merchantResponse.getData().get("timezone");
+                if (timezone != null && !timezone.isEmpty()) {
+                    response.setTimezone(timezone);
+                    logger.debug("设置商户时区: {}", timezone);
+                } else {
+                    response.setTimezone("America/Vancouver"); // 默认时区
+                    logger.warn("商户时区为空，使用默认时区: America/Vancouver");
+                }
+            } else {
+                response.setTimezone("America/Vancouver"); // 默认时区
+                logger.warn("获取商户信息失败，使用默认时区: America/Vancouver");
+            }
+        } catch (Exception e) {
+            logger.error("获取商户时区失败: {}", e.getMessage(), e);
+            response.setTimezone("America/Vancouver"); // 默认时区
+        }
+
+        logger.info("用户登录成功 - userId: {}, username: {}, roles: {}, permissions: {}, timezone: {}",
+                    user.getId(), user.getUsername(), roleCodes.size(), permissionCodes.size(), response.getTimezone());
+        logger.debug("登录响应生成完成 - accessToken长度: {}, refreshToken长度: {}",
                     accessToken.length(), refreshToken.length());
-        
+
         return response;
     }
     
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public LoginResponse register(RegisterRequest registerRequest) {
         logger.debug("开始处理注册请求 - 用户名: {}, 邮箱: {}", registerRequest.getUsername(), registerRequest.getEmail());
-        
+
         // 验证密码确认
         if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
             logger.warn("注册失败 - 密码不匹配: {}", registerRequest.getUsername());
             throw new RuntimeException(messageUtil.getMessage("user.password.mismatch"));
         }
-        
+
         // 验证邀请码并获取租户
         logger.debug("验证邀请码 - invitationCode: {}", registerRequest.getInvitationCode());
         TenantInvitation invitation = tenantInvitationService.validateInvitationCode(registerRequest.getInvitationCode());
-        
+
         // 获取租户信息
         Optional<Tenant> tenantOpt = tenantService.findById(invitation.getTenantId());
         if (tenantOpt.isEmpty()) {
             logger.error("邀请码关联的租户不存在 - tenantId: {}", invitation.getTenantId());
-            throw new RuntimeException("邀请码关联的租户不存在");
+            throw new RuntimeException(messageUtil.getMessage("error.tenant.invitation.invalid"));
         }
         Tenant tenant = tenantOpt.get();
-        
+
+        // 检查租户状态 - 只有激活的租户才能注册员工
+        if (tenant.getStatus() != Tenant.TenantStatus.ACTIVE) {
+            logger.warn("注册失败 - 租户状态非活跃: tenantCode={}, status={}", tenant.getTenantCode(), tenant.getStatus());
+            throw new RuntimeException(messageUtil.getMessage("tenant.not.active"));
+        }
+
         // 检查用户名在该租户下是否已存在
         if (userService.existsByUsernameAndTenantId(registerRequest.getUsername(), tenant.getId())) {
             logger.warn("注册失败 - 用户名在租户{}下已存在: {}", tenant.getId(), registerRequest.getUsername());
             throw new RuntimeException(messageUtil.getMessage("user.username.exists"));
         }
-        
+
         // 检查邮箱在该租户下是否已存在
         if (registerRequest.getEmail() != null && userService.existsByEmailAndTenantId(registerRequest.getEmail(), tenant.getId())) {
             logger.warn("注册失败 - 邮箱在租户{}下已存在: {}", tenant.getId(), registerRequest.getEmail());
             throw new RuntimeException(messageUtil.getMessage("user.email.exists"));
         }
-        
+
         // 创建用户
         logger.debug("创建新用户");
         User user = new User();
@@ -157,124 +268,59 @@ public class AuthServiceImpl implements AuthService {
         user.setRealName(registerRequest.getRealName());
         user.setStatus(User.UserStatus.ACTIVE);
         user.setLoginAttempts(0);
-        
+
         // 加密密码
         logger.debug("加密用户密码");
         String salt = passwordUtil.generateSalt();
         String passwordHash = passwordUtil.hashPassword(registerRequest.getPassword(), salt);
         user.setPasswordHash(passwordHash);
         user.setSalt(salt);
-        
+
         // 保存用户
         user = userService.save(user);
         logger.debug("用户保存成功 - userId: {}", user.getId());
-        
+
+        // 重新查询用户以获取数据库自动设置的字段（如 created_at）
+        Optional<User> savedUserOpt = userService.findById(user.getId());
+        if (savedUserOpt.isPresent()) {
+            user = savedUserOpt.get();
+            logger.debug("重新查询用户信息 - createdAt: {}", user.getCreatedAt());
+        }
+
+        // 自动分配 staff 角色（必须成功，否则回滚整个事务）
+        Role staffRole = roleMapper.selectByRoleCodeOnly("STAFF");
+        if (staffRole == null) {
+            logger.error("注册失败 - 系统中不存在 STAFF 角色");
+            throw new RuntimeException(messageUtil.getMessage("error.role.system.not.found", new Object[]{"STAFF"}));
+        }
+
+        UserRole userRole = new UserRole();
+        userRole.setUserId(user.getId());
+        userRole.setRoleId(staffRole.getId());
+        userRole.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        int insertResult = userRoleMapper.insert(userRole);
+
+        if (insertResult <= 0) {
+            logger.error("注册失败 - 角色分配失败: userId={}, roleId={}", user.getId(), staffRole.getId());
+            throw new RuntimeException(messageUtil.getMessage("error.role.assign.failed"));
+        }
+        logger.info("自动分配 STAFF 角色成功 - userId: {}, roleId: {}", user.getId(), staffRole.getId());
+
         // 记录邀请码使用
         tenantInvitationService.useInvitation(invitation.getId(), user.getId());
-        
+
         // 生成JWT令牌
         logger.debug("生成JWT令牌");
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-        
+
         LoginResponse response = new LoginResponse(accessToken, refreshToken, user);
         logger.info("用户注册成功 - userId: {}, username: {}", user.getId(), user.getUsername());
-        logger.debug("注册响应生成完成 - accessToken长度: {}, refreshToken长度: {}", 
+        logger.debug("注册响应生成完成 - accessToken长度: {}, refreshToken长度: {}",
                     accessToken.length(), refreshToken.length());
-        
+
         return response;
     }
-    
-    @Override
-    public LoginResponse googleLogin(GoogleLoginRequest request) {
-        logger.debug("开始处理Google登录请求");
-        
-        // 验证Google ID Token
-        GoogleOAuthService.GoogleUserInfo googleUserInfo = googleOAuthService.verifyGoogleToken(request.getIdToken());
-        if (googleUserInfo == null) {
-            logger.warn("Google登录失败 - 无效的ID Token");
-            throw new RuntimeException(messageUtil.getMessage("auth.login.failed"));
-        }
-        
-        // 检查邮箱是否已验证
-        if (!Boolean.TRUE.equals(googleUserInfo.getEmailVerified())) {
-            logger.warn("Google登录失败 - 邮箱未验证: {}", googleUserInfo.getEmail());
-            throw new RuntimeException(messageUtil.getMessage("user.email.not.verified"));
-        }
-        
-        // 查找或创建用户
-        Optional<User> existingUserOpt = userService.findByEmail(googleUserInfo.getEmail());
-        User user;
-        
-        if (existingUserOpt.isPresent()) {
-            // 用户已存在，更新Google信息
-            user = existingUserOpt.get();
-            logger.info("找到已存在用户 - userId: {}, email: {}", user.getId(), user.getEmail());
-            
-            // 更新用户的Google信息和头像
-            if (googleUserInfo.getPicture() != null && !googleUserInfo.getPicture().isEmpty()) {
-                user.setAvatarUrl(googleUserInfo.getPicture());
-            }
-            user.setLastLoginAt(LocalDateTime.now());
-            userService.save(user);
-            
-        } else {
-            // 创建新用户
-            logger.info("创建新的Google用户 - email: {}", googleUserInfo.getEmail());
-            
-            // 确定租户
-            Tenant tenant = null;
-            if (request.getTenantCode() != null && !request.getTenantCode().isEmpty()) {
-                Optional<Tenant> tenantOpt = tenantService.findByTenantCode(request.getTenantCode());
-                if (tenantOpt.isEmpty()) {
-                    logger.warn("Google登录失败 - 租户不存在: {}", request.getTenantCode());
-                    throw new RuntimeException(messageUtil.getMessage("tenant.not.found"));
-                }
-                tenant = tenantOpt.get();
-            } else {
-                // 使用默认租户
-                Optional<Tenant> defaultTenantOpt = tenantService.findByTenantCode("default");
-                if (defaultTenantOpt.isEmpty()) {
-                    logger.error("系统错误 - 默认租户不存在");
-                    throw new RuntimeException(messageUtil.getMessage("common.server.error"));
-                }
-                tenant = defaultTenantOpt.get();
-            }
-            
-            // 生成用户名（基于邮箱前缀）
-            String username = googleUserInfo.getEmail().split("@")[0];
-            // 如果用户名已存在，添加随机后缀
-            if (userService.existsByUsername(username)) {
-                username = username + "_" + System.currentTimeMillis() % 10000;
-            }
-            
-            user = new User();
-            user.setUsername(username);
-            user.setEmail(googleUserInfo.getEmail());
-            user.setRealName(googleUserInfo.getName() != null ? googleUserInfo.getName() : googleUserInfo.getGivenName());
-            user.setPasswordHash(""); // Google用户不需要密码
-            user.setSalt(""); // Google用户不需要salt，但数据库字段不能为null
-            user.setTenantId(tenant.getId());
-            user.setStatus(User.UserStatus.ACTIVE);
-            user.setAvatarUrl(googleUserInfo.getPicture());
-            user.setCreatedAt(LocalDateTime.now());
-            user.setUpdatedAt(LocalDateTime.now());
-            user.setLastLoginAt(LocalDateTime.now());
-            
-            user = userService.save(user);
-            logger.info("Google用户创建成功 - userId: {}, username: {}", user.getId(), user.getUsername());
-        }
-        
-        // 生成JWT令牌
-        String accessToken = jwtUtil.generateToken(user);
-        String refreshToken = jwtUtil.generateRefreshToken(user);
-        
-        LoginResponse response = new LoginResponse(accessToken, refreshToken, user);
-        logger.info("Google登录成功 - userId: {}, email: {}", user.getId(), user.getEmail());
-        
-        return response;
-    }
-    
     @Override
     public void logout(String token) {
         logger.debug("处理登出请求 - token长度: {}", token.length());

@@ -12,6 +12,7 @@ public class UserProfileResponse {
     private String avatar;
     private Long tenantId;
     private String tenantName;
+    private String timezone;
     private List<String> roles;
     private List<String> permissions;
     private LocalDateTime lastLoginTime;
@@ -73,7 +74,15 @@ public class UserProfileResponse {
     public void setTenantName(String tenantName) {
         this.tenantName = tenantName;
     }
-    
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
     public List<String> getRoles() {
         return roles;
     }
@@ -116,6 +125,7 @@ public class UserProfileResponse {
                 ", avatar='" + avatar + '\'' +
                 ", tenantId=" + tenantId +
                 ", tenantName='" + tenantName + '\'' +
+                ", timezone='" + timezone + '\'' +
                 ", roles=" + roles +
                 ", permissions=" + permissions +
                 ", lastLoginTime=" + lastLoginTime +

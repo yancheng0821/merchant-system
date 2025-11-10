@@ -47,9 +47,11 @@ import { useTranslation } from 'react-i18next';
 import RoomDialog from './RoomDialog';
 import { RoomResource, convertToRoomResource, convertRoomToResource } from '../types';
 import { getFullImageUrl } from '../../../services/api';
+import { usePermission } from '../../../hooks/usePermission';
 
 const RoomResourceManagement: React.FC = () => {
     const { t } = useTranslation();
+    const { hasPermission } = usePermission();
     const [rooms, setRooms] = useState<RoomResource[]>([]);
     const [filteredRooms, setFilteredRooms] = useState<RoomResource[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -437,15 +439,33 @@ const RoomResourceManagement: React.FC = () => {
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 3,
                                 backgroundColor: '#f8fafc',
-                                border: '2px solid transparent',
                                 '&:hover': {
                                     backgroundColor: '#f1f5f9',
-                                    borderColor: alpha(themeColor, 0.3),
                                 },
                                 '&.Mui-focused': {
                                     backgroundColor: 'white',
-                                    borderColor: themeColor,
-                                    boxShadow: `0 0 0 3px ${alpha(themeColor, 0.1)}`,
+                                    '& fieldset': {
+                                        borderColor: themeColor,
+                                        borderWidth: '2px',
+                                    },
+                                },
+                                '& fieldset': {
+                                    borderColor: 'rgba(0,0,0,0.1)',
+                                    transition: 'border-color 0.2s ease',
+                                },
+                            },
+                            '& .MuiOutlinedInput-input': {
+                                outline: 'none !important',
+                                '&:-webkit-autofill': {
+                                    WebkitBoxShadow: '0 0 0 100px #f8fafc inset !important',
+                                    WebkitTextFillColor: 'inherit',
+                                    caretColor: 'inherit',
+                                },
+                                '&:focus': {
+                                    outline: 'none !important',
+                                },
+                                '&:focus-visible': {
+                                    outline: 'none !important',
                                 },
                             },
                         }}
@@ -477,31 +497,33 @@ const RoomResourceManagement: React.FC = () => {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} md={3}>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => {
-                            setSelectedRoom(null);
-                            setRoomDialogOpen(true);
-                        }}
-                        sx={{
-                            borderRadius: 3,
-                            background: `linear-gradient(45deg, ${themeColor}, #3B82F6)`,
-                            boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
-                            height: '56px',
-                            width: '100%',
-                            '&:hover': {
-                                background: `linear-gradient(45deg, #1D4ED8, ${themeColor})`,
-                                transform: 'translateY(-1px)',
-                                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
-                            },
-                            transition: 'all 0.3s ease',
-                        }}
-                    >
-                        {t('resources.addRoom')}
-                    </Button>
-                </Grid>
+                {hasPermission('room:create') && (
+                    <Grid item xs={12} md={3}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => {
+                                setSelectedRoom(null);
+                                setRoomDialogOpen(true);
+                            }}
+                            sx={{
+                                borderRadius: 3,
+                                background: `linear-gradient(45deg, ${themeColor}, #3B82F6)`,
+                                boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+                                height: '56px',
+                                width: '100%',
+                                '&:hover': {
+                                    background: `linear-gradient(45deg, #1D4ED8, ${themeColor})`,
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                                },
+                                transition: 'all 0.3s ease',
+                            }}
+                        >
+                            {t('resources.addRoom')}
+                        </Button>
+                    </Grid>
+                )}
             </Grid>
 
             {/* 错误提示 */}
@@ -587,6 +609,9 @@ const RoomResourceManagement: React.FC = () => {
                                                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                                             {room.name}
                                                         </Typography>
+                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                                                            ID: {room.id}
+                                                        </Typography>
                                                         <Typography variant="caption" color="text.secondary">
                                                             {room.description || '-'}
                                                         </Typography>
@@ -650,16 +675,18 @@ const RoomResourceManagement: React.FC = () => {
                 open={Boolean(menuAnchorEl)}
                 onClose={() => setMenuAnchorEl(null)}
             >
-                <MenuItem
-                    onClick={() => {
-                        setRoomDialogOpen(true);
-                        setMenuAnchorEl(null);
-                    }}
-                >
-                    <EditIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t('resources.editRoom')}
-                </MenuItem>
-                {selectedRoom?.status === 'ACTIVE' && (
+                {hasPermission('room:update') && (
+                    <MenuItem
+                        onClick={() => {
+                            setRoomDialogOpen(true);
+                            setMenuAnchorEl(null);
+                        }}
+                    >
+                        <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+                        {t('resources.editRoom')}
+                    </MenuItem>
+                )}
+                {hasPermission('room:manage_availability') && selectedRoom?.status === 'ACTIVE' && (
                     <MenuItem
                         onClick={() => {
                             handleSetRoomInactive();
@@ -671,7 +698,7 @@ const RoomResourceManagement: React.FC = () => {
                         {t('resources.setInactive')}
                     </MenuItem>
                 )}
-                {(selectedRoom?.status === 'INACTIVE' || selectedRoom?.status === 'MAINTENANCE') && (
+                {hasPermission('room:manage_availability') && (selectedRoom?.status === 'INACTIVE' || selectedRoom?.status === 'MAINTENANCE') && (
                     <MenuItem
                         onClick={() => {
                             handleSetRoomActive();
@@ -683,16 +710,18 @@ const RoomResourceManagement: React.FC = () => {
                         {t('resources.setActive')}
                     </MenuItem>
                 )}
-                <MenuItem
-                    onClick={() => {
-                        setDeleteDialogOpen(true);
-                        setMenuAnchorEl(null);
-                    }}
-                    sx={{ color: 'error.main' }}
-                >
-                    <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t('resources.deleteRoom')}
-                </MenuItem>
+                {hasPermission('room:delete') && (
+                    <MenuItem
+                        onClick={() => {
+                            setDeleteDialogOpen(true);
+                            setMenuAnchorEl(null);
+                        }}
+                        sx={{ color: 'error.main' }}
+                    >
+                        <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+                        {t('resources.deleteRoom')}
+                    </MenuItem>
+                )}
             </Menu>
 
             {/* 房间对话框 */}

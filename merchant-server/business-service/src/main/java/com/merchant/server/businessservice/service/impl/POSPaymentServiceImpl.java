@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -211,8 +212,8 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         posTransaction.setRequestData(convertToJson(posRequest));
         posTransaction.setRetryCount(0); // 设置默认重试次数
         posTransaction.setNextRetryTime(null); // 初始状态不需要重试时间
-        posTransaction.setCreatedAt(LocalDateTime.now());
-        posTransaction.setUpdatedAt(LocalDateTime.now());
+        posTransaction.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        posTransaction.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         posTransactionMapper.insert(posTransaction);
         
         try {
@@ -229,7 +230,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             order.setPaymentStatus("pending");
             order.setPosTerminalId(terminal.getTerminalId());
             order.setTransactionId(initResponse.getTransactionId());
-            order.setUpdatedAt(LocalDateTime.now());
+            order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             orderMapper.updateById(order);
             
             // 启动状态轮询（Mock POS客户端支持轮询）
@@ -303,8 +304,8 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         order.setPaymentMethod("cash");
         order.setPaymentStatus("paid");
         order.setOrderStatus("completed");
-        order.setCompletedAt(LocalDateTime.now());
-        order.setUpdatedAt(LocalDateTime.now());
+        order.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
+        order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         try {
             orderMapper.updateById(order);
@@ -331,7 +332,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             .amount(totalAmount)
             .changeAmount(change)
             .message("Cash payment completed")
-            .completedAt(LocalDateTime.now())
+            .completedAt(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
     
@@ -384,7 +385,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
         callback.setCallbackData(convertToJson(status));
         callback.setCallbackStatus(CallbackStatus.PENDING);
         callback.setRetryCount(0);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         callback.setCreatedAt(now);
         callback.setUpdatedAt(now);
         paymentCallbackMapper.insert(callback);
@@ -393,7 +394,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             // 更新交易状态
             posTransaction.setTransactionStatus(status.getStatus());
             posTransaction.setResponseData(convertToJson(status));
-            posTransaction.setUpdatedAt(LocalDateTime.now());
+            posTransaction.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             posTransactionMapper.updateById(posTransaction);
             
             // 更新订单状态
@@ -408,7 +409,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                     order.setOrderStatus("completed");
                     order.setAuthorizationCode(status.getAuthorizationCode());
                     order.setCardLast4(status.getCardLast4());
-                    order.setCompletedAt(LocalDateTime.now());
+                    order.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
                     
                     // 如果订单关联了预约，更新预约状态为已完成
                     if (order.getAppointmentId() != null) {
@@ -429,7 +430,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                     // 如果支付失败且订单关联了预约，可以选择保持预约状态不变或标记为失败
                     // 这里我们选择保持预约状态不变，让用户可以重新支付
                 }
-                order.setUpdatedAt(LocalDateTime.now());
+                order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 
                 try {
                     orderMapper.updateById(order);
@@ -445,14 +446,14 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             // 更新回调状态
             callback.setCallbackStatus(CallbackStatus.PROCESSED);
             callback.setProcessingResult("Success");
-            callback.setUpdatedAt(LocalDateTime.now());
+            callback.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             paymentCallbackMapper.updateById(callback);
             
         } catch (Exception e) {
             log.error("Failed to process payment callback", e);
             callback.setCallbackStatus(CallbackStatus.FAILED);
             callback.setErrorMessage(e.getMessage());
-            callback.setUpdatedAt(LocalDateTime.now());
+            callback.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             paymentCallbackMapper.updateById(callback);
             throw e;
         }
@@ -479,7 +480,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             if (cancelResponse.isSuccess()) {
                 order.setPaymentStatus("cancelled");
                 order.setOrderStatus("cancelled");
-                order.setUpdatedAt(LocalDateTime.now());
+                order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 orderMapper.updateById(order);
                 return true;
             }
@@ -524,7 +525,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 order.setRefundAmount(normalizedRefundAmount);
                 order.setRefundReason(displayText);
                 order.setPaymentStatus("refunded");
-                order.setUpdatedAt(LocalDateTime.now());
+                order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 orderMapper.updateById(order);
                 
                 // 退款成功后，扣除客户的累计消费金额和积分
@@ -575,7 +576,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 refundTransaction.setResponseData(convertToJson(refundResponse));
                 refundTransaction.setRetryCount(0); // 设置默认重试次数
                 refundTransaction.setNextRetryTime(null); // 退款不需要重试时间
-                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
                 refundTransaction.setCreatedAt(now);
                 refundTransaction.setUpdatedAt(now);
                 posTransactionMapper.insert(refundTransaction);
@@ -584,7 +585,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 order.setRefundAmount(normalizedRefundAmount);
                 order.setRefundReason(displayText);
                 order.setPaymentStatus("refunded");
-                order.setUpdatedAt(LocalDateTime.now());
+                order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 orderMapper.updateById(order);
                 
                 // 退款成功后，扣除客户的累计消费金额和积分
@@ -710,8 +711,8 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             }
             
             // 更新最后访问日期
-            customer.setLastVisitDate(LocalDateTime.now());
-            customer.setUpdatedAt(LocalDateTime.now());
+            customer.setLastVisitDate(LocalDateTime.now(ZoneOffset.UTC));
+            customer.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             
             customerMapper.update(customer);
             log.info("Successfully updated customer {} - totalSpent: ${}, points: {}", 
@@ -768,7 +769,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
             }
             
             // 更新修改时间
-            customer.setUpdatedAt(LocalDateTime.now());
+            customer.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             
             customerMapper.update(customer);
             log.info("Successfully updated customer {} after refund - totalSpent: ${}, points: {}", 
@@ -801,7 +802,7 @@ public class POSPaymentServiceImpl implements POSPaymentService {
                 }
                 
                 appointment.setStatus(newStatus);
-                appointment.setUpdatedAt(LocalDateTime.now());
+                appointment.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                 appointmentMapper.update(appointment);
                 
                 log.info("Successfully updated appointment {} status to {}", appointmentId, newStatus);

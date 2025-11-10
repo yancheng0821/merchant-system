@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CustomerPreferredResourceMapper">
+
+    <resultMap id="CustomerPreferredResourceResultMap" type="com.merchant.server.businessservice.entity.CustomerPreferredResource">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="preference_level" property="preferenceLevel"/>
+        <result column="preference_note" property="preferenceNote"/>
+        <result column="total_appointments" property="totalAppointments"/>
+        <result column="last_appointment_date" property="lastAppointmentDate"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findByCustomerIdAndResourceId" resultMap="CustomerPreferredResourceResultMap">
+        SELECT * FROM customer_preferred_resources
+        WHERE customer_id = #{customerId} AND resource_id = #{resourceId}
+    </select>
+
+    <select id="findByCustomerId" resultMap="CustomerPreferredResourceResultMap">
+        SELECT * FROM customer_preferred_resources
+        WHERE customer_id = #{customerId}
+        ORDER BY preference_level DESC, total_appointments DESC
+    </select>
+
+    <select id="findByResourceId" resultMap="CustomerPreferredResourceResultMap">
+        SELECT * FROM customer_preferred_resources
+        WHERE resource_id = #{resourceId}
+        ORDER BY preference_level DESC, total_appointments DESC
+    </select>
+
+    <select id="findHighPreferenceByCustomerId" resultMap="CustomerPreferredResourceResultMap">
+        SELECT * FROM customer_preferred_resources
+        WHERE customer_id = #{customerId}
+        AND preference_level IN ('HIGH', 'EXCLUSIVE')
+        ORDER BY preference_level DESC
+    </select>
+
+    <select id="findByTenantId" resultMap="CustomerPreferredResourceResultMap">
+        SELECT * FROM customer_preferred_resources
+        WHERE tenant_id = #{tenantId}
+        ORDER BY customer_id, preference_level DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_preferred_resources (
+            tenant_id, customer_id, resource_id, preference_level, preference_note,
+            total_appointments, last_appointment_date, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{customerId}, #{resourceId}, #{preferenceLevel}, #{preferenceNote},
+            #{totalAppointments}, #{lastAppointmentDate}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO customer_preferred_resources (
+            tenant_id, customer_id, resource_id, preference_level, preference_note,
+            total_appointments, last_appointment_date, created_at, updated_at
+        ) VALUES
+        <foreach collection="preferences" item="pref" separator=",">
+            (
+                #{pref.tenantId}, #{pref.customerId}, #{pref.resourceId}, #{pref.preferenceLevel},
+                #{pref.preferenceNote}, #{pref.totalAppointments}, #{pref.lastAppointmentDate}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+            )
+        </foreach>
+    </insert>
+
+    <update id="update">
+        UPDATE customer_preferred_resources SET
+            preference_level = #{preferenceLevel},
+            preference_note = #{preferenceNote},
+            total_appointments = #{totalAppointments},
+            last_appointment_date = #{lastAppointmentDate},
+            updated_at = UTC_TIMESTAMP()
+        WHERE customer_id = #{customerId} AND resource_id = #{resourceId}
+    </update>
+
+    <update id="incrementAppointmentCount">
+        UPDATE customer_preferred_resources SET
+            total_appointments = total_appointments + 1,
+            last_appointment_date = #{appointmentDate},
+            updated_at = UTC_TIMESTAMP()
+        WHERE customer_id = #{customerId} AND resource_id = #{resourceId}
+    </update>
+
+    <delete id="deleteByCustomerIdAndResourceId">
+        DELETE FROM customer_preferred_resources
+        WHERE customer_id = #{customerId} AND resource_id = #{resourceId}
+    </delete>
+
+    <delete id="deleteByCustomerId">
+        DELETE FROM customer_preferred_resources WHERE customer_id = #{customerId}
+    </delete>
+
+    <delete id="deleteByResourceId">
+        DELETE FROM customer_preferred_resources WHERE resource_id = #{resourceId}
+    </delete>
+
+    <select id="existsByCustomerIdAndResourceId" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM customer_preferred_resources
+        WHERE customer_id = #{customerId} AND resource_id = #{resourceId}
+    </select>
+
+</mapper>

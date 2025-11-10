@@ -11,6 +11,7 @@ import com.merchant.server.businessservice.mapper.CustomerImportLogMapper;
 import com.merchant.server.businessservice.mapper.CustomerImportTempMapper;
 import com.merchant.server.businessservice.service.CustomerImportService;
 import com.merchant.server.businessservice.service.CustomerService;
+import com.merchant.server.businessservice.util.MessageUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -40,13 +42,16 @@ public class CustomerImportServiceImpl implements CustomerImportService {
     
     @Autowired
     private CustomerImportTempMapper tempMapper;
-    
+
     @Autowired
     private CustomerImportLogMapper logMapper;
-    
+
     @Autowired
     private CustomerService customerService;
-    
+
+    @Autowired
+    private MessageUtil messageUtil;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     
     // 支持的字段映射
@@ -83,9 +88,9 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             logger.info("创建导入会话: {}", importSessionId);
             
             List<Map<String, Object>> data = parseFile(file);
-            
+
             if (data.isEmpty()) {
-                throw new RuntimeException("文件为空或格式不正确");
+                throw new RuntimeException(messageUtil.getMessage("error.import.file.empty"));
             }
             
             logger.info("文件解析完成，共 {} 行数据", data.size());
@@ -122,7 +127,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             return response;
             
         } catch (Exception e) {
-            throw new RuntimeException("文件上传失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.upload.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -136,9 +141,9 @@ public class CustomerImportServiceImpl implements CustomerImportService {
                 tenantId, request.getImportSessionId());
             
             logger.info("找到 {} 条临时记录", tempRecords.size());
-            
+
             if (tempRecords.isEmpty()) {
-                throw new RuntimeException("未找到导入数据");
+                throw new RuntimeException(messageUtil.getMessage("error.import.data.not.found"));
             }
             
             List<CustomerImportDTO.PreviewRecord> previewRecords = new ArrayList<>();
@@ -194,7 +199,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             return response;
             
         } catch (Exception e) {
-            throw new RuntimeException("数据验证失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.validation.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -210,7 +215,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             
             if (importLog == null) {
                 logger.error("未找到导入记录 - tenantId: {}, importSessionId: {}", tenantId, request.getImportSessionId());
-                throw new RuntimeException("未找到导入记录");
+                throw new RuntimeException(messageUtil.getMessage("error.import.record.not.found"));
             }
             
             logger.info("找到导入记录 - fileName: {}, totalRecords: {}", importLog.getFileName(), importLog.getTotalRecords());
@@ -278,7 +283,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
                 updateImportLog(importLog, 0, 0, CustomerImportLog.ImportStatus.FAILED, e.getMessage());
             }
             
-            throw new RuntimeException("导入执行失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.execution.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -291,7 +296,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             return logs.stream().map(this::convertToLogDTO).collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("获取导入日志失败: {}", e.getMessage(), e);
-            throw new RuntimeException("获取导入日志失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.log.get.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -299,7 +304,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
     public CustomerImportDTO.ImportLogDTO getImportLog(Long tenantId, String importSessionId) {
         CustomerImportLog log = logMapper.findByTenantIdAndImportSessionId(tenantId, importSessionId);
         if (log == null) {
-            throw new RuntimeException("未找到导入记录");
+            throw new RuntimeException(messageUtil.getMessage("error.import.record.not.found"));
         }
         return convertToLogDTO(log);
     }
@@ -335,7 +340,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             return outputStream.toByteArray();
             
         } catch (Exception e) {
-            throw new RuntimeException("生成错误报告失败: " + e.getMessage(), e);
+            throw new RuntimeException(messageUtil.getMessage("error.import.report.generation.failed", new Object[]{e.getMessage()}), e);
         }
     }
     
@@ -355,7 +360,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             importLog.setSuccessRecords(successRecords);
             importLog.setFailedRecords(failedRecords);
             importLog.setStatus(status);
-            importLog.setCompletedAt(LocalDateTime.now());
+            importLog.setCompletedAt(LocalDateTime.now(ZoneOffset.UTC));
             if (errorMessage != null) {
                 importLog.setErrorMessage(errorMessage);
             }
@@ -371,15 +376,15 @@ public class CustomerImportServiceImpl implements CustomerImportService {
     private List<Map<String, Object>> parseFile(MultipartFile file) throws IOException {
         String fileName = file.getOriginalFilename();
         if (fileName == null) {
-            throw new RuntimeException("文件名为空");
+            throw new RuntimeException(messageUtil.getMessage("error.import.filename.empty"));
         }
-        
+
         if (fileName.endsWith(".csv")) {
             return parseCsvFile(file);
         } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
             return parseExcelFile(file);
         } else {
-            throw new RuntimeException("不支持的文件格式，请上传 CSV 或 Excel 文件");
+            throw new RuntimeException(messageUtil.getMessage("error.import.format.unsupported"));
         }
     }
     

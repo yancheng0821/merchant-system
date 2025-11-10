@@ -2,8 +2,7 @@ import React from 'react';
 import {
   Box,
   TextField,
-  InputAdornment,
-  Autocomplete,
+  MenuItem,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
@@ -182,6 +181,8 @@ interface CountryCodeSelectorProps {
   label?: string;
   size?: 'small' | 'medium';
   fullWidth?: boolean;
+  disabled?: boolean;
+  container?: HTMLElement | null;
 }
 
 const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
@@ -190,91 +191,97 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
   label = 'Country Code',
   size = 'medium',
   fullWidth = false,
+  disabled = false,
+  container,
 }) => {
   const { i18n } = useTranslation();
-  const selectedCountry = countryCodes.find(country => country.dialCode === value) || countryCodes[0];
   const isZh = i18n.language === 'zh-CN';
 
-  // 获取显示的拨号代码（去掉国家后缀）
+  // 清理拨号代码显示（去掉国家后缀）
   const getDisplayDialCode = (dialCode: string) => {
     return dialCode.replace(/-[A-Z]{2}$/, '');
   };
 
   return (
-    <Autocomplete
-      options={countryCodes}
-      value={selectedCountry}
-      onChange={(_, newValue) => {
-        if (newValue) {
-          onChange(newValue.dialCode);
-        }
-      }}
-      getOptionLabel={(option) => `${option.flag} ${getDisplayDialCode(option.dialCode)} ${isZh ? (option.nameZh || option.name) : option.name}`}
-      renderOption={(props, option) => (
-        <Box component="li" {...props}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-            <span style={{ fontSize: '1.2em' }}>{option.flag}</span>
-            <Box sx={{ flex: 1 }}>
-              <Box sx={{ fontWeight: 'medium', fontSize: '0.875rem' }}>
-                {isZh ? (option.nameZh || option.name) : option.name}
+    <TextField
+      select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      label={label}
+      size={size}
+      fullWidth={fullWidth}
+      disabled={disabled}
+      SelectProps={{
+        MenuProps: {
+          container: container,
+          disablePortal: false,
+          PaperProps: {
+            style: {
+              maxHeight: 300,
+              zIndex: 10001,
+            },
+          },
+          anchorOrigin: {
+            vertical: 'bottom',
+            horizontal: 'left',
+          },
+          transformOrigin: {
+            vertical: 'top',
+            horizontal: 'left',
+          },
+          style: {
+            zIndex: 10001,
+          },
+        },
+        renderValue: (selected) => {
+          const country = countryCodes.find(c => c.dialCode === selected);
+          if (!country) return String(selected);
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ fontSize: '1.2rem', lineHeight: 1 }}>
+                {country.flag}
               </Box>
-              <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                {getDisplayDialCode(option.dialCode)}
+              <Box sx={{
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                color: 'text.primary',
+              }}>
+                {getDisplayDialCode(country.dialCode)}
               </Box>
             </Box>
-          </Box>
-        </Box>
-      )}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          size={size}
-          fullWidth={fullWidth}
-          placeholder=""
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: (
-              <InputAdornment position="start">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <span style={{ fontSize: '1.2em' }}>{selectedCountry.flag}</span>
-                  <span style={{
-                    fontWeight: 'medium',
-                    color: 'text.primary',
-                    fontSize: '0.875rem'
-                  }}>
-                    {getDisplayDialCode(selectedCountry.dialCode)}
-                  </span>
-                </Box>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-            },
-            '& .MuiAutocomplete-input': {
-              opacity: 0,
-              cursor: 'pointer',
-            },
-            '& .MuiInputAdornment-root': {
-              marginRight: '8px',
-            },
-          }}
-        />
-      )}
-      filterOptions={(options, { inputValue }) => {
-        const filtered = options.filter(
-          (option) =>
-            option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
-            (option.nameZh && option.nameZh.includes(inputValue)) ||
-            getDisplayDialCode(option.dialCode).includes(inputValue) ||
-            option.code.toLowerCase().includes(inputValue.toLowerCase())
-        );
-        return filtered;
+          );
+        },
       }}
-      sx={{ minWidth: fullWidth ? undefined : 200 }}
-    />
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 2,
+        },
+      }}
+    >
+      {countryCodes.map((country) => (
+        <MenuItem key={country.code} value={country.dialCode}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ fontSize: '1.2rem', lineHeight: 1 }}>
+              {country.flag}
+            </Box>
+            <Box sx={{
+              fontWeight: 500,
+              fontSize: '0.875rem',
+              color: 'text.secondary',
+              minWidth: 45,
+            }}>
+              {getDisplayDialCode(country.dialCode)}
+            </Box>
+            <Box sx={{
+              fontSize: '0.875rem',
+              color: 'text.primary',
+            }}>
+              {isZh ? (country.nameZh || country.name) : country.name}
+            </Box>
+          </Box>
+        </MenuItem>
+      ))}
+    </TextField>
   );
 };
 

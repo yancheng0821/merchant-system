@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -20,6 +21,11 @@ import java.util.regex.Pattern;
 public class TemplateServiceImpl implements TemplateService {
 
     private final NotificationTemplateMapper templateMapper;
+
+    @Override
+    public NotificationTemplate getTemplateById(Long id) {
+        return templateMapper.findById(id);
+    }
 
     @Override
     public List<NotificationTemplate> getTemplatesByTenantId(Long tenantId) {
@@ -46,8 +52,8 @@ public class TemplateServiceImpl implements TemplateService {
         template.setSubject(templateDTO.getSubject());
         template.setContent(templateDTO.getContent());
         template.setStatus(templateDTO.getStatus());
-        template.setCreatedAt(LocalDateTime.now());
-        template.setUpdatedAt(LocalDateTime.now());
+        template.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        template.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         templateMapper.insert(template);
         return template;
@@ -55,8 +61,8 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public NotificationTemplate createTemplate(NotificationTemplate template) {
-        template.setCreatedAt(LocalDateTime.now());
-        template.setUpdatedAt(LocalDateTime.now());
+        template.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        template.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         templateMapper.insert(template);
         return template;
     }
@@ -74,7 +80,7 @@ public class TemplateServiceImpl implements TemplateService {
         template.setSubject(templateDTO.getSubject());
         template.setContent(templateDTO.getContent());
         template.setStatus(templateDTO.getStatus());
-        template.setUpdatedAt(LocalDateTime.now());
+        template.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         templateMapper.update(template);
         return template;
@@ -82,7 +88,7 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     public NotificationTemplate updateTemplate(NotificationTemplate template) {
-        template.setUpdatedAt(LocalDateTime.now());
+        template.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         templateMapper.update(template);
         return template;
     }
@@ -126,17 +132,54 @@ public class TemplateServiceImpl implements TemplateService {
             log.info("租户 {} 已存在通知模板，跳过初始化", tenantId);
             return;
         }
-        
-        log.info("为租户 {} 初始化默认通知模板，语言: {}", tenantId, language);
-        
-        // 根据语言选择模板内容
-        if ("en".equalsIgnoreCase(language) || "en-US".equalsIgnoreCase(language)) {
-            log.info("初始化英文模板");
-            initEnglishTemplates(tenantId);
-        } else {
-            log.info("初始化中文模板");
-            initChineseTemplates(tenantId);
+
+        log.info("为租户 {} 初始化默认通知模板，从系统模板（tenant_id=1）复制商户级模板", tenantId);
+
+        // 从 tenant_id=1 复制所有商户级（TENANT scope）模板
+        // 根据 NotificationScene 枚举，商户级模板包括：
+        // - PACKAGE_VERIFICATION
+        // - APPOINTMENT_CONFIRMATION
+        // - APPOINTMENT_CANCELLATION
+        // - APPOINTMENT_COMPLETION
+        // - PACKAGE_PURCHASE_SUCCESS
+        // - APPOINTMENT_REMINDER
+
+        List<String> tenantScopedTemplateCodes = List.of(
+            "PACKAGE_VERIFICATION",
+            "APPOINTMENT_CONFIRMATION",
+            "APPOINTMENT_CANCELLATION",
+            "APPOINTMENT_COMPLETION",
+            "PACKAGE_PURCHASE_SUCCESS",
+            "APPOINTMENT_REMINDER"
+        );
+
+        int copiedCount = 0;
+        for (String templateCode : tenantScopedTemplateCodes) {
+            // 获取系统模板（tenant_id=1）中该代码的所有模板（SMS和EMAIL）
+            List<NotificationTemplate> systemTemplates = templateMapper.findByCodeAndTenantId(templateCode, 1L);
+
+            for (NotificationTemplate systemTemplate : systemTemplates) {
+                // 复制模板到新租户
+                NotificationTemplate newTemplate = new NotificationTemplate();
+                newTemplate.setTenantId(tenantId);
+                newTemplate.setTemplateCode(systemTemplate.getTemplateCode());
+                newTemplate.setTemplateName(systemTemplate.getTemplateName());
+                newTemplate.setType(systemTemplate.getType());
+                newTemplate.setSubject(systemTemplate.getSubject());
+                newTemplate.setContent(systemTemplate.getContent());
+                newTemplate.setStatus(NotificationTemplate.TemplateStatus.ACTIVE);
+                newTemplate.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+                newTemplate.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
+
+                templateMapper.insert(newTemplate);
+                copiedCount++;
+
+                log.info("已复制模板 - 租户: {}, 代码: {}, 类型: {}, 名称: {}",
+                    tenantId, templateCode, systemTemplate.getType(), systemTemplate.getTemplateName());
+            }
         }
+
+        log.info("租户 {} 初始化完成，共复制 {} 个商户级通知模板", tenantId, copiedCount);
     }
     
     private void initChineseTemplates(Long tenantId) {
@@ -180,8 +223,8 @@ public class TemplateServiceImpl implements TemplateService {
         template.setSubject(subject);
         template.setContent(content);
         template.setStatus(NotificationTemplate.TemplateStatus.ACTIVE);
-        template.setCreatedAt(LocalDateTime.now());
-        template.setUpdatedAt(LocalDateTime.now());
+        template.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        template.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         templateMapper.insert(template);
     }

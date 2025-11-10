@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.VerificationCodeMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.VerificationCode">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="businessType" column="business_type"/>
+        <result property="businessId" column="business_id"/>
+        <result property="recipientType" column="recipient_type"/>
+        <result property="recipient" column="recipient"/>
+        <result property="verificationCode" column="verification_code"/>
+        <result property="codeHash" column="code_hash"/>
+        <result property="status" column="status"/>
+        <result property="attempts" column="attempts"/>
+        <result property="maxAttempts" column="max_attempts"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="verifiedAt" column="verified_at"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="userAgent" column="user_agent"/>
+        <result property="metadata" column="metadata"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.VerificationCode"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO verification_codes (
+            tenant_id, business_type, business_id, recipient_type, recipient,
+            verification_code, code_hash, status, attempts, max_attempts,
+            created_at, expires_at, ip_address, user_agent, metadata
+        ) VALUES (
+            #{tenantId}, #{businessType}, #{businessId}, #{recipientType}, #{recipient},
+            #{verificationCode}, #{codeHash}, #{status}, #{attempts}, #{maxAttempts},
+            #{createdAt}, #{expiresAt}, #{ipAddress}, #{userAgent}, #{metadata}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM verification_codes WHERE id = #{id}
+    </select>
+
+    <select id="selectLatestByBusiness" resultMap="BaseResultMap">
+        SELECT * FROM verification_codes
+        WHERE tenant_id = #{tenantId}
+          AND business_type = #{businessType}
+          AND business_id = #{businessId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectLatestByRecipient" resultMap="BaseResultMap">
+        SELECT * FROM verification_codes
+        WHERE tenant_id = #{tenantId}
+          AND recipient_type = #{recipientType}
+          AND recipient = #{recipient}
+          AND business_type = #{businessType}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <update id="updateStatus">
+        UPDATE verification_codes
+        SET status = #{status},
+            verified_at = #{verifiedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="incrementAttempts">
+        UPDATE verification_codes
+        SET attempts = attempts + 1
+        WHERE id = #{id}
+    </update>
+
+    <update id="expireOldCodes">
+        UPDATE verification_codes
+        SET status = 'EXPIRED'
+        WHERE status = 'PENDING'
+          AND expires_at &lt; #{currentTime}
+    </update>
+
+    <select id="countRecentCodesByRecipient" resultType="int">
+        SELECT COUNT(*)
+        FROM verification_codes
+        WHERE recipient_type = #{recipientType}
+          AND recipient = #{recipient}
+          AND created_at &gt;= #{startTime}
+          AND status IN ('PENDING', 'VERIFIED', 'EXPIRED')
+    </select>
+
+    <select id="countRecentCodesByIp" resultType="int">
+        SELECT COUNT(*)
+        FROM verification_codes
+        WHERE ip_address = #{ipAddress}
+          AND created_at &gt;= #{startTime}
+          AND status IN ('PENDING', 'VERIFIED', 'EXPIRED')
+    </select>
+
+</mapper>

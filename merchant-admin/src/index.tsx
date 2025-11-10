@@ -4,15 +4,32 @@ import './index.css';
 import App from './App';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './contexts/AuthContext';
 import './i18n/config';
+
+// Suppress MetaMask and browser extension errors in React error overlay
+if (process.env.NODE_ENV === 'development') {
+  const originalError = console.error;
+  console.error = (...args: any[]) => {
+    const errorString = args.join(' ');
+    if (
+      errorString.includes('MetaMask') ||
+      errorString.includes('chrome-extension') ||
+      errorString.includes('moz-extension')
+    ) {
+      return;
+    }
+    originalError.apply(console, args);
+  };
+}
 
 // 创建MUI主题
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
+      main: '#6366F1',
     },
     secondary: {
       main: '#dc004e',
@@ -61,11 +78,24 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <App />
-      </ThemeProvider>
-    </AuthProvider>
+    <SnackbarProvider
+      maxSnack={3}
+      anchorOrigin={{
+        vertical: 'top',
+        horizontal: 'center',
+      }}
+      autoHideDuration={3000}
+      preventDuplicate
+      style={{
+        marginTop: '64px',
+      }}
+    >
+      <AuthProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <App />
+        </ThemeProvider>
+      </AuthProvider>
+    </SnackbarProvider>
   </React.StrictMode>
 ); // Build: Mon 18 Aug 2025 20:22:24 PDT

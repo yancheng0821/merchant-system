@@ -2,6 +2,7 @@ package com.merchant.server.authservice.entity;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Data
 public class TenantInvitation {
@@ -35,7 +36,7 @@ public class TenantInvitation {
             return false;
         }
         
-        if (expiresAt != null && expiresAt.isBefore(LocalDateTime.now())) {
+        if (expiresAt != null && expiresAt.isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
             return false;
         }
         

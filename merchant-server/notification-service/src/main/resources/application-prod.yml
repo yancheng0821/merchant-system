@@ -6,9 +6,9 @@ spring:
   application:
     name: notification-service
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_notification?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/merchant_notification?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:merchant_app}
+    password: ${DB_PASSWORD:MerchantApp@2024}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5
@@ -17,10 +17,11 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
   rabbitmq:
-    host: ${RABBITMQ_HOST}
-    port: 5672
-    username: ${RABBITMQ_USERNAME}
-    password: ${RABBITMQ_PASSWORD}
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:merchant_app}
+    password: ${RABBITMQ_PASSWORD:MerchantApp@2024}
+    virtual-host: ${RABBITMQ_VHOST:merchant_vhost}
 
 # MyBatis配置
 mybatis:
@@ -31,11 +32,17 @@ mybatis:
 
 eureka:
   client:
+    enabled: true
     service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://eureka-server:8761/eureka/}
+      defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+    appname: ${spring.application.name}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
 
 # 生产环境通知服务配置
 notification:
@@ -48,18 +55,22 @@ notification:
   email:
     provider: aws # 生产环境使用AWS SES
     from: ${EMAIL_FROM:yancheng0723@gmail.com}
-    fromName: ${EMAIL_FROM_NAME:美容院预约系统}
+    fromName: ${EMAIL_FROM_NAME:VA Merchant}
     enabled: true
   aws:
-    region: ${AWS_REGION:us-east-1}
-    useLocalCredentials: false # 生产环境使用配置的凭证
+    region: ${AWS_REGION:ca-central-1}
+    # 🔐 生产环境使用IAM Role（推荐）
+    # 在EC2/ECS/EKS上运行时，设置为true会自动使用实例/任务/Pod的IAM Role
+    # 这样无需管理access key，更安全且不会过期
+    useLocalCredentials: true # 使用AWS默认凭证链（包括IAM Role）
     maxRetries: ${AWS_MAX_RETRIES:3} # 最大重试次数
     retryDelayMs: ${AWS_RETRY_DELAY_MS:1000} # 重试间隔（毫秒）
-    accessKeyId: ${AWS_ACCESS_KEY_ID}
-    secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+    # 不再需要配置access key - 使用IAM Role
+    accessKeyId: ${AWS_ACCESS_KEY_ID:}
+    secretAccessKey: ${AWS_SECRET_ACCESS_KEY:}
     ses:
-      fromEmail: ${AWS_SES_FROM_EMAIL:yancheng0723@gmail.com}
-      fromName: ${AWS_SES_FROM_NAME:美容院预约系统}
+      fromEmail: ${AWS_SES_FROM_EMAIL:noreply@vamerchant.app}
+      fromName: ${AWS_SES_FROM_NAME:VA Merchant}
       configurationSetName: ${AWS_SES_CONFIG_SET:}
     sns:
       defaultSenderId: ${AWS_SNS_SENDER_ID:YourApp}
@@ -75,10 +86,13 @@ management:
     health:
       show-details: always
 
-# 生产环境日志配置
+# 生产环境日志配置 - 只保留核心业务日志
 logging:
   level:
     com.merchant.server.notificationservice: INFO
+    com.merchant.server.notificationservice.mq: INFO
+    com.merchant.server.notificationservice.processor: INFO
+    com.merchant.server.notificationservice.service: INFO
     com.merchant.server.notificationservice.mapper: WARN
     org.apache.ibatis: WARN
     java.sql: WARN
@@ -87,7 +101,9 @@ logging:
     org.apache.catalina: WARN
     org.apache.coyote: WARN
     org.apache.tomcat: WARN
-    software.amazon.awssdk: INFO
+    software.amazon.awssdk: WARN
+    software.amazon.awssdk.request: WARN
+    software.amazon.awssdk.http: WARN
     root: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

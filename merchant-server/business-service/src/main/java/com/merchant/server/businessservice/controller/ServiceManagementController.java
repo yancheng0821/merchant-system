@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.dto.ServiceDTO;
 import com.merchant.server.businessservice.dto.ServiceQueryDTO;
 import com.merchant.server.businessservice.service.ServiceManagementService;
@@ -24,6 +25,7 @@ public class ServiceManagementController {
     /**
      * 分页查询服务
      */
+    @RequiresPermission("services:view")
     @GetMapping
     public ResponseEntity<Map<String, Object>> getServices(
             @RequestParam Long tenantId,
@@ -57,6 +59,7 @@ public class ServiceManagementController {
     /**
      * 根据ID获取服务详情
      */
+    @RequiresPermission("services:view")
     @GetMapping("/{id}")
     public ResponseEntity<ServiceDTO> getServiceById(@PathVariable Long id) {
         ServiceDTO service = serviceManagementService.getServiceById(id);
@@ -66,6 +69,8 @@ public class ServiceManagementController {
     /**
      * 创建服务
      */
+    @RequiresPermission("services:create")
+    @com.merchant.server.common.annotation.Auditable(resource = "SERVICE", action = "CREATE", recordOldValue = true, description = "Create new service")
     @PostMapping
     public ResponseEntity<ServiceDTO> createService(@Valid @RequestBody ServiceDTO serviceDTO) {
         ServiceDTO createdService = serviceManagementService.createService(serviceDTO);
@@ -75,6 +80,8 @@ public class ServiceManagementController {
     /**
      * 更新服务
      */
+    @RequiresPermission("services:update")
+    @com.merchant.server.common.annotation.Auditable(resource = "SERVICE", action = "UPDATE", resourceIdParam = "id", recordOldValue = true, description = "Update service information")
     @PutMapping("/{id}")
     public ResponseEntity<ServiceDTO> updateService(@PathVariable Long id, @Valid @RequestBody ServiceDTO serviceDTO) {
         ServiceDTO updatedService = serviceManagementService.updateService(id, serviceDTO);
@@ -84,6 +91,8 @@ public class ServiceManagementController {
     /**
      * 删除服务
      */
+    @RequiresPermission("services:delete")
+    @com.merchant.server.common.annotation.Auditable(resource = "SERVICE", action = "DELETE", resourceIdParam = "id", recordOldValue = true, description = "Delete service")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteService(@PathVariable Long id) {
         serviceManagementService.deleteService(id);
@@ -93,6 +102,7 @@ public class ServiceManagementController {
     /**
      * 根据租户ID获取所有服务
      */
+    @RequiresPermission("services:view")
     @GetMapping("/tenant/{tenantId}")
     public ResponseEntity<List<ServiceDTO>> getServicesByTenantId(@PathVariable Long tenantId) {
         List<ServiceDTO> services = serviceManagementService.getServicesByTenantId(tenantId);

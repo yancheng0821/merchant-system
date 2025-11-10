@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.ResourceServiceExpertiseMapper">
+
+    <resultMap id="ResourceServiceExpertiseResultMap" type="com.merchant.server.businessservice.entity.ResourceServiceExpertise">
+        <id column="id" property="id"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="service_id" property="serviceId"/>
+        <result column="skill_level" property="skillLevel"/>
+        <result column="years_experience" property="yearsExperience"/>
+        <result column="certification" property="certification"/>
+        <result column="is_preferred" property="isPreferred"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="findByResourceIdAndServiceId" resultMap="ResourceServiceExpertiseResultMap">
+        SELECT * FROM resource_service_expertise
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </select>
+
+    <select id="findByResourceId" resultMap="ResourceServiceExpertiseResultMap">
+        SELECT * FROM resource_service_expertise
+        WHERE resource_id = #{resourceId}
+        ORDER BY skill_level DESC, service_id
+    </select>
+
+    <select id="findByServiceId" resultMap="ResourceServiceExpertiseResultMap">
+        SELECT * FROM resource_service_expertise
+        WHERE service_id = #{serviceId}
+        ORDER BY skill_level DESC, is_preferred DESC
+    </select>
+
+    <select id="findByServiceIdAndSkillLevel" resultMap="ResourceServiceExpertiseResultMap">
+        SELECT * FROM resource_service_expertise
+        WHERE service_id = #{serviceId} AND skill_level = #{skillLevel}
+        ORDER BY is_preferred DESC, resource_id
+    </select>
+
+    <select id="findPreferredByServiceId" resultMap="ResourceServiceExpertiseResultMap">
+        SELECT * FROM resource_service_expertise
+        WHERE service_id = #{serviceId} AND is_preferred = 1
+        ORDER BY skill_level DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource_service_expertise (
+            resource_id, service_id, skill_level, years_experience,
+            certification, is_preferred, created_at
+        ) VALUES (
+            #{resourceId}, #{serviceId}, #{skillLevel}, #{yearsExperience},
+            #{certification}, #{isPreferred}, UTC_TIMESTAMP()
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO resource_service_expertise (
+            resource_id, service_id, skill_level, years_experience,
+            certification, is_preferred, created_at
+        ) VALUES
+        <foreach collection="expertiseList" item="expertise" separator=",">
+            (
+                #{expertise.resourceId}, #{expertise.serviceId}, #{expertise.skillLevel},
+                #{expertise.yearsExperience}, #{expertise.certification}, #{expertise.isPreferred}, UTC_TIMESTAMP()
+            )
+        </foreach>
+    </insert>
+
+    <update id="update">
+        UPDATE resource_service_expertise SET
+            skill_level = #{skillLevel},
+            years_experience = #{yearsExperience},
+            certification = #{certification},
+            is_preferred = #{isPreferred}
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </update>
+
+    <delete id="deleteByResourceIdAndServiceId">
+        DELETE FROM resource_service_expertise
+        WHERE resource_id = #{resourceId} AND service_id = #{serviceId}
+    </delete>
+
+    <delete id="deleteByResourceId">
+        DELETE FROM resource_service_expertise WHERE resource_id = #{resourceId}
+    </delete>
+
+</mapper>

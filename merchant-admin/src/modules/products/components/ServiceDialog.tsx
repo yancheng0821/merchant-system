@@ -40,6 +40,7 @@ const THEME_COLOR_DARKER = '#0E7490';
 interface ServiceDialogProps {
   open: boolean;
   onClose: () => void;
+  onExited?: () => void;
   onSave: (service: Partial<ServiceManagementType>) => void;
   service: ServiceManagementType | null;
   categories: ServiceCategory[];
@@ -49,6 +50,7 @@ interface ServiceDialogProps {
 const ServiceDialog: React.FC<ServiceDialogProps> = ({
   open,
   onClose,
+  onExited,
   onSave,
   service,
   categories,
@@ -215,6 +217,9 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      TransitionProps={{
+        onExited: onExited,
+      }}
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -519,6 +524,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                     value={formData.resourceType || 'STAFF'}
                     onChange={handleChange('resourceType')}
                     label={t('services.resourceType')}
+                    disabled={availableResourceTypes.length <= 1}
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {

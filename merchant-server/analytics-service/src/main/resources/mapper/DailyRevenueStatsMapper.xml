@@ -16,13 +16,13 @@
 
     <insert id="insert" parameterType="com.merchant.server.analyticsservice.entity.DailyRevenueStats" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO daily_revenue_stats (tenant_id, stat_date, total_revenue, total_orders, total_tips, avg_order_value, created_at, updated_at)
-        VALUES (#{tenantId}, #{statDate}, #{totalRevenue}, #{totalOrders}, #{totalTips}, #{avgOrderValue}, NOW(), NOW())
+        VALUES (#{tenantId}, #{statDate}, #{totalRevenue}, #{totalOrders}, #{totalTips}, #{avgOrderValue}, UTC_TIMESTAMP(), UTC_TIMESTAMP())
         ON DUPLICATE KEY UPDATE
         total_revenue = #{totalRevenue},
         total_orders = #{totalOrders},
         total_tips = #{totalTips},
         avg_order_value = #{avgOrderValue},
-        updated_at = NOW()
+        updated_at = UTC_TIMESTAMP()
     </insert>
 
     <select id="selectByTenantIdAndDateRange" resultMap="BaseResultMap">

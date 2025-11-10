@@ -7,6 +7,7 @@ import com.merchant.server.businessservice.entity.Customer;
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.mapper.*;
 import com.merchant.server.businessservice.service.OrderService;
+import com.merchant.server.businessservice.util.MessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageImpl;
@@ -15,10 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.merchant.server.common.util.TimeZoneUtils;
 import com.merchant.server.common.util.CurrencyUtils;
+import com.merchant.server.businessservice.client.MerchantServiceClient;
 
 /**
  * 订单服务实现
@@ -33,25 +36,44 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerMapper customerMapper;
     private final ServiceMapper serviceMapper;
     private final ResourceMapper resourceMapper;
+    private final MessageUtil messageUtil;
+    private final MerchantServiceClient merchantServiceClient;
     
     @Override
     public org.springframework.data.domain.Page<OrderDTO> getOrders(
-            Long tenantId, String searchTerm, String paymentStatus, 
+            Long tenantId, String searchTerm, String paymentStatus,
             String orderStatus, Long customerId, String startDate, String endDate, Pageable pageable) {
-        
+
         // 计算分页参数
         int offset = pageable.getPageNumber() * pageable.getPageSize();
         int limit = pageable.getPageSize();
-        
+
+        // 获取商户时区
+        String merchantTimezone = getMerchantTimezone(tenantId);
+
+        // 将商户本地日期转换为 UTC 时间范围
+        LocalDateTime startDateTime = null;
+        LocalDateTime endDateTime = null;
+
+        if (startDate != null && !startDate.isEmpty()) {
+            LocalDate start = LocalDate.parse(startDate);
+            startDateTime = TimeZoneUtils.getMerchantStartOfDayUTC(start, merchantTimezone);
+        }
+
+        if (endDate != null && !endDate.isEmpty()) {
+            LocalDate end = LocalDate.parse(endDate);
+            endDateTime = TimeZoneUtils.getMerchantEndOfDayUTC(end, merchantTimezone);
+        }
+
         // 查询订单列表
         List<Order> orders = orderMapper.selectByConditions(
-            tenantId, searchTerm, paymentStatus, orderStatus, customerId, 
-            startDate, endDate, offset, limit);
-        
+            tenantId, searchTerm, paymentStatus, orderStatus, customerId,
+            startDate, endDate, startDateTime, endDateTime, offset, limit);
+
         // 查询总数
         int total = orderMapper.countByConditions(
-            tenantId, searchTerm, paymentStatus, orderStatus, customerId, 
-            startDate, endDate);
+            tenantId, searchTerm, paymentStatus, orderStatus, customerId,
+            startDate, endDate, startDateTime, endDateTime);
         
         // 转换为DTO
         List<OrderDTO> orderDTOs = orders.stream()
@@ -114,7 +136,7 @@ public class OrderServiceImpl implements OrderService {
             Customer customer = customerMapper.selectById(orderCreate.getCustomerId());
             if (customer == null) {
                 log.error("Customer not found with ID: {}", orderCreate.getCustomerId());
-                throw new RuntimeException("Customer not found with ID: " + orderCreate.getCustomerId());
+                throw new RuntimeException(messageUtil.getMessage("error.order.customer.not.found", new Object[]{orderCreate.getCustomerId()}));
             }
 
             
@@ -123,7 +145,7 @@ public class OrderServiceImpl implements OrderService {
                 Resource resource = resourceMapper.findById(orderCreate.getResourceId());
                 if (resource == null) {
                     log.error("Resource not found with ID: {}", orderCreate.getResourceId());
-                    throw new RuntimeException("Resource not found with ID: " + orderCreate.getResourceId());
+                    throw new RuntimeException(messageUtil.getMessage("error.order.resource.not.found", new Object[]{orderCreate.getResourceId()}));
                 }
 
             }
@@ -142,34 +164,56 @@ public class OrderServiceImpl implements OrderService {
             order.setOrderStatus("draft");
             order.setPaymentStatus("pending");
             order.setPaymentMethod(orderCreate.getPaymentMethod());
-            order.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
-            order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+            order.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             // Set created_by and updated_by to resource_id if available, otherwise null
             order.setCreatedBy(orderCreate.getResourceId());
             order.setUpdatedBy(orderCreate.getResourceId());
-            
 
-            
-            // 计算金额
-            double subtotal = 0.0;
-            for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
 
-                com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
-                if (service == null) {
-                    log.error("Service not found with ID: {}", serviceCreate.getServiceId());
-                    throw new RuntimeException("Service not found with ID: " + serviceCreate.getServiceId());
+
+            // Use amounts from frontend (already calculated excluding package payments)
+            // If frontend provides subtotal and totalAmount, use them directly
+            if (orderCreate.getSubtotal() != null && orderCreate.getTotalAmount() != null) {
+                log.info("Using amounts from frontend - Subtotal: {}, TotalAmount: {}",
+                    orderCreate.getSubtotal(), orderCreate.getTotalAmount());
+
+                order.setSubtotal(orderCreate.getSubtotal());
+                // Tax amount and tip amount are already provided by frontend
+                order.setTaxAmount(orderCreate.getTaxRate() != null ? orderCreate.getSubtotal() * orderCreate.getTaxRate() : 0.0);
+                order.setTipAmount(orderCreate.getTipAmount() != null ? orderCreate.getTipAmount() : 0.0);
+                order.setTotalAmount(orderCreate.getTotalAmount());
+
+                log.info("Order amounts set from frontend - Subtotal: {}, Tax: {}, Tip: {}, Total: {}",
+                    order.getSubtotal(), order.getTaxAmount(), order.getTipAmount(), order.getTotalAmount());
+            } else {
+                // Fallback: Calculate amounts from service prices (backward compatibility)
+                log.info("Frontend did not provide amounts, calculating from service prices");
+                double subtotal = 0.0;
+                for (OrderServiceCreateDTO serviceCreate : orderCreate.getServices()) {
+                    com.merchant.server.businessservice.entity.Service service = serviceMapper.selectById(serviceCreate.getServiceId());
+                    if (service == null) {
+                        log.error("Service not found with ID: {}", serviceCreate.getServiceId());
+                        throw new RuntimeException(messageUtil.getMessage("error.order.service.not.found", new Object[]{serviceCreate.getServiceId()}));
+                    }
+                    subtotal += service.getPrice().doubleValue() * serviceCreate.getQuantity();
                 }
 
-                subtotal += service.getPrice().doubleValue() * serviceCreate.getQuantity();
+                order.setSubtotal(subtotal);
+                order.setTaxAmount(subtotal * orderCreate.getTaxRate());
+
+                // 如果前端传了tipAmount（custom输入），直接使用；否则根据tipPercentage计算
+                if (orderCreate.getTipAmount() != null && orderCreate.getTipAmount() > 0) {
+                    order.setTipAmount(orderCreate.getTipAmount());
+                } else {
+                    order.setTipAmount(subtotal * orderCreate.getTipPercentage() / 100);
+                }
+
+                order.setTotalAmount(subtotal + order.getTaxAmount() + order.getTipAmount());
+
+                log.info("Order amounts calculated - Subtotal: {}, Tax: {}, Tip: {}, Total: {}",
+                    order.getSubtotal(), order.getTaxAmount(), order.getTipAmount(), order.getTotalAmount());
             }
-            
-            order.setSubtotal(subtotal);
-            order.setTaxAmount(subtotal * orderCreate.getTaxRate());
-            order.setTipAmount(subtotal * orderCreate.getTipPercentage() / 100);
-            order.setTotalAmount(subtotal + order.getTaxAmount() + order.getTipAmount());
-            
-            log.info("Order amounts calculated - Subtotal: {}, Tax: {}, Tip: {}, Total: {}", 
-                order.getSubtotal(), order.getTaxAmount(), order.getTipAmount(), order.getTotalAmount());
             
             // 插入订单
             log.info("Inserting order into database...");
@@ -191,8 +235,8 @@ public class OrderServiceImpl implements OrderService {
                     orderService.setDuration(service.getDuration());
                     orderService.setAssignedResourceId(serviceCreate.getAssignedResourceId());
                     orderService.setAssignedResourceType(serviceCreate.getAssignedResourceType());
-                    orderService.setCreatedAt(TimeZoneUtils.getCurrentVancouverTime());
-                    orderService.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+                    orderService.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+                    orderService.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
                     
                     log.info("OrderService object: {}", orderService);
                     orderServiceMapper.insert(orderService);
@@ -227,7 +271,7 @@ public class OrderServiceImpl implements OrderService {
         
         // 重新计算总金额
         order.setTotalAmount(CurrencyUtils.calculateTotal(order.getSubtotal(), order.getTaxAmount(), order.getTipAmount()));
-        order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+        order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
         orderMapper.updateById(order);
         
@@ -246,9 +290,9 @@ public class OrderServiceImpl implements OrderService {
         if (!"pending".equals(order.getPaymentStatus())) {
             return false;
         }
-        
+
         order.setOrderStatus("cancelled");
-        order.setUpdatedAt(TimeZoneUtils.getCurrentVancouverTime());
+        order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         orderMapper.updateById(order);
         
         return true;
@@ -425,5 +469,25 @@ public class OrderServiceImpl implements OrderService {
             case "gift_card": return "礼品卡";
             default: return method;
         }
+    }
+
+    /**
+     * 获取商户时区
+     */
+    private String getMerchantTimezone(Long tenantId) {
+        try {
+            // 从 merchant-service 获取商户信息
+            var response = merchantServiceClient.getMerchantByTenantId(tenantId);
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                String timezone = (String) response.getData().get("timezone");
+                if (timezone != null && !timezone.isEmpty()) {
+                    return timezone;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get merchant timezone for tenantId: {}, using default", tenantId, e);
+        }
+        // 默认使用 America/Toronto
+        return "America/Toronto";
     }
 }

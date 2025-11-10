@@ -1,8 +1,11 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.dto.CustomerDTO;
 import com.merchant.server.businessservice.entity.Customer;
+import com.merchant.server.businessservice.mapper.CustomerMapper;
 import com.merchant.server.businessservice.service.CustomerService;
+import com.merchant.server.businessservice.util.MessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +26,16 @@ import java.util.Map;
 public class CustomerController {
     
     private static final Logger logger = LoggerFactory.getLogger(CustomerController.class);
-    
+
     @Autowired
     private CustomerService customerService;
-    
+
+    @Autowired
+    private CustomerMapper customerMapper;
+
+    @Autowired
+    private MessageUtil messageUtil;
+
     private CustomerDTO convertToDTO(Customer customer) {
         CustomerDTO dto = new CustomerDTO();
         dto.setId(customer.getId());
@@ -34,6 +43,7 @@ public class CustomerController {
         dto.setFirstName(customer.getFirstName());
         dto.setLastName(customer.getLastName());
         dto.setPhone(customer.getPhone());
+        dto.setCountryCode(customer.getCountryCode());  // ⭐ 添加countryCode
         dto.setEmail(customer.getEmail());
         dto.setAddress(customer.getAddress());
         dto.setDateOfBirth(customer.getDateOfBirth());
@@ -50,12 +60,20 @@ public class CustomerController {
         dto.setUpdatedAt(customer.getUpdatedAt());
         dto.setFullName(customer.getFullName());
         dto.setPreferredServiceIds(customer.getPreferredServiceIds());
+
+        // 获取活跃套餐数量
+        if (customer.getId() != null) {
+            int activePackageCount = customerMapper.countActivePackages(customer.getId());
+            dto.setActivePackageCount(activePackageCount);
+        }
+
         return dto;
     }
     
     /**
      * 分页查询客户
      */
+    @RequiresPermission("customers:view")
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCustomers(
             @RequestParam Long tenantId,
@@ -82,6 +100,7 @@ public class CustomerController {
                        customerPage.getContent().size(), customerPage.getTotalElements());
             
             Page<CustomerDTO> dtoPage = customerPage.map(this::convertToDTO);
+
             Map<String, Object> response = new HashMap<>();
             response.put("customers", dtoPage.getContent());
             response.put("currentPage", dtoPage.getNumber());
@@ -89,7 +108,7 @@ public class CustomerController {
             response.put("totalPages", dtoPage.getTotalPages());
             response.put("hasNext", dtoPage.hasNext());
             response.put("hasPrevious", dtoPage.hasPrevious());
-            
+
             logger.info("=== getCustomers API completed successfully ===");
             logger.info("Response - currentPage: {}, totalItems: {}, totalPages: {}, hasNext: {}, hasPrevious: {}", 
                        dtoPage.getNumber(), dtoPage.getTotalElements(), dtoPage.getTotalPages(), 
@@ -106,6 +125,7 @@ public class CustomerController {
     /**
      * 获取客户详情
      */
+    @RequiresPermission("customers:view")
     @GetMapping("/{id}")
     public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long id) {
         logger.info("=== getCustomerById API called ===");
@@ -128,6 +148,8 @@ public class CustomerController {
     /**
      * 创建客户
      */
+    @RequiresPermission("customers:create")
+    @com.merchant.server.common.annotation.Auditable(resource = "CUSTOMER", action = "CREATE", recordOldValue = true, description = "Create new customer")
     @PostMapping
     public ResponseEntity<CustomerDTO> createCustomer(@Valid @RequestBody CustomerDTO customerDTO) {
         logger.info("=== createCustomer API called ===");
@@ -150,6 +172,8 @@ public class CustomerController {
     /**
      * 更新客户
      */
+    @RequiresPermission("customers:update")
+    @com.merchant.server.common.annotation.Auditable(resource = "CUSTOMER", action = "UPDATE", resourceIdParam = "id", recordOldValue = true, description = "Update customer information")
     @PutMapping("/{id}")
     public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable Long id, @RequestBody CustomerDTO customerDTO) {
         logger.info("=== updateCustomer API called ===");
@@ -164,21 +188,21 @@ public class CustomerController {
             // 手动验证必填字段
             if (customerDTO.getFirstName() == null || customerDTO.getFirstName().trim().isEmpty()) {
                 logger.error("Validation failed: First name is required");
-                throw new RuntimeException("First name is required");
+                throw new RuntimeException(messageUtil.getMessage("error.field.first.name.required"));
             }
             if (customerDTO.getLastName() == null || customerDTO.getLastName().trim().isEmpty()) {
                 logger.error("Validation failed: Last name is required");
-                throw new RuntimeException("Last name is required");
+                throw new RuntimeException(messageUtil.getMessage("error.field.last.name.required"));
             }
             if (customerDTO.getPhone() == null || customerDTO.getPhone().trim().isEmpty()) {
                 logger.error("Validation failed: Phone is required");
-                throw new RuntimeException("Phone is required");
+                throw new RuntimeException(messageUtil.getMessage("error.field.phone.required"));
             }
             if (customerDTO.getEmail() != null && !customerDTO.getEmail().trim().isEmpty()) {
                 // 验证邮箱格式
                 if (!customerDTO.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
                     logger.error("Validation failed: Invalid email format: {}", customerDTO.getEmail());
-                    throw new RuntimeException("Invalid email format");
+                    throw new RuntimeException(messageUtil.getMessage("error.field.email.invalid"));
                 }
             }
             
@@ -198,6 +222,8 @@ public class CustomerController {
     /**
      * 删除客户
      */
+    @RequiresPermission("customers:delete")
+    @com.merchant.server.common.annotation.Auditable(resource = "CUSTOMER", action = "DELETE", resourceIdParam = "id", recordOldValue = true, description = "Delete customer")
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteCustomer(@PathVariable Long id) {
         logger.info("=== deleteCustomer API called ===");
@@ -223,6 +249,7 @@ public class CustomerController {
     /**
      * 根据电话号码查询客户
      */
+    @RequiresPermission("customers:view")
     @GetMapping("/phone/{phone}")
     public ResponseEntity<CustomerDTO> getCustomerByPhone(
             @RequestParam Long tenantId,
@@ -247,6 +274,7 @@ public class CustomerController {
     /**
      * 获取客户统计信息
      */
+    @RequiresPermission("customers:view")
     @GetMapping("/stats")
     public ResponseEntity<CustomerService.CustomerStatsDTO> getCustomerStats(@RequestParam Long tenantId) {
         logger.info("=== getCustomerStats API called ===");
@@ -269,6 +297,7 @@ public class CustomerController {
     /**
      * 获取消费排行榜
      */
+    @RequiresPermission("customers:view")
     @GetMapping("/top-spending")
     public ResponseEntity<List<CustomerDTO>> getTopSpendingCustomers(
             @RequestParam Long tenantId,
@@ -289,44 +318,37 @@ public class CustomerController {
             throw e;
         }
     }
-    
+
     /**
-     * 异常处理
+     * 创建默认 Walk-in 客户
+     * 此端点不需要权限检查，专门用于商户注册流程
      */
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException e) {
-        logger.error("=== RuntimeException handled ===");
-        logger.error("RuntimeException occurred: {}", e.getMessage(), e);
-        
-        Map<String, String> error = new HashMap<>();
-        error.put("error", e.getMessage());
-        error.put("type", e.getClass().getSimpleName());
-        
-        logger.info("Returning error response: {}", error);
-        return ResponseEntity.badRequest().body(error);
+    @PostMapping("/walk-in")
+    public ResponseEntity<Map<String, Object>> createWalkInCustomer(@RequestParam Long tenantId) {
+        logger.info("Creating Walk-in customer for tenant: {}", tenantId);
+
+        try {
+            CustomerDTO walkInCustomer = customerService.createWalkInCustomer(tenantId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Walk-in customer created successfully");
+            response.put("data", walkInCustomer);
+
+            logger.info("Walk-in customer created successfully with id: {} for tenant: {}",
+                    walkInCustomer.getId(), tenantId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to create Walk-in customer for tenant: {}", tenantId, e);
+
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Failed to create Walk-in customer: " + e.getMessage());
+
+            return ResponseEntity.badRequest().body(error);
+        }
     }
-    
-    /**
-     * 验证异常处理
-     */
-    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(
-            org.springframework.web.bind.MethodArgumentNotValidException e) {
-        logger.error("=== MethodArgumentNotValidException handled ===");
-        logger.error("Validation exception occurred: {}", e.getMessage(), e);
-        
-        Map<String, Object> error = new HashMap<>();
-        error.put("error", "Validation failed");
-        error.put("details", e.getBindingResult().getFieldErrors().stream()
-            .collect(java.util.stream.Collectors.toMap(
-                fieldError -> fieldError.getField(),
-                fieldError -> fieldError.getDefaultMessage()
-            )));
-        
-        logger.info("Returning validation error response: {}", error);
-        return ResponseEntity.badRequest().body(error);
-    }
-    
+
     /**
      * JSON解析异常处理
      */
@@ -348,7 +370,7 @@ public class CustomerController {
         } else if (e.getMessage().contains("CustomerStatus")) {
             error.put("message", "Invalid status. Valid values are: ACTIVE, INACTIVE");
         } else if (e.getMessage().contains("CommunicationPreference")) {
-            error.put("message", "Invalid communication preference. Valid values are: SMS, EMAIL, PHONE");
+            error.put("message", "Invalid communication preference. Valid values are: SMS, EMAIL, BOTH");
         } else {
             error.put("message", "Invalid data format in request");
         }

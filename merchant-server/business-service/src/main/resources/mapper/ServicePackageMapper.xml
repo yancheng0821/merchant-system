@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.ServicePackageMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.ServicePackage">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="name" property="name" />
+        <result column="description" property="description" />
+        <result column="icon" property="icon" />
+        <result column="color" property="color" />
+        <result column="services" property="includedServices" />
+        <result column="original_price" property="originalPrice" />
+        <result column="package_price" property="packagePrice" />
+        <result column="discount_percentage" property="discountPercentage" />
+        <result column="validity_days" property="validityDays" />
+        <result column="max_shared_users" property="maxSharedUsers" />
+        <result column="terms" property="terms" />
+        <result column="status" property="status" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <!-- 基础列名 -->
+    <sql id="Base_Column_List">
+        id, tenant_id, name, description, icon, color, services,
+        original_price, package_price, discount_percentage,
+        validity_days, max_shared_users, terms, status,
+        created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询套餐 -->
+    <select id="selectById" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM packages
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据租户ID获取套餐列表 -->
+    <select id="selectByTenantId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM packages
+        WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据租户ID和状态获取套餐列表 -->
+    <select id="selectByTenantIdAndStatus" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM packages
+        WHERE tenant_id = #{tenantId}
+        AND status = #{status}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据ID和租户ID获取套餐 -->
+    <select id="selectByIdAndTenantId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM packages
+        WHERE id = #{id}
+        AND tenant_id = #{tenantId}
+    </select>
+
+    <!-- 插入套餐 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.ServicePackage"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO packages (
+            tenant_id, name, description, icon, color, services,
+            original_price, package_price, discount_percentage,
+            validity_days, max_shared_users, terms, status,
+            created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{name}, #{description}, #{icon}, #{color}, #{includedServices},
+            #{originalPrice}, #{packagePrice}, #{discountPercentage},
+            #{validityDays}, #{maxSharedUsers}, #{terms}, #{status},
+            #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新套餐 -->
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.ServicePackage">
+        UPDATE packages
+        SET
+            tenant_id = #{tenantId},
+            name = #{name},
+            description = #{description},
+            icon = #{icon},
+            color = #{color},
+            services = #{includedServices},
+            original_price = #{originalPrice},
+            package_price = #{packagePrice},
+            discount_percentage = #{discountPercentage},
+            validity_days = #{validityDays},
+            max_shared_users = #{maxSharedUsers},
+            terms = #{terms},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除套餐 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM packages
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

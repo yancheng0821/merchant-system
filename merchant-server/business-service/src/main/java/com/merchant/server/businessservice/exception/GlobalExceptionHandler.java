@@ -1,6 +1,8 @@
 package com.merchant.server.businessservice.exception;
 
+import com.merchant.server.businessservice.util.MessageUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -22,6 +24,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @Autowired
+    private MessageUtil messageUtil;
 
     /**
      * 处理Bean Validation异常
@@ -114,17 +119,43 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理运行时异常（业务逻辑错误）
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        log.warn("Runtime exception: {}", ex.getMessage());
+
+        String message = ex.getMessage();
+
+        // 使用MessageUtil处理，它内部已经有fallback机制
+        // 如果message是key则返回国际化消息，否则返回原message
+        if (message != null && messageUtil != null) {
+            message = messageUtil.getMessage(message);
+        }
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("success", false);
+        errorResponse.put("error", message != null ? message : "Runtime error occurred");
+        errorResponse.put("type", ex.getClass().getSimpleName());
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
      * 处理其他异常
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         log.error("Unexpected error: ", ex);
-        
+
+        // 使用国际化消息
+        String message = messageUtil.getMessage("error.system.internal");
+
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("success", false);
-        errorResponse.put("error", ex.getClass().getSimpleName());
-        errorResponse.put("message", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred");
-        
+        errorResponse.put("error", message);
+        errorResponse.put("type", ex.getClass().getSimpleName());
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }

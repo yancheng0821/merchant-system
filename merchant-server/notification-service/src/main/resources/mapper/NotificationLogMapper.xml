@@ -22,7 +22,7 @@
 
     <!-- 基础查询SQL -->
     <sql id="Base_Column_List">
-        id, tenant_id, template_code, type, recipient, subject, content, status, 
+        id, tenant_id, template_code, type, recipient, subject, content, status,
         error_message, retry_count, business_id, business_type, created_at, sent_at
     </sql>
 
@@ -41,6 +41,13 @@
         FROM notification_logs
         WHERE business_id = #{businessId}
         ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据ID查询通知日志 -->
+    <select id="findById" resultMap="NotificationLogResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_logs
+        WHERE id = #{id}
     </select>
 
     <!-- 根据租户ID查询通知日志（带分页） -->
@@ -74,7 +81,7 @@
     <!-- 插入通知日志 -->
     <insert id="insert" parameterType="com.merchant.server.notificationservice.entity.NotificationLog" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO notification_logs (
-            tenant_id, template_code, type, recipient, subject, content, status, 
+            tenant_id, template_code, type, recipient, subject, content, status,
             error_message, retry_count, business_id, business_type, created_at, sent_at
         ) VALUES (
             #{tenantId}, #{templateCode}, #{type}, #{recipient}, #{subject}, #{content}, #{status},
@@ -118,6 +125,9 @@
         </if>
         <if test="businessId != null and businessId != ''">
             AND business_id = #{businessId}
+        </if>
+        <if test="businessType != null and businessType != ''">
+            AND business_type = #{businessType}
         </if>
         ORDER BY created_at DESC
         LIMIT #{limit} OFFSET #{offset}

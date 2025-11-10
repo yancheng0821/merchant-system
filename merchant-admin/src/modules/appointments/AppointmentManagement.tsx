@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Typography,
   Table,
@@ -53,7 +54,9 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n/config';
-import { TimeZoneUtils, CurrencyUtils } from '../../config/constants';
+import { CurrencyUtils } from '../../config/constants';
+import { usePermission } from '../../hooks/usePermission';
+import { getMerchantToday, getMerchantNow } from '../../utils/timezoneUtils';
 import AddAppointmentDialog from './components/AddAppointmentDialog';
 import { Customer, Appointment, appointmentApi, customerApi, notificationApi, handleApiError } from '../../services/api';
 // 预约统计接口
@@ -66,6 +69,8 @@ interface AppointmentStats {
 
 const AppointmentManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermission();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<AppointmentStats | null>(null);
@@ -151,6 +156,20 @@ const AppointmentManagement: React.FC = () => {
     loadAppointments();
   }, [loadAppointments]);
 
+  // 处理URL参数中的appointmentId
+  useEffect(() => {
+    const appointmentId = searchParams.get('appointmentId');
+    if (appointmentId && appointments.length > 0) {
+      const appointment = appointments.find(apt => apt.id === Number(appointmentId));
+      if (appointment) {
+        setSelectedAppointment(appointment);
+        setViewDetailsOpen(true);
+        // 清除URL参数
+        setSearchParams({});
+      }
+    }
+  }, [appointments, searchParams, setSearchParams]);
+
   // 筛选预约数据
   const filteredAppointments = useMemo(() => {
     let filtered = appointments;
@@ -171,10 +190,10 @@ const AppointmentManagement: React.FC = () => {
 
     // 日期筛选
     if (dateFilter !== 'all') {
-      const todayStr = TimeZoneUtils.getTodayVancouverDateString();
-      const tomorrow = new Date(TimeZoneUtils.getCurrentVancouverTime());
+      const todayStr = getMerchantToday();
+      const tomorrow = new Date(getMerchantNow());
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = TimeZoneUtils.formatVancouverDate(tomorrow);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
       switch (dateFilter) {
         case 'today':
@@ -184,14 +203,14 @@ const AppointmentManagement: React.FC = () => {
           filtered = filtered.filter(apt => apt.appointmentDate === tomorrowStr);
           break;
         case 'this-week':
-          const today = TimeZoneUtils.getCurrentVancouverTime();
+          const today = getMerchantNow();
           const weekStart = new Date(today);
           weekStart.setDate(today.getDate() - today.getDay());
-          const weekStartStr = TimeZoneUtils.formatVancouverDate(weekStart);
+          const weekStartStr = weekStart.toISOString().split('T')[0];
 
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
-          const weekEndStr = TimeZoneUtils.formatVancouverDate(weekEnd);
+          const weekEndStr = weekEnd.toISOString().split('T')[0];
 
           filtered = filtered.filter(apt =>
             apt.appointmentDate >= weekStartStr && apt.appointmentDate <= weekEndStr
@@ -218,9 +237,10 @@ const AppointmentManagement: React.FC = () => {
   const getStatusChip = (status: string) => {
     const statusConfig = {
       CONFIRMED: { color: '#3B82F6', bg: alpha('#3B82F6', 0.1), label: t('appointments.appointmentStatuses.confirmed') },
+      CHECKED_IN: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('appointments.appointmentStatuses.checked-in') },
       COMPLETED: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('appointments.appointmentStatuses.completed') },
       CANCELLED: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('appointments.appointmentStatuses.cancelled') },
-      NO_SHOW: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('appointments.appointmentStatuses.no-show') },
+      NO_SHOW: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('appointments.appointmentStatuses.no-show') },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.CONFIRMED;
@@ -514,6 +534,7 @@ const AppointmentManagement: React.FC = () => {
                 >
                   <MenuItem value="all">{t('appointments.allStatuses')}</MenuItem>
                   <MenuItem value="confirmed">{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
+                  <MenuItem value="checked_in">{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
                   <MenuItem value="completed">{t('appointments.appointmentStatuses.completed')}</MenuItem>
                   <MenuItem value="cancelled">{t('appointments.appointmentStatuses.cancelled')}</MenuItem>
                   <MenuItem value="no_show">{t('appointments.appointmentStatuses.no-show')}</MenuItem>
@@ -546,7 +567,8 @@ const AppointmentManagement: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={2}>
+            {/* 暂时隐藏新建预约按钮 - 从 Schedule 模块创建预约 */}
+            {/* <Grid item xs={12} md={2}>
               <Button
                 fullWidth
                 variant="contained"
@@ -567,7 +589,7 @@ const AppointmentManagement: React.FC = () => {
               >
                 {t('appointments.newAppointment')}
               </Button>
-            </Grid>
+            </Grid> */}
           </Grid>
         </CardContent>
       </Card>
@@ -584,7 +606,8 @@ const AppointmentManagement: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('appointments.tableHeaders.customer')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('appointments.tableHeaders.id')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.customer')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.services')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.dateTime')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.staff')}</TableCell>
@@ -597,13 +620,13 @@ const AppointmentManagement: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <CircularProgress sx={{ color: '#8B5CF6' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredAppointments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">
                       {t('appointments.noAppointments')}
                     </Typography>
@@ -622,6 +645,18 @@ const AppointmentManagement: React.FC = () => {
                         transition: 'background-color 0.2s ease',
                       }}
                     >
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontFamily: 'monospace',
+                            color: 'text.secondary',
+                            fontWeight: 500
+                          }}
+                        >
+                          #{appointment.id}
+                        </Typography>
+                      </TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={2}>
                           <Avatar
@@ -649,9 +684,22 @@ const AppointmentManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {appointment.appointmentServices.map(service => service.serviceName).join(', ')}
-                          </Typography>
+                          <Box display="flex" flexWrap="wrap" gap={0.5} maxWidth={250}>
+                            {appointment.appointmentServices.map((service, idx) => (
+                              <Chip
+                                key={idx}
+                                label={service.serviceName}
+                                size="small"
+                                sx={{
+                                  backgroundColor: alpha('#10B981', 0.1),
+                                  color: '#10B981',
+                                  fontWeight: 500,
+                                  fontSize: '0.7rem',
+                                  height: 22,
+                                }}
+                              />
+                            ))}
+                          </Box>
                         ) : (
                           <Typography variant="body2" color="text.secondary">
                             {t('appointments.noServiceDetails')}
@@ -729,22 +777,24 @@ const AppointmentManagement: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            setMenuAnchorEl(e.currentTarget);
-                            setSelectedAppointment(appointment);
-                            // Blur the button to prevent aria-hidden warning
-                            e.currentTarget.blur();
-                          }}
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: alpha('#8B5CF6', 0.1),
-                            },
-                          }}
-                        >
-                          <MoreVertIcon />
-                        </IconButton>
+                        {(hasPermission('appointments:view') || hasPermission('appointments:update')) && (
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              setMenuAnchorEl(e.currentTarget);
+                              setSelectedAppointment(appointment);
+                              // Blur the button to prevent aria-hidden warning
+                              e.currentTarget.blur();
+                            }}
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: alpha('#8B5CF6', 0.1),
+                              },
+                            }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -801,10 +851,9 @@ const AppointmentManagement: React.FC = () => {
           {t('appointments.viewDetails')}
         </MenuItem>
 
-
-
+        {/* Temporarily disabled - Other actions */}
         {/* CONFIRMED和NO_SHOW状态的预约都可以标记为完成 */}
-        {(selectedAppointment?.status === 'CONFIRMED' || selectedAppointment?.status === 'NO_SHOW') && (
+        {/* {hasPermission('appointments:update') && (selectedAppointment?.status === 'CONFIRMED' || selectedAppointment?.status === 'NO_SHOW') && (
           <MenuItem
             onClick={async () => {
               try {
@@ -832,10 +881,10 @@ const AppointmentManagement: React.FC = () => {
               ? t('appointments.markCompletedFromNoShow')
               : t('appointments.markCompleted')}
           </MenuItem>
-        )}
+        )} */}
 
         {/* CONFIRMED和NO_SHOW状态的预约都可以取消 */}
-        {(selectedAppointment?.status === 'CONFIRMED' || selectedAppointment?.status === 'NO_SHOW') && (
+        {/* {hasPermission('appointments:update') && (selectedAppointment?.status === 'CONFIRMED' || selectedAppointment?.status === 'NO_SHOW') && (
           <MenuItem
             onClick={() => {
               setDeleteDialogOpen(true);
@@ -848,10 +897,10 @@ const AppointmentManagement: React.FC = () => {
               ? t('appointments.cancelFromNoShow')
               : t('appointments.cancelAppointment')}
           </MenuItem>
-        )}
+        )} */}
 
         {/* 只有CONFIRMED状态的预约才能标记为NO_SHOW */}
-        {selectedAppointment?.status === 'CONFIRMED' && (
+        {/* {hasPermission('appointments:update') && selectedAppointment?.status === 'CONFIRMED' && (
           <MenuItem
             onClick={async () => {
               try {
@@ -877,7 +926,7 @@ const AppointmentManagement: React.FC = () => {
             <PersonIcon sx={{ mr: 1, fontSize: 18, color: '#F59E0B' }} />
             {t('appointments.markNoShow')}
           </MenuItem>
-        )}
+        )} */}
       </Menu>
 
       {/* 对话框组件 */}

@@ -73,6 +73,13 @@ public interface UserService {
     boolean existsByUsernameAndTenantId(String username, Long tenantId);
     
     boolean existsByEmail(String email);
-    
+
     boolean existsByEmailAndTenantId(String email, Long tenantId);
+
+    /**
+     * 更新用户状态
+     * @param userId 用户ID
+     * @param status 新状态
+     */
+    void updateUserStatus(Long userId, User.UserStatus status);
 } 

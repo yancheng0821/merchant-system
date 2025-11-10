@@ -43,7 +43,6 @@ public class EmailService {
                         .region(Region.of(awsConfig.getRegion()))
                         .credentialsProvider(DefaultCredentialsProvider.create())
                         .build();
-                    log.info("AWS SES客户端初始化成功（使用本地凭证），区域：{}", awsConfig.getRegion());
                 } else {
                     // 验证凭证配置
                     if (awsConfig.getAccessKeyId() == null || awsConfig.getAccessKeyId().trim().isEmpty()) {
@@ -62,7 +61,6 @@ public class EmailService {
                         .region(Region.of(awsConfig.getRegion()))
                         .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
                         .build();
-                    log.info("AWS SES客户端初始化成功（使用配置凭证），区域：{}", awsConfig.getRegion());
                 }
             } catch (Exception e) {
                 log.error("初始化AWS SES客户端失败", e);
@@ -189,12 +187,11 @@ public class EmailService {
                 return false;
             }
             
-            String fromAddress = fromName != null && !fromName.trim().isEmpty() ? 
+            String fromAddress = fromName != null && !fromName.trim().isEmpty() ?
                 fromName + " <" + fromEmail + ">" : fromEmail;
-            
-            log.info("准备发送AWS SES邮件，收件人：{}，发件人：{}，主题：{}，内容长度：{}，区域：{}", 
-                to, fromAddress, subject, content.length(), notificationConfig.getAws().getRegion());
-            
+
+            log.info("📧 发送邮件 - 收件人: {}, 主题: {}", to, subject);
+
             Destination destination = Destination.builder()
                 .toAddresses(to)
                 .build();
@@ -216,7 +213,7 @@ public class EmailService {
                     .charset("UTF-8")
                     .build();
                 bodyBuilder.html(htmlContent);
-                
+
                 // 同时提供纯文本版本（去除HTML标签）
                 String textContent = htmlToText(content);
                 Content textContentObj = Content.builder()
@@ -224,8 +221,6 @@ public class EmailService {
                     .charset("UTF-8")
                     .build();
                 bodyBuilder.text(textContentObj);
-                
-                log.debug("发送HTML邮件，HTML长度：{}，纯文本长度：{}", content.length(), textContent.length());
             } else {
                 // 纯文本邮件
                 Content textContent = Content.builder()
@@ -233,8 +228,6 @@ public class EmailService {
                     .charset("UTF-8")
                     .build();
                 bodyBuilder.text(textContent);
-                
-                log.debug("发送纯文本邮件，内容长度：{}", content.length());
             }
             
             Body body = bodyBuilder.build();
@@ -252,7 +245,6 @@ public class EmailService {
             // 如果配置了Configuration Set，则添加
             if (sesConfig.getConfigurationSetName() != null && !sesConfig.getConfigurationSetName().trim().isEmpty()) {
                 requestBuilder.configurationSetName(sesConfig.getConfigurationSetName());
-                log.debug("使用Configuration Set：{}", sesConfig.getConfigurationSetName());
             }
             
             // 添加邮件标签（用于跟踪和分类）
@@ -264,32 +256,17 @@ public class EmailService {
             
             SendEmailRequest request = requestBuilder.build();
             SendEmailResponse response = getSesClient().sendEmail(request);
-            
-            log.info("AWS SES邮件发送成功，收件人：{}，MessageId：{}，响应：{}", 
-                to, response.messageId(), response.toString());
-            
-            // 记录详细的发送信息
-            log.info("邮件发送详情 - 发件人：{}，收件人：{}，主题：{}，内容类型：{}，区域：{}", 
-                fromAddress, to, subject, isHtmlContent ? "HTML" : "TEXT", 
-                notificationConfig.getAws().getRegion());
-            
+
+            log.info("✅ 邮件已发送 - AWS SES [MessageId: {}]", response.messageId());
+
             return true;
             
         } catch (SesException e) {
-            log.error("AWS SES服务异常，收件人：{}，错误代码：{}，错误信息：{}", 
-                to, e.awsErrorDetails().errorCode(), e.awsErrorDetails().errorMessage(), e);
-            
-            // 记录更详细的错误信息
-            if (e.awsErrorDetails() != null) {
-                log.error("AWS SES错误详情 - 错误代码：{}，HTTP状态码：{}，请求ID：{}", 
-                    e.awsErrorDetails().errorCode(), 
-                    e.statusCode(), 
-                    e.requestId());
-            }
-            
+            log.error("❌ AWS SES错误 - 收件人: {}, 错误: {} ({})",
+                to, e.awsErrorDetails().errorMessage(), e.awsErrorDetails().errorCode());
             return false;
         } catch (Exception e) {
-            log.error("AWS SES邮件发送失败，收件人：{}", to, e);
+            log.error("❌ 邮件发送异常 - 收件人: {}, 错误: {}", to, e.getMessage());
             return false;
         }
     }

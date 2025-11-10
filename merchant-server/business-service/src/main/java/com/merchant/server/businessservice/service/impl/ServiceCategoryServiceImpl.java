@@ -18,9 +18,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ServiceCategoryServiceImpl implements ServiceCategoryService {
-    
+
     private final ServiceCategoryMapper serviceCategoryMapper;
     private final ServiceMapper serviceMapper;
+    private final com.merchant.server.businessservice.util.MessageUtil messageUtil;
     
     @Override
     public List<ServiceCategoryDTO> getCategoriesByTenantId(Long tenantId) {
@@ -42,36 +43,36 @@ public class ServiceCategoryServiceImpl implements ServiceCategoryService {
     public ServiceCategoryDTO getCategoryById(Long id) {
         ServiceCategory category = serviceCategoryMapper.selectById(id);
         if (category == null) {
-            throw new RuntimeException("分类不存在");
+            throw new RuntimeException(messageUtil.getMessage("category.not.found"));
         }
         return convertToDTO(category);
     }
-    
+
     @Override
     @Transactional
     public ServiceCategoryDTO createCategory(ServiceCategoryDTO categoryDTO) {
         // 检查分类名称是否已存在
         if (existsByName(categoryDTO.getTenantId(), categoryDTO.getName(), null)) {
-            throw new RuntimeException("分类名称已存在");
+            throw new RuntimeException(messageUtil.getMessage("category.name.exists"));
         }
-        
+
         ServiceCategory category = convertToEntity(categoryDTO);
         serviceCategoryMapper.insert(category);
-        
+
         return convertToDTO(category);
     }
-    
+
     @Override
     @Transactional
     public ServiceCategoryDTO updateCategory(Long id, ServiceCategoryDTO categoryDTO) {
         ServiceCategory existingCategory = serviceCategoryMapper.selectById(id);
         if (existingCategory == null) {
-            throw new RuntimeException("分类不存在");
+            throw new RuntimeException(messageUtil.getMessage("category.not.found"));
         }
-        
+
         // 检查分类名称是否已存在（排除当前分类）
         if (existsByName(categoryDTO.getTenantId(), categoryDTO.getName(), id)) {
-            throw new RuntimeException("分类名称已存在");
+            throw new RuntimeException(messageUtil.getMessage("category.name.exists"));
         }
         
         ServiceCategory category = convertToEntity(categoryDTO);
@@ -86,14 +87,14 @@ public class ServiceCategoryServiceImpl implements ServiceCategoryService {
     public void deleteCategory(Long id) {
         ServiceCategory category = serviceCategoryMapper.selectById(id);
         if (category == null) {
-            throw new RuntimeException("分类不存在");
+            throw new RuntimeException(messageUtil.getMessage("error.category.not.found"));
         }
-        
+
         // 检查是否有关联的服务
-        List<com.merchant.server.businessservice.entity.Service> services = 
+        List<com.merchant.server.businessservice.entity.Service> services =
             serviceMapper.selectByTenantIdAndCategoryId(category.getTenantId(), id);
         if (!services.isEmpty()) {
-            throw new RuntimeException("该分类下还有服务，无法删除");
+            throw new RuntimeException(messageUtil.getMessage("error.category.has.services"));
         }
         
         serviceCategoryMapper.deleteById(id);

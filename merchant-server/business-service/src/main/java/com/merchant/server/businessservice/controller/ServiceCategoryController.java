@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.controller;
 
 import com.merchant.server.businessservice.dto.ServiceCategoryDTO;
 import com.merchant.server.businessservice.service.ServiceCategoryService;
+import com.merchant.server.common.annotation.RequiresPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +15,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/business/service-categories")
 @RequiredArgsConstructor
+@RequiresPermission("product_categories:manage")
 public class ServiceCategoryController {
-    
+
     private final ServiceCategoryService serviceCategoryService;
-    
+
     /**
      * 根据租户ID获取所有分类
      */
@@ -50,6 +52,8 @@ public class ServiceCategoryController {
     /**
      * 创建分类
      */
+    @RequiresPermission("product_categories:manage")
+    @com.merchant.server.common.annotation.Auditable(resource = "SERVICE_CATEGORY", action = "CREATE", recordOldValue = true, description = "Create new service category")
     @PostMapping
     public ResponseEntity<ServiceCategoryDTO> createCategory(@Valid @RequestBody ServiceCategoryDTO categoryDTO) {
         ServiceCategoryDTO createdCategory = serviceCategoryService.createCategory(categoryDTO);
@@ -59,6 +63,8 @@ public class ServiceCategoryController {
     /**
      * 更新分类
      */
+    @RequiresPermission("product_categories:manage")
+    @com.merchant.server.common.annotation.Auditable(resource = "SERVICE_CATEGORY", action = "UPDATE", resourceIdParam = "id", recordOldValue = true, description = "Update service category")
     @PutMapping("/{id}")
     public ResponseEntity<ServiceCategoryDTO> updateCategory(@PathVariable Long id, @Valid @RequestBody ServiceCategoryDTO categoryDTO) {
         ServiceCategoryDTO updatedCategory = serviceCategoryService.updateCategory(id, categoryDTO);
@@ -68,6 +74,8 @@ public class ServiceCategoryController {
     /**
      * 删除分类
      */
+    @RequiresPermission("product_categories:manage")
+    @com.merchant.server.common.annotation.Auditable(resource = "SERVICE_CATEGORY", action = "DELETE", resourceIdParam = "id", recordOldValue = true, description = "Delete service category")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         serviceCategoryService.deleteCategory(id);

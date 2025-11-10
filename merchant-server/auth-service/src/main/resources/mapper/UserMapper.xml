@@ -68,7 +68,7 @@
             status, last_login_at, last_login_ip, login_attempts, locked_until, created_at, updated_at
         ) VALUES (
             #{tenantId}, #{username}, #{email}, #{phone}, #{passwordHash}, #{salt}, #{realName}, #{avatarUrl},
-            #{status}, #{lastLoginAt}, #{lastLoginIp}, #{loginAttempts}, #{lockedUntil}, NOW(), NOW()
+            #{status}, #{lastLoginAt}, #{lastLoginIp}, #{loginAttempts}, #{lockedUntil}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
         )
     </insert>
     
@@ -87,7 +87,7 @@
             last_login_ip = #{lastLoginIp},
             login_attempts = #{loginAttempts},
             locked_until = #{lockedUntil},
-            updated_at = NOW()
+            updated_at = UTC_TIMESTAMP()
         WHERE id = #{id}
     </update>
     
@@ -110,5 +110,9 @@
     <select id="existsByEmailAndTenantId" resultType="boolean">
         SELECT COUNT(*) > 0 FROM users WHERE email = #{email} AND tenant_id = #{tenantId}
     </select>
-    
+
+    <select id="findUsernameById" parameterType="java.lang.Long" resultType="java.lang.String">
+        SELECT username FROM users WHERE id = #{id}
+    </select>
+
 </mapper> 

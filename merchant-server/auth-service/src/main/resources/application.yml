@@ -6,7 +6,7 @@ spring:
     name: auth-service
   
   datasource:
-    url: jdbc:mysql://localhost:3306/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&characterSetResults=utf8&connectionCollation=utf8_unicode_ci&zeroDateTimeBehavior=convertToNull
+    url: jdbc:mysql://localhost:3306/merchant_auth?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&characterSetResults=utf8&connectionCollation=utf8_unicode_ci&zeroDateTimeBehavior=convertToNull
     username: merchant_app
     password: MerchantApp@2024
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -16,7 +16,26 @@ spring:
   cloud:
     discovery:
       enabled: true
-  
+
+  # RabbitMQ 配置
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: merchant_app
+    password: MerchantApp@2024
+    virtual-host: merchant_vhost
+    connection-name-strategy: com.merchant.server.authservice.config.RabbitMQConnectionNameStrategy
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+
   # 国际化配置
   messages:
     basename: messages
@@ -29,21 +48,27 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
+  # HTTP编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.merchant.server.authservice.entity
   configuration:
     map-underscore-to-camel-case: true
-    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 注释掉SQL日志输出
+    default-time-zone: UTC
 
 eureka:
   client:
-    enabled: false  # 禁用Eureka客户端
+    enabled: true  # 启用Eureka客户端
     service-url:
       defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: false
-    fetch-registry: false
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
@@ -51,20 +76,27 @@ eureka:
 
 jwt:
   secret: merchant-system-jwt-secret-key-2024
-  expiration: 86400000  # 24小时
-  refresh-expiration: 604800000  # 7天
+  expiration: 2592000  # 30天（秒）
+  refresh-expiration: 5184000  # 60天（秒）
 
-# Google OAuth2 配置
-google:
-  oauth2:
-    client-id: ${GOOGLE_CLIENT_ID:567578445873-v336ul1tb9i08kvvm2vg3mkmoe5cvtfj.apps.googleusercontent.com}
-    client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
-    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:3000/auth/google/callback}
+# 微服务URL配置（本地开发环境）
+business-service:
+  url: http://localhost:8083
+
+notification-service:
+  url: http://localhost:8084
+
+# 前端URL配置
+app:
+  frontend:
+    url: http://localhost:3000
+  password-reset:
+    token-validity-hours: 24
 
 # 文件上传配置
 file:
   upload:
-    path: /usr/share/nginx/html/files  # 文件上传根路径
+    path: /Users/aisenyc/merchant-system/uploads  # 文件上传根路径（使用项目目录下的永久存储）
 
 logging:
   level:

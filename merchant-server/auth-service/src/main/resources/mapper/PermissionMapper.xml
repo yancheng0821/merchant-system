@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.authservice.mapper.PermissionMapper">
+
+    <!-- Result Map -->
+    <resultMap id="BaseResultMap" type="com.merchant.server.authservice.entity.Permission">
+        <id column="id" property="id"/>
+        <result column="permission_name" property="permissionName"/>
+        <result column="permission_code" property="permissionCode"/>
+        <result column="display_name" property="displayName"/>
+        <result column="resource" property="resource"/>
+        <result column="action" property="action"/>
+        <result column="scope" property="scope"/>
+        <result column="resource_type" property="resourceType"/>
+        <result column="module" property="module"/>
+        <result column="resource_path" property="resourcePath"/>
+        <result column="http_method" property="httpMethod"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- Base Column List -->
+    <sql id="Base_Column_List">
+        id, permission_name, permission_code, display_name, resource, action, scope,
+        resource_type, module, resource_path, http_method, description, status, created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询权限 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据权限代码查询权限 -->
+    <select id="selectByPermissionCode" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        WHERE permission_code = #{permissionCode}
+    </select>
+
+    <!-- 查询所有激活的权限 -->
+    <select id="selectAllActive" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        WHERE status = 'ACTIVE'
+        ORDER BY resource, action
+    </select>
+
+    <!-- 根据资源和操作查询权限 -->
+    <select id="selectByResourceAndAction" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        WHERE resource = #{resource}
+          AND action = #{action}
+          AND status = 'ACTIVE'
+        LIMIT 1
+    </select>
+
+    <!-- 根据资源类型查询权限列表 -->
+    <select id="selectByResourceType" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        WHERE resource_type = #{resourceType}
+          AND status = 'ACTIVE'
+        ORDER BY permission_code
+    </select>
+
+    <!-- 根据资源模块查询权限列表 -->
+    <select id="selectByResource" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        WHERE resource = #{resource}
+          AND status = 'ACTIVE'
+        ORDER BY action
+    </select>
+
+    <!-- 插入权限 -->
+    <insert id="insert" parameterType="com.merchant.server.authservice.entity.Permission" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO permissions (
+            permission_name, permission_code, display_name, resource, action, scope,
+            resource_type, module, resource_path, http_method, description, status
+        ) VALUES (
+            #{permissionName}, #{permissionCode}, #{displayName}, #{resource}, #{action}, #{scope},
+            #{resourceType}, #{module}, #{resourcePath}, #{httpMethod}, #{description}, #{status}
+        )
+    </insert>
+
+    <!-- 更新权限 -->
+    <update id="update" parameterType="com.merchant.server.authservice.entity.Permission">
+        UPDATE permissions
+        SET permission_name = #{permissionName},
+            permission_code = #{permissionCode},
+            display_name = #{displayName},
+            resource = #{resource},
+            action = #{action},
+            scope = #{scope},
+            resource_type = #{resourceType},
+            module = #{module},
+            resource_path = #{resourcePath},
+            http_method = #{httpMethod},
+            description = #{description},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除权限 -->
+    <delete id="deleteById">
+        DELETE FROM permissions WHERE id = #{id}
+    </delete>
+
+    <!-- 批量插入权限 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO permissions (
+            permission_name, permission_code, display_name, resource, action, scope,
+            resource_type, module, resource_path, http_method, description, status
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.permissionName}, #{item.permissionCode}, #{item.displayName},
+                #{item.resource}, #{item.action}, #{item.scope},
+                #{item.resourceType}, #{item.module}, #{item.resourcePath}, #{item.httpMethod},
+                #{item.description}, #{item.status}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据角色ID查询权限列表 -->
+    <select id="selectByRoleId" resultMap="BaseResultMap">
+        SELECT
+            p.id, p.permission_name, p.permission_code, p.display_name, p.resource, p.action,
+            COALESCE(rp.scope_override, p.scope) as scope,
+            p.resource_type, p.resource_path, p.http_method, p.description, p.status,
+            p.created_at, p.updated_at
+        FROM permissions p
+        INNER JOIN role_permissions rp ON p.id = rp.permission_id
+        WHERE rp.role_id = #{roleId}
+          AND p.status = 'ACTIVE'
+        ORDER BY p.resource, p.action
+    </select>
+
+    <!-- 根据用户ID查询权限列表（通过用户角色） -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT DISTINCT
+            p.id, p.permission_name, p.permission_code, p.display_name, p.resource, p.action,
+            COALESCE(rp.scope_override, p.scope) as scope,
+            p.resource_type, p.resource_path, p.http_method, p.description, p.status,
+            p.created_at, p.updated_at
+        FROM permissions p
+        INNER JOIN role_permissions rp ON p.id = rp.permission_id
+        INNER JOIN roles r ON rp.role_id = r.id
+        INNER JOIN user_roles ur ON r.id = ur.role_id
+        WHERE ur.user_id = #{userId}
+          <if test="tenantId != null">
+          AND (ur.tenant_id = #{tenantId} OR ur.tenant_id IS NULL)
+          </if>
+          AND r.status = 'ACTIVE'
+          AND p.status = 'ACTIVE'
+          AND (ur.effective_from IS NULL OR ur.effective_from &lt;= CURRENT_DATE)
+          AND (ur.effective_to IS NULL OR ur.effective_to &gt;= CURRENT_DATE)
+        ORDER BY p.resource, p.action
+    </select>
+
+    <!-- 查询权限总数 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM permissions
+    </select>
+
+    <!-- 分页查询权限 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permissions
+        ORDER BY resource, action
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+</mapper>

@@ -1,0 +1,39 @@
+# 生产环境配置
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+
+# 生产环境日志配置
+logging:
+  level:
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
+    org.springframework: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/eureka-server/application.log
+    max-size: 100MB
+    max-history: 30
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:eureka-server}
+    prefer-ip-address: true
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    enable-self-preservation: true  # 生产环境启用自我保护
+    eviction-interval-timer-in-ms: 60000  # 生产环境使用默认值60秒
+    renewal-percent-threshold: 0.85

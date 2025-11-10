@@ -972,16 +972,34 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                     '& .MuiOutlinedInput-root': {
                                         borderRadius: 3,
                                         backgroundColor: alpha('#f8fafc', 0.5),
-                                        border: '2px solid transparent',
                                         fontSize: '1rem',
                                         '&:hover': {
                                             backgroundColor: '#f1f5f9',
-                                            borderColor: alpha(themeColor, 0.3),
                                         },
                                         '&.Mui-focused': {
                                             backgroundColor: 'white',
-                                            borderColor: themeColor,
-                                            boxShadow: `0 0 0 4px ${alpha(themeColor, 0.1)}`,
+                                            '& fieldset': {
+                                                borderColor: themeColor,
+                                                borderWidth: '2px',
+                                            },
+                                        },
+                                        '& fieldset': {
+                                            borderColor: 'rgba(0,0,0,0.1)',
+                                            transition: 'border-color 0.2s ease',
+                                        },
+                                    },
+                                    '& .MuiOutlinedInput-input': {
+                                        outline: 'none !important',
+                                        '&:-webkit-autofill': {
+                                            WebkitBoxShadow: '0 0 0 100px #f8fafc inset !important',
+                                            WebkitTextFillColor: 'inherit',
+                                            caretColor: 'inherit',
+                                        },
+                                        '&:focus': {
+                                            outline: 'none !important',
+                                        },
+                                        '&:focus-visible': {
+                                            outline: 'none !important',
                                         },
                                     },
                                 }}

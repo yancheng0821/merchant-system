@@ -16,6 +16,7 @@
         <result column="hourly_rate" property="hourlyRate"/>
         <result column="status" property="status"/>
         <result column="phone" property="phone"/>
+        <result column="country_code" property="countryCode"/>
         <result column="email" property="email"/>
         <result column="position" property="position"/>
         <result column="start_date" property="startDate"/>
@@ -33,6 +34,7 @@
         <result column="start_time" property="startTime"/>
         <result column="end_time" property="endTime"/>
         <result column="is_available" property="isAvailable"/>
+        <result column="segment_order" property="segmentOrder"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -93,11 +95,11 @@
     <!-- 插入资源 -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO resource (
-            tenant_id, name, type, description, capacity, location, 
-            equipment, specialties, hourly_rate, status, phone, email, position, start_date, avatar, icon, created_at, updated_at
+            tenant_id, name, type, description, capacity, location,
+            equipment, specialties, hourly_rate, status, phone, country_code, email, position, start_date, avatar, icon, created_at, updated_at
         ) VALUES (
             #{tenantId}, #{name}, #{type}, #{description}, #{capacity}, #{location},
-            #{equipment}, #{specialties}, #{hourlyRate}, #{status}, #{phone}, #{email}, #{position}, #{startDate}, #{avatar}, #{icon}, #{createdAt}, #{updatedAt}
+            #{equipment}, #{specialties}, #{hourlyRate}, #{status}, #{phone}, #{countryCode}, #{email}, #{position}, #{startDate}, #{avatar}, #{icon}, #{createdAt}, #{updatedAt}
         )
     </insert>
 
@@ -114,6 +116,7 @@
             hourly_rate = #{hourlyRate},
             status = #{status},
             phone = #{phone},
+            country_code = #{countryCode},
             email = #{email},
             position = #{position},
             start_date = #{startDate},
@@ -128,6 +131,32 @@
         DELETE FROM resource WHERE id = #{id}
     </delete>
 
+    <!-- 检查手机号是否已存在 -->
+    <select id="existsByTenantIdAndPhone" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM resource
+        WHERE tenant_id = #{tenantId} AND phone = #{phone} AND status != 'DELETED'
+    </select>
+
+    <!-- 检查邮箱是否已存在 -->
+    <select id="existsByTenantIdAndEmail" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM resource
+        WHERE tenant_id = #{tenantId} AND email = #{email} AND status != 'DELETED'
+    </select>
+
+    <!-- 根据租户ID和手机号查询资源 -->
+    <select id="selectByTenantIdAndPhone" resultMap="ResourceResultMap">
+        SELECT * FROM resource
+        WHERE tenant_id = #{tenantId} AND phone = #{phone} AND status != 'DELETED'
+        LIMIT 1
+    </select>
+
+    <!-- 根据租户ID和邮箱查询资源 -->
+    <select id="selectByTenantIdAndEmail" resultMap="ResourceResultMap">
+        SELECT * FROM resource
+        WHERE tenant_id = #{tenantId} AND email = #{email} AND status != 'DELETED'
+        LIMIT 1
+    </select>
+
     <!-- 查询资源可用性 -->
     <select id="findAvailabilitiesByResourceId" resultMap="ResourceAvailabilityResultMap">
         SELECT * FROM resource_availability 
@@ -138,9 +167,9 @@
     <!-- 插入资源可用性 -->
     <insert id="insertAvailability" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO resource_availability (
-            resource_id, day_of_week, start_time, end_time, is_available, created_at, updated_at
+            resource_id, day_of_week, start_time, end_time, is_available, segment_order, created_at, updated_at
         ) VALUES (
-            #{resourceId}, #{dayOfWeek}, #{startTime}, #{endTime}, #{isAvailable}, #{createdAt}, #{updatedAt}
+            #{resourceId}, #{dayOfWeek}, #{startTime}, #{endTime}, #{isAvailable}, #{segmentOrder}, #{createdAt}, #{updatedAt}
         )
     </insert>
 
@@ -173,23 +202,52 @@
         <result column="booking_date" property="bookingDate"/>
         <result column="start_time" property="startTime"/>
         <result column="end_time" property="endTime"/>
-        <result column="status" property="status"/>
+        <result column="booking_status" property="status"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
+        <!-- 嵌套 appointment 对象以获取真实状态 -->
+        <association property="appointment" javaType="com.merchant.server.businessservice.entity.Appointment">
+            <id column="appointment_id" property="id"/>
+            <result column="appointment_status" property="status"/>
+            <result column="appointment_date" property="appointmentDate"/>
+            <result column="appointment_time" property="appointmentTime"/>
+            <result column="duration" property="duration"/>
+            <result column="total_amount" property="totalAmount"/>
+        </association>
     </resultMap>
 
     <!-- 查询资源的预约时间段 -->
     <select id="findBookingSlotsByResourceId" resultMap="ResourceBookingSlotResultMap">
-        SELECT * FROM resource_booking_slots 
-        WHERE resource_id = #{resourceId} AND status = 'BOOKED'
-        ORDER BY booking_date, start_time
+        SELECT
+            rbs.*,
+            rbs.status as booking_status,
+            a.id as appointment_id,
+            a.status as appointment_status,
+            a.appointment_date,
+            a.appointment_time,
+            a.duration,
+            a.total_amount
+        FROM resource_booking_slots rbs
+        LEFT JOIN appointments a ON rbs.appointment_id = a.id
+        WHERE rbs.resource_id = #{resourceId} AND rbs.status = 'BOOKED'
+        ORDER BY rbs.booking_date, rbs.start_time
     </select>
 
     <!-- 查询资源在指定日期的预约时间段 -->
     <select id="findBookingSlotsByResourceIdAndDate" resultMap="ResourceBookingSlotResultMap">
-        SELECT * FROM resource_booking_slots 
-        WHERE resource_id = #{resourceId} AND booking_date = #{bookingDate} AND status = 'BOOKED'
-        ORDER BY start_time
+        SELECT
+            rbs.*,
+            rbs.status as booking_status,
+            a.id as appointment_id,
+            a.status as appointment_status,
+            a.appointment_date,
+            a.appointment_time,
+            a.duration,
+            a.total_amount
+        FROM resource_booking_slots rbs
+        LEFT JOIN appointments a ON rbs.appointment_id = a.id
+        WHERE rbs.resource_id = #{resourceId} AND rbs.booking_date = #{bookingDate} AND rbs.status = 'BOOKED'
+        ORDER BY rbs.start_time
     </select>
 
     <!-- 插入预约时间段 -->
@@ -234,5 +292,43 @@
             (#{startTime} &lt;= start_time AND #{endTime} >= end_time)
         )
     </select>
+
+    <!-- 检查资源在指定时间段是否已被预约（排除指定预约） -->
+    <select id="isResourceBookedInTimeSlotExcluding" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM resource_booking_slots
+        WHERE resource_id = #{resourceId}
+        AND booking_date = #{bookingDate}
+        AND status = 'BOOKED'
+        AND appointment_id != #{excludeAppointmentId}
+        AND (
+            (#{startTime} >= start_time AND #{startTime} &lt; end_time) OR
+            (#{endTime} > start_time AND #{endTime} &lt;= end_time) OR
+            (#{startTime} &lt;= start_time AND #{endTime} >= end_time)
+        )
+    </select>
+
+    <!-- ========== 新增：多时间段排班管理 ========== -->
+
+    <!-- 根据资源ID和星期几查询可用性记录 -->
+    <select id="findAvailabilitiesByResourceIdAndDay" resultType="com.merchant.server.businessservice.entity.ResourceAvailability">
+        SELECT id, resource_id, day_of_week, start_time, end_time, is_available, segment_order, created_at, updated_at
+        FROM resource_availability
+        WHERE resource_id = #{resourceId}
+        AND day_of_week = #{dayOfWeek}
+        ORDER BY segment_order
+    </select>
+
+    <!-- 根据ID删除可用性记录 -->
+    <delete id="deleteAvailabilityById">
+        DELETE FROM resource_availability
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 根据资源ID和星期几删除可用性记录 -->
+    <delete id="deleteAvailabilitiesByResourceIdAndDay">
+        DELETE FROM resource_availability
+        WHERE resource_id = #{resourceId}
+        AND day_of_week = #{dayOfWeek}
+    </delete>
 
 </mapper>

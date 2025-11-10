@@ -32,6 +32,8 @@
         <result property="notes" column="notes"/>
         <result property="rating" column="rating"/>
         <result property="review" column="review"/>
+        <result property="reminder24hSent" column="reminder_24h_sent"/>
+        <result property="reminder30minSent" column="reminder_30min_sent"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <association property="customer" javaType="com.merchant.server.businessservice.entity.Customer">
@@ -52,6 +54,7 @@
             <id property="id" column="appointment_resource_id"/>
             <result property="appointmentId" column="appointment_id"/>
             <result property="resourceId" column="appointment_resource_resource_id"/>
+            <result property="resourceName" column="appointment_resource_name"/>
             <result property="resourceType" column="appointment_resource_type"/>
             <result property="isPrimary" column="appointment_resource_is_primary"/>
             <result property="createdAt" column="appointment_resource_created_at"/>
@@ -186,18 +189,22 @@
 
     <!-- 更新预约 -->
     <update id="update" parameterType="com.merchant.server.businessservice.entity.Appointment">
-        UPDATE appointments SET
-            tenant_id = #{tenantId},
-            customer_id = #{customerId},
-            appointment_date = #{appointmentDate},
-            appointment_time = #{appointmentTime},
-            duration = #{duration},
-            total_amount = #{totalAmount},
-            status = #{status},
-            notes = #{notes},
-            rating = #{rating},
-            review = #{review},
-            updated_at = #{updatedAt}
+        UPDATE appointments
+        <set>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="appointmentDate != null">appointment_date = #{appointmentDate},</if>
+            <if test="appointmentTime != null">appointment_time = #{appointmentTime},</if>
+            <if test="duration != null">duration = #{duration},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="notes != null">notes = #{notes},</if>
+            <if test="rating != null">rating = #{rating},</if>
+            <if test="review != null">review = #{review},</if>
+            <if test="reminder24hSent != null">reminder_24h_sent = #{reminder24hSent},</if>
+            <if test="reminder30minSent != null">reminder_30min_sent = #{reminder30minSent},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt}</if>
+        </set>
         WHERE id = #{id}
     </update>
 
@@ -234,12 +241,35 @@
         </foreach>
     </insert>
 
+    <!-- 删除预约的所有服务 -->
+    <delete id="deleteAppointmentServices">
+        DELETE FROM appointment_services
+        WHERE appointment_id = #{appointmentId}
+    </delete>
+
     <!-- 查询所有CONFIRMED状态的预约 -->
-    <select id="findConfirmedAppointments" resultMap="AppointmentResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM appointments
-        WHERE status = 'CONFIRMED'
-        ORDER BY appointment_date, appointment_time
+    <select id="findConfirmedAppointments" resultMap="AppointmentWithDetailsResultMap">
+        SELECT
+            a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
+            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review,
+            a.reminder_24h_sent, a.reminder_30min_sent,
+            a.created_at, a.updated_at,
+            c.first_name as customer_first_name, c.last_name as customer_last_name,
+            c.phone as customer_phone, c.email as customer_email,
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price,
+            aps.duration as appointment_service_duration,
+            ar.id as appointment_resource_id, ar.resource_id as appointment_resource_resource_id,
+            r.name as appointment_resource_name,
+            ar.resource_type as appointment_resource_type, ar.is_primary as appointment_resource_is_primary,
+            ar.created_at as appointment_resource_created_at
+        FROM appointments a
+        LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
+        LEFT JOIN resource r ON ar.resource_id = r.id
+        WHERE a.status = 'CONFIRMED'
+        ORDER BY a.appointment_date, a.appointment_time
     </select>
 
     <!-- 根据日期范围查询预约 -->
@@ -271,25 +301,27 @@
 
     <!-- Dashboard 相关查询 -->
     <select id="countAppointmentsByDate" resultType="int">
-        SELECT COUNT(*) FROM appointments 
-        WHERE tenant_id = #{tenantId} 
+        SELECT COUNT(*) FROM appointments
+        WHERE tenant_id = #{tenantId}
         AND DATE(appointment_date) = #{date}
+        AND status NOT IN ('CANCELLED', 'CANCELED')
     </select>
 
     <select id="countAppointmentsByDateRange" resultType="int">
-        SELECT COUNT(*) FROM appointments 
-        WHERE tenant_id = #{tenantId} 
+        SELECT COUNT(*) FROM appointments
+        WHERE tenant_id = #{tenantId}
         AND DATE(appointment_date) BETWEEN #{startDate} AND #{endDate}
+        AND status NOT IN ('CANCELLED', 'CANCELED')
     </select>
     
     <!-- 查询即将开始的预约 -->
     <select id="findUpcomingAppointments" resultMap="AppointmentWithDetailsResultMap">
-        SELECT 
+        SELECT
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
-            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id, 
-            aps.service_name as appointment_service_name, aps.price as appointment_service_price, 
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
             ar.id as appointment_resource_id, ar.resource_id as appointment_resource_resource_id,
             ar.resource_type as appointment_resource_type, ar.is_primary as appointment_resource_is_primary,
@@ -301,6 +333,71 @@
         WHERE a.appointment_date = #{date}
         AND a.appointment_time = #{time}
         AND a.status IN ('PENDING', 'CONFIRMED')
+    </select>
+
+    <!-- 查询指定日期已完成的预约（用于每日汇总） -->
+    <select id="findCompletedAppointmentsByDate" resultMap="AppointmentWithDetailsResultMap">
+        SELECT
+            a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
+            a.duration, a.total_amount, a.status,
+            a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            c.first_name as customer_first_name, c.last_name as customer_last_name,
+            c.phone as customer_phone, c.email as customer_email,
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price,
+            aps.duration as appointment_service_duration,
+            ar.id as appointment_resource_id, ar.resource_id as appointment_resource_resource_id,
+            ar.resource_type as appointment_resource_type,
+            r.name as appointment_resource_name,
+            ar.is_primary as appointment_resource_is_primary,
+            ar.created_at as appointment_resource_created_at
+        FROM appointments a
+        INNER JOIN orders o ON a.id = o.appointment_id
+        LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
+        LEFT JOIN resource r ON ar.resource_id = r.id AND ar.resource_type = 'STAFF'
+        WHERE DATE(a.appointment_date) = #{date}
+          AND a.status = 'COMPLETED'
+          AND o.payment_status = 'paid'
+        ORDER BY a.appointment_date, a.appointment_time
+    </select>
+
+    <!-- 查询指定租户和日期已完成的预约（用于多时区每日汇总） -->
+    <select id="findCompletedAppointmentsByTenantAndDate" resultMap="AppointmentWithDetailsResultMap">
+        SELECT
+            a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
+            a.duration, a.total_amount, a.status,
+            a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            c.first_name as customer_first_name, c.last_name as customer_last_name,
+            c.phone as customer_phone, c.email as customer_email,
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price,
+            aps.duration as appointment_service_duration,
+            ar.id as appointment_resource_id, ar.resource_id as appointment_resource_resource_id,
+            ar.resource_type as appointment_resource_type,
+            r.name as appointment_resource_name,
+            ar.is_primary as appointment_resource_is_primary,
+            ar.created_at as appointment_resource_created_at
+        FROM appointments a
+        INNER JOIN orders o ON a.id = o.appointment_id
+        LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
+        LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
+        LEFT JOIN resource r ON ar.resource_id = r.id AND ar.resource_type = 'STAFF'
+        WHERE a.tenant_id = #{tenantId}
+          AND DATE(a.appointment_date) = #{date}
+          AND a.status = 'COMPLETED'
+          AND o.payment_status = 'paid'
+        ORDER BY a.appointment_date, a.appointment_time
+    </select>
+
+    <!-- 查询所有有预约的租户ID列表（用于多时区定时任务） -->
+    <select id="findAllTenantIdsWithAppointments" resultType="long">
+        SELECT DISTINCT tenant_id
+        FROM appointments
+        WHERE status IN ('CONFIRMED', 'PENDING', 'IN_PROGRESS', 'COMPLETED')
+        ORDER BY tenant_id
     </select>
 
 </mapper>

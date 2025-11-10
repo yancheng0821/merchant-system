@@ -5,8 +5,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Box,
-  Typography,
   Tooltip,
   Fade
 } from '@mui/material';
@@ -25,12 +23,10 @@ const languages = [
   {
     code: 'zh-CN',
     name: '中文',
-    flag: '🇨🇳'
   },
   {
     code: 'en-US',
     name: 'English',
-    flag: '🇨🇦'
   }
 ];
 
@@ -63,28 +59,17 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       return {
         color: 'white',
         background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         '&:hover': {
           background: 'rgba(255, 255, 255, 0.2)',
-          transform: 'translateY(-1px)',
-          boxShadow: '0 4px 20px rgba(255, 255, 255, 0.1)',
         },
-        transition: 'all 0.3s ease',
       };
     }
     return {
       color: '#6366F1',
-      background: 'rgba(99, 102, 241, 0.08)',
-      border: '1px solid rgba(99, 102, 241, 0.2)',
-      borderRadius: 2,
       '&:hover': {
-        background: 'rgba(99, 102, 241, 0.12)',
-        transform: 'translateY(-1px)',
-        boxShadow: '0 4px 15px rgba(99, 102, 241, 0.2)',
-        borderColor: 'rgba(99, 102, 241, 0.3)',
+        backgroundColor: 'rgba(99, 102, 241, 0.08)',
       },
-      transition: 'all 0.3s ease',
     };
   };
 
@@ -96,18 +81,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           size={size}
           sx={getIconButtonStyles()}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontSize: size === 'small' ? '1rem' : '1.2rem',
-                fontWeight: 500
-              }}
-            >
-              {currentLanguage.flag}
-            </Typography>
-            <LanguageIcon sx={{ fontSize: size === 'small' ? 18 : 20 }} />
-          </Box>
+          <LanguageIcon sx={{ fontSize: size === 'small' ? 18 : 20 }} />
         </IconButton>
       </Tooltip>
 
@@ -123,24 +97,16 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             sx: {
               borderRadius: 2,
               minWidth: 160,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
-              border: '1px solid rgba(99, 102, 241, 0.1)',
+              mt: 1,
               '& .MuiMenuItem-root': {
-                borderRadius: 1.5,
-                mx: 1,
-                my: 0.5,
-                transition: 'all 0.2s ease',
+                py: 1,
                 '&:hover': {
-                  background: 'rgba(99, 102, 241, 0.08)',
-                  transform: 'translateX(2px)',
+                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
                 },
                 '&.Mui-selected': {
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05))',
-                  borderLeft: '3px solid #6366F1',
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08))',
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
                   },
                 },
               },
@@ -153,30 +119,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             key={language.code}
             onClick={() => handleLanguageChange(language.code)}
             selected={i18n.language === language.code}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              py: 1.5,
-            }}
           >
-            <Typography variant="body1" sx={{ fontSize: '1.2rem' }}>
-              {language.flag}
-            </Typography>
             <ListItemText
               primary={language.name}
               primaryTypographyProps={{
-                fontWeight: i18n.language === language.code ? 600 : 500,
-                fontSize: '0.95rem',
+                fontWeight: i18n.language === language.code ? 600 : 400,
+                fontSize: '0.9rem',
                 color: i18n.language === language.code ? '#6366F1' : 'text.primary'
               }}
             />
             {i18n.language === language.code && (
-              <ListItemIcon sx={{ minWidth: 'auto', ml: 'auto' }}>
+              <ListItemIcon sx={{ minWidth: 'auto', ml: 2 }}>
                 <CheckIcon sx={{
                   fontSize: 18,
-                  color: '#6366F1',
-                  filter: 'drop-shadow(0 1px 2px rgba(99, 102, 241, 0.3))'
+                  color: '#6366F1'
                 }} />
               </ListItemIcon>
             )}

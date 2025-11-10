@@ -52,7 +52,7 @@
             contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at
         ) VALUES (
             #{tenantCode}, #{tenantName}, #{tenantType}, #{parentTenantId}, #{status},
-            #{contactPerson}, #{contactPhone}, #{contactEmail}, #{address}, #{businessLicense}, NOW(), NOW()
+            #{contactPerson}, #{contactPhone}, #{contactEmail}, #{address}, #{businessLicense}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
         )
     </insert>
     
@@ -68,7 +68,7 @@
             contact_email = #{contactEmail},
             address = #{address},
             business_license = #{businessLicense},
-            updated_at = NOW()
+            updated_at = UTC_TIMESTAMP()
         WHERE id = #{id}
     </update>
     

@@ -24,7 +24,9 @@ public class CustomerDTO {
     
     @NotBlank(message = "Phone number is required")
     private String phone;
-    
+
+    private String countryCode;
+
     @Email(message = "Invalid email format")
     private String email;
     
@@ -64,6 +66,7 @@ public class CustomerDTO {
     private Long completedAppointments;
     private Double averageRating;
     private java.time.LocalDateTime lastVisit;
+    private Integer activePackageCount;  // 活跃套餐数量
     
     // 构造函数
     public CustomerDTO() {}
@@ -108,7 +111,15 @@ public class CustomerDTO {
     public void setPhone(String phone) {
         this.phone = phone;
     }
-    
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -255,7 +266,10 @@ public class CustomerDTO {
 
     public LocalDateTime getLastVisit() { return lastVisit; }
     public void setLastVisit(LocalDateTime lastVisit) { this.lastVisit = lastVisit; }
-    
+
+    public Integer getActivePackageCount() { return activePackageCount; }
+    public void setActivePackageCount(Integer activePackageCount) { this.activePackageCount = activePackageCount; }
+
     @Override
     public String toString() {
         return "CustomerDTO{" +
@@ -264,6 +278,7 @@ public class CustomerDTO {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", phone='" + phone + '\'' +
+                ", countryCode='" + countryCode + '\'' +
                 ", email='" + email + '\'' +
                 ", address='" + address + '\'' +
                 ", dateOfBirth=" + dateOfBirth +

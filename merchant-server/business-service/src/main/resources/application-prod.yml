@@ -1,9 +1,14 @@
 # 生产环境配置
+server:
+  port: 8083
+
 spring:
+  application:
+    name: business-service
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/merchant_business?useSSL=true&serverTimezone=America/Vancouver&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/merchant_business?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:merchant_app}
+    password: ${DB_PASSWORD:MerchantApp@2024}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10        # 最大连接数（业务服务需要更多连接）
@@ -13,10 +18,45 @@ spring:
       max-lifetime: 1800000        # 连接最大生存时间（30分钟）
       leak-detection-threshold: 60000  # 连接泄漏检测阈值（60秒）
   rabbitmq:
-    host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_PORT}
-    username: ${RABBITMQ_USERNAME}
-    password: ${RABBITMQ_PASSWORD}
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:merchant_app}
+    password: ${RABBITMQ_PASSWORD:MerchantApp@2024}
+    virtual-host: ${RABBITMQ_VHOST:merchant_vhost}
+    connection-name-strategy: com.merchant.server.businessservice.config.RabbitMQConnectionNameStrategy
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 3000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.businessservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    default-time-zone: UTC
+
+# Eureka配置
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    appname: ${spring.application.name}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
 
 # HTTP客户端配置
 http:
@@ -24,10 +64,10 @@ http:
     connect-timeout: 30000  # 30秒连接超时
     read-timeout: 60000     # 60秒读取超时
 
-# 通知服务配置
+# 通知服务配置（通过Eureka发现）
 notification:
   service:
-    url: http://notification-service:8084
+    url: lb://notification-service
 
 # Actuator配置
 management:
@@ -42,8 +82,23 @@ management:
 # 日志配置
 logging:
   level:
-    root: WARN
-    com.merchant.server: INFO
+    com.merchant.server.businessservice: INFO
+    com.merchant.server.businessservice.mapper: WARN
+    org.apache.ibatis: WARN
+    java.sql: WARN
+    org.mybatis: WARN
+    org.springframework: WARN
+    org.apache.catalina: WARN
+    org.apache.coyote: WARN
+    org.apache.tomcat: WARN
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/business-service/application.log
+    max-size: 100MB
+    max-history: 30
 
 # 文件上传配置
 file:

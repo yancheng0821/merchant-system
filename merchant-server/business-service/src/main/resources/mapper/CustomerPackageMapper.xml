@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CustomerPackageMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.CustomerPackage">
+        <id column="id" property="id" />
+        <result column="tenant_id" property="tenantId" />
+        <result column="customer_id" property="customerId" />
+        <result column="package_id" property="packageId" />
+        <result column="purchase_date" property="purchaseDate" />
+        <result column="expiration_date" property="expirationDate" />
+        <result column="purchase_price" property="purchasePrice" />
+        <result column="payment_status" property="paymentStatus" />
+        <result column="usage_details" property="usageDetails" />
+        <result column="status" property="status" />
+        <result column="first_used_at" property="firstUsedAt" />
+        <result column="last_used_at" property="lastUsedAt" />
+        <result column="completed_at" property="completedAt" />
+        <result column="shared_users" property="sharedUsers" />
+        <result column="is_gift" property="isGift" />
+        <result column="gifted_by_customer_id" property="giftedByCustomerId" />
+        <result column="notes" property="notes" />
+        <result column="refund_amount" property="refundAmount" />
+        <result column="refund_date" property="refundDate" />
+        <result column="created_at" property="createdAt" />
+        <result column="updated_at" property="updatedAt" />
+    </resultMap>
+
+    <!-- 基础列名 -->
+    <sql id="Base_Column_List">
+        id, tenant_id, customer_id, package_id, purchase_date, expiration_date,
+        purchase_price, payment_status, usage_details, status,
+        first_used_at, last_used_at, completed_at, shared_users,
+        is_gift, gifted_by_customer_id, notes, refund_amount, refund_date,
+        created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询客户套餐 -->
+    <select id="selectById" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM customer_packages
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据客户ID获取套餐列表 -->
+    <select id="selectByCustomerId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM customer_packages
+        WHERE customer_id = #{customerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据客户ID和状态获取套餐列表 -->
+    <select id="selectByCustomerIdAndStatus" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM customer_packages
+        WHERE customer_id = #{customerId}
+        AND status = #{status}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据租户ID和客户ID获取有效套餐 -->
+    <select id="selectActiveByCustomerId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM customer_packages
+        WHERE tenant_id = #{tenantId}
+        AND customer_id = #{customerId}
+        AND status = 'ACTIVE'
+        AND expiration_date > CURDATE()
+        ORDER BY expiration_date ASC
+    </select>
+
+    <!-- 根据套餐ID获取购买该套餐的所有客户 -->
+    <select id="selectByPackageId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM customer_packages
+        WHERE package_id = #{packageId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 插入客户套餐 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.CustomerPackage"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_packages (
+            tenant_id, customer_id, package_id, purchase_date, expiration_date,
+            purchase_price, payment_status, usage_details, status,
+            first_used_at, last_used_at, completed_at, shared_users,
+            is_gift, gifted_by_customer_id, notes, refund_amount, refund_date,
+            created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{customerId}, #{packageId}, #{purchaseDate}, #{expirationDate},
+            #{purchasePrice}, #{paymentStatus}, #{usageDetails}, #{status},
+            #{firstUsedAt}, #{lastUsedAt}, #{completedAt}, #{sharedUsers},
+            #{isGift}, #{giftedByCustomerId}, #{notes}, #{refundAmount}, #{refundDate},
+            #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新客户套餐 -->
+    <update id="updateById" parameterType="com.merchant.server.businessservice.entity.CustomerPackage">
+        UPDATE customer_packages
+        SET
+            tenant_id = #{tenantId},
+            customer_id = #{customerId},
+            package_id = #{packageId},
+            purchase_date = #{purchaseDate},
+            expiration_date = #{expirationDate},
+            purchase_price = #{purchasePrice},
+            payment_status = #{paymentStatus},
+            usage_details = #{usageDetails},
+            status = #{status},
+            first_used_at = #{firstUsedAt},
+            last_used_at = #{lastUsedAt},
+            completed_at = #{completedAt},
+            shared_users = #{sharedUsers},
+            is_gift = #{isGift},
+            gifted_by_customer_id = #{giftedByCustomerId},
+            notes = #{notes},
+            refund_amount = #{refundAmount},
+            refund_date = #{refundDate},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新使用详情 -->
+    <update id="updateUsageDetails">
+        UPDATE customer_packages
+        SET
+            usage_details = #{usageDetails},
+            last_used_at = #{lastUsedAt},
+            <if test="firstUsedAt != null">
+                first_used_at = #{firstUsedAt},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="completedAt != null">
+                completed_at = #{completedAt},
+            </if>
+            updated_at = UTC_TIMESTAMP()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除客户套餐 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM customer_packages
+        WHERE id = #{id}
+    </delete>
+
+</mapper>
