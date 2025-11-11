@@ -604,9 +604,27 @@ const LoginPage: React.FC = () => {
               <Typography variant="h6" sx={{ opacity: 0.8, mb: 3 }}>
                 {t('auth.brandSubtitle')}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.7 }}>
+              <Typography variant="body1" sx={{ opacity: 0.7, mb: 4 }}>
                 {t('auth.brandDescription')}
               </Typography>
+
+              {/* 公司标识 */}
+              <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                <Typography variant="body2" sx={{ opacity: 0.6, mb: 1, fontSize: '0.85rem' }}>
+                  Powered by
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    letterSpacing: '0.5px',
+                    fontSize: '1.1rem',
+                    opacity: 0.9,
+                  }}
+                >
+                  SwiftmindSystems
+                </Typography>
+              </Box>
             </Box>
           </Fade>
 
@@ -1289,6 +1307,27 @@ const LoginPage: React.FC = () => {
 
             </Paper>
           </Slide>
+        </Box>
+
+        {/* 页面底部版权信息 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '0.75rem',
+            }}
+          >
+            © {new Date().getFullYear()} SwiftmindSystems. All rights reserved.
+          </Typography>
         </Box>
       </Container>
 

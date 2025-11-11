@@ -470,8 +470,56 @@ const MainAppContent: React.FC = () => {
         ))}
       </List>
 
-      {/* 隐藏导航栏按钮 */}
+      {/* 公司标识和隐藏导航栏按钮 */}
       <Box sx={{ p: 2, mt: 'auto' }}>
+        {/* 公司信息 */}
+        <Box
+          sx={{
+            mb: 2,
+            pb: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            textAlign: 'center',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              color: 'text.disabled',
+              fontSize: '0.65rem',
+              mb: 0.5,
+            }}
+          >
+            Powered by
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '0.3px',
+            }}
+          >
+            SwiftmindSystems
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              color: 'text.disabled',
+              fontSize: '0.6rem',
+              mt: 0.5,
+            }}
+          >
+            © {new Date().getFullYear()}
+          </Typography>
+        </Box>
+
         <Button
           fullWidth
           startIcon={<ChevronLeftIcon />}
@@ -652,28 +700,31 @@ const MainAppContent: React.FC = () => {
 
 
           {/* 现代化侧边栏 */}
-          {isDrawerOpen && (
-            <Box
-              component="nav"
-              sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+          <Box
+            component="nav"
+            sx={{ width: { sm: isDrawerOpen ? drawerWidth : 0 }, flexShrink: { sm: 0 } }}
+          >
+            {/* 移动端临时抽屉 - 始终存在，不受 isDrawerOpen 控制 */}
+            <Drawer
+              variant="temporary"
+              open={mobileOpen}
+              onClose={handleDrawerToggle}
+              ModalProps={{ keepMounted: true }}
+              sx={{
+                display: { xs: 'block', sm: 'none' },
+                '& .MuiDrawer-paper': {
+                  boxSizing: 'border-box',
+                  width: drawerWidth,
+                  background: '#ffffff',
+                  boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+                },
+              }}
             >
-              <Drawer
-                variant="temporary"
-                open={mobileOpen}
-                onClose={handleDrawerToggle}
-                ModalProps={{ keepMounted: true }}
-                sx={{
-                  display: { xs: 'block', sm: 'none' },
-                  '& .MuiDrawer-paper': {
-                    boxSizing: 'border-box',
-                    width: drawerWidth,
-                    background: '#ffffff',
-                    boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-                  },
-                }}
-              >
-                {drawer}
-              </Drawer>
+              {drawer}
+            </Drawer>
+
+            {/* 桌面端固定抽屉 - 受 isDrawerOpen 控制 */}
+            {isDrawerOpen && (
               <Drawer
                 variant="permanent"
                 sx={{
@@ -690,8 +741,8 @@ const MainAppContent: React.FC = () => {
               >
                 {drawer}
               </Drawer>
-            </Box>
-          )}
+            )}
+          </Box>
 
           {/* 现代化内容区域 */}
           <Box

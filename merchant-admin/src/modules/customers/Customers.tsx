@@ -1213,7 +1213,7 @@ const CustomerManagement: React.FC = () => {
           loadCustomerStats();
           setSnackbar({
             open: true,
-            message: '客户数据导入成功',
+            message: t('customers.import.importSuccess'),
             severity: 'success',
           });
         }}

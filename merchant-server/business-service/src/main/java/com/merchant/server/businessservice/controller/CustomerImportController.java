@@ -169,7 +169,7 @@ public class CustomerImportController {
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", "error-report-" + importSessionId + ".xlsx");
+            headers.setContentDispositionFormData("attachment", "error-report-" + importSessionId + ".csv");
             
             return ResponseEntity.ok()
                 .headers(headers)

@@ -38,7 +38,12 @@ public interface CustomerService {
      * 根据电话号码查询客户
      */
     CustomerDTO getCustomerByPhone(Long tenantId, String phone);
-    
+
+    /**
+     * 根据邮箱查询客户
+     */
+    CustomerDTO getCustomerByEmail(Long tenantId, String email);
+
     /**
      * 获取客户统计信息
      */

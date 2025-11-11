@@ -131,14 +131,18 @@ public class CustomerImportDTO {
     public static class ExecuteRequest {
         private String importSessionId;
         private Boolean skipInvalidRecords = true;
-        
+        private Map<String, String> fieldMapping;
+
         public ExecuteRequest() {}
-        
+
         public String getImportSessionId() { return importSessionId; }
         public void setImportSessionId(String importSessionId) { this.importSessionId = importSessionId; }
-        
+
         public Boolean getSkipInvalidRecords() { return skipInvalidRecords; }
         public void setSkipInvalidRecords(Boolean skipInvalidRecords) { this.skipInvalidRecords = skipInvalidRecords; }
+
+        public Map<String, String> getFieldMapping() { return fieldMapping; }
+        public void setFieldMapping(Map<String, String> fieldMapping) { this.fieldMapping = fieldMapping; }
     }
     
     // 导入结果

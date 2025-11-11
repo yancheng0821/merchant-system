@@ -122,23 +122,25 @@ const NotificationLogManagement: React.FC = () => {
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
+      // 传递一个大的size值来获取所有数据（后端默认size=20）
       const params = {
         tenantId,
-        page: page,
-        size: rowsPerPage,
+        page: 0,
+        size: 10000, // 获取足够多的数据，支持客户端分页
         ...filters
       };
 
       const logs = await notificationApi.getLogs(params);
       const logsArray = Array.isArray(logs) ? logs : [];
-      
+
       // 按创建时间降序排序，确保最新的记录显示在前面
       const sortedLogs = logsArray.sort((a, b) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
         return dateB - dateA; // 降序排序
       });
-      
+
+      // 设置所有日志数据和总数
       setLogs(sortedLogs);
       setTotalElements(sortedLogs.length);
       setError(null);
@@ -148,7 +150,7 @@ const NotificationLogManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, filters, tenantId]);
+  }, [filters, tenantId, t]);
 
   useEffect(() => {
     fetchLogs();

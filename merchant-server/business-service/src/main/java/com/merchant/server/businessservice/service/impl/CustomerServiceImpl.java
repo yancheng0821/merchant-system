@@ -187,7 +187,17 @@ public class CustomerServiceImpl implements CustomerService {
         }
         return convertToDTO(customer);
     }
-    
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public CustomerDTO getCustomerByEmail(Long tenantId, String email) {
+        Customer customer = customerMapper.selectByTenantIdAndEmail(tenantId, email);
+        if (customer == null) {
+            throw new RuntimeException(messageUtil.getMessage("error.customer.not.found.with.email", new Object[]{email}));
+        }
+        return convertToDTO(customer);
+    }
+
     @Override
     public CustomerStatsDTO getCustomerStats(Long tenantId) {
         long totalCustomers = customerMapper.countByTenantId(tenantId);

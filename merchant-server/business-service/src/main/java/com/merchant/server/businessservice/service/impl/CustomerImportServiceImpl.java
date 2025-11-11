@@ -53,18 +53,41 @@ public class CustomerImportServiceImpl implements CustomerImportService {
     private MessageUtil messageUtil;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    
+
+    // 导入模板字段顺序（与customer_import_template.csv保持一致）
+    private static final List<String> TEMPLATE_FIELD_ORDER = List.of(
+        "firstName",
+        "lastName",
+        "phone",
+        "countryCode",
+        "email",
+        "address",
+        "dateOfBirth",
+        "gender",
+        "membershipLevel",
+        "points",
+        "totalSpent",
+        "communicationPreference",
+        "notes",
+        "allergies"
+    );
+
     // 支持的字段映射
-    private static final Map<String, String> FIELD_MAPPING_OPTIONS = Map.of(
-        "firstName", "姓名/名字/First Name",
-        "lastName", "姓氏/Last Name", 
-        "phone", "电话/手机/Phone",
-        "email", "邮箱/Email",
-        "address", "地址/Address",
-        "dateOfBirth", "生日/出生日期/Birthday",
-        "gender", "性别/Gender",
-        "notes", "备注/Notes",
-        "allergies", "过敏信息/Allergies"
+    private static final Map<String, String> FIELD_MAPPING_OPTIONS = Map.ofEntries(
+        Map.entry("firstName", "姓名/名字/First Name"),
+        Map.entry("lastName", "姓氏/Last Name"),
+        Map.entry("phone", "电话/手机/Phone"),
+        Map.entry("countryCode", "国家码/Country Code"),
+        Map.entry("email", "邮箱/Email"),
+        Map.entry("address", "地址/Address"),
+        Map.entry("dateOfBirth", "生日/出生日期/Birthday"),
+        Map.entry("gender", "性别/Gender"),
+        Map.entry("membershipLevel", "会员等级/Membership Level"),
+        Map.entry("points", "积分/Points"),
+        Map.entry("totalSpent", "总消费/Total Spent"),
+        Map.entry("communicationPreference", "沟通偏好/Communication Preference"),
+        Map.entry("notes", "备注/Notes"),
+        Map.entry("allergies", "过敏信息/Allergies")
     );
     
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
@@ -231,7 +254,8 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             for (CustomerImportTemp temp : validRecords) {
                 try {
                     Map<String, Object> rawData = objectMapper.readValue(temp.getRawData(), Map.class);
-                    CustomerDTO customerDTO = convertToCustomerDTO(rawData, tenantId);
+                    Map<String, Object> mappedData = mapFields(rawData, request.getFieldMapping());
+                    CustomerDTO customerDTO = convertToCustomerDTO(mappedData, tenantId);
                     
                     // 检查是否已存在相同手机号的客户
                     try {
@@ -246,7 +270,23 @@ public class CustomerImportServiceImpl implements CustomerImportService {
                     } catch (Exception e) {
                         // 客户不存在，可以继续创建
                     }
-                    
+
+                    // 检查是否已存在相同邮箱的客户（邮箱不为空时才检查）
+                    if (customerDTO.getEmail() != null && !customerDTO.getEmail().trim().isEmpty()) {
+                        try {
+                            CustomerDTO existingCustomer = customerService.getCustomerByEmail(tenantId, customerDTO.getEmail());
+                            if (existingCustomer != null) {
+                                temp.setStatus(CustomerImportTemp.ImportStatus.INVALID);
+                                temp.setErrorMessage("邮箱已存在: " + customerDTO.getEmail());
+                                failedCount++;
+                                tempMapper.save(temp);
+                                continue;
+                            }
+                        } catch (Exception e) {
+                            // 客户不存在，可以继续创建
+                        }
+                    }
+
                     customerService.createCustomer(customerDTO);
                     temp.setStatus(CustomerImportTemp.ImportStatus.IMPORTED);
                     successCount++;
@@ -314,34 +354,61 @@ public class CustomerImportServiceImpl implements CustomerImportService {
         try {
             List<CustomerImportTemp> errorRecords = tempMapper.findByTenantIdAndImportSessionIdAndStatus(
                 tenantId, importSessionId, CustomerImportTemp.ImportStatus.INVALID);
-            
-            Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("错误报告");
-            
-            // 创建标题行
-            Row headerRow = sheet.createRow(0);
-            headerRow.createCell(0).setCellValue("行号");
-            headerRow.createCell(1).setCellValue("原始数据");
-            headerRow.createCell(2).setCellValue("错误信息");
-            
-            // 填充数据
-            int rowNum = 1;
-            for (CustomerImportTemp temp : errorRecords) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(temp.getRowIndex());
-                row.createCell(1).setCellValue(temp.getRawData());
-                row.createCell(2).setCellValue(temp.getErrorMessage());
+
+            if (errorRecords.isEmpty()) {
+                throw new RuntimeException("没有失败记录");
             }
-            
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            workbook.write(outputStream);
-            workbook.close();
-            
-            return outputStream.toByteArray();
-            
+
+            // 使用模板定义的字段顺序
+            List<String> fieldNames = TEMPLATE_FIELD_ORDER;
+
+            // 构建CSV
+            StringBuilder csv = new StringBuilder();
+
+            // 创建标题行（按照模板字段顺序 + 错误信息）
+            for (String fieldName : fieldNames) {
+                csv.append(escapeCsvValue(fieldName)).append(",");
+            }
+            csv.append("错误信息\n");
+
+            // 填充数据行
+            for (CustomerImportTemp temp : errorRecords) {
+                Map<String, Object> rawData = objectMapper.readValue(temp.getRawData(), Map.class);
+
+                // 按照模板字段顺序输出值
+                for (String fieldName : fieldNames) {
+                    Object value = rawData.get(fieldName);
+                    String strValue = value != null ? value.toString() : "";
+                    csv.append(escapeCsvValue(strValue)).append(",");
+                }
+
+                // 添加错误信息
+                csv.append(escapeCsvValue(temp.getErrorMessage() != null ? temp.getErrorMessage() : ""));
+                csv.append("\n");
+            }
+
+            return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
         } catch (Exception e) {
+            logger.error("生成错误报告失败: {}", e.getMessage(), e);
             throw new RuntimeException(messageUtil.getMessage("error.import.report.generation.failed", new Object[]{e.getMessage()}), e);
         }
+    }
+
+    /**
+     * CSV值转义处理
+     */
+    private String escapeCsvValue(String value) {
+        if (value == null) {
+            return "";
+        }
+        // 如果包含逗号、引号或换行符，需要用引号包裹
+        if (value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
+            // 将引号转义为双引号
+            value = value.replace("\"", "\"\"");
+            return "\"" + value + "\"";
+        }
+        return value;
     }
     
     @Override
@@ -556,7 +623,13 @@ public class CustomerImportServiceImpl implements CustomerImportService {
         dto.setAddress((String) data.get("address"));
         dto.setNotes((String) data.get("notes"));
         dto.setAllergies((String) data.get("allergies"));
-        
+
+        // 处理国家码
+        String countryCode = (String) data.get("countryCode");
+        if (countryCode != null && !countryCode.isEmpty()) {
+            dto.setCountryCode(countryCode);
+        }
+
         // 处理生日
         String dateOfBirth = (String) data.get("dateOfBirth");
         if (dateOfBirth != null && !dateOfBirth.isEmpty()) {
@@ -566,7 +639,7 @@ public class CustomerImportServiceImpl implements CustomerImportService {
                 // 忽略日期解析错误
             }
         }
-        
+
         // 处理性别
         String gender = (String) data.get("gender");
         if (gender != null && !gender.isEmpty()) {
@@ -576,14 +649,58 @@ public class CustomerImportServiceImpl implements CustomerImportService {
                 // 忽略性别解析错误
             }
         }
-        
-        // 设置默认值
-        dto.setMembershipLevel(Customer.MembershipLevel.REGULAR);
+
+        // 处理会员等级（如果CSV中有值则使用，否则使用默认值）
+        String membershipLevel = (String) data.get("membershipLevel");
+        if (membershipLevel != null && !membershipLevel.isEmpty()) {
+            try {
+                dto.setMembershipLevel(Customer.MembershipLevel.valueOf(membershipLevel.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                dto.setMembershipLevel(Customer.MembershipLevel.REGULAR);
+            }
+        } else {
+            dto.setMembershipLevel(Customer.MembershipLevel.REGULAR);
+        }
+
+        // 处理积分（如果CSV中有值则使用，否则使用默认值0）
+        String points = (String) data.get("points");
+        if (points != null && !points.isEmpty()) {
+            try {
+                dto.setPoints(Integer.parseInt(points));
+            } catch (NumberFormatException e) {
+                dto.setPoints(0);
+            }
+        } else {
+            dto.setPoints(0);
+        }
+
+        // 处理总消费（如果CSV中有值则使用，否则使用默认值0）
+        String totalSpent = (String) data.get("totalSpent");
+        if (totalSpent != null && !totalSpent.isEmpty()) {
+            try {
+                dto.setTotalSpent(new BigDecimal(totalSpent));
+            } catch (NumberFormatException e) {
+                dto.setTotalSpent(BigDecimal.ZERO);
+            }
+        } else {
+            dto.setTotalSpent(BigDecimal.ZERO);
+        }
+
+        // 处理沟通偏好（如果CSV中有值则使用，否则使用默认值SMS）
+        String communicationPreference = (String) data.get("communicationPreference");
+        if (communicationPreference != null && !communicationPreference.isEmpty()) {
+            try {
+                dto.setCommunicationPreference(Customer.CommunicationPreference.valueOf(communicationPreference.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                dto.setCommunicationPreference(Customer.CommunicationPreference.SMS);
+            }
+        } else {
+            dto.setCommunicationPreference(Customer.CommunicationPreference.SMS);
+        }
+
+        // 设置状态默认值
         dto.setStatus(Customer.CustomerStatus.ACTIVE);
-        dto.setPoints(0);
-        dto.setTotalSpent(BigDecimal.ZERO);
-        dto.setCommunicationPreference(Customer.CommunicationPreference.SMS);
-        
+
         return dto;
     }
     

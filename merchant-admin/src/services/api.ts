@@ -1014,6 +1014,7 @@ export const customerApi = {
   executeCustomerImport: async (tenantId: string, data: {
     importSessionId: string;
     skipInvalidRecords: boolean;
+    fieldMapping: Record<string, string>;
   }): Promise<ImportResult> => {
     const response = await createRequest(`/api/business/customers/import/execute?tenantId=${tenantId}`, {
       method: 'POST',
@@ -1038,7 +1039,7 @@ export const customerApi = {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `import-error-report-${importSessionId}.xlsx`;
+    a.download = `import-error-report-${importSessionId}.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

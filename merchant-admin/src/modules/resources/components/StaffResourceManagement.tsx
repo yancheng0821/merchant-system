@@ -272,13 +272,13 @@ const StaffResourceManagement: React.FC = () => {
     const getSkillLevelText = (level: string) => {
         switch (level) {
             case 'BEGINNER':
-                return 'Beginner';
+                return t('staff.skillLevels.beginner');
             case 'INTERMEDIATE':
-                return 'Intermediate';
+                return t('staff.skillLevels.intermediate');
             case 'EXPERT':
-                return 'Expert';
+                return t('staff.skillLevels.expert');
             case 'MASTER':
-                return 'Master';
+                return t('staff.skillLevels.master');
             default:
                 return level;
         }
@@ -738,14 +738,14 @@ const StaffResourceManagement: React.FC = () => {
                                                                             transition: 'all 0.2s',
                                                                         }}
                                                                     >
-                                                                        {staffExpertise[staffMember.id].length - 3} more services
+                                                                        {staffExpertise[staffMember.id].length - 3} {t('staff.moreServices')}
                                                                     </Typography>
                                                                 </Box>
                                                             )}
                                                         </>
                                                     ) : (
                                                         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
-                                                            No services
+                                                            {t('staff.noServices')}
                                                         </Typography>
                                                     )}
                                                 </Box>
@@ -921,12 +921,12 @@ const StaffResourceManagement: React.FC = () => {
                     {/* 标题 */}
                     <Box sx={{ mb: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.95rem' }}>
-                            Service Expertise
+                            {t('staff.serviceExpertise')}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
                             {selectedStaffIdForExpertise && staffExpertise[selectedStaffIdForExpertise]?.length > 0
-                                ? `${staffExpertise[selectedStaffIdForExpertise].length} services`
-                                : 'No services'}
+                                ? t('staff.servicesCount', { count: staffExpertise[selectedStaffIdForExpertise].length })
+                                : t('staff.noServices')}
                         </Typography>
                     </Box>
 
