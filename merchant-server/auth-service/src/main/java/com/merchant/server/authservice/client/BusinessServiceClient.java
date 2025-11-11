@@ -5,18 +5,23 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
-@FeignClient(name = "business-service", url = "${business-service.url:http://business-service:8083}")
+@FeignClient(name = "business-service")
 public interface BusinessServiceClient {
 
     @PostMapping("/api/business/verification/send")
-    ResponseEntity<VerificationCodeResponse> sendVerificationCode(@RequestBody SendVerificationCodeRequest request);
+    ResponseEntity<VerificationCodeResponse> sendVerificationCode(
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage,
+            @RequestBody SendVerificationCodeRequest request);
 
     @PostMapping("/api/business/verification/verify")
-    ResponseEntity<VerificationCodeResponse> verifyCode(@RequestBody VerifyCodeRequest request);
+    ResponseEntity<VerificationCodeResponse> verifyCode(
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguage,
+            @RequestBody VerifyCodeRequest request);
 
     /**
      * 创建默认 Walk-in 客户

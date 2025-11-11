@@ -51,9 +51,7 @@ import {
 import ModernTerminalManagement from './ModernTerminalManagement';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmerchantplatform.com';
+import { stripeApi, merchantConfigApi, handleApiError } from '../../services/api';
 
 interface StripeAccountInfo {
   stripeAccountId?: string;
@@ -91,25 +89,18 @@ const StripeConnectTab: React.FC = () => {
   // 获取Stripe账户信息
   const fetchAccountInfo = async () => {
     if (!user?.tenantId) return;
-    
+
     setLoading(true);
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setAccountInfo(response.data.data);
-      }
+      const data = await stripeApi.getAccount(user.tenantId);
+      setAccountInfo(data);
     } catch (error: any) {
-      if (error.response?.status === 404) {
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
         // 账户不存在
         setAccountInfo(null);
       } else {
         console.error('Failed to fetch Stripe account:', error);
+        handleApiError(error);
       }
     } finally {
       setLoading(false);
@@ -119,26 +110,23 @@ const StripeConnectTab: React.FC = () => {
   // 创建Stripe Connect账户
   const createStripeAccount = async () => {
     if (!user?.tenantId) return;
-    
+
     setCreatingAccount(true);
     try {
       // 先尝试获取商户的实际信息
       let merchantBasicInfo: any = {};
       try {
-        const merchantResponse = await axios.get(
-          `${API_BASE_URL}/api/business/merchant-config/basic-info?tenantId=${user.tenantId}`,
-          { withCredentials: true }
-        );
-        if (merchantResponse.data?.data) {
-          merchantBasicInfo = merchantResponse.data.data;
+        const data = await merchantConfigApi.getBasicInfo(user.tenantId);
+        if (data) {
+          merchantBasicInfo = data;
         }
       } catch (error) {
         console.log('Could not fetch merchant basic info, using defaults');
       }
-      
+
       // 获取商户详细信息（从数据库或用户上下文）
       const tenantInfo = JSON.parse(localStorage.getItem('tenantInfo') || '{}');
-      
+
       // 预填充商户信息，优先使用数据库中的信息
       const merchantInfo = {
         businessName: merchantBasicInfo.merchantName || user.tenantName || tenantInfo.tenantName || t('settings.stripe.defaultBusinessName', 'My Business'),
@@ -147,25 +135,25 @@ const StripeConnectTab: React.FC = () => {
         country: 'CA',
         defaultCurrency: 'CAD',
         accountType: 'express',
-        
+
         // 预填充的商户信息 - 确保不发送空字符串
         phone: merchantBasicInfo.contactPhone || tenantInfo.contactPhone || null,
         address: merchantBasicInfo.address || tenantInfo.address || null,
         city: merchantBasicInfo.city || tenantInfo.city || t('settings.stripe.defaultCity', 'Vancouver'),
         state: merchantBasicInfo.province || tenantInfo.state || 'BC',
         postalCode: merchantBasicInfo.postalCode || tenantInfo.postalCode || null,
-        
+
         // 联系人信息
         contactPerson: merchantBasicInfo.contactPerson || tenantInfo.contactPerson || user.realName || user.username || '',
         firstName: merchantBasicInfo.contactPerson?.split(' ')[0] || tenantInfo.firstName || user.realName?.split(' ')[0] || '',
         lastName: merchantBasicInfo.contactPerson?.split(' ').slice(1).join(' ') || tenantInfo.lastName || user.realName?.split(' ').slice(1).join(' ') || '',
-        
+
         // 业务信息
         productDescription: tenantInfo.businessDescription || t('settings.stripe.defaultProductDesc', 'Beauty and wellness services'),
         mcc: '7230', // 美容院的MCC代码
         website: tenantInfo.website || null
       };
-      
+
       // 过滤掉null值，只发送有值的字段
       const filteredMerchantInfo = Object.entries(merchantInfo).reduce((acc, [key, value]) => {
         if (value !== null && value !== '') {
@@ -174,19 +162,10 @@ const StripeConnectTab: React.FC = () => {
         return acc;
       }, {} as any);
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/account/create?tenantId=${user.tenantId}`,
-        filteredMerchantInfo,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setAccountInfo(response.data.data);
+      const accountInfo = await stripeApi.createAccount(user.tenantId, filteredMerchantInfo);
+
+      if (accountInfo) {
+        setAccountInfo(accountInfo);
         // 显示创建成功提示
         setSnackbar({
           open: true,
@@ -200,6 +179,7 @@ const StripeConnectTab: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to create Stripe account:', error);
+      handleApiError(error);
     } finally {
       setCreatingAccount(false);
     }
@@ -244,41 +224,34 @@ const StripeConnectTab: React.FC = () => {
     try {
       const returnUrl = `${window.location.origin}/settings?tab=payment`;
       const refreshUrl = `${window.location.origin}/settings?tab=payment`;
-      
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/account/link?tenantId=${user.tenantId}&returnUrl=${encodeURIComponent(returnUrl)}&refreshUrl=${encodeURIComponent(refreshUrl)}`,
-        {},
-        {
-          withCredentials: true,
-        }
+
+      const linkData = await stripeApi.createAccountLink(
+        user.tenantId,
+        returnUrl,
+        refreshUrl
       );
-      
-      if (response.data?.data?.url) {
-        setOnboardingUrl(response.data.data.url);
+
+      if (linkData?.url) {
+        setOnboardingUrl(linkData.url);
         // 自动打开入驻链接
-        window.open(response.data.data.url, '_blank');
+        window.open(linkData.url, '_blank');
       }
     } catch (error) {
       console.error('Failed to create onboarding link:', error);
+      handleApiError(error);
     }
   };
 
   // 同步账户状态
   const syncAccountStatus = async () => {
     if (!user?.tenantId) return;
-    
+
     setSyncing(true);
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}/sync`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setAccountInfo(response.data.data);
+      const accountData = await stripeApi.syncAccountStatus(user.tenantId);
+
+      if (accountData) {
+        setAccountInfo(accountData);
         setLastSyncTime(new Date());
         // 设置下次同步时间
         const next = new Date();
@@ -287,6 +260,7 @@ const StripeConnectTab: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to sync account status:', error);
+      handleApiError(error);
     } finally {
       setSyncing(false);
     }
@@ -296,26 +270,21 @@ const StripeConnectTab: React.FC = () => {
   const openStripeDashboard = async () => {
     // 只要有账户信息就可以打开Dashboard，不需要等待onboarding完成
     if (!user?.tenantId || !accountInfo) return;
-    
+
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}/dashboard-url`,
-        {
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data?.url) {
+      const dashboardData = await stripeApi.getDashboardUrl(user.tenantId);
+
+      if (dashboardData?.url) {
         // Express Dashboard登录链接是临时的，会直接让商户访问他们的子账户
         // 无需额外登录，直接跳转到他们的Stripe Express仪表板
-        window.open(response.data.data.url, '_blank');
-        
+        window.open(dashboardData.url, '_blank');
+
         // 可选：显示提示信息
         console.info('Opening Stripe Express Dashboard - no additional login required');
       }
     } catch (error) {
       console.error('Failed to get dashboard URL:', error);
-      // 可以添加用户友好的错误提示
+      handleApiError(error);
     }
   };
 
@@ -337,27 +306,22 @@ const StripeConnectTab: React.FC = () => {
   // 解绑Stripe账户（仅测试环境）
   const disconnectAccount = async () => {
     if (!user?.tenantId) return;
-    
+
     setDeleting(true);
     handleCloseDeleteDialog();
-    
+
     try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}/disconnect`,
-        {
-          withCredentials: true,
-        }
-      );
-      
+      const result = await stripeApi.disconnectAccount(user.tenantId);
+
       // 检查响应，即使没有明确的 success 标志，只要请求成功就算成功
-      if (response.status === 200 || response.data?.data?.success) {
+      if (result || result === undefined) {
         // 显示成功提示
         setSnackbar({
           open: true,
           message: t('settings.stripe.disconnectSuccess'),
           severity: 'success',
         });
-        
+
         // 立即清空账户信息，显示重新绑定界面
         setAccountInfo(null);
         // 删除成功后不再重新获取，避免界面闪烁
@@ -371,6 +335,7 @@ const StripeConnectTab: React.FC = () => {
         message: t('settings.stripe.disconnectError'),
         severity: 'error',
       });
+      handleApiError(error);
     } finally {
       setDeleting(false);
     }

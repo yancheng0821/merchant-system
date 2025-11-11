@@ -61,9 +61,12 @@ public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
                             "PHONE"  // recipientType: PHONE or EMAIL
                     );
 
+            // Get current locale for internationalization
+            String acceptLanguage = org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag();
+
             // Call business service to send code
             ResponseEntity<BusinessServiceClient.VerificationCodeResponse> response =
-                    businessServiceClient.sendVerificationCode(verificationRequest);
+                    businessServiceClient.sendVerificationCode(acceptLanguage, verificationRequest);
 
             if (response.getBody() != null && response.getBody().success) {
                 log.info("2FA code sent successfully to user: {}", request.getUserId());
@@ -127,8 +130,11 @@ public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
                             request.getCode()
                     );
 
+            // Get current locale for internationalization
+            String acceptLanguage = org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag();
+
             ResponseEntity<BusinessServiceClient.VerificationCodeResponse> response =
-                    businessServiceClient.verifyCode(verifyRequest);
+                    businessServiceClient.verifyCode(acceptLanguage, verifyRequest);
 
             if (response.getBody() != null && response.getBody().success) {
                 // Code verified successfully, generate JWT token

@@ -62,8 +62,9 @@ import IconButton from '@mui/material/IconButton';
 import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
+import { API_BASE_URL } from '../../config/environment';
 import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, getFullImageUrl } from '../../services/api';
-import { getMerchantNow } from '../../utils/timezoneUtils';
+import { getMerchantNow, utcToMerchantTime } from '../../utils/timezoneUtils';
 
 // 时间范围类型
 type TimeRange = '7days' | '30days' | '6months' | '1year';
@@ -185,8 +186,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     try {
       // 获取业务通知
-      const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/api/business/notifications/dashboard?tenantId=${user.tenantId}`, {
+
+      const response = await fetch(`${API_BASE_URL}/api/business/notifications/dashboard?tenantId=${user.tenantId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -304,7 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           return [];
         }),
         // 获取最近的业务通知
-        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080'}/api/business/notifications/dashboard?tenantId=${user.tenantId}`, {
+        fetch(`${API_BASE_URL}/api/business/notifications/dashboard?tenantId=${user.tenantId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -977,10 +978,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     title = localizedText.title || t('dashboard.notification');
                   }
                   
-                  // 计算时间差
-                  const createdTime = new Date(notification.createdAt);
-                  const now = new Date();
-                  const diffMinutes = Math.floor((now.getTime() - createdTime.getTime()) / (1000 * 60));
+                  // 计算时间差 - 使用UTC时间转换为商户本地时间
+                  const createdTime = utcToMerchantTime(notification.createdAt);
+                  const now = getMerchantNow();
+                  const diffMinutes = createdTime ? Math.floor((now.getTime() - createdTime.getTime()) / (1000 * 60)) : 0;
                   let timeAgo = '';
 
                   // 处理负数时间差（时区问题或未来时间）

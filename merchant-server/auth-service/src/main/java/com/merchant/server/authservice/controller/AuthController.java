@@ -118,13 +118,10 @@ public class AuthController {
         if (lang != null && !lang.isEmpty()) {
             LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
         }
-        logger.info("收到令牌刷新请求 - refreshToken: {}", refreshToken.substring(0, Math.min(20, refreshToken.length())) + "...");
-        
+
+        // BusinessLogAspect 已自动记录 [REQUEST] 和 [RESPONSE]，无需手动记录
         try {
             LoginResponse response = authService.refreshToken(refreshToken);
-            logger.info("令牌刷新成功");
-            logger.debug("刷新响应: userId={}, token={}", response.getUserId(),
-                response.getToken() != null ? response.getToken().substring(0, Math.min(20, response.getToken().length())) + "..." : "null");
             return ApiResponse.success(response);
         } catch (Exception e) {
             logger.error("令牌刷新失败: {}", e.getMessage(), e);

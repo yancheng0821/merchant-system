@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { businessNotificationApi, handleApiError } from '../../services/api';
 import {
   Box,
   Paper,
@@ -82,20 +83,7 @@ const SystemNotificationManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/api/business/notifications/system`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch system notifications');
-      }
-
-      const data = await response.json();
+      const data = await businessNotificationApi.getSystemNotifications();
       setNotifications(data || []);
     } catch (error) {
       console.error('Error fetching system notifications:', error);
@@ -156,28 +144,16 @@ const SystemNotificationManagement: React.FC = () => {
 
     setLoading(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const url = editingNotification
-        ? `${apiUrl}/api/business/notifications/system/${editingNotification.id}`
-        : `${apiUrl}/api/business/notifications/system`;
+      const notificationData = {
+        ...formData,
+        title: formData.titleEn, // 默认使用英文
+        content: formData.contentEn,
+      };
 
-      const method = editingNotification ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          ...formData,
-          title: formData.titleEn, // 默认使用英文
-          content: formData.contentEn,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save system notification');
+      if (editingNotification) {
+        await businessNotificationApi.updateSystemNotification(editingNotification.id!, notificationData);
+      } else {
+        await businessNotificationApi.createSystemNotification(notificationData);
       }
 
       handleCloseDialog();
@@ -207,17 +183,7 @@ const SystemNotificationManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/api/business/notifications/system/${notificationToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete system notification');
-      }
+      await businessNotificationApi.deleteSystemNotification(notificationToDelete.id);
 
       setSuccessMessage(t('notifications.deleteSuccess'));
       handleCloseDeleteDialog();

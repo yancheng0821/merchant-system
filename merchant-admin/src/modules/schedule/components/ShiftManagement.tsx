@@ -27,7 +27,7 @@ import zhCNLocale from 'date-fns/locale/zh-CN';
 import enUSLocale from 'date-fns/locale/en-US';
 import ShiftDialog from './ShiftDialog';
 import ShiftCalendarView from '../ShiftCalendarView';
-import axios from 'axios';
+import { shiftApi, handleApiError } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../hooks/usePermission';
 
@@ -270,34 +270,23 @@ const ShiftManagement: React.FC<ShiftManagementProps> = ({ resourceId }) => {
       setLoading(false);
     }, 500);
 
-    // 真实 API 调用（已注释）
-    /*
+    // 真实 API 调用
+    /* 暂时注释，等API准备好后启用
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
       const startDate = format(currentWeekStart, 'yyyy-MM-dd');
       const endDate = format(addDays(currentWeekStart, 6), 'yyyy-MM-dd');
 
-      const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      };
-
-      let response;
+      let data;
       if (resourceId) {
-        response = await axios.get(`${API_BASE_URL}/api/business/shifts/resource/${resourceId}`, {
-          params: { startDate, endDate },
-          headers
-        });
+        data = await shiftApi.getShiftsByResource(resourceId, startDate, endDate);
       } else {
-        response = await axios.get(`${API_BASE_URL}/api/business/shifts/tenant/${user?.tenantId}`, {
-          params: { startDate, endDate },
-          headers
-        });
+        data = await shiftApi.getShiftsByTenant(user?.tenantId || 0, startDate, endDate);
       }
 
-      setShifts(response.data);
+      setShifts(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || t('shift.loadError'));
-      console.error('Failed to load shifts:', err);
+      setError(t('shift.loadError'));
+      handleApiError(err);
     } finally {
       setLoading(false);
     }
@@ -333,15 +322,11 @@ const ShiftManagement: React.FC<ShiftManagementProps> = ({ resourceId }) => {
     }
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      await axios.delete(`${API_BASE_URL}/api/business/shifts/${shiftId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      await shiftApi.deleteShift(shiftId);
       await loadShifts();
     } catch (err: any) {
-      setError(err.response?.data?.message || t('shift.deleteError'));
+      setError(t('shift.deleteError'));
+      handleApiError(err);
     }
   };
 

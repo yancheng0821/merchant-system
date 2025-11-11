@@ -1,5 +1,8 @@
 package com.merchant.server.authservice.controller;
 
+import com.merchant.server.authservice.service.S3Service;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,15 +17,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth/files")
 public class FileUploadController {
 
-    @Value("${file.upload.path:/tmp/uploads}")
+    @Value("${file.upload.path:/var/uploads}")
     private String uploadBasePath;
 
     @Value("${server.port:8080}")
     private String serverPort;
+
+    @Value("${file.upload.mode:s3}")
+    private String uploadMode;  // local, s3, or dual
+
+    @Autowired(required = false)
+    private S3Service s3Service;
 
     @PostMapping("/upload/avatar")
     public ResponseEntity<Map<String, String>> uploadAvatar(
@@ -42,12 +52,10 @@ public class FileUploadController {
 
     private ResponseEntity<Map<String, String>> uploadFile(MultipartFile file, Long tenantId, String subDir) {
         try {
-            // Log the upload paths for debugging
-            System.out.println("=== FILE UPLOAD DEBUG ===");
-            System.out.println("uploadBasePath: " + uploadBasePath);
-            System.out.println("subDir: " + subDir);
-            System.out.println("tenantId: " + tenantId);
-            
+            log.info("=== FILE UPLOAD ===");
+            log.info("Upload mode: {}", uploadMode);
+            log.info("subDir: {}, tenantId: {}, file: {}", subDir, tenantId, file.getOriginalFilename());
+
             // 验证文件
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(createErrorResponse("文件不能为空"));
@@ -64,37 +72,80 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(createErrorResponse("文件大小不能超过5MB"));
             }
 
-            // 创建目录结构: {uploadBasePath}/{subDir}/tenant_{tenantId}/
-            String tenantDir = "tenant_" + tenantId;
-            Path uploadDir = Paths.get(uploadBasePath, subDir, tenantDir);
-            System.out.println("Creating directory: " + uploadDir.toString());
-            Files.createDirectories(uploadDir);
-
-            // 生成唯一文件名
+            // 生成文件名和路径
             String originalFilename = file.getOriginalFilename();
-            String extension = originalFilename != null && originalFilename.contains(".") 
+            String extension = originalFilename != null && originalFilename.contains(".")
                 ? originalFilename.substring(originalFilename.lastIndexOf("."))
                 : ".jpg";
             String filename = UUID.randomUUID().toString() + extension;
+            String tenantDir = "tenant_" + tenantId;
 
-            // 保存文件
-            Path filePath = uploadDir.resolve(filename);
-            System.out.println("Saving file to: " + filePath.toString());
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            String fileUrl = null;
 
-            // 生成访问URL - 使用静态资源路径
-            String fileUrl = String.format("/static/uploads/%s/%s/%s", subDir, tenantDir, filename);
+            // S3 上传模式
+            if ("s3".equals(uploadMode) || "dual".equals(uploadMode)) {
+                if (s3Service != null && s3Service.isConfigured()) {
+                    try {
+                        // S3 key: uploads/{subDir}/tenant_{tenantId}/{filename}
+                        String s3Key = String.format("uploads/%s/%s/%s", subDir, tenantDir, filename);
+                        fileUrl = s3Service.uploadFile(file, s3Key, contentType);
+                        log.info("File uploaded to S3: {}", fileUrl);
 
-            Map<String, String> response = new HashMap<>();
-            response.put("url", fileUrl);
-            response.put("filename", filename);
-            response.put("originalName", originalFilename);
-            response.put("size", String.valueOf(file.getSize()));
+                        // 如果是纯S3模式，直接返回
+                        if ("s3".equals(uploadMode)) {
+                            Map<String, String> response = new HashMap<>();
+                            response.put("url", fileUrl);
+                            response.put("filename", filename);
+                            response.put("originalName", originalFilename);
+                            response.put("size", String.valueOf(file.getSize()));
+                            response.put("storageMode", "s3");
+                            return ResponseEntity.ok(response);
+                        }
+                    } catch (IOException e) {
+                        log.error("Failed to upload to S3: {}", e.getMessage());
+                        if ("s3".equals(uploadMode)) {
+                            return ResponseEntity.internalServerError().body(createErrorResponse("S3上传失败: " + e.getMessage()));
+                        }
+                        // 如果是dual模式，继续本地上传
+                    }
+                } else {
+                    log.warn("S3 service not configured, falling back to local storage");
+                    if ("s3".equals(uploadMode)) {
+                        return ResponseEntity.internalServerError().body(createErrorResponse("S3服务未配置"));
+                    }
+                }
+            }
 
-            return ResponseEntity.ok(response);
+            // 本地上传模式（local或dual的fallback）
+            if ("local".equals(uploadMode) || "dual".equals(uploadMode) || fileUrl == null) {
+                Path uploadDir = Paths.get(uploadBasePath, subDir, tenantDir);
+                log.info("Creating local directory: {}", uploadDir.toString());
+                Files.createDirectories(uploadDir);
+
+                Path filePath = uploadDir.resolve(filename);
+                log.info("Saving file to: {}", filePath.toString());
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                String localUrl = String.format("/static/uploads/%s/%s/%s", subDir, tenantDir, filename);
+
+                Map<String, String> response = new HashMap<>();
+                response.put("url", "dual".equals(uploadMode) && fileUrl != null ? fileUrl : localUrl);
+                response.put("localUrl", localUrl);
+                if (fileUrl != null) {
+                    response.put("s3Url", fileUrl);
+                }
+                response.put("filename", filename);
+                response.put("originalName", originalFilename);
+                response.put("size", String.valueOf(file.getSize()));
+                response.put("storageMode", uploadMode);
+
+                return ResponseEntity.ok(response);
+            }
+
+            return ResponseEntity.internalServerError().body(createErrorResponse("文件上传失败"));
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("File upload failed", e);
             return ResponseEntity.internalServerError().body(createErrorResponse("文件上传失败: " + e.getMessage()));
         }
     }
@@ -109,28 +160,56 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body(createErrorResponse("文件URL不能为空"));
             }
 
-            // 支持两种URL格式:
-            // 1. /static/uploads/{subDir}/{tenantDir}/{filename}
-            // 2. 完整的HTTP URL
-            String relativePath;
-            if (fileUrl.startsWith("/static/uploads/")) {
-                relativePath = fileUrl.substring("/static/uploads/".length());
-            } else if (fileUrl.contains("/static/uploads/")) {
-                int index = fileUrl.indexOf("/static/uploads/");
-                relativePath = fileUrl.substring(index + "/static/uploads/".length());
-            } else {
-                return ResponseEntity.badRequest().body(createErrorResponse("无效的文件URL格式"));
+            log.info("Deleting file: {}, mode: {}", fileUrl, uploadMode);
+            boolean deleted = false;
+
+            // 如果是S3 URL (包含 s3.amazonaws.com 或自定义域名)
+            if (fileUrl.contains("s3.") || fileUrl.contains("amazonaws.com")) {
+                if (s3Service != null && s3Service.isConfigured()) {
+                    try {
+                        // 从S3 URL提取key: https://bucket.s3.region.amazonaws.com/uploads/...
+                        String s3Key = extractS3Key(fileUrl);
+                        if (s3Key != null) {
+                            s3Service.deleteFile(s3Key);
+                            deleted = true;
+                            log.info("File deleted from S3: {}", s3Key);
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to delete from S3: {}", e.getMessage());
+                        if ("s3".equals(uploadMode)) {
+                            return ResponseEntity.internalServerError().body(createErrorResponse("S3删除失败: " + e.getMessage()));
+                        }
+                    }
+                }
             }
 
-            Path filePath = Paths.get(uploadBasePath, relativePath);
+            // 本地文件删除（支持两种URL格式）
+            if ("local".equals(uploadMode) || "dual".equals(uploadMode) || !deleted) {
+                String relativePath = null;
+                if (fileUrl.startsWith("/static/uploads/")) {
+                    relativePath = fileUrl.substring("/static/uploads/".length());
+                } else if (fileUrl.contains("/static/uploads/")) {
+                    int index = fileUrl.indexOf("/static/uploads/");
+                    relativePath = fileUrl.substring(index + "/static/uploads/".length());
+                }
 
-            // 安全检查：确保文件路径在上传目录内
-            if (!filePath.normalize().startsWith(Paths.get(uploadBasePath).normalize())) {
-                return ResponseEntity.badRequest().body(createErrorResponse("非法的文件路径"));
+                if (relativePath != null) {
+                    Path filePath = Paths.get(uploadBasePath, relativePath);
+
+                    // 安全检查：确保文件路径在上传目录内
+                    if (!filePath.normalize().startsWith(Paths.get(uploadBasePath).normalize())) {
+                        return ResponseEntity.badRequest().body(createErrorResponse("非法的文件路径"));
+                    }
+
+                    if (Files.exists(filePath)) {
+                        Files.delete(filePath);
+                        deleted = true;
+                        log.info("File deleted from local storage: {}", filePath);
+                    }
+                }
             }
 
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
+            if (deleted) {
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "文件删除成功");
                 return ResponseEntity.ok(response);
@@ -139,9 +218,23 @@ public class FileUploadController {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("File deletion failed", e);
             return ResponseEntity.internalServerError().body(createErrorResponse("文件删除失败: " + e.getMessage()));
         }
+    }
+
+    private String extractS3Key(String s3Url) {
+        try {
+            // S3 URL格式: https://bucket.s3.region.amazonaws.com/key
+            // 提取 key 部分
+            if (s3Url.contains("amazonaws.com/")) {
+                int index = s3Url.indexOf("amazonaws.com/");
+                return s3Url.substring(index + "amazonaws.com/".length());
+            }
+        } catch (Exception e) {
+            log.error("Failed to extract S3 key from URL: {}", s3Url, e);
+        }
+        return null;
     }
 
     private Map<String, String> createErrorResponse(String message) {

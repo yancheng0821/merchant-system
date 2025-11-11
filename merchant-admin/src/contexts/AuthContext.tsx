@@ -179,18 +179,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 获取用户权限信息
   const fetchUserPermissions = async (userId: number, tenantId: number) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080'}/api/auth/authorization/user/${userId}/permissions?tenantId=${tenantId}`, {
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const result = await authApi.getUserPermissions(userId);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          return result.data as UserPermissions;
-        }
+      if (result.success && result.data) {
+        return result.data as UserPermissions;
       }
     } catch (error) {
       console.error('Failed to fetch user permissions:', error);

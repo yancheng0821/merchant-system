@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import HelpTooltip from '../common/HelpTooltip';
 import CountryCodeSelector from '../common/CountryCodeSelector';
+import { authApi, handleApiError } from '../../services/api';
 
 
 interface RegisterData {
@@ -417,19 +418,7 @@ const LoginPage: React.FC = () => {
     clearError();
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${API_BASE_URL}/api/auth/send-2fa-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          tenantId,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await authApi.send2FACode(userId, tenantId);
 
       if (result.success && result.data?.success) {
         // 使用 flushSync 强制同步更新所有状态
@@ -468,21 +457,12 @@ const LoginPage: React.FC = () => {
     clearError();
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-2fa-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: twoFactorData.userId,
-          code: verificationCode,
-          verificationId: twoFactorData.verificationId,
-          tenantId: twoFactorData.tenantId,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await authApi.verify2FACode(
+        twoFactorData.userId,
+        verificationCode,
+        twoFactorData.verificationId || '', // Provide default empty string if undefined
+        twoFactorData.tenantId
+      );
 
       if (result.success && result.data) {
         // 保存 token 和 refreshToken
@@ -516,9 +496,11 @@ const LoginPage: React.FC = () => {
         let errorMessage = result.message || t('auth.verificationFailed');
 
         // 如果有剩余尝试次数，显示更友好的提示
-        if (result.remainingAttempts !== undefined && result.remainingAttempts > 0) {
-          errorMessage = result.message || `${t('auth.incorrectCode')} ${t('auth.attemptsRemaining')}: ${result.remainingAttempts}`;
-        } else if (result.remainingAttempts === 0) {
+        // remainingAttempts might be in the data field or as part of the response
+        const remainingAttempts = (result as any).remainingAttempts || result.data?.remainingAttempts;
+        if (remainingAttempts !== undefined && remainingAttempts > 0) {
+          errorMessage = result.message || `${t('auth.incorrectCode')} ${t('auth.attemptsRemaining')}: ${remainingAttempts}`;
+        } else if (remainingAttempts === 0) {
           errorMessage = result.message || t('auth.maxAttemptsExceeded');
         }
 
@@ -531,26 +513,8 @@ const LoginPage: React.FC = () => {
       let errorMessage = t('auth.verificationError') || '验证失败';
 
       if (err.message) {
-        // 检查是否包含JSON格式的错误信息（支持嵌套JSON）
-        // 匹配最后一个完整的JSON对象
-        const jsonMatch = err.message.match(/\{(?:[^{}]|\{[^{}]*\})*\}$/);
-        if (jsonMatch) {
-          try {
-            const errorData = JSON.parse(jsonMatch[0]);
-            if (errorData.message) {
-              errorMessage = errorData.message;
-            }
-          } catch (parseErr) {
-            console.error('Failed to parse error JSON:', parseErr);
-          }
-        } else {
-          // 如果没有找到JSON，尝试直接从消息中提取有用部分
-          // 查找是否包含中文错误消息
-          const chineseMatch = err.message.match(/["']([^"']*[\u4e00-\u9fa5]+[^"']*)["']/);
-          if (chineseMatch) {
-            errorMessage = chineseMatch[1];
-          }
-        }
+        // 直接使用错误消息，因为后端已经返回了格式化好的错误消息
+        errorMessage = err.message;
       }
 
       setError(errorMessage);

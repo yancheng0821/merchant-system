@@ -2,8 +2,7 @@
  * 权限管理 API 服务
  */
 
-// 导入API基础URL
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '../config/environment';
 
 // 创建带认证的请求
 const createAuthRequest = async (url: string, options: RequestInit = {}) => {

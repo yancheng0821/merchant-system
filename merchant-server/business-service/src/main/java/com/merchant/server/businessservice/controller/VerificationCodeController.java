@@ -6,11 +6,13 @@ import com.merchant.server.businessservice.dto.VerificationCodeResponse;
 import com.merchant.server.businessservice.service.VerificationCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -29,15 +31,21 @@ public class VerificationCodeController {
      */
     @PostMapping("/send")
     public ResponseEntity<VerificationCodeResponse> sendVerificationCode(
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
             @RequestBody SendVerificationCodeRequest request,
             HttpServletRequest httpRequest) {
         try {
+            // 设置语言环境
+            if (lang != null && !lang.isEmpty()) {
+                LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+            }
+
             // 设置IP地址和User Agent
             request.setIpAddress(getClientIp(httpRequest));
             request.setUserAgent(httpRequest.getHeader("User-Agent"));
 
-            log.info("Sending verification code - tenantId: {}, businessType: {}, recipient: {}, ip: {}",
-                    request.getTenantId(), request.getBusinessType(), request.getRecipient(), request.getIpAddress());
+            log.info("Sending verification code - tenantId: {}, businessType: {}, recipient: {}, ip: {}, lang: {}",
+                    request.getTenantId(), request.getBusinessType(), request.getRecipient(), request.getIpAddress(), lang);
 
             VerificationCodeResponse response = verificationCodeService.sendVerificationCode(request);
 
@@ -62,13 +70,19 @@ public class VerificationCodeController {
      */
     @PostMapping("/verify")
     public ResponseEntity<VerificationCodeResponse> verifyCode(
+            @RequestHeader(value = "Accept-Language", required = false) String lang,
             @RequestBody VerifyCodeRequest request,
             HttpServletRequest httpRequest) {
         try {
+            // 设置语言环境
+            if (lang != null && !lang.isEmpty()) {
+                LocaleContextHolder.setLocale(Locale.forLanguageTag(lang));
+            }
+
             // 设置IP地址
             request.setIpAddress(getClientIp(httpRequest));
 
-            log.info("Verifying code - verificationId: {}", request.getVerificationId());
+            log.info("Verifying code - verificationId: {}, lang: {}", request.getVerificationId(), lang);
 
             VerificationCodeResponse response = verificationCodeService.verifyCode(request);
 

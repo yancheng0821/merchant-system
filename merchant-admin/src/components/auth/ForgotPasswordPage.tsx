@@ -22,6 +22,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import HelpTooltip from '../common/HelpTooltip';
+import { authApi, handleApiError } from '../../services/api';
 
 interface ForgotPasswordPageProps {
   onBack: () => void;
@@ -59,19 +60,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
     setLoading(true);
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          tenantCode,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await authApi.forgotPassword(email, tenantCode);
 
       if (result.success) {
         setSuccess(true);

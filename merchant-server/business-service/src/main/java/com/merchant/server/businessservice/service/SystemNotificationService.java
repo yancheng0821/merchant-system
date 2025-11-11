@@ -42,6 +42,14 @@ public class SystemNotificationService {
     }
 
     /**
+     * 获取租户的系统通知副本（用于前端顶部通知栏显示）
+     * 返回该租户所有的系统通知副本
+     */
+    public List<BusinessNotification> getTenantSystemNotifications(Long tenantId) {
+        return notificationMapper.getTenantSystemNotifications(tenantId);
+    }
+
+    /**
      * 创建系统通知
      * 系统通知会被应用到所有租户，所以需要为每个现有租户创建一条通知记录
      */

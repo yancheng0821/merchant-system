@@ -80,6 +80,11 @@ public interface BusinessNotificationMapper {
     List<BusinessNotification> getSystemNotifications();
 
     /**
+     * 获取租户的系统通知副本（用于前端顶部通知栏显示）
+     */
+    List<BusinessNotification> getTenantSystemNotifications(@Param("tenantId") Long tenantId);
+
+    /**
      * 根据ID获取系统通知
      */
     BusinessNotification getSystemNotificationById(@Param("id") Long id);

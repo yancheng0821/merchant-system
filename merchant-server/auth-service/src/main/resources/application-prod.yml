@@ -76,24 +76,28 @@ eureka:
       defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
     register-with-eureka: true
     fetch-registry: true
+    registry-fetch-interval-seconds: 5
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
     appname: ${spring.application.name}
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# Actuator健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 
 jwt:
   secret: ${JWT_SECRET:merchant-system-jwt-secret-key-2024}
   expiration: 2592000  # 30天（秒）
   refresh-expiration: 5184000  # 60天（秒）
-
-# 微服务URL配置（生产环境通过Eureka发现）
-business-service:
-  url: http://business-service:8083
-
-notification-service:
-  url: http://notification-service:8084
 
 # 前端URL配置
 app:
@@ -107,6 +111,15 @@ file:
   upload:
     path: ${UPLOAD_PATH:/var/uploads}
     max-size: 10485760  # 10MB
+    mode: ${FILE_UPLOAD_MODE:s3}  # local, s3, or dual
+
+# AWS S3配置
+# 使用EC2 Instance Profile自动获取凭证，无需配置access-key-id和secret-access-key
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:}
+    region: ${AWS_S3_REGION:ca-central-1}
+    url-expiration-hours: 24
 
 # 生产环境日志配置
 logging:

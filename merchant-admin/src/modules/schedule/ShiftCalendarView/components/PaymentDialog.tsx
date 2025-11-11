@@ -121,6 +121,9 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
 
+  // 商户名称
+  const [merchantName, setMerchantName] = useState<string>('');
+
   // Refs for auto-scrolling
   const packageSelectionRef = useRef<HTMLDivElement>(null);
   const verificationSectionRef = useRef<HTMLDivElement>(null);
@@ -130,6 +133,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     if (open && customerId && user?.tenantId) {
       loadCustomerPackages();
       loadTaxRate();
+      loadMerchantName();
       // 多服务场景：初始化每个服务的支付方式为默认值
       if (services && services.length > 1) {
         const initialMethods: Record<number, string> = {};
@@ -335,6 +339,24 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   };
 
+  // 加载商户名称
+  const loadMerchantName = async () => {
+    if (!user?.tenantId) {
+      return;
+    }
+
+    try {
+      const merchantInfo = await merchantConfigApi.getMerchantBasicInfo(user.tenantId);
+      if (merchantInfo && merchantInfo.merchantName) {
+        setMerchantName(merchantInfo.merchantName);
+      }
+    } catch (err) {
+      console.error('Failed to load merchant name:', err);
+      // 失败时使用默认值
+      setMerchantName('');
+    }
+  };
+
   // 计算金额
   const calculateAmounts = () => {
     let subtotal = amount; // 默认使用原始金额
@@ -447,18 +469,29 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
         serviceNameToSend = serviceName;
       }
 
+      // 构建完整手机号（国际码 + 手机号）
+      let fullPhoneNumber = customer.phone;
+      if (customer.countryCode) {
+        // 提取国际码中的数字部分（去掉国家后缀，如 +1-CA 变成 +1）
+        const dialCode = customer.countryCode.replace(/-[A-Z]{2}$/, '').trim();
+        fullPhoneNumber = dialCode + customer.phone.trim();
+      } else if (!customer.phone.startsWith('+')) {
+        // 如果没有国家码且手机号不以+开头，默认使用 +1（北美）
+        fullPhoneNumber = '+1' + customer.phone.trim();
+      }
+
       const response = await verificationApi.sendCode({
         tenantId: user.tenantId,
         businessType: 'PACKAGE_PAYMENT',
         businessId: appointmentId.toString(),
         recipientType: 'PHONE',
-        recipient: customer.phone,
+        recipient: fullPhoneNumber,
         metadata: JSON.stringify({
           customerId,
           appointmentId,
           packageId: packageIdToSend,
           servicePackageIds: services && services.length > 1 ? servicePackageIds : undefined,
-          merchantName: user.tenantName || user.username || 'Merchant',
+          merchantName: merchantName || 'Merchant',
           packageName: packageNameToSend,
         }),
       });

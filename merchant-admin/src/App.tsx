@@ -184,6 +184,10 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     const fetchMerchantConfig = async () => {
       try {
+        // 添加短暂延迟，确保token已完全设置
+        // 这样可以避免在登录后立即调用API时出现401错误
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // 初始化配置预加载器
         initializeConfigPreloader();
 

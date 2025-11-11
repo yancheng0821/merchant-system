@@ -115,12 +115,11 @@ const RoomIconSelector: React.FC<RoomIconSelectorProps> = ({
             fixedValue = value.replace('/api/files/avatars/', '/api/files/room-icons/');
         }
         
-        // 2. 如果是完整URL但域名错误，修正它
-        if (fixedValue && (fixedValue.startsWith('https://swiftmerchantplatform.com/api/') || 
-                          fixedValue.startsWith('http://swiftmerchantplatform.com/api/'))) {
-            // 提取路径部分
-            const pathMatch = fixedValue.match(/https?:\/\/[^\/]+(\/.+)/);
-            if (pathMatch) {
+        // 2. 如果是完整URL，提取路径部分（不依赖具体域名）
+        if (fixedValue && fixedValue.startsWith('http')) {
+            // 提取路径部分，适用于任何域名
+            const pathMatch = fixedValue.match(/https?:\/\/[^\/]+(\/api\/.+)/);
+            if (pathMatch && pathMatch[1]) {
                 fixedValue = pathMatch[1]; // 只保留路径部分，让getFullImageUrl处理域名
             }
         }

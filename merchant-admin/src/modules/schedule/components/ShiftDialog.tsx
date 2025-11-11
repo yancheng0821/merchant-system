@@ -24,7 +24,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import zhCNLocale from 'date-fns/locale/zh-CN';
 import enUSLocale from 'date-fns/locale/en-US';
 import { format } from 'date-fns';
-import axios from 'axios';
+import { shiftApi, handleApiError } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   Close as CloseIcon,
@@ -115,15 +115,11 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
     // 真实 API（已注释）
     /*
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await axios.get(`${API_BASE_URL}/api/business/resources/tenant/${user?.tenantId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setResources(response.data || []);
+      const data = await shiftApi.getResourcesByTenant(user?.tenantId || 0);
+      setResources(data || []);
     } catch (err) {
       console.error('Failed to load resources:', err);
+      handleApiError(err);
     }
     */
   };
@@ -141,7 +137,6 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
     // 真实 API（已注释）
     /*
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
       const payload = {
         tenantId: user?.tenantId,
         resourceId: formData.resourceId,
@@ -158,20 +153,16 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
         createdBy: user?.id,
       };
 
-      const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      };
-
       if (shift) {
-        await axios.put(`${API_BASE_URL}/api/business/shifts/${shift.id}`, payload, { headers });
+        await shiftApi.updateShift(shift.id, payload);
       } else {
-        await axios.post(`${API_BASE_URL}/api/business/shifts`, payload, { headers });
+        await shiftApi.createShift(payload);
       }
 
       onClose(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || t('shift.saveError'));
+      setError(t('shift.saveError'));
+      handleApiError(err);
     } finally {
       setLoading(false);
     }

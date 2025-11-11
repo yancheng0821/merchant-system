@@ -97,6 +97,13 @@ app:
 file:
   upload:
     path: /Users/aisenyc/merchant-system/uploads  # 文件上传根路径（使用项目目录下的永久存储）
+    mode: local  # 本地开发环境使用local模式
+
+# AWS S3配置（本地开发不配置，S3Service不会初始化）
+# aws:
+#   s3:
+#     bucket-name:
+#     region: ca-central-1
 
 logging:
   level:

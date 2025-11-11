@@ -119,8 +119,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTax } from '../../../contexts/TaxContext';
-import { serviceApi, customerApi, appointmentApi, api, Customer as ApiCustomer } from '../../../services/api';
-import axios from 'axios';
+import { serviceApi, customerApi, appointmentApi, api, Customer as ApiCustomer, stripeApi, handleApiError } from '../../../services/api';
 import { CurrencyUtils, TimeZoneUtils } from '../../../config/constants';
 
 interface Service {
@@ -176,8 +175,6 @@ interface Appointment {
   resourceId?: number;
   resourceType?: 'STAFF' | 'ROOM';
 }
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.swiftmerchantplatform.com';
 
 interface PaymentProcessProps {
   onNavigate?: (item: string) => void;
@@ -239,22 +236,10 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
     
     try {
       // 并行获取账户状态和终端列表
-      const [accountResponse, terminalsResponse] = await Promise.all([
-        axios.get(
-          `${API_BASE_URL}/api/business/stripe-connect/account/${user.tenantId}`,
-          { withCredentials: true }
-        ),
-        axios.get(
-          `${API_BASE_URL}/api/business/stripe-connect/terminal/list`,
-          {
-            params: { tenantId: user.tenantId },
-            withCredentials: true
-          }
-        ).catch(() => ({ data: { data: [] } })) // 如果终端API失败，返回空数组
+      const [accountInfo, terminalsData] = await Promise.all([
+        stripeApi.getAccount(user.tenantId),
+        stripeApi.listTerminals(user.tenantId).catch(() => []) // 如果终端API失败，返回空数组
       ]);
-      
-      const accountInfo = accountResponse.data?.data;
-      const terminalsData = terminalsResponse.data?.data || [];
       
       // 存储终端列表
       setTerminals(terminalsData);
@@ -295,6 +280,7 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
       }
     } catch (error) {
       console.error('Failed to fetch Stripe account status:', error);
+      handleApiError(error);
       setStripeAccountStatus({
         isActive: false,
         chargesEnabled: false,
@@ -308,19 +294,11 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
   // 独立的获取终端列表函数
   const fetchTerminals = useCallback(async () => {
     if (!user?.tenantId) return;
-    
+
     setLoadingTerminals(true);
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/list`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true
-        }
-      );
-      
-      const terminalsData = response.data?.data || [];
-      setTerminals(terminalsData);
+      const terminalsData = await stripeApi.listTerminals(user.tenantId);
+      setTerminals(terminalsData || []);
       
       // 只考虑在线的终端
       const onlineTerminals = terminalsData.filter((t: any) => t.status === 'online');
@@ -338,6 +316,7 @@ const PaymentProcess: React.FC<PaymentProcessProps> = ({ onNavigate }) => {
       }
     } catch (error) {
       console.error('Failed to fetch terminals:', error);
+      handleApiError(error);
       setTerminals([]);
     } finally {
       setLoadingTerminals(false);

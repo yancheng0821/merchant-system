@@ -79,6 +79,13 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
+        <!-- AWS S3 SDK -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.20.26</version>
+        </dependency>
+
         <!-- JWT 支持 -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

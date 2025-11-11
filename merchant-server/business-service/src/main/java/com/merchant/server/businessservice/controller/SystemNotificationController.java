@@ -21,12 +21,22 @@ public class SystemNotificationController {
     private final SystemNotificationService systemNotificationService;
 
     /**
-     * 获取所有系统通知
+     * 获取所有系统通知（全局，tenantId=null）
      */
     @GetMapping
     public ResponseEntity<List<BusinessNotification>> getAllSystemNotifications() {
         log.info("Fetching all system notifications");
         List<BusinessNotification> notifications = systemNotificationService.getAllSystemNotifications();
+        return ResponseEntity.ok(notifications);
+    }
+
+    /**
+     * 获取租户的系统通知副本（用于前端顶部通知栏显示）
+     */
+    @GetMapping("/tenant/{tenantId}")
+    public ResponseEntity<List<BusinessNotification>> getTenantSystemNotifications(@PathVariable Long tenantId) {
+        log.info("Fetching system notifications for tenant: {}", tenantId);
+        List<BusinessNotification> notifications = systemNotificationService.getTenantSystemNotifications(tenantId);
         return ResponseEntity.ok(notifications);
     }
 

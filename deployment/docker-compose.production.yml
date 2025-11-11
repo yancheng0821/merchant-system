@@ -1,0 +1,335 @@
+version: '3.8'
+
+# 生产环境Docker Compose配置
+# 用于单EC2部署，支持无痛迁移到服务独立部署
+
+networks:
+  merchant-network:
+    driver: bridge
+
+services:
+  # ============================================
+  # Eureka服务注册中心
+  # ============================================
+  eureka-server:
+    image: ${DOCKER_REGISTRY:-merchant}/eureka-server:${VERSION:-latest}
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOSTNAME=eureka-server
+      - TZ=America/Vancouver
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ============================================
+  # API Gateway网关服务
+  # ============================================
+  gateway-service:
+    image: ${DOCKER_REGISTRY:-merchant}/gateway-service:${VERSION:-latest}
+    container_name: gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOST=eureka-server
+      - EUREKA_PORT=8761
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_REDIS_HOST=${REDIS_HOST}
+      - SPRING_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=America/Vancouver
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dspring.data.redis.host=${REDIS_HOST} -Dspring.data.redis.port=${REDIS_PORT:-6379}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ============================================
+  # 认证服务
+  # ============================================
+  auth-service:
+    image: ${DOCKER_REGISTRY:-merchant}/auth-service:${VERSION:-latest}
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOST=eureka-server
+      - EUREKA_PORT=8761
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL:-https://vamerchant.app}
+      - FILE_UPLOAD_MODE=${FILE_UPLOAD_MODE:-s3}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - AWS_S3_REGION=${AWS_S3_REGION:-ca-central-1}
+      - TZ=America/Vancouver
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
+
+  # ============================================
+  # 商户服务
+  # ============================================
+  merchant-service:
+    image: ${DOCKER_REGISTRY:-merchant}/merchant-service:${VERSION:-latest}
+    container_name: merchant-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOST=eureka-server
+      - EUREKA_PORT=8761
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - TZ=America/Vancouver
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
+
+  # ============================================
+  # 业务服务（核心服务，负载最重）
+  # ============================================
+  business-service:
+    image: ${DOCKER_REGISTRY:-merchant}/business-service:${VERSION:-latest}
+    container_name: business-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOST=eureka-server
+      - EUREKA_PORT=8761
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - TZ=America/Vancouver
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
+
+  # ============================================
+  # 通知服务
+  # ============================================
+  notification-service:
+    image: ${DOCKER_REGISTRY:-merchant}/notification-service:${VERSION:-latest}
+    container_name: notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOST=eureka-server
+      - EUREKA_PORT=8761
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
+      - AWS_REGION=${AWS_REGION:-ca-central-1}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@vamerchant.app}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-VA Merchant}
+      - AWS_SES_FROM_EMAIL=${AWS_SES_FROM_EMAIL:-noreply@vamerchant.app}
+      - AWS_SES_FROM_NAME=${AWS_SES_FROM_NAME:-VA Merchant}
+      - AWS_SNS_SENDER_ID=${AWS_SNS_SENDER_ID:-VAMerchant}
+      - TZ=America/Vancouver
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
+
+  # ============================================
+  # RabbitMQ消息队列
+  # 注意：将来可以迁移到Amazon MQ
+  # ============================================
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # AMQP端口
+      - "15672:15672"  # 管理界面（建议仅内网访问）
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
+      - TZ=America/Vancouver
+    networks:
+      - merchant-network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+volumes:
+  rabbitmq_data:
+    driver: local

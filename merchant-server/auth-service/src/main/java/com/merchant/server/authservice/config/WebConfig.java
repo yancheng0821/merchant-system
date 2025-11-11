@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${file.upload.path:/tmp/merchant-uploads}")
+    @Value("${file.upload.path:/var/uploads}")
     private String uploadPath;
 
     @Override

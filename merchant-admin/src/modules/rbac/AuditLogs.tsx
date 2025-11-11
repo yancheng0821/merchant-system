@@ -48,8 +48,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+import { auditApi, handleApiError } from '../../services/api';
 
 interface AuditLog {
   id: number;
@@ -117,36 +116,22 @@ const AuditLogs: React.FC = () => {
         params.append('endDate', format(endDate, 'yyyy-MM-dd'));
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/audit-logs?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      // Convert params to object for API call
+      const queryParams: any = {
+        tenantId: user?.tenantId || 1,
+        page: parseInt(params.get('page') || '0'),
+        size: parseInt(params.get('size') || '10'),
+      };
+      const action = params.get('action');
+      const search = params.get('search');
+      const dateFrom = params.get('startDate');
+      const dateTo = params.get('endDate');
+      if (action) queryParams.action = action;
+      if (search) queryParams.search = search;
+      if (dateFrom) queryParams.dateFrom = dateFrom;
+      if (dateTo) queryParams.dateTo = dateTo;
 
-      if (!response.ok) {
-        // Get user-friendly error messages
-        let errorMessage = t('errors.unexpectedError');
-
-        if (response.status === 503) {
-          errorMessage = t('errors.serviceUnavailable');
-        } else if (response.status === 500) {
-          errorMessage = t('errors.serverError');
-        } else if (response.status === 404) {
-          errorMessage = t('errors.notFound');
-        } else if (response.status === 403) {
-          errorMessage = t('errors.forbidden');
-        } else if (response.status === 401) {
-          errorMessage = t('errors.unauthorized');
-        }
-
-        console.error('Error loading audit logs:', errorMessage);
-        setError(errorMessage);
-        setLogs([]);
-        setTotalCount(0);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await auditApi.getAuditLogs(queryParams);
       setLogs(data.content || []);
       setTotalCount(data.totalElements || 0);
     } catch (err: any) {
@@ -204,25 +189,21 @@ const AuditLogs: React.FC = () => {
         params.append('endDate', format(endDate, 'yyyy-MM-dd'));
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/audit-logs/export?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      // Convert params to object for API call
+      const exportParams: any = {
+        tenantId: user?.tenantId || 1,
+      };
+      const search = params.get('search');
+      const action = params.get('action');
+      const dateFrom = params.get('startDate');
+      const dateTo = params.get('endDate');
 
-      if (!response.ok) {
-        throw new Error('Failed to export audit logs');
-      }
+      if (search) exportParams.search = search;
+      if (action) exportParams.action = action;
+      if (dateFrom) exportParams.dateFrom = dateFrom;
+      if (dateTo) exportParams.dateTo = dateTo;
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await auditApi.exportAuditLogs(exportParams);
     } catch (err) {
       console.error('Error exporting audit logs:', err);
     }

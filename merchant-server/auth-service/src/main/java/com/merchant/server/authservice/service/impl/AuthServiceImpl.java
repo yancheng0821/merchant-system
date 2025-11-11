@@ -353,15 +353,12 @@ public class AuthServiceImpl implements AuthService {
         logger.debug("找到用户: userId={}, username={}", user.getId(), user.getUsername());
         
         // 生成新的访问令牌
-        logger.debug("生成新的访问令牌");
         String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
-        
+
         LoginResponse response = new LoginResponse(newAccessToken, newRefreshToken, user);
-        logger.info("令牌刷新成功 - userId: {}", user.getId());
-        logger.debug("刷新响应生成完成 - accessToken长度: {}, refreshToken长度: {}", 
-                    newAccessToken.length(), newRefreshToken.length());
-        
+        // BusinessLogAspect 已自动记录，Service 层无需重复记录
+
         return response;
     }
     

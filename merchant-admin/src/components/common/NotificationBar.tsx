@@ -54,19 +54,16 @@ const NotificationBar: React.FC = () => {
     };
   };
 
-  // 获取系统通知（过滤只显示 SYSTEM_NOTIFICATION 类型）
+  // 获取租户的系统通知副本
+  // 系统通知在创建时会自动为每个租户创建副本
   const fetchNotifications = async () => {
     if (!user?.tenantId) return;
 
     try {
-      const data = await businessNotificationApi.getDashboardNotifications(user.tenantId);
-      // 只显示系统通知类型
-      const systemNotifications = (data.notifications || []).filter(
-        (n: SystemNotification) => n.notificationType === 'SYSTEM_NOTIFICATION'
-      );
-      setNotifications(systemNotifications);
+      const systemNotifications = await businessNotificationApi.getTenantSystemNotifications(user.tenantId);
+      setNotifications(systemNotifications || []);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('Failed to fetch system notifications:', error);
     }
   };
 

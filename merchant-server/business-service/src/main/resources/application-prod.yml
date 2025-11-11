@@ -79,7 +79,7 @@ management:
     health:
       show-details: when-authorized
 
-# 日志配置
+# 日志配置 - 文件日志由logback-spring.xml管理
 logging:
   level:
     com.merchant.server.businessservice: INFO
@@ -94,11 +94,6 @@ logging:
     root: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: /var/log/business-service/application.log
-    max-size: 100MB
-    max-history: 30
 
 # 文件上传配置
 file:
@@ -122,18 +117,18 @@ pos:
     api-key: "${POS_API_KEY}"
     terminal-id: "${POS_TERMINAL_ID}"
 
-# Stripe Connect配置 - 生产环境
+# Stripe Connect配置 - 生产环境（功能已废弃，提供默认值以保证服务启动）
 stripe:
   api:
-    key: ${STRIPE_API_KEY}  # 生产环境必须设置
+    key: ${STRIPE_API_KEY:sk_test_51OKP1234567890abcdefghijklmnopqrstuvwxyz}
   webhook:
-    secret: ${STRIPE_WEBHOOK_SECRET}  # 生产环境必须设置
+    secret: ${STRIPE_WEBHOOK_SECRET:whsec_1234567890abcdefghijklmnopqrstuvwxyz}
   platform:
     fee:
       percentage: 2.5      # 平台费用百分比
   connect:
     client:
-      id: ${STRIPE_CLIENT_ID}  # 生产环境必须设置
+      id: ${STRIPE_CLIENT_ID:ca_1234567890abcdefghijklmnop}
   terminal:
     location:
       id: ${STRIPE_TERMINAL_LOCATION_ID:}  # Stripe Terminal Location ID（可选）

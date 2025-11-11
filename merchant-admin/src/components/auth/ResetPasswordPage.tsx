@@ -20,6 +20,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import { authApi, handleApiError } from '../../services/api';
 
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -46,18 +47,7 @@ const ResetPasswordPage: React.FC = () => {
       }
 
       try {
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-        const response = await fetch(
-          `${API_BASE_URL}/api/auth/validate-reset-token?token=${token}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        const result = await response.json();
+        const result = await authApi.validateResetToken(token);
 
         if (result.success && result.data) {
           setTokenValid(true);
@@ -96,20 +86,7 @@ const ResetPasswordPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          newPassword,
-          confirmPassword,
-        }),
-      });
-
-      const result = await response.json();
+      const result = await authApi.resetPassword(token!, newPassword);
 
       if (result.success) {
         setSuccess(true);

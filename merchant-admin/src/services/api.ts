@@ -1,37 +1,15 @@
 import i18n from '../i18n/config';
+import { API_BASE_URL, getApiBaseUrl } from '../config/environment';
 
-// API基础配置
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
-
-// 获取正确的API基础URL
-const getApiBaseUrl = (): string => {
-  // 优先使用环境变量
-  if (process.env.REACT_APP_API_BASE_URL) {
-    return process.env.REACT_APP_API_BASE_URL;
-  }
-  
-  // 根据当前域名判断
-  const hostname = window.location.hostname;
-  if (hostname === 'swiftmerchantplatform.com' || hostname === 'www.swiftmerchantplatform.com') {
-    return 'https://api.swiftmerchantplatform.com';
-  }
-  
-  // 本地开发环境
-  return 'http://localhost:8080';
-};
+// 重新导出，保持向后兼容
+export { API_BASE_URL, getApiBaseUrl };
 
 // 工具函数：获取完整的文件URL
 export const getFullImageUrl = (imageUrl?: string): string | undefined => {
   if (!imageUrl) return undefined;
 
-  // 如果已经是完整URL，检查是否需要修正域名
+  // 如果已经是完整URL，直接返回
   if (imageUrl.startsWith('http')) {
-    // 修正错误的域名
-    if (imageUrl.startsWith('https://swiftmerchantplatform.com/api/') ||
-        imageUrl.startsWith('http://swiftmerchantplatform.com/api/')) {
-      // 替换为正确的API域名
-      return imageUrl.replace(/https?:\/\/swiftmerchantplatform\.com\/api\//, 'https://api.swiftmerchantplatform.com/api/');
-    }
     return imageUrl;
   }
 
@@ -40,13 +18,7 @@ export const getFullImageUrl = (imageUrl?: string): string | undefined => {
     return imageUrl;
   }
 
-  // 如果是静态资源路径（/static/uploads/），直接拼接完整URL
-  if (imageUrl.startsWith('/static/uploads/')) {
-    const apiBaseUrl = getApiBaseUrl();
-    return `${apiBaseUrl}${imageUrl}`;
-  }
-
-  // 其他路径，拼接API基础URL
+  // 相对路径，拼接API基础URL
   const apiBaseUrl = getApiBaseUrl();
   return `${apiBaseUrl}${imageUrl}`;
 };
@@ -87,12 +59,32 @@ export const merchantConfigApi = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch merchant config');
     }
-    
+
     return response.json();
+  },
+
+  // 获取商户基本信息
+  getBasicInfo: async (tenantId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/business/merchant-config/basic-info?tenantId=${tenantId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      // Don't throw error, just return null
+      return null;
+    }
+
+    const result = await response.json();
+    return result?.data || null;
   },
 
   // 获取商户资源类型配置
@@ -276,9 +268,9 @@ const createRequest = async (url: string, options: RequestInit = {}, isRetry: bo
       ...defaultHeaders,
       ...options.headers,
     },
-    // 使用简化的CORS设置
-    mode: 'cors',
-    credentials: 'include',
+    // 生产环境使用 same-origin，开发环境使用 include
+    // 这样可以避免浏览器触发本地网络访问权限提示
+    credentials: API_BASE_URL ? 'include' : 'same-origin',
   };
 
   try {
@@ -333,11 +325,10 @@ const createRequest = async (url: string, options: RequestInit = {}, isRetry: bo
       isRefreshing = true;
 
       try {
-        // 尝试刷新token
-        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        // 尝试刷新token - 使用查询参数而不是请求体
+        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh?refreshToken=${encodeURIComponent(refreshToken)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
         });
 
         if (refreshResponse.ok) {
@@ -556,9 +547,8 @@ export const authApi = {
 
   // 刷新令牌
   refreshToken: async (refreshToken: string): Promise<ApiResponse<LoginResponse>> => {
-    return createRequest('/api/auth/refresh', {
+    return createRequest(`/api/auth/refresh?refreshToken=${encodeURIComponent(refreshToken)}`, {
       method: 'POST',
-      body: JSON.stringify({ refreshToken }),
     });
   },
 
@@ -589,6 +579,49 @@ export const authApi = {
     return createRequest('/api/auth/merchant-register', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  // 2FA认证相关
+  send2FACode: async (userId: number, tenantId: number): Promise<ApiResponse<any>> => {
+    return createRequest('/api/auth/send-2fa-code', {
+      method: 'POST',
+      body: JSON.stringify({ userId, tenantId }),
+    });
+  },
+
+  verify2FACode: async (userId: number, code: string, verificationId: string, tenantId: number): Promise<ApiResponse<any>> => {
+    return createRequest('/api/auth/verify-2fa-code', {
+      method: 'POST',
+      body: JSON.stringify({ userId, code, verificationId, tenantId }),
+    });
+  },
+
+  // 密码重置相关
+  forgotPassword: async (email: string, tenantName: string): Promise<ApiResponse<any>> => {
+    return createRequest('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, tenantName }),
+    });
+  },
+
+  validateResetToken: async (token: string): Promise<ApiResponse<any>> => {
+    return createRequest(`/api/auth/validate-reset-token?token=${token}`, {
+      method: 'GET',
+    });
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<ApiResponse<any>> => {
+    return createRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
+
+  // 用户权限相关
+  getUserPermissions: async (userId: number): Promise<ApiResponse<any>> => {
+    return createRequest(`/api/auth/authorization/user/${userId}/permissions`, {
+      method: 'GET',
     });
   },
 };
@@ -2057,6 +2090,44 @@ export const businessNotificationApi = {
     });
     return response;
   },
+
+  // 系统通知管理
+  getSystemNotifications: async (): Promise<any[]> => {
+    const response = await createRequest('/api/business/notifications/system', {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 获取租户的系统通知副本（用于前端顶部通知栏）
+  getTenantSystemNotifications: async (tenantId: number): Promise<any[]> => {
+    const response = await createRequest(`/api/business/notifications/system/tenant/${tenantId}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  createSystemNotification: async (data: any): Promise<any> => {
+    const response = await createRequest('/api/business/notifications/system', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response;
+  },
+
+  updateSystemNotification: async (id: number, data: any): Promise<any> => {
+    const response = await createRequest(`/api/business/notifications/system/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response;
+  },
+
+  deleteSystemNotification: async (id: number): Promise<void> => {
+    await createRequest(`/api/business/notifications/system/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Combined API export for convenience
@@ -2453,5 +2524,309 @@ export const packageUsageApi = {
       { method: 'GET' }
     );
     return response;
+  },
+};
+
+// Stripe Connect API
+export const stripeApi = {
+  // 账户管理
+  getAccount: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/account/${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createOnboardingLink: async (tenantId: number) => {
+    const response = await createRequest(
+      '/api/business/stripe-connect/onboarding-link',
+      {
+        method: 'POST',
+        body: JSON.stringify({ tenantId }),
+      }
+    );
+    return response;
+  },
+
+  createLoginLink: async (tenantId: number) => {
+    const response = await createRequest(
+      '/api/business/stripe-connect/login-link',
+      {
+        method: 'POST',
+        body: JSON.stringify({ tenantId }),
+      }
+    );
+    return response;
+  },
+
+  disconnectAccount: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/disconnect/${tenantId}`,
+      { method: 'DELETE' }
+    );
+    return response;
+  },
+
+  // 终端管理
+  listTerminals: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/terminal/list?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createTerminal: async (tenantId: number, data: any) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/terminal/create?tenantId=${tenantId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+    return response;
+  },
+
+  updateTerminalStatus: async (tenantId: number, terminalId: string) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/terminal/${terminalId}/update-status`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ tenantId }),
+      }
+    );
+    return response;
+  },
+
+  deleteTerminal: async (tenantId: number, terminalId: string) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/terminal/${terminalId}?tenantId=${tenantId}`,
+      { method: 'DELETE' }
+    );
+    return response;
+  },
+
+  // 位置管理
+  listLocations: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/location/list?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createLocation: async (tenantId: number, data: any) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/location/create?tenantId=${tenantId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+    return response;
+  },
+
+  deleteLocation: async (tenantId: number, locationId: string) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/location/${locationId}?tenantId=${tenantId}`,
+      { method: 'DELETE' }
+    );
+    return response;
+  },
+
+  // 账户管理（添加缺失的方法）
+  createAccount: async (tenantId: number, merchantInfo: any) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/account/create?tenantId=${tenantId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(merchantInfo),
+      }
+    );
+    return response;
+  },
+
+  createAccountLink: async (tenantId: number, returnUrl: string, refreshUrl: string) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/account/link?tenantId=${tenantId}&returnUrl=${encodeURIComponent(returnUrl)}&refreshUrl=${encodeURIComponent(refreshUrl)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }
+    );
+    return response;
+  },
+
+  syncAccountStatus: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/account/${tenantId}/sync`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }
+    );
+    return response;
+  },
+
+  getDashboardUrl: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/stripe-connect/account/${tenantId}/dashboard-url`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  // 商户配置
+  getMerchantBasicInfo: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/merchant-config/basic-info?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  // 终端管理（新API）
+  getTerminals: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/terminals?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  getLocations: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/locations?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+};
+
+// 排班管理 API
+export const shiftApi = {
+  getShiftsByTenant: async (tenantId: number, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await createRequest(
+      `/api/business/shifts/tenant/${tenantId}?${params.toString()}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  getShiftsByResource: async (resourceId: number, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await createRequest(
+      `/api/business/shifts/resource/${resourceId}?${params.toString()}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createShift: async (data: any) => {
+    const response = await createRequest(
+      '/api/business/shifts',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+    return response;
+  },
+
+  updateShift: async (shiftId: number, data: any) => {
+    const response = await createRequest(
+      `/api/business/shifts/${shiftId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+    return response;
+  },
+
+  deleteShift: async (shiftId: number) => {
+    const response = await createRequest(
+      `/api/business/shifts/${shiftId}`,
+      { method: 'DELETE' }
+    );
+    return response;
+  },
+
+  getResourcesByTenant: async (tenantId: number) => {
+    const response = await createRequest(
+      `/api/business/resources/tenant/${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+};
+
+// 审计日志 API
+export const auditApi = {
+  getAuditLogs: async (params: {
+    tenantId: number;
+    page?: number;
+    size?: number;
+    search?: string;
+    action?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('tenantId', params.tenantId.toString());
+    if (params.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params.size !== undefined) queryParams.append('size', params.size.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.action) queryParams.append('action', params.action);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    const response = await createRequest(
+      `/api/auth/audit-logs?${queryParams.toString()}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  exportAuditLogs: async (params: {
+    tenantId: number;
+    search?: string;
+    action?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('tenantId', params.tenantId.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.action) queryParams.append('action', params.action);
+    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/audit-logs/export?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Export failed');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit-logs-${new Date().getTime()}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   },
 };

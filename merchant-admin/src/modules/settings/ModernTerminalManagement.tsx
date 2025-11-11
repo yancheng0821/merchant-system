@@ -45,10 +45,8 @@ import {
   FiberManualRecord as DotIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
+import { stripeApi, handleApiError } from '../../services/api';
 
 interface Location {
   id: string;
@@ -145,17 +143,11 @@ const ModernTerminalManagement: React.FC = () => {
   // 加载终端列表
   const loadTerminals = async () => {
     if (!user?.tenantId) return;
-    
+
     setLoading(true);
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/list`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      setTerminals(response.data?.data || []);
+      const data = await stripeApi.listTerminals(user.tenantId);
+      setTerminals(data || []);
     } catch (error) {
       console.error('Failed to load terminals:', error);
       setSnackbar({
@@ -163,6 +155,7 @@ const ModernTerminalManagement: React.FC = () => {
         message: t('settings.terminal.loadError'),
         severity: 'error',
       });
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
@@ -171,18 +164,13 @@ const ModernTerminalManagement: React.FC = () => {
   // 加载位置列表
   const loadLocations = async () => {
     if (!user?.tenantId) return;
-    
+
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/location/list`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      setLocations(response.data?.data || []);
+      const data = await stripeApi.listLocations(user.tenantId);
+      setLocations(data || []);
     } catch (error) {
       console.error('Failed to load locations:', error);
+      handleApiError(error);
     }
   };
 
@@ -231,19 +219,12 @@ const ModernTerminalManagement: React.FC = () => {
   // 注册Terminal
   const handleRegisterTerminal = async () => {
     if (!user?.tenantId) return;
-    
+
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/create`,
-        newTerminal,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setTerminals([...terminals, response.data.data]);
+      const data = await stripeApi.createTerminal(user.tenantId, newTerminal);
+
+      if (data) {
+        setTerminals([...terminals, data]);
         setOpenAddDialog(false);
         setNewTerminal({ label: '', registrationCode: '', locationId: '' });
         setActiveStep(0);
@@ -261,13 +242,14 @@ const ModernTerminalManagement: React.FC = () => {
         message: t('settings.terminal.registerError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 
   // 创建Location
   const handleCreateLocation = async () => {
     if (!user?.tenantId) return;
-    
+
     try {
       // Prepare location data, excluding empty line2
       const locationData = {
@@ -281,18 +263,11 @@ const ModernTerminalManagement: React.FC = () => {
           postalCode: newLocation.address.postalCode,
         },
       };
-      
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/location/create`,
-        locationData,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setLocations([...locations, response.data.data]);
+
+      const data = await stripeApi.createLocation(user.tenantId, locationData);
+
+      if (data) {
+        setLocations([...locations, data]);
         setOpenLocationDialog(false);
         setNewLocation({
           displayName: '',
@@ -319,21 +294,17 @@ const ModernTerminalManagement: React.FC = () => {
         message: t('settings.terminal.createLocationError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 
   // 删除Terminal
   const handleDeleteTerminal = async () => {
     if (!terminalToDelete || !user?.tenantId) return;
-    
+
     try {
-      await axios.delete(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/${terminalToDelete}?tenantId=${user.tenantId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      
+      await stripeApi.deleteTerminal(user.tenantId, terminalToDelete);
+
       setTerminals(terminals.filter(t => t.terminalId !== terminalToDelete));
       setDeleteConfirmOpen(false);
       setTerminalToDelete(null);
@@ -349,21 +320,17 @@ const ModernTerminalManagement: React.FC = () => {
         message: t('settings.terminal.deleteError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 
   // 删除Location
   const handleDeleteLocation = async () => {
     if (!locationToDelete || !user?.tenantId) return;
-    
+
     try {
-      await axios.delete(
-        `${API_BASE_URL}/api/business/stripe-connect/location/${locationToDelete}?tenantId=${user.tenantId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      
+      await stripeApi.deleteLocation(user.tenantId, locationToDelete);
+
       setLocations(locations.filter(l => l.id !== locationToDelete));
       setDeleteLocationConfirmOpen(false);
       setLocationToDelete(null);
@@ -379,6 +346,7 @@ const ModernTerminalManagement: React.FC = () => {
         message: t('settings.location.deleteError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 

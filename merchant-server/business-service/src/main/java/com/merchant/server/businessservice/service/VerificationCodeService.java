@@ -123,18 +123,19 @@ public class VerificationCodeService {
             // 1. 查询验证码记录
             VerificationCode verificationCode = verificationCodeMapper.selectById(request.getVerificationId());
             if (verificationCode == null) {
-                return VerificationCodeResponse.verificationFailure("Verification code not found", null);
+                return VerificationCodeResponse.verificationFailure(
+                        messageUtil.getMessage("error.verification.code.not.found"), null);
             }
 
             // 2. 检查验证码状态
             if (!verificationCode.canVerify()) {
                 String message;
                 if (verificationCode.isExpired()) {
-                    message = "Verification code has expired";
+                    message = messageUtil.getMessage("error.verification.code.incorrect");
                 } else if (verificationCode.isMaxAttemptsReached()) {
-                    message = "Maximum verification attempts exceeded";
+                    message = messageUtil.getMessage("error.verification.code.max.attempts");
                 } else {
-                    message = "Invalid verification code status";
+                    message = messageUtil.getMessage("error.verification.code.invalid.status");
                 }
                 return VerificationCodeResponse.verificationFailure(message, 0);
             }
@@ -153,7 +154,9 @@ public class VerificationCodeService {
                         LocalDateTime.now(ZoneOffset.UTC)
                 );
                 log.info("Verification successful - id: {}", verificationCode.getId());
-                return VerificationCodeResponse.verificationSuccess("Verification successful");
+                return VerificationCodeResponse.verificationSuccess(
+                        messageUtil.getMessage("success.verification.code.verified")
+                );
             } else {
                 // 验证失败
                 int remaining = verificationCode.getMaxAttempts() - verificationCode.getAttempts() - 1;
@@ -166,18 +169,22 @@ public class VerificationCodeService {
                             VerificationCode.VerificationStatus.FAILED.name(),
                             null
                     );
-                    return VerificationCodeResponse.verificationFailure("Incorrect verification code. No attempts remaining", 0);
+                    return VerificationCodeResponse.verificationFailure(
+                            messageUtil.getMessage("error.verification.code.no.attempts"),
+                            0
+                    );
                 }
 
                 return VerificationCodeResponse.verificationFailure(
-                        "Incorrect verification code. " + remaining + " attempt(s) remaining",
+                        messageUtil.getMessage("error.verification.code.incorrect.with.attempts", new Object[]{remaining}),
                         remaining
                 );
             }
 
         } catch (Exception e) {
             log.error("Error verifying code", e);
-            return VerificationCodeResponse.failure("Verification failed: " + e.getMessage());
+            return VerificationCodeResponse.failure(
+                    messageUtil.getMessage("error.verification.failed", new Object[]{e.getMessage()}));
         }
     }
 
@@ -233,7 +240,7 @@ public class VerificationCodeService {
                 oneHourAgo
         );
         if (recipientCount >= rateLimitRecipientPerHour) {
-            throw new IllegalArgumentException("Too many requests. Please try again later");
+            throw new IllegalArgumentException(messageUtil.getMessage("error.verification.code.rate.limit"));
         }
 
         // 检查IP发送频率
@@ -243,7 +250,7 @@ public class VerificationCodeService {
                     oneHourAgo
             );
             if (ipCount >= rateLimitIpPerHour) {
-                throw new IllegalArgumentException("Too many requests. Please try again later");
+                throw new IllegalArgumentException(messageUtil.getMessage("error.verification.code.rate.limit"));
             }
         }
     }

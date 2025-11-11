@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SESPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "ses:SendEmail",
+        "ses:SendRawEmail",
+        "ses:GetSendQuota",
+        "ses:GetSendStatistics"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SNSPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "sns:Publish",
+        "sns:GetSMSAttributes",
+        "sns:SetSMSAttributes"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

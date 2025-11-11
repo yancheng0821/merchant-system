@@ -32,11 +32,9 @@ public class GlobalExceptionHandler {
         log.warn("Runtime exception: {}", e.getMessage());
         String message = e.getMessage();
 
-        // 使用MessageUtil处理，它内部已经有fallback机制
-        // 如果message是key则返回国际化消息，否则返回原message
-        if (message != null && messageUtil != null) {
-            message = messageUtil.getMessage(message);
-        }
+        // 直接返回原始错误消息，不进行国际化处理
+        // 因为某些错误消息（如验证码验证失败）已经是格式化好的完整消息
+        // 如果尝试将其作为国际化key处理，会导致消息丢失或变成默认消息
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(message != null ? message : "Bad Request"));

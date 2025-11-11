@@ -116,7 +116,17 @@
       "Bash(__NEW_LINE__ echo \"=========================================\")",
       "Bash(while read pid)",
       "Bash(git fsck:*)",
-      "Bash(TZ=UTC date:*)"
+      "Bash(TZ=UTC date:*)",
+      "Bash(ssh:*)",
+      "Bash(ubuntu@35.182.43.233 )",
+      "Bash(\"cat /home/ubuntu/init-complete.txt 2>/dev/null || echo ''初始化中...''\")",
+      "Bash(./deploy.sh:*)",
+      "Bash(nslookup:*)",
+      "Bash(./deploy-frontend.sh:*)",
+      "Bash(GENERATE_SOURCEMAP=false npm run build:*)",
+      "Bash(NODE_ENV=production npm run build:*)",
+      "Bash(scp:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

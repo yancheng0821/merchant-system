@@ -73,12 +73,23 @@ eureka:
       defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
     register-with-eureka: true
     fetch-registry: true
+    registry-fetch-interval-seconds: 5
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
     appname: ${spring.application.name}
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# Actuator健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
 
 # 生产环境日志配置
 logging:

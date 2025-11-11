@@ -44,10 +44,8 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
+import { stripeApi, handleApiError } from '../../services/api';
 
 interface Location {
   id: string;
@@ -119,19 +117,12 @@ const TerminalManagement: React.FC = () => {
   // 加载Terminals
   const loadTerminals = async () => {
     if (!user?.tenantId) return;
-    
+
     setLoading(true);
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/list`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setTerminals(response.data.data);
+      const data = await stripeApi.listTerminals(user.tenantId);
+      if (data) {
+        setTerminals(data);
       }
     } catch (error) {
       console.error('Failed to load terminals:', error);
@@ -140,6 +131,7 @@ const TerminalManagement: React.FC = () => {
         message: t('settings.terminal.loadError'),
         severity: 'error',
       });
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
@@ -148,23 +140,17 @@ const TerminalManagement: React.FC = () => {
   // 加载Locations
   const loadLocations = async () => {
     if (!user?.tenantId) return;
-    
+
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/business/stripe-connect/location/list`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setLocations(response.data.data);
+      const data = await stripeApi.listLocations(user.tenantId);
+      if (data) {
+        setLocations(data);
       }
     } catch (error) {
       console.error('Failed to load locations:', error);
       // 如果没有Location API，使用默认值
       setLocations([]);
+      handleApiError(error);
     }
   };
 
@@ -176,19 +162,12 @@ const TerminalManagement: React.FC = () => {
   // 创建Location
   const handleCreateLocation = async () => {
     if (!user?.tenantId) return;
-    
+
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/location/create`,
-        newLocation,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setLocations([...locations, response.data.data]);
+      const data = await stripeApi.createLocation(user.tenantId, newLocation);
+
+      if (data) {
+        setLocations([...locations, data]);
         setOpenLocationDialog(false);
         setNewLocation({
           displayName: '',
@@ -215,25 +194,19 @@ const TerminalManagement: React.FC = () => {
         message: t('settings.terminal.createLocationError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 
   // 注册Terminal
   const handleRegisterTerminal = async () => {
     if (!user?.tenantId) return;
-    
+
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/create`,
-        newTerminal,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
-      if (response.data?.data) {
-        setTerminals([...terminals, response.data.data]);
+      const data = await stripeApi.createTerminal(user.tenantId, newTerminal);
+
+      if (data) {
+        setTerminals([...terminals, data]);
         setOpenAddDialog(false);
         setNewTerminal({
           label: '',
@@ -253,52 +226,41 @@ const TerminalManagement: React.FC = () => {
       console.error('Failed to register terminal:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || t('settings.terminal.registerError'),
+        message: error.message || t('settings.terminal.registerError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 
   // 更新Terminal状态
   const handleUpdateStatus = async (terminalId: string) => {
     if (!user?.tenantId) return;
-    
+
     try {
-      await axios.post(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/${terminalId}/update-status`,
-        {},
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
+      await stripeApi.updateTerminalStatus(user.tenantId, terminalId);
+
       // 重新加载列表
       loadTerminals();
     } catch (error) {
       console.error('Failed to update terminal status:', error);
+      handleApiError(error);
     }
   };
 
   // 删除Terminal
   const handleDeleteTerminal = async () => {
     if (!user?.tenantId || !terminalToDelete) return;
-    
+
     try {
-      await axios.delete(
-        `${API_BASE_URL}/api/business/stripe-connect/terminal/${terminalToDelete}`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
+      await stripeApi.deleteTerminal(user.tenantId, terminalToDelete);
+
       setSnackbar({
         open: true,
         message: t('settings.terminal.deleteSuccess'),
         severity: 'success',
       });
-      
+
       // 重新加载列表
       loadTerminals();
       setDeleteConfirmOpen(false);
@@ -307,31 +269,26 @@ const TerminalManagement: React.FC = () => {
       console.error('Failed to delete terminal:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || t('settings.terminal.deleteError'),
+        message: error.message || t('settings.terminal.deleteError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 
   // 删除Location
   const handleDeleteLocation = async () => {
     if (!user?.tenantId || !locationToDelete) return;
-    
+
     try {
-      await axios.delete(
-        `${API_BASE_URL}/api/business/stripe-connect/location/${locationToDelete}`,
-        {
-          params: { tenantId: user.tenantId },
-          withCredentials: true,
-        }
-      );
-      
+      await stripeApi.deleteLocation(user.tenantId, locationToDelete);
+
       setSnackbar({
         open: true,
         message: t('settings.location.deleteSuccess'),
         severity: 'success',
       });
-      
+
       // 重新加载列表
       loadLocations();
       setDeleteLocationConfirmOpen(false);
@@ -340,9 +297,10 @@ const TerminalManagement: React.FC = () => {
       console.error('Failed to delete location:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || t('settings.location.deleteError'),
+        message: error.message || t('settings.location.deleteError'),
         severity: 'error',
       });
+      handleApiError(error);
     }
   };
 

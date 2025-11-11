@@ -14,11 +14,13 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * TraceId过滤器 - 用于记录请求和响应详情
+ * TraceId过滤器 - 用于分布式链路追踪
  * 功能：
  * 1. 从请求头中提取或生成traceId
  * 2. 将traceId设置到MDC，使得所有日志都包含traceId
- * 3. 记录简化的请求和响应信息
+ * 3. 将traceId添加到响应头，便于下游服务追踪
+ *
+ * 注意：请求/响应日志由 BusinessLogAspect 统一处理，此Filter不再记录
  */
 @Slf4j
 @Component
@@ -55,18 +57,10 @@ public class TraceIdFilter implements Filter {
         // 将traceId添加到响应头
         httpResponse.setHeader(TRACE_ID, traceId);
 
-        long startTime = System.currentTimeMillis();
-
         try {
-            // 记录请求信息
-            logRequest(wrappedRequest, traceId);
-
             // 继续过滤器链
+            // 注意：不再在这里记录请求/响应日志，由 BusinessLogAspect 统一处理
             chain.doFilter(wrappedRequest, wrappedResponse);
-
-            // 记录响应信息
-            long duration = System.currentTimeMillis() - startTime;
-            logResponse(wrappedRequest, wrappedResponse, traceId, duration);
 
         } finally {
             // 将缓存的响应内容写回客户端
@@ -74,44 +68,6 @@ public class TraceIdFilter implements Filter {
 
             // 清除MDC
             MDC.remove(TRACE_ID_MDC);
-        }
-    }
-
-    /**
-     * 记录请求信息（简化版 - 业务日志专用）
-     */
-    private void logRequest(ContentCachingRequestWrapper request, String traceId) {
-        // 简化的业务日志：只记录请求概要，详细的HTTP信息由Gateway记录
-        log.info("Request: {} {} [TraceId: {}]",
-                request.getMethod(),
-                request.getRequestURI() + (request.getQueryString() != null ? "?" + request.getQueryString() : ""),
-                traceId);
-    }
-
-    /**
-     * 记录响应信息（简化版 - 业务日志专用）
-     */
-    private void logResponse(ContentCachingRequestWrapper request,
-                            ContentCachingResponseWrapper response,
-                            String traceId,
-                            long duration) {
-        // 简化的业务日志：只记录响应概要，详细的HTTP信息由Gateway记录
-        int status = response.getStatus();
-
-        if (status >= 400) {
-            log.error("Response: {} {} - Status: {} - Duration: {}ms [TraceId: {}]",
-                    request.getMethod(),
-                    request.getRequestURI(),
-                    status,
-                    duration,
-                    traceId);
-        } else {
-            log.info("Response: {} {} - Status: {} - Duration: {}ms [TraceId: {}]",
-                    request.getMethod(),
-                    request.getRequestURI(),
-                    status,
-                    duration,
-                    traceId);
         }
     }
 

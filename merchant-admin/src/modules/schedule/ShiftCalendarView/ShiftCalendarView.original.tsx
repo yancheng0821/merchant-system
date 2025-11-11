@@ -339,6 +339,9 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const [dataLoading, setDataLoading] = useState(true);
   const [resourceServices, setResourceServices] = useState<Record<number, number[]>>({});
   const [resourceAvailabilities, setResourceAvailabilities] = useState<Record<number, any[]>>({});
+  const [availabilitiesLoading, setAvailabilitiesLoading] = useState(true);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [resourceServicesLoading, setResourceServicesLoading] = useState(true);
 
   // 加载真实数据
   useEffect(() => {
@@ -376,10 +379,12 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   useEffect(() => {
     const loadAllResourceServices = async () => {
       if (realStaff.length === 0) {
+        setResourceServicesLoading(false);
         return;
       }
 
       try {
+        setResourceServicesLoading(true);
         const servicesMap: Record<number, number[]> = {};
 
         // 为所有员工加载其服务专长
@@ -398,6 +403,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         setResourceServices(servicesMap);
       } catch (error) {
         console.error('Failed to load resource services:', error);
+      } finally {
+        setResourceServicesLoading(false);
       }
     };
 
@@ -408,10 +415,12 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   useEffect(() => {
     const loadResourceAvailabilities = async () => {
       if (realStaff.length === 0) {
+        setAvailabilitiesLoading(false);
         return;
       }
 
       try {
+        setAvailabilitiesLoading(true);
         const availabilitiesMap: Record<number, any[]> = {};
 
         // 为所有员工加载其每周可用性数据
@@ -430,6 +439,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         setResourceAvailabilities(availabilitiesMap);
       } catch (error) {
         console.error('Failed to load resource availabilities:', error);
+      } finally {
+        setAvailabilitiesLoading(false);
       }
     };
 
@@ -438,9 +449,13 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
   // 加载预约数据
   const loadAppointments = React.useCallback(async () => {
-    if (!user?.tenantId) return;
+    if (!user?.tenantId) {
+      setAppointmentsLoading(false);
+      return;
+    }
 
     try {
+      setAppointmentsLoading(true);
       const appointmentsData = await api.getAllAppointments(user.tenantId);
 
       // Transform API data to local Appointment format
@@ -489,6 +504,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       setAllAppointments(transformedAppointments);
     } catch (error) {
       console.error('Failed to load appointments:', error);
+    } finally {
+      setAppointmentsLoading(false);
     }
   }, [user?.tenantId]);
 
@@ -504,6 +521,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   useEffect(() => {
     loadAppointments();
   }, [loadAppointments]);
+
+  // 计算整个日历的数据是否已全部加载完成
+  const isCalendarDataReady = useMemo(() => {
+    return !dataLoading &&
+           !availabilitiesLoading &&
+           !appointmentsLoading &&
+           !resourceServicesLoading;
+  }, [dataLoading, availabilitiesLoading, appointmentsLoading, resourceServicesLoading]);
 
   const currentDates = useMemo(() => {
     if (viewMode === 'day') {
@@ -699,6 +724,18 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
   // 检查员工在指定时间是否可用
   const isResourceAvailable = (resourceId: number, date: Date, timeStr: string): boolean => {
+    // 如果可用性数据还在加载中，默认返回true（避免显示斜纹）
+    if (availabilitiesLoading) {
+      return true;
+    }
+
+    // 如果 resourceAvailabilities 是空对象（没有任何员工的可用性数据），
+    // 但有员工数据存在，说明数据还在加载中，返回true避免显示斜纹
+    const hasAnyAvailabilityData = Object.keys(resourceAvailabilities).length > 0;
+    if (!hasAnyAvailabilityData && realStaff.length > 0) {
+      return true;
+    }
+
     const availabilities = resourceAvailabilities[resourceId];
     if (!availabilities || availabilities.length === 0) {
       // 如果没有设置可用性，默认为不可用（必须先设置员工可用性才能添加预约）
@@ -1781,7 +1818,32 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             </Box>
           </Paper>
 
-          <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#fafbfc' }}>
+          <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#fafbfc', position: 'relative' }}>
+            {/* 简洁的日历加载状态 */}
+            {!isCalendarDataReady && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bgcolor: 'rgba(255, 255, 255, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 100,
+                }}
+              >
+                <CircularProgress
+                  size={40}
+                  thickness={3}
+                  sx={{
+                    color: themeColor,
+                  }}
+                />
+              </Box>
+            )}
             <Box sx={{ display: 'flex', minHeight: '100%', minWidth: 'fit-content' }}>
               <Box
                 sx={{

@@ -9,9 +9,9 @@
 
     <!-- 文件输出 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/Users/aisenyc/merchant-system/merchant-server/logs/business-service.log</file>
+        <file>logs/business-service.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>/Users/aisenyc/merchant-system/merchant-server/logs/business-service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>logs/business-service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>

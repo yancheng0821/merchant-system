@@ -63,6 +63,16 @@ class ConfigPreloader {
     // 从API加载配置
     private async loadConfigFromAPI(tenantId: number): Promise<MerchantConfig> {
         try {
+            // 检查是否有有效的token，如果没有则不进行API调用
+            const token = localStorage.getItem('token');
+            if (!token || token.trim() === '') {
+                console.log('No valid token found, using default config');
+                return {
+                    merchantId: tenantId,
+                    resourceTypes: ['STAFF']
+                };
+            }
+
             const { merchantConfigApi } = await import('../services/api');
             return await merchantConfigApi.getMerchantConfig(tenantId);
         } catch (err) {
@@ -78,6 +88,13 @@ class ConfigPreloader {
     // 后台刷新配置
     private async refreshConfigInBackground(tenantId: number): Promise<void> {
         try {
+            // 检查是否有有效的token，如果没有则不进行后台刷新
+            const token = localStorage.getItem('token');
+            if (!token || token.trim() === '') {
+                console.log('No valid token found, skipping background refresh');
+                return;
+            }
+
             const freshConfig = await this.loadConfigFromAPI(tenantId);
             const cachedConfig = this.configCache.get(tenantId);
 
