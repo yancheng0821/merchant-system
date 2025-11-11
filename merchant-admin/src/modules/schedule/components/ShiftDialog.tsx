@@ -26,6 +26,7 @@ import enUSLocale from 'date-fns/locale/en-US';
 import { format } from 'date-fns';
 import { shiftApi, handleApiError } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getMerchantNow } from '../../../utils/timezoneUtils';
 import {
   Close as CloseIcon,
   Schedule as ScheduleIcon,
@@ -56,9 +57,9 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
   const [formData, setFormData] = useState({
     resourceId: resourceId || '',
     shiftName: '',
-    shiftDate: new Date(),
-    startTime: new Date(new Date().setHours(9, 0, 0, 0)),
-    endTime: new Date(new Date().setHours(17, 0, 0, 0)),
+    shiftDate: getMerchantNow(),
+    startTime: (() => { const d = getMerchantNow(); d.setHours(9, 0, 0, 0); return d; })(),
+    endTime: (() => { const d = getMerchantNow(); d.setHours(17, 0, 0, 0); return d; })(),
     breakStart: null as Date | null,
     breakEnd: null as Date | null,
     status: 'SCHEDULED',
@@ -92,7 +93,7 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
 
   const parseTime = (timeStr: string): Date => {
     const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = new Date();
+    const date = getMerchantNow();
     date.setHours(hours, minutes, 0, 0);
     return date;
   };
@@ -335,7 +336,7 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
               <DatePicker
                 label={t('shift.date')}
                 value={formData.shiftDate}
-                onChange={(date) => setFormData({ ...formData, shiftDate: date || new Date() })}
+                onChange={(date) => setFormData({ ...formData, shiftDate: date || getMerchantNow() })}
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -422,7 +423,7 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
               <TimePicker
                 label={t('shift.startTime')}
                 value={formData.startTime}
-                onChange={(time) => setFormData({ ...formData, startTime: time || new Date() })}
+                onChange={(time) => setFormData({ ...formData, startTime: time || getMerchantNow() })}
                 slotProps={{
                   textField: {
                     fullWidth: true,
@@ -448,7 +449,7 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
               <TimePicker
                 label={t('shift.endTime')}
                 value={formData.endTime}
-                onChange={(time) => setFormData({ ...formData, endTime: time || new Date() })}
+                onChange={(time) => setFormData({ ...formData, endTime: time || getMerchantNow() })}
                 slotProps={{
                   textField: {
                     fullWidth: true,

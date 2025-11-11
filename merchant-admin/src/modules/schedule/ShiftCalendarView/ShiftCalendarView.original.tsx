@@ -61,6 +61,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../hooks/usePermission';
 import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi } from '../../../services/api';
 import type { Resource, Service as ApiService, Customer } from '../../../services/api';
+import { getMerchantNow, getMerchantTimezone } from '../../../utils/timezoneUtils';
 
 interface ResourceShift {
   id: number;
@@ -302,7 +303,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const { hasPermission } = usePermission();
   const locale = i18n.language === 'zh' ? zhCNLocale : enUSLocale;
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(getMerchantNow());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -697,15 +698,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(getMerchantNow());
   };
 
-  // 检查是否是过去的时间 - 精确到分钟
+  // 检查是否是过去的时间 - 精确到分钟（基于商户时区）
   const isPastTime = (date: Date, timeStr: string): boolean => {
-    const now = new Date();
+    // 使用商户时区的当前时间，而不是浏览器本地时间
+    const now = getMerchantNow();
     const [hours, minutes] = timeStr.split(':').map(Number);
 
-    // 检查日期是否是今天
+    // 检查日期是否是今天（基于商户时区）
     const isToday = format(date, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
 
     // 如果不是今天，直接判断日期是否在过去
@@ -2152,7 +2154,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               {viewMode === 'week' && (
                 <Box sx={{ display: 'flex', flex: 1 }}>
                   {currentDates.map((date, dateIndex) => {
-                    const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                    const isToday = format(date, 'yyyy-MM-dd') === format(getMerchantNow(), 'yyyy-MM-dd');
 
                     // 收集这一天所有员工的预约
                     const dayAppointments: Appointment[] = [];

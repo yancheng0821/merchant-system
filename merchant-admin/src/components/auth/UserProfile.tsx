@@ -788,41 +788,6 @@ const UserProfile: React.FC = () => {
                 }}
               />
             </Box>
-
-            <Divider sx={{ my: 4 }} />
-
-            {/* 租户信息 */}
-            {user.tenantId && (
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                  {t('auth.tenantInfo')}
-                </Typography>
-                <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
-                  <TextField
-                    fullWidth
-                    label={t('auth.tenantName')}
-                    value={user?.tenantName || ''}
-                    disabled
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }, 
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    label={t('auth.tenantId')}
-                    value={user?.tenantId ? user.tenantId.toString() : ''}
-                    disabled
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      },
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
           </Box>
         </CardContent>
       </Card>

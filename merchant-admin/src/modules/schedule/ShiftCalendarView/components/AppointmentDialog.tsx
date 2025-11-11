@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 import { api, Customer as ApiCustomer } from '../../../../services/api';
 import CustomTimePicker from './CustomTimePicker';
 import CountryCodeSelector from '../../../../components/common/CountryCodeSelector';
+import { getMerchantNow } from '../../../../utils/timezoneUtils';
 
 // 主题颜色 - 使用蓝色主题与界面一致
 const themeColor = '#3B82F6';
@@ -482,9 +483,10 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       newErrors.startTime = t('appointments.startTimeRequired', 'Start time is required');
     }
 
-    // Validate that the appointment time is not in the past
+    // Validate that the appointment time is not in the past (based on merchant timezone)
     if (formData.date && formData.startTime) {
-      const now = new Date();
+      // Use merchant timezone current time instead of browser local time
+      const now = getMerchantNow();
       // Parse the date string as local date (YYYY-MM-DD)
       const [year, month, day] = formData.date.split('-').map(Number);
       const [hours, minutes] = formData.startTime.split(':').map(Number);

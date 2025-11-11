@@ -109,6 +109,16 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
                 throw new BusinessException("初始化通知模板失败：" + e.getMessage());
             }
 
+            // 6.2 为新租户初始化系统通知副本（远程调用，需要补偿）
+            try {
+                initSystemNotificationCopiesForNewTenant(tenant.getId());
+            } catch (Exception e) {
+                log.error("初始化系统通知副本失败，开始补偿回滚 - 租户ID: {}, 商户ID: {}", tenant.getId(), merchantId, e);
+                // 补偿：删除已创建的商户和设置
+                compensateDeleteMerchant(merchantId, tenant.getId());
+                throw new BusinessException("初始化系统通知副本失败：" + e.getMessage());
+            }
+
             // 7. 创建管理员用户（本地事务）
             User adminUser;
             try {
@@ -584,6 +594,21 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
         } catch (Exception e) {
             log.error("创建 Walk-in 客户失败 - 租户ID: {}", tenantId, e);
             throw new BusinessException("创建 Walk-in 客户失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 为新租户初始化系统通知副本
+     */
+    private void initSystemNotificationCopiesForNewTenant(Long tenantId) {
+        log.debug("为新租户初始化系统通知副本 - 租户ID: {}", tenantId);
+
+        try {
+            businessServiceClient.initSystemNotificationCopiesForNewTenant(tenantId);
+            log.info("系统通知副本初始化成功 - 租户ID: {}", tenantId);
+        } catch (Exception e) {
+            log.error("初始化系统通知副本失败 - 租户ID: {}", tenantId, e);
+            throw new BusinessException("初始化系统通知副本失败：" + e.getMessage());
         }
     }
 }

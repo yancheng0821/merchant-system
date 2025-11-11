@@ -30,6 +30,7 @@ import ShiftCalendarView from '../ShiftCalendarView';
 import { shiftApi, handleApiError } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../hooks/usePermission';
+import { getMerchantNow } from '../../../utils/timezoneUtils';
 
 interface ResourceShift {
   id: number;
@@ -61,7 +62,7 @@ const ShiftManagement: React.FC<ShiftManagementProps> = ({ resourceId }) => {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<ResourceShift | null>(null);
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(getMerchantNow(), { weekStartsOn: 1 }));
 
   const locale = i18n.language === 'zh' ? zhCNLocale : enUSLocale;
 

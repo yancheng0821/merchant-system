@@ -6,8 +6,10 @@ import com.merchant.server.businessservice.dto.AppointmentNotificationDTO;
 import com.merchant.server.businessservice.entity.Appointment;
 import com.merchant.server.businessservice.entity.AppointmentResource;
 import com.merchant.server.businessservice.entity.Customer;
+import com.merchant.server.businessservice.entity.Order;
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.mapper.CustomerMapper;
+import com.merchant.server.businessservice.mapper.OrderMapper;
 import com.merchant.server.businessservice.mapper.ResourceMapper;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
 import com.merchant.server.businessservice.service.AppointmentNotificationService;
@@ -30,6 +32,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     private final CustomerMapper customerMapper;
     private final ResourceMapper resourceMapper;
     private final AppointmentMapper appointmentMapper;
+    private final OrderMapper orderMapper;
     private final MerchantServiceClient merchantServiceClient;
 
     // 缓存商户信息，key: tenantId, value: MerchantInfo
@@ -143,7 +146,23 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
             notification.setAppointmentDate(appointment.getAppointmentDate());
             notification.setAppointmentTime(appointment.getAppointmentTime());
             notification.setDuration(appointment.getDuration());
-            notification.setTotalAmount(appointment.getTotalAmount());
+
+            // 获取订单信息以获取税费和小费详情
+            Order order = orderMapper.selectByAppointmentId(appointment.getId());
+            if (order != null) {
+                notification.setSubtotal(order.getSubtotal() != null ?
+                    java.math.BigDecimal.valueOf(order.getSubtotal()) : java.math.BigDecimal.ZERO);
+                notification.setTaxAmount(order.getTaxAmount() != null ?
+                    java.math.BigDecimal.valueOf(order.getTaxAmount()) : java.math.BigDecimal.ZERO);
+                notification.setTipAmount(order.getTipAmount() != null ?
+                    java.math.BigDecimal.valueOf(order.getTipAmount()) : java.math.BigDecimal.ZERO);
+                notification.setTotalAmount(order.getTotalAmount() != null ?
+                    java.math.BigDecimal.valueOf(order.getTotalAmount()) : java.math.BigDecimal.ZERO);
+            } else {
+                // 如果没有订单，使用预约的总金额
+                notification.setTotalAmount(appointment.getTotalAmount());
+            }
+
             notification.setStatus(appointment.getStatus().name());
             notification.setNotes(appointment.getNotes());
             

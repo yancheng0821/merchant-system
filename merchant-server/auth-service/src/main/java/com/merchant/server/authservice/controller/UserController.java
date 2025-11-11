@@ -201,7 +201,6 @@ public class UserController {
         }
     }
 
-    @RequiresPermission("users:change_password")
     @PutMapping("/password")
     public ApiResponse<Void> changePassword(
             @RequestHeader("Authorization") String token,

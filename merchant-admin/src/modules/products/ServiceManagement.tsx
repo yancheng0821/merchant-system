@@ -407,9 +407,7 @@ const ServiceManagement: React.FC = () => {
         ? t('products.serviceUpdateFailed')
         : t('products.serviceCreateFailed');
       setServiceError(errorMessage + ': ' + handleApiError(err));
-      // 关闭对话框以便用户可以看到错误消息
-      setServiceDialogOpen(false);
-      setSelectedService(null);
+      // 失败时保持对话框打开，让用户可以修改
     }
   };
 
@@ -446,9 +444,7 @@ const ServiceManagement: React.FC = () => {
         ? t('packages.packageUpdateFailed')
         : t('packages.packageCreateFailed');
       setPackageError(errorMessage + ': ' + handleApiError(err));
-      // 关闭对话框以便用户可以看到错误消息
-      setPackageDialogOpen(false);
-      setSelectedPackage(null);
+      // 失败时保持对话框打开，让用户可以修改
     }
   };
 
@@ -750,22 +746,6 @@ const ServiceManagement: React.FC = () => {
         </Box>
       )}
 
-      {/* 错误提示 - 只在 Services tab 显示 */}
-      <Fade in={!!serviceError && currentTabKey === 'services'} timeout={300}>
-        <Box>
-          {serviceError && (
-            <Alert
-              severity="error"
-              sx={{ mb: 3 }}
-            >
-              {serviceError}
-            </Alert>
-          )}
-        </Box>
-      </Fade>
-
-
-
       {/* 服务列表表格 */}
       <Card
         sx={{
@@ -1033,7 +1013,7 @@ const ServiceManagement: React.FC = () => {
           }
         }}
       >
-        <DialogTitle>
+        <DialogTitle component="div">
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#06B6D4' }}>
               {t('products.serviceDetails')}
@@ -1143,20 +1123,6 @@ const ServiceManagement: React.FC = () => {
       {/* Packages Tab Content */}
       {currentTabKey === 'packages' && (
         <>
-          {/* 错误提示 - 只在 Packages tab 显示 */}
-          <Fade in={!!packageError} timeout={300}>
-            <Box>
-              {packageError && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 3 }}
-                >
-                  {packageError}
-                </Alert>
-              )}
-            </Box>
-          </Fade>
-
           {/* Package Search and Filters - Matching Service Management Style */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={4}>
@@ -1351,7 +1317,7 @@ const ServiceManagement: React.FC = () => {
               }
             }}
           >
-            <DialogTitle sx={{ pb: 1 }}>
+            <DialogTitle component="div" sx={{ pb: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
                 {t('packages.confirmDeletePackage')}
               </Typography>
@@ -1405,9 +1371,41 @@ const ServiceManagement: React.FC = () => {
         <Alert
           onClose={() => setSuccessMessage(null)}
           severity="success"
-          sx={{ width: '100%' }}
+          sx={{ width: '100%', borderRadius: 2 }}
         >
           {successMessage}
+        </Alert>
+      </Snackbar>
+
+      {/* 服务错误提示 */}
+      <Snackbar
+        open={!!serviceError}
+        autoHideDuration={5000}
+        onClose={() => setServiceError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setServiceError(null)}
+          severity="error"
+          sx={{ width: '100%', borderRadius: 2 }}
+        >
+          {serviceError}
+        </Alert>
+      </Snackbar>
+
+      {/* 套餐错误提示 */}
+      <Snackbar
+        open={!!packageError}
+        autoHideDuration={5000}
+        onClose={() => setPackageError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setPackageError(null)}
+          severity="error"
+          sx={{ width: '100%', borderRadius: 2 }}
+        >
+          {packageError}
         </Alert>
       </Snackbar>
     </Box>

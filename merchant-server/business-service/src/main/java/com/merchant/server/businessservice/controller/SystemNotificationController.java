@@ -72,4 +72,15 @@ public class SystemNotificationController {
         systemNotificationService.deleteSystemNotification(id);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * 为新租户初始化系统通知副本
+     * 在商户注册时调用
+     */
+    @PostMapping("/init-for-tenant/{tenantId}")
+    public ResponseEntity<Void> initSystemNotificationCopiesForNewTenant(@PathVariable Long tenantId) {
+        log.info("Initializing system notification copies for new tenant: {}", tenantId);
+        systemNotificationService.initSystemNotificationCopiesForNewTenant(tenantId);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -3,6 +3,7 @@ package com.merchant.server.authservice.client;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,6 +29,12 @@ public interface BusinessServiceClient {
      */
     @PostMapping("/api/business/customers/walk-in")
     Map<String, Object> createWalkInCustomer(@RequestParam("tenantId") Long tenantId);
+
+    /**
+     * 为新租户初始化系统通知副本
+     */
+    @PostMapping("/api/business/notifications/system/init-for-tenant/{tenantId}")
+    ResponseEntity<Void> initSystemNotificationCopiesForNewTenant(@PathVariable("tenantId") Long tenantId);
 
     class SendVerificationCodeRequest {
         public Long tenantId;

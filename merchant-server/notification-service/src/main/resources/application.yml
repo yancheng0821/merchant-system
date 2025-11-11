@@ -52,7 +52,7 @@ eureka:
 notification:
   # Mock模式配置 - 开发和测试环境使用
   mock:
-    enabled: false # 设置为false以使用真实的AWS服务进行测试
+    enabled: true # 设置为true在本地开发环境使用mock模式，不调用真实AWS服务
     sms:
       simulateDelay: true # 模拟发送延迟
       delayMs: 1000 # 模拟延迟时间（毫秒）

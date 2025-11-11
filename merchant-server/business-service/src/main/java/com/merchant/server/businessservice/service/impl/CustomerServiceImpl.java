@@ -175,7 +175,10 @@ public class CustomerServiceImpl implements CustomerService {
         if (customer == null) {
             throw new RuntimeException(messageUtil.getMessage("error.customer.not.found.with.id", new Object[]{id}));
         }
-        customerMapper.deleteById(id);
+        // 软删除：只修改状态为DELETED，不真正删除数据
+        customer.setStatus(Customer.CustomerStatus.DELETED);
+        customer.setUpdatedAt(LocalDateTime.now());
+        customerMapper.update(customer);
     }
     
     @Override
@@ -310,7 +313,7 @@ public class CustomerServiceImpl implements CustomerService {
         walkInDTO.setFirstName("Walk-in");
         walkInDTO.setLastName("Customer");
         walkInDTO.setPhone("0000000000"); // 默认电话号码
-        walkInDTO.setEmail(null); // Walk-in 客户通常没有邮箱
+        walkInDTO.setEmail("walkin" + tenantId + "@vamerchant.app"); // Walk-in 客户占位邮箱
         walkInDTO.setGender(Customer.Gender.PREFER_NOT_TO_SAY);
         walkInDTO.setMembershipLevel(Customer.MembershipLevel.REGULAR);
         walkInDTO.setStatus(Customer.CustomerStatus.ACTIVE);

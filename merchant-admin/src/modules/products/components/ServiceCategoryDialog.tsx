@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,8 +16,8 @@ import {
   Switch,
   Chip,
   Grid,
-
   Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -145,6 +145,16 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
       setErrors({});
     }
   }, [open, categories]);
+
+  // 自动清除错误消息
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleAddNew = () => {
     setIsAdding(true);
@@ -519,6 +529,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
   ];
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={onClose}
@@ -542,12 +553,6 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
       </DialogTitle>
 
       <DialogContent dividers sx={{ p: 3, backgroundColor: '#f8fafc' }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-        
         {(isAdding || editingCategory) && formData.name.trim() && formData.description.trim() && (
           <Alert severity="info" sx={{ mb: 3 }}>
             {isAdding 
@@ -1041,6 +1046,23 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
         </Button>
       </DialogActions>
     </Dialog>
+
+    {/* 错误提示 Snackbar */}
+    <Snackbar
+      open={!!error}
+      autoHideDuration={5000}
+      onClose={() => setError(null)}
+      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+    >
+      <Alert
+        onClose={() => setError(null)}
+        severity="error"
+        sx={{ width: '100%', borderRadius: 2 }}
+      >
+        {error}
+      </Alert>
+    </Snackbar>
+    </>
   );
 };
 

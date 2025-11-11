@@ -26,7 +26,10 @@ public class AppointmentNotificationDTO {
     private LocalTime appointmentTime;
     
     private Integer duration;
-    private BigDecimal totalAmount;
+    private BigDecimal subtotal;      // 服务小计
+    private BigDecimal taxAmount;     // 税额
+    private BigDecimal tipAmount;     // 小费
+    private BigDecimal totalAmount;   // 总金额
     private String status;
     private String notes;
     

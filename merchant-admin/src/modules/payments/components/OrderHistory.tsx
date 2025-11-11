@@ -66,7 +66,7 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { api } from '../../../services/api';
 import { CurrencyUtils } from '../../../config/constants';
-import { formatUtcToMerchantTime } from '../../../utils/timezoneUtils';
+import { formatUtcToMerchantTime, getMerchantNow } from '../../../utils/timezoneUtils';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../../hooks/usePermission';
 import { useNavigate } from 'react-router-dom';
@@ -139,7 +139,7 @@ const OrderHistory: React.FC = () => {
   const [endDateAnchorEl, setEndDateAnchorEl] = useState<null | HTMLElement>(null);
 
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(() => {
-    const today = new Date();
+    const today = getMerchantNow();
     return {
       start: today,
       end: today,

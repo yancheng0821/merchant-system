@@ -185,4 +185,49 @@ public class SystemNotificationService {
 
         log.info("System notification deleted with ID: {}", id);
     }
+
+    /**
+     * 为新租户初始化系统通知副本
+     * 在商户注册时调用，将所有现有的系统通知复制给新租户
+     */
+    @Transactional
+    public void initSystemNotificationCopiesForNewTenant(Long tenantId) {
+        log.info("开始为新租户初始化系统通知副本 - 租户ID: {}", tenantId);
+
+        // 获取所有系统通知（tenant_id=NULL）
+        List<BusinessNotification> systemNotifications = notificationMapper.getSystemNotifications();
+
+        if (systemNotifications.isEmpty()) {
+            log.info("没有系统通知需要复制 - 租户ID: {}", tenantId);
+            return;
+        }
+
+        LocalDateTime now = getCurrentTime();
+        int copiedCount = 0;
+
+        for (BusinessNotification template : systemNotifications) {
+            BusinessNotification copy = BusinessNotification.builder()
+                    .tenantId(tenantId)
+                    .notificationType("SYSTEM_NOTIFICATION")
+                    .businessId(String.valueOf(template.getId())) // 使用主系统通知ID作为关联标识
+                    .businessType("SYSTEM_NOTIFICATION")
+                    .title(template.getTitle())
+                    .titleEn(template.getTitleEn())
+                    .titleZh(template.getTitleZh())
+                    .content(template.getContent())
+                    .contentEn(template.getContentEn())
+                    .contentZh(template.getContentZh())
+                    .level(template.getLevel())
+                    .isRead(false)
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .deleted(false)
+                    .build();
+
+            notificationMapper.insert(copy);
+            copiedCount++;
+        }
+
+        log.info("为新租户初始化系统通知副本完成 - 租户ID: {}, 复制数量: {}", tenantId, copiedCount);
+    }
 }

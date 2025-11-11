@@ -80,7 +80,7 @@
         "timezone": "时区"
       },
       "businessConfig": {
-        "resourceTypes": "资源类型",
+        "resourceTypes": "类型",
         "resourceTypesHelp": "选择您的商户支持的资源类型。可以同时选择员工和房间资源。员工资源适用于需要指定服务人员的业务，房间资源适用于需要预订场地的业务。",
         "resourceTypesInfo": "您的商户将使用员工资源进行预约排班和服务管理。"
       },
@@ -277,6 +277,7 @@
     "newPassword": "新密码",
     "passwordNotMatch": "两次输入的新密码不一致。",
     "passwordNoRepeat": "新密码不能与原密码相同。",
+    "passwordRequirementsNotMet": "密码不符合安全要求，请确保包含大小写字母、数字和特殊字符，且长度至少8位。",
     "invitationCode": "邀请码",
     "invitationCodeHelp": "邀请码用于加入现有商户组织，联系管理员获取",
     "invitationCodeRequired": "邀请码不能为空",
@@ -362,7 +363,7 @@
     "appointments": "预约",
     "appointmentRecords": "预约记录",
     "staff": "员工",
-    "resources": "资源",
+    "resources": "员工",
     "staffManagement": "员工",
     "roomManagement": "场地",
     "schedule": "日程",
@@ -1709,9 +1710,9 @@
     "timeSlotAvailability": "时间段可用性",
     "deleteSuccess": "资源删除成功",
     "deleteError": "删除资源失败",
-    "statusUpdateSuccess": "资源状态更新成功",
-    "statusUpdateError": "资源状态更新失败",
-    "confirmDelete": "确认删除资源？",
+    "statusUpdateSuccess": "状态更新成功",
+    "statusUpdateError": "状态更新失败",
+    "confirmDelete": "确认删除？",
     "deleteConfirmMessage": "确定要删除房间 \"{{name}}\" 吗？删除后该房间将不再显示在列表中，但相关的预约记录会保留。",
     "type": {
       "staff": "员工",
@@ -2218,7 +2219,7 @@
     "viewNotifications": "查看通知",
     "percentage": "占比",
     "staffStatus": "员工状态",
-    "resourceStatus": "资源状态",
+    "resourceStatus": "员工状态",
     "totalStaff": "总员工",
     "totalRooms": "总房间",
     "capacity": "容量",

@@ -81,7 +81,7 @@ public class Customer {
     }
     
     public enum CustomerStatus {
-        ACTIVE, INACTIVE
+        ACTIVE, INACTIVE, DELETED
     }
     
     public enum CommunicationPreference {

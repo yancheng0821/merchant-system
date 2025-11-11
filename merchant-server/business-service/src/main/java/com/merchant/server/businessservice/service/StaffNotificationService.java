@@ -128,9 +128,24 @@ public class StaffNotificationService {
         Order order
     ) {
         try {
+            // 获取商户名称
+            String businessName = "Unknown Merchant";
+            try {
+                ApiResponse<Map<String, Object>> merchantResponse = merchantServiceClient.getMerchantByTenantId(staff.getTenantId());
+                if (merchantResponse != null && merchantResponse.isSuccess() && merchantResponse.getData() != null) {
+                    Object nameObj = merchantResponse.getData().get("merchantName");
+                    if (nameObj != null) {
+                        businessName = nameObj.toString();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to get merchant name for tenant {}: {}", staff.getTenantId(), e.getMessage());
+            }
+
             // 构建邮件数据
             Map<String, Object> variables = new HashMap<>();
             variables.put("staffName", staff.getName());
+            variables.put("businessName", businessName);
             variables.put("customerName", customer.getLastName() + customer.getFirstName());
             variables.put("appointmentDate", appointment.getAppointmentDate().toString());
             variables.put("appointmentTime", appointment.getAppointmentTime().toString());
@@ -145,12 +160,18 @@ public class StaffNotificationService {
 
             // 金额和支付方式
             if (order != null) {
+                variables.put("subtotal", String.format("%.2f", order.getSubtotal()));
+                variables.put("taxAmount", String.format("%.2f", order.getTaxAmount()));
+                variables.put("tipAmount", String.format("%.2f", order.getTipAmount()));
                 variables.put("amount", String.format("%.2f", order.getTotalAmount()));
                 variables.put("paymentMethod", order.getPaymentMethod() != null ?
                     order.getPaymentMethod() : "N/A");
                 variables.put("orderNumber", order.getOrderNumber() != null ?
                     order.getOrderNumber() : "N/A");
             } else {
+                variables.put("subtotal", "0.00");
+                variables.put("taxAmount", "0.00");
+                variables.put("tipAmount", "0.00");
                 variables.put("amount", "0.00");
                 variables.put("paymentMethod", "N/A");
                 variables.put("orderNumber", "N/A");
@@ -434,13 +455,20 @@ public class StaffNotificationService {
         try {
             // 统计数据
             int totalCount = appointments.size();
-            double totalRevenue = appointments.stream()
-                .map(apt -> {
-                    Order order = orderMapper.selectByAppointmentId(apt.getId());
-                    return order != null ? order.getTotalAmount() : 0.0;
-                })
-                .mapToDouble(Double::doubleValue)
-                .sum();
+            double totalSubtotal = 0.0;
+            double totalTax = 0.0;
+            double totalTips = 0.0;
+            double totalRevenue = 0.0;
+
+            for (Appointment apt : appointments) {
+                Order order = orderMapper.selectByAppointmentId(apt.getId());
+                if (order != null) {
+                    totalSubtotal += order.getSubtotal().doubleValue();
+                    totalTax += order.getTaxAmount().doubleValue();
+                    totalTips += order.getTipAmount().doubleValue();
+                    totalRevenue += order.getTotalAmount();
+                }
+            }
 
             // 生成预约列表 HTML
             StringBuilder appointmentListHtml = new StringBuilder();
@@ -457,7 +485,10 @@ public class StaffNotificationService {
                 String customerName = customer != null ?
                     customer.getLastName() + customer.getFirstName() : "N/A";
 
-                double amount = order != null ? order.getTotalAmount() : 0.0;
+                double subtotal = order != null ? order.getSubtotal().doubleValue() : 0.0;
+                double taxAmount = order != null ? order.getTaxAmount().doubleValue() : 0.0;
+                double tipAmount = order != null ? order.getTipAmount().doubleValue() : 0.0;
+                double totalAmount = order != null ? order.getTotalAmount() : 0.0;
                 String paymentMethod = order != null && order.getPaymentMethod() != null ?
                     order.getPaymentMethod() : "N/A";
 
@@ -465,16 +496,37 @@ public class StaffNotificationService {
                     .append("<td>").append(apt.getAppointmentTime()).append("</td>")
                     .append("<td>").append(customerName).append("</td>")
                     .append("<td>").append(serviceName).append("</td>")
-                    .append("<td>$").append(String.format("%.2f", amount)).append("</td>")
+                    .append("<td>$").append(String.format("%.2f", subtotal)).append("</td>")
+                    .append("<td>$").append(String.format("%.2f", taxAmount)).append("</td>")
+                    .append("<td>$").append(String.format("%.2f", tipAmount)).append("</td>")
+                    .append("<td>$").append(String.format("%.2f", totalAmount)).append("</td>")
                     .append("<td>").append(paymentMethod).append("</td>")
                     .append("</tr>");
+            }
+
+            // 获取商户名称
+            String merchantName = "Unknown Merchant";
+            try {
+                ApiResponse<Map<String, Object>> merchantResponse = merchantServiceClient.getMerchantByTenantId(staff.getTenantId());
+                if (merchantResponse != null && merchantResponse.isSuccess() && merchantResponse.getData() != null) {
+                    Object nameObj = merchantResponse.getData().get("merchantName");
+                    if (nameObj != null) {
+                        merchantName = nameObj.toString();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to get merchant name for tenant {}: {}", staff.getTenantId(), e.getMessage());
             }
 
             // 构建变量
             Map<String, String> variables = new HashMap<>();
             variables.put("staffName", staff.getName());
+            variables.put("merchantName", merchantName);
             variables.put("date", date.toString());
             variables.put("totalCount", String.valueOf(totalCount));
+            variables.put("totalSubtotal", String.format("%.2f", totalSubtotal));
+            variables.put("totalTax", String.format("%.2f", totalTax));
+            variables.put("totalTips", String.format("%.2f", totalTips));
             variables.put("totalRevenue", String.format("%.2f", totalRevenue));
             variables.put("appointmentList", appointmentListHtml.toString());
             variables.put("serviceStats", generateServiceStats(appointments));
@@ -489,8 +541,12 @@ public class StaffNotificationService {
             // 构建通知请求
             Map<String, Object> notificationVariables = new HashMap<>();
             notificationVariables.put("staffName", staff.getName());
+            notificationVariables.put("merchantName", merchantName);
             notificationVariables.put("date", date.toString());
             notificationVariables.put("totalCount", totalCount);
+            notificationVariables.put("totalSubtotal", String.format("%.2f", totalSubtotal));
+            notificationVariables.put("totalTax", String.format("%.2f", totalTax));
+            notificationVariables.put("totalTips", String.format("%.2f", totalTips));
             notificationVariables.put("totalRevenue", String.format("%.2f", totalRevenue));
             notificationVariables.put("appointmentList", appointmentListHtml.toString());
             notificationVariables.put("serviceStats", generateServiceStats(appointments));

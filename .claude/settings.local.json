@@ -126,7 +126,10 @@
       "Bash(GENERATE_SOURCEMAP=false npm run build:*)",
       "Bash(NODE_ENV=production npm run build:*)",
       "Bash(scp:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(yes:*)",
+      "Bash(./cleanup-ecr-images.sh:*)",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }

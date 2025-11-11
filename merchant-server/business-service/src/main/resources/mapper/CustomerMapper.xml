@@ -82,7 +82,7 @@
     <select id="selectByTenantId" resultMap="CustomerResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM customers
-        WHERE tenant_id = #{tenantId}
+        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -100,7 +100,7 @@
     <select id="selectByTenantIdAndMembershipLevel" resultMap="CustomerResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -132,7 +132,7 @@
     <select id="searchCustomers" resultMap="CustomerResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM customers
-        WHERE tenant_id = #{tenantId}
+        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
         <include refid="Search_Where_Clause"/>
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
@@ -152,7 +152,7 @@
     <select id="searchCustomersByMembershipLevel" resultMap="CustomerResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
         <include refid="Search_Where_Clause"/>
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
@@ -172,14 +172,14 @@
     <select id="countByTenantId" resultType="long">
         SELECT COUNT(*)
         FROM customers
-        WHERE tenant_id = #{tenantId}
+        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
     </select>
 
     <!-- 统计租户客户总数（带搜索） -->
     <select id="countSearchCustomers" resultType="long">
         SELECT COUNT(*)
         FROM customers
-        WHERE tenant_id = #{tenantId}
+        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
         <include refid="Search_Where_Clause"/>
     </select>
 
@@ -202,14 +202,14 @@
     <select id="countByTenantIdAndMembershipLevel" resultType="long">
         SELECT COUNT(*)
         FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
     </select>
 
     <!-- 统计租户客户总数（带搜索和会员等级过滤） -->
     <select id="countSearchCustomersByMembershipLevel" resultType="long">
         SELECT COUNT(*)
         FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel}
+        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
         <include refid="Search_Where_Clause"/>
     </select>
 
@@ -232,14 +232,14 @@
     <select id="countVipCustomers" resultType="long">
         SELECT COUNT(*)
         FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level IN ('GOLD', 'PLATINUM')
+        WHERE tenant_id = #{tenantId} AND membership_level IN ('GOLD', 'PLATINUM') AND status != 'DELETED'
     </select>
 
     <!-- 获取客户消费排行 -->
     <select id="selectTopSpendingCustomers" resultMap="CustomerResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM customers
-        WHERE tenant_id = #{tenantId}
+        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
         ORDER BY total_spent DESC
         LIMIT #{limit}
     </select>
@@ -291,29 +291,32 @@
     <select id="existsByTenantIdAndPhone" resultType="boolean">
         SELECT COUNT(*) > 0
         FROM customers
-        WHERE tenant_id = #{tenantId} AND phone = #{phone}
+        WHERE tenant_id = #{tenantId} AND phone = #{phone} AND status != 'DELETED'
     </select>
 
     <!-- 检查邮箱是否存在 -->
     <select id="existsByTenantIdAndEmail" resultType="boolean">
         SELECT COUNT(*) > 0
         FROM customers
-        WHERE tenant_id = #{tenantId} AND email = #{email}
+        WHERE tenant_id = #{tenantId} AND email = #{email} AND status != 'DELETED'
     </select>
 
     <select id="findByCondition" resultMap="CustomerResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM customers
         WHERE tenant_id = #{tenantId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="status == null">
+            AND status != 'DELETED'
+        </if>
         <if test="keyword != null and keyword != ''">
             AND (
                 LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
                 OR phone LIKE CONCAT('%', #{keyword}, '%')
                 OR LOWER(email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
             )
-        </if>
-        <if test="status != null">
-            AND status = #{status}
         </if>
         <if test="level != null">
             AND membership_level = #{level}
@@ -348,6 +351,7 @@
     <select id="countNewCustomersByDateRange" resultType="int">
         SELECT COUNT(*) FROM customers
         WHERE tenant_id = #{tenantId}
+        AND status != 'DELETED'
         AND DATE(created_at) BETWEEN #{startDate} AND #{endDate}
     </select>
 
@@ -355,6 +359,7 @@
     <select id="countNewCustomersByDateTimeRange" resultType="int">
         SELECT COUNT(*) FROM customers
         WHERE tenant_id = #{tenantId}
+        AND status != 'DELETED'
         AND created_at &gt;= #{startDateTime}
         AND created_at &lt;= #{endDateTime}
     </select>

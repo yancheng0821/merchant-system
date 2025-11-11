@@ -521,7 +521,14 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
                 <FormControl fullWidth error={!!errors.resourceType}>
                   <InputLabel>{t('services.resourceType')}</InputLabel>
                   <Select
-                    value={formData.resourceType || 'STAFF'}
+                    value={
+                      availableResourceTypes.length > 0 &&
+                      availableResourceTypes.find(t => t.value === formData.resourceType)
+                        ? formData.resourceType
+                        : availableResourceTypes.length > 0
+                        ? availableResourceTypes[0].value
+                        : ''
+                    }
                     onChange={handleChange('resourceType')}
                     label={t('services.resourceType')}
                     disabled={availableResourceTypes.length <= 1}

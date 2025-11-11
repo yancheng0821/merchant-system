@@ -63,7 +63,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_BASE_URL } from '../../config/environment';
-import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, getFullImageUrl } from '../../services/api';
+import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, shiftApi, getFullImageUrl } from '../../services/api';
 import { getMerchantNow, utcToMerchantTime } from '../../utils/timezoneUtils';
 
 // 时间范围类型
@@ -281,22 +281,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       }
       
       // 并行获取所有数据
-      const [stats, salesTrend, serviceCategories, topServices, appointments, notificationLogs, staffList, roomList] = await Promise.all([
+      const [stats, salesTrend, serviceCategories, topServices, appointments, notificationLogs, staffList, roomList, staffAvailabilities] = await Promise.all([
         dashboardApi.getDashboardStats(user.tenantId, days),
         dashboardApi.getSalesTrend(user.tenantId, days),
         dashboardApi.getServiceCategoryStats(user.tenantId, days),
         dashboardApi.getTopServices(user.tenantId, days, 5),
         // 获取今日预约数据（排除已取消的）
         appointmentApi.getAllAppointments(user.tenantId).then((allAppointments: any[]) => {
-          // 使用本地日期而不是UTC日期
-          const now = new Date();
+          // 使用商户时区的日期
+          const now = getMerchantNow();
           const year = now.getFullYear();
           const month = String(now.getMonth() + 1).padStart(2, '0');
           const day = String(now.getDate()).padStart(2, '0');
           const today = `${year}-${month}-${day}`;
-          const todayAppointments = allAppointments.filter((appointment: any) => 
-            appointment.appointmentDate === today && 
-            appointment.status !== 'CANCELLED' && 
+          const todayAppointments = allAppointments.filter((appointment: any) =>
+            appointment.appointmentDate === today &&
+            appointment.status !== 'CANCELLED' &&
             appointment.status !== 'CANCELED'
           );
           return todayAppointments;
@@ -340,8 +340,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               console.error('Failed to fetch room resources:', error);
               return [];
             })
-          : Promise.resolve([])
+          : Promise.resolve([]),
+        // 稍后再获取员工可用性，此处返回空
+        Promise.resolve([])
       ]);
+
+      // 获取员工的可用性配置（工作时间）
+      let staffAvailabilitiesMap: Map<number, any[]> = new Map();
+      if ((resourceType === 'STAFF' || resourceType === 'BOTH') && staffList && staffList.length > 0) {
+        try {
+          const availabilitiesPromises = staffList.map((staff: any) =>
+            resourceApi.getResourceAvailability(staff.id)
+              .then((availabilities: any) => ({
+                resourceId: staff.id,
+                availabilities: availabilities || []
+              }))
+              .catch(() => ({
+                resourceId: staff.id,
+                availabilities: []
+              }))
+          );
+          const availabilitiesResults = await Promise.all(availabilitiesPromises);
+          availabilitiesResults.forEach((result: any) => {
+            staffAvailabilitiesMap.set(result.resourceId, result.availabilities);
+          });
+        } catch (error) {
+          console.error('Failed to fetch staff availabilities:', error);
+        }
+      }
 
       // 计算预约统计数据（基于过滤后的今日预约）
       const completedCount = appointments.filter((apt: any) => apt.status === 'COMPLETED').length;
@@ -401,13 +427,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       
       // 处理员工状态数据（仅在资源类型包含员工时）
       if ((resourceType === 'STAFF' || resourceType === 'BOTH') && staffList && staffList.length > 0) {
-        const now = new Date();
-        // 使用本地日期，而不是UTC日期
+        const now = getMerchantNow();
+        // 使用商户时区的日期
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         const today = `${year}-${month}-${day}`;
         const currentTime = now.toTimeString().slice(0, 5); // HH:mm
+        // 获取今天是星期几（0=Sunday, 1=Monday, ..., 6=Saturday）
+        // 转换为 1-7 格式（1=Monday, ..., 7=Sunday）
+        const dayOfWeekJS = now.getDay(); // 0-6
+        const dayOfWeek = dayOfWeekJS === 0 ? 7 : dayOfWeekJS; // 转换为1-7
 
         const staffWithStatus = staffList.map((staff: any) => {
           // 根据员工的当前预约情况判断状态
@@ -444,9 +474,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           let currentService = null;
           let endTime = null;
 
+          // 检查员工是否在工作时间内
+          const staffAvailabilities = staffAvailabilitiesMap.get(staff.id) || [];
+          const todayAvailabilities = staffAvailabilities.filter((avail: any) => avail.dayOfWeek === dayOfWeek);
+
+          let isWithinWorkingHours = false;
+          if (todayAvailabilities.length > 0) {
+            // 检查当前时间是否在任意一个工作时间段内
+            isWithinWorkingHours = todayAvailabilities.some((avail: any) => {
+              const startTime = avail.startTime.slice(0, 5); // HH:mm
+              const endTime = avail.endTime.slice(0, 5); // HH:mm
+              return currentTime >= startTime && currentTime < endTime;
+            });
+          }
+
           // 资源对象的status字段
           if (staff.status === 'ACTIVE') {
-            if (currentAppointments.length > 0) {
+            if (!isWithinWorkingHours) {
+              // 不在工作时间内，显示offline
+              status = 'offline';
+            } else if (currentAppointments.length > 0) {
               status = 'busy';
               const apt = currentAppointments[0];
               currentService = apt.appointmentServices?.[0]?.serviceName || apt.serviceName || t('dashboard.inService');
@@ -478,8 +525,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       if ((resourceType === 'ROOM' || resourceType === 'BOTH') && roomList && roomList.length > 0) {
         const roomWithStatus = roomList.map((room: any) => {
           // 根据房间的当前预约情况判断状态
-          const now = new Date();
-          // 使用本地日期，而不是UTC日期
+          const now = getMerchantNow();
+          // 使用商户时区的日期
           const year = now.getFullYear();
           const month = String(now.getMonth() + 1).padStart(2, '0');
           const day = String(now.getDate()).padStart(2, '0');
@@ -593,9 +640,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       // 延迟执行以确保DOM已渲染
       setTimeout(() => {
         if (timelineRef.current) {
-          const now = new Date();
+          const now = getMerchantNow();
           const currentTimeStr = now.toTimeString().slice(0, 5); // HH:mm format
-          
+
           // 找到当前时间附近的预约索引
           let targetIndex = 0;
           for (let i = 0; i < todayAppointments.length; i++) {
@@ -1971,9 +2018,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   }}>
                     {/* 时间节点内容 */}
                     {(() => {
-                      const now = new Date();
+                      const now = getMerchantNow();
                       const currentTimeStr = now.toTimeString().slice(0, 5); // HH:mm format
-                      
+
                       // 排序预约列表
                       const sortedAppointments = todayAppointments.sort((a, b) => 
                         a.appointmentTime.localeCompare(b.appointmentTime)
