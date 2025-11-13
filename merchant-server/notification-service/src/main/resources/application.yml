@@ -50,9 +50,9 @@ eureka:
 
 # 通知服务配置
 notification:
-  # Mock模式配置 - 开发和测试环境使用
+  # Mock模式配置 - 本地开发环境使用
   mock:
-    enabled: true # 设置为true在本地开发环境使用mock模式，不调用真实AWS服务
+    enabled: true # 本地开发环境使用mock模式，不调用真实AWS/阿里云服务
     sms:
       simulateDelay: true # 模拟发送延迟
       delayMs: 1000 # 模拟延迟时间（毫秒）
@@ -91,6 +91,21 @@ notification:
     sns:
       defaultSenderId: YourApp # 可选，短信发送者ID
       defaultMessageType: Transactional # Promotional 或 Transactional
+  aliyun:
+    # 阿里云配置 - 用于中国地区 (+86) 的短信发送
+    # 本地开发环境不配置凭证，使用mock模式
+    accessKeyId: ${ALIYUN_ACCESS_KEY_ID:}
+    accessKeySecret: ${ALIYUN_ACCESS_KEY_SECRET:}
+    endpoint: dysmsapi.aliyuncs.com
+    maxRetries: 3
+    retryDelayMs: 1000
+    sms:
+      signName: 快想科技 # 需要在阿里云短信服务中申请
+      templateCode: SMS_327736525 # 默认验证码模板：您的验证码为：${code}，请勿泄露于他人！
+      # 场景模板映射 - 阿里云仅支持验证码场景（预约相关因审核限制已禁用）
+      sceneTemplates:
+        LOGIN_2FA: SMS_327736525  # 登录验证码
+        PACKAGE_VERIFICATION: SMS_327736525  # 套餐消费验证（使用验证码模板）
 
 # 日志配置 - 只保留核心业务日志
 logging:

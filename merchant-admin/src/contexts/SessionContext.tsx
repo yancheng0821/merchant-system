@@ -161,7 +161,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     };
 
     // 监听各种用户活动事件
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    // 注意：移除了 mousemove 和 scroll，因为它们太敏感，会被自动行为触发
+    const events = ['mousedown', 'keypress', 'touchstart', 'click'];
     
     events.forEach(event => {
       document.addEventListener(event, handleActivity, { passive: true });
@@ -200,17 +201,17 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
             sessionTimeoutMinutes: sessionTimeout,
             lastActivity: new Date(currentLastActivity).toLocaleString()
           });
-          
+
           // 触发session过期
           setTimeout(() => {
             setIsSessionExpired(true);
             setShowSessionDialog(true);
           }, 0);
-          
+
           // 返回null来清除lastActivity
           return null;
         }
-        
+
         // 如果没有过期，返回原值
         return currentLastActivity;
       });
@@ -218,14 +219,14 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
 
     // 立即检查一次
     checkSession();
-    
+
     // 每30秒检查一次会话状态
     const interval = setInterval(checkSession, 30000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [user, sessionTimeout, isSessionExpired]);
+  }, [user, sessionTimeout, isSessionExpired, lastActivity]);
 
   const handleSessionExpiredConfirm = () => {
     setShowSessionDialog(false);

@@ -13,6 +13,7 @@ public class NotificationConfig {
     private Sms sms = new Sms();
     private Email email = new Email();
     private Aws aws = new Aws();
+    private Aliyun aliyun = new Aliyun();
     
     @Data
     public static class Mock {
@@ -78,6 +79,23 @@ public class NotificationConfig {
         public static class Sns {
             private String defaultSenderId;
             private String defaultMessageType = "Transactional";
+        }
+    }
+
+    @Data
+    public static class Aliyun {
+        private String accessKeyId;
+        private String accessKeySecret;
+        private String endpoint = "dysmsapi.aliyuncs.com"; // 阿里云短信服务端点
+        private int maxRetries = 3; // 最大重试次数
+        private long retryDelayMs = 1000; // 重试间隔（毫秒）
+        private Sms sms = new Sms();
+
+        @Data
+        public static class Sms {
+            private String signName; // 短信签名
+            private String templateCode; // 短信模板CODE（默认验证码模板）
+            private java.util.Map<String, String> sceneTemplates = new java.util.HashMap<>(); // 场景到模板CODE的映射
         }
     }
 }

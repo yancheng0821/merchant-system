@@ -1,0 +1,78 @@
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: merchant-system-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: merchant_auth
+      MYSQL_USER: merchant_app
+      MYSQL_PASSWORD: MerchantApp@2024
+      TZ: UTC
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - merchant-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: merchant-system-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - merchant-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ 消息队列
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: merchant-system-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP 端口
+      - "15672:15672"  # 管理界面端口
+    environment:
+      RABBITMQ_DEFAULT_USER: merchant_app
+      RABBITMQ_DEFAULT_PASS: MerchantApp@2024
+      RABBITMQ_DEFAULT_VHOST: merchant_vhost
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./docker/rabbitmq-init:/etc/rabbitmq/conf.d
+    networks:
+      - merchant-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql-data:
+    name: merchant-system_mysql-data
+  redis-data:
+    name: merchant-system_redis-data
+  rabbitmq-data:
+    name: merchant-system_rabbitmq-data
+
+networks:
+  merchant-network:
+    name: merchant-network
+    driver: bridge

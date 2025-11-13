@@ -265,6 +265,8 @@ services:
       - AWS_SES_FROM_EMAIL=${AWS_SES_FROM_EMAIL:-noreply@vamerchant.app}
       - AWS_SES_FROM_NAME=${AWS_SES_FROM_NAME:-VA Merchant}
       - AWS_SNS_SENDER_ID=${AWS_SNS_SENDER_ID:-VAMerchant}
+      - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID}
+      - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET}
       - TZ=America/Vancouver
     depends_on:
       eureka-server:

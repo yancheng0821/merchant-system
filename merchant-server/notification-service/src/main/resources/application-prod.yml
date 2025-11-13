@@ -75,6 +75,20 @@ notification:
     sns:
       defaultSenderId: ${AWS_SNS_SENDER_ID:YourApp}
       defaultMessageType: Transactional
+  aliyun:
+    # 阿里云配置 - 用于中国地区 (+86) 的短信发送
+    accessKeyId: ${ALIYUN_ACCESS_KEY_ID}
+    accessKeySecret: ${ALIYUN_ACCESS_KEY_SECRET}
+    endpoint: dysmsapi.aliyuncs.com
+    maxRetries: 3
+    retryDelayMs: 1000
+    sms:
+      signName: 快想科技
+      templateCode: SMS_327736525 # 默认验证码模板
+      # 场景模板映射 - 阿里云仅支持验证码场景（预约相关因审核限制已禁用）
+      sceneTemplates:
+        LOGIN_2FA: SMS_327736525  # 登录验证码
+        PACKAGE_VERIFICATION: SMS_327736525  # 套餐消费验证
 
 # Actuator配置
 management:

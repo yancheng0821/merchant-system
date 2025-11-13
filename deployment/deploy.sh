@@ -227,19 +227,17 @@ upload_to_ec2() {
         fi
     done
 
-    # 如果是首次部署或部署所有服务，上传配置文件
-    if [ ${#DEPLOY_SERVICES[@]} -eq ${#ALL_SERVICES[@]} ]; then
-        echo ""
-        echo -e "${YELLOW}上传配置文件...${NC}"
-        scp -i "$SSH_KEY" /Users/aisenyc/merchant-system/deployment/.env ${EC2_USER}@${EC2_HOST}:${DEPLOY_DIR}/
-        scp -i "$SSH_KEY" /Users/aisenyc/merchant-system/deployment/docker-compose.production.yml ${EC2_USER}@${EC2_HOST}:${DEPLOY_DIR}/docker-compose.yml
-        
-        if [ $? -eq 0 ]; then
-            print_success "配置文件上传成功"
-        else
-            print_error "配置文件上传失败"
-            exit 1
-        fi
+    # 始终上传配置文件（确保环境变量是最新的）
+    echo ""
+    echo -e "${YELLOW}上传配置文件...${NC}"
+    scp -i "$SSH_KEY" /Users/aisenyc/merchant-system/deployment/.env ${EC2_USER}@${EC2_HOST}:${DEPLOY_DIR}/
+    scp -i "$SSH_KEY" /Users/aisenyc/merchant-system/deployment/docker-compose.production.yml ${EC2_USER}@${EC2_HOST}:${DEPLOY_DIR}/docker-compose.yml
+
+    if [ $? -eq 0 ]; then
+        print_success "配置文件上传成功"
+    else
+        print_error "配置文件上传失败"
+        exit 1
     fi
 }
 

@@ -176,8 +176,16 @@ public class NotificationProcessor {
 
             notificationLog.setContent(message);
 
-            // 发送短信
-            boolean sent = smsService.sendSms(request.getRecipient().getPhone(), message);
+            // 将渲染后的message放入variables，供AWS SNS使用（阿里云使用场景和变量）
+            Map<String, Object> variables = new java.util.HashMap<>(request.getVariables());
+            variables.put("message", message);
+
+            // 发送短信 - 使用带场景参数的方法
+            boolean sent = smsService.sendSms(
+                request.getRecipient().getPhone(),
+                scene.getDefaultTemplateCode(),  // 场景标识
+                variables                         // 模板变量（包含渲染后的message）
+            );
 
             // 更新状态
             if (sent) {
