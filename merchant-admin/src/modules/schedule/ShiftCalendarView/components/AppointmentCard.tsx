@@ -35,6 +35,7 @@ interface AppointmentCardProps {
   onEdit?: (e: React.MouseEvent) => void;
   variant?: 'day' | 'week';
   compact?: boolean;
+  cardHeight?: number; // 卡片实际高度（px）
 }
 
 const AppointmentCard: React.FC<AppointmentCardProps> = ({
@@ -44,8 +45,24 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onEdit,
   variant = 'day',
   compact = false,
+  cardHeight = 100,
 }) => {
   const { t } = useTranslation();
+
+  // 根据卡片高度决定显示级别
+  const isTiny = cardHeight < 50;      // 极短：只显示时间和客户名
+  const isShort = cardHeight < 75;     // 短：显示时间、客户名、服务名（1行）
+  const isMedium = cardHeight < 110;   // 中：显示时间、客户名、服务名（2行）
+  const isTall = cardHeight >= 150;    // 高：可以显示3行以上
+  // 长（>110px）：显示全部信息
+
+  // 根据卡片高度动态计算服务名称的最大行数
+  const getServiceLineClamp = () => {
+    if (compact || isShort) return 1;
+    if (isMedium) return 2;
+    if (isTall) return 4; // 高卡片显示4行
+    return 3; // 普通长卡片显示3行
+  };
 
   // 状态配置 - 使用系统统一的配色方案
   const getStatusConfig = () => {
@@ -86,6 +103,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
   // 紧凑模式（用于周视图）
   if (compact) {
+    // 根据卡片高度调整padding和间距
+    const compactPadding = cardHeight < 45 ? '2px' : '8px';
+    const compactGap = cardHeight < 45 ? '0px' : '4px';
+
     return (
       <Box
         onClick={onClick}
@@ -95,7 +116,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           height: '100%',
           bgcolor: statusConfig.bgColor,
           borderRadius: '6px',
-          p: '8px',
+          p: compactPadding,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           border: '1px solid',
@@ -110,41 +131,47 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           },
         }}
       >
-        {/* 状态指示点 */}
+        {/* 第一行：时间 + 客户名 + 状态/编辑 */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: '2px',
+            mb: compactGap,
+            gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <DotIcon
-              sx={{
-                fontSize: 6,
-                color: statusConfig.color,
-                animation: appointment.status === 'CHECKED_IN' && !appointment.paid ? 'pulse 2s infinite' : 'none',
-                '@keyframes pulse': {
-                  '0%': { opacity: 1 },
-                  '50%': { opacity: 0.5 },
-                  '100%': { opacity: 1 },
-                }
-              }}
-            />
+          {/* 左侧：时间 + 客户名 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: cardHeight < 45 ? '4px' : '6px', flex: 1, minWidth: 0 }}>
             <Typography
               sx={{
                 fontSize: 12,
                 fontWeight: 600,
                 color: statusConfig.color,
                 lineHeight: 1,
+                flexShrink: 0,
               }}
             >
               {appointment.startTime.substring(0, 5)}
             </Typography>
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#111827',
+                lineHeight: 1,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {appointment.customerName}
+            </Typography>
           </Box>
 
-          {/* 编辑按钮 - 紧凑模式，仅在CONFIRMED状态下显示 */}
+          {/* 右侧：仅编辑按钮 */}
           {onEdit && appointment.status === 'CONFIRMED' && (
             <IconButton
               size="small"
@@ -153,48 +180,34 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 onEdit(e);
               }}
               sx={{
-                width: 20,
-                height: 20,
+                width: cardHeight < 45 ? 16 : 20,
+                height: cardHeight < 45 ? 16 : 20,
                 p: 0,
                 color: '#94a3b8',
                 bgcolor: 'transparent',
                 borderRadius: 0.75,
                 transition: 'all 0.2s ease',
+                flexShrink: 0,
                 '&:hover': {
                   bgcolor: alpha(statusConfig.color, 0.12),
                   color: statusConfig.color,
                 },
               }}
             >
-              <EditCalendarIcon sx={{ fontSize: 14 }} />
+              <EditCalendarIcon sx={{ fontSize: cardHeight < 45 ? 12 : 14 }} />
             </IconButton>
           )}
         </Box>
 
         <Typography
           sx={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#111827',
-            lineHeight: 1.2,
-            mb: '2px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {appointment.customerName}
-        </Typography>
-
-        <Typography
-          sx={{
             fontSize: 11,
             color: '#6B7280',
-            lineHeight: 1.2,
+            lineHeight: cardHeight < 45 ? 1.1 : 1.2,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             display: '-webkit-box',
-            WebkitLineClamp: 2,
+            WebkitLineClamp: cardHeight < 45 ? 1 : cardHeight >= 80 ? 3 : 2,
             WebkitBoxOrient: 'vertical',
             whiteSpace: 'pre-line',
           }}
@@ -206,6 +219,10 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   }
 
   // 完整模式（用于日视图）
+  // 动态调整padding和gap
+  const cardPadding = compact ? '8px' : (isTiny ? '6px' : isShort ? '8px' : isMedium ? '8px' : '12px');
+  const cardGap = compact ? '4px' : (isTiny ? '2px' : isShort ? '4px' : isMedium ? '4px' : '8px');
+
   return (
     <Box
       onClick={onClick}
@@ -214,7 +231,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         width: '100%',
         height: '100%',
         bgcolor: statusConfig.bgColor,
-        borderRadius: '8px',
+        borderRadius: compact || isTiny ? '6px' : '8px',
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
@@ -229,24 +246,62 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         },
       }}
     >
-      {/* 主体内容 - 精简布局 */}
-      <Box sx={{ p: '12px', height: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {/* 顶部行：时间和状态 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography
-            sx={{
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              color: statusConfig.color,
-              letterSpacing: '0.01em',
-            }}
-          >
-            {appointment.startTime.substring(0, 5)} - {appointment.endTime.substring(0, 5)}
-          </Typography>
+      {/* 主体内容 - 根据高度调整布局 */}
+      <Box sx={{ p: cardPadding, height: '100%', display: 'flex', flexDirection: 'column', gap: cardGap }}>
+        {/* 顶部行：时间/客户名和状态 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          {/* 左侧：时间和客户名 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: compact ? 0.75 : 0, flex: 1, minWidth: 0 }}>
+            {/* 缩放模式：时间+客户名在同一行 */}
+            {compact ? (
+              <>
+                <Typography
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: statusConfig.color,
+                    letterSpacing: '0.01em',
+                    flexShrink: 0,
+                  }}
+                >
+                  {appointment.startTime.substring(0, 5)}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {appointment.customerName}
+                </Typography>
+              </>
+            ) : (
+              /* 正常模式：只显示时间 */
+              <Typography
+                sx={{
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  color: statusConfig.color,
+                  letterSpacing: '0.01em',
+                  lineHeight: 1.2,
+                }}
+              >
+                {appointment.startTime.substring(0, 5)} - {appointment.endTime.substring(0, 5)}
+              </Typography>
+            )}
+          </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* 右侧：编辑按钮和状态标签 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: compact ? '4px' : (isTiny ? '2px' : '6px'), flexShrink: 0 }}>
             {/* 编辑按钮 - 仅在CONFIRMED状态下显示 */}
-            {onEdit && appointment.status === 'CONFIRMED' && (
+            {onEdit && appointment.status === 'CONFIRMED' && !isTiny && (
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -254,8 +309,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   onEdit(e);
                 }}
                 sx={{
-                  width: 24,
-                  height: 24,
+                  width: compact || isShort || isMedium ? 20 : 24,
+                  height: compact || isShort || isMedium ? 20 : 24,
                   p: 0,
                   color: '#94a3b8',
                   bgcolor: 'transparent',
@@ -267,72 +322,88 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   },
                 }}
               >
-                <EditCalendarIcon sx={{ fontSize: 16 }} />
+                <EditCalendarIcon sx={{ fontSize: compact || isShort || isMedium ? 14 : 16 }} />
               </IconButton>
             )}
 
-            {/* 状态标签 - 移到右上角，所有状态都显示 */}
-            <Chip
-              icon={statusConfig.icon}
-              label={statusConfig.label}
-              size="small"
-              sx={{
-                height: 22,
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-                bgcolor: alpha(statusConfig.color, 0.1),
-                color: statusConfig.color,
-                border: 'none',
-                borderRadius: 1.5,
-                '& .MuiChip-label': {
-                  px: '8px',
-                  py: 0,
-                },
-                '& .MuiChip-icon': {
-                  fontSize: 14,
-                  color: statusConfig.color,
-                  marginLeft: '6px',
-                  marginRight: '-4px',
-                },
-              }}
-            />
+            {/* 状态标签 - 缩放模式下不显示 */}
+            {!compact && (
+              isTiny ? (
+                // 极短卡片只显示状态点
+                <DotIcon
+                  sx={{
+                    fontSize: 8,
+                    color: statusConfig.color,
+                  }}
+                />
+              ) : (
+                <Chip
+                  icon={!isShort && !isMedium ? statusConfig.icon : undefined}
+                  label={statusConfig.label}
+                  size="small"
+                  sx={{
+                    height: isShort || isMedium ? 18 : 22,
+                    fontSize: isShort || isMedium ? '0.625rem' : '0.6875rem',
+                    fontWeight: 600,
+                    bgcolor: alpha(statusConfig.color, 0.1),
+                    color: statusConfig.color,
+                    border: 'none',
+                    borderRadius: 1.5,
+                    '& .MuiChip-label': {
+                      px: isShort || isMedium ? '6px' : '8px',
+                      py: 0,
+                    },
+                    '& .MuiChip-icon': {
+                      fontSize: 14,
+                      color: statusConfig.color,
+                      marginLeft: '6px',
+                      marginRight: '-4px',
+                    },
+                  }}
+                />
+              )
+            )}
           </Box>
         </Box>
 
-        {/* 客户名称 */}
-        <Typography
-          sx={{
-            fontSize: '0.9375rem',
-            fontWeight: 600,
-            color: '#0f172a',
-            lineHeight: 1.3,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {appointment.customerName}
-        </Typography>
+        {/* 客户名称 - 只在非缩放模式下显示 */}
+        {!compact && (
+          <Typography
+            sx={{
+              fontSize: isShort || isMedium ? '0.875rem' : '0.9375rem',
+              fontWeight: 600,
+              color: '#0f172a',
+              lineHeight: 1.2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {appointment.customerName}
+          </Typography>
+        )}
 
-        {/* 服务名称 */}
-        <Typography
-          sx={{
-            fontSize: '0.8125rem',
-            color: '#64748b',
-            lineHeight: 1.4,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            whiteSpace: 'pre-line',
-          }}
-        >
-          {appointment.serviceName.replace(/, /g, '\n')}
-        </Typography>
+        {/* 服务名称 - 缩放模式下始终显示，否则根据高度决定 */}
+        {(compact || !isTiny) && (
+          <Typography
+            sx={{
+              fontSize: compact || isShort ? '0.6875rem' : '0.8125rem',
+              color: '#64748b',
+              lineHeight: 1.3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: getServiceLineClamp(),
+              WebkitBoxOrient: 'vertical',
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {appointment.serviceName.replace(/, /g, '\n')}
+          </Typography>
+        )}
 
-        {/* 备注 */}
-        {appointment.notes && (
+        {/* 备注 - 只在非缩放模式且高度充足时显示 */}
+        {!compact && !isTiny && !isShort && !isMedium && appointment.notes && (
           <Box sx={{ display: 'flex', gap: '4px' }}>
             <Typography
               sx={{

@@ -151,6 +151,16 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
                 throw new BusinessException("创建默认邀请码失败：" + e.getMessage());
             }
 
+            // 9.5. 从模板租户复制会员等级（远程调用，需要补偿）
+            try {
+                copyMembershipTiersFromTemplate(tenant.getId());
+            } catch (Exception e) {
+                log.error("复制会员等级失败，开始补偿回滚 - 租户ID: {}", tenant.getId(), e);
+                // 补偿：删除商户和设置，本地事务会自动回滚用户、角色、邀请码数据
+                compensateDeleteMerchant(merchantId, tenant.getId());
+                throw new BusinessException("复制会员等级失败：" + e.getMessage());
+            }
+
             // 10. 创建默认 Walk-in 客户（远程调用，需要补偿）
             try {
                 createWalkInCustomer(tenant.getId());
@@ -609,6 +619,28 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
         } catch (Exception e) {
             log.error("初始化系统通知副本失败 - 租户ID: {}", tenantId, e);
             throw new BusinessException("初始化系统通知副本失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 从模板租户复制会员等级
+     */
+    private void copyMembershipTiersFromTemplate(Long tenantId) {
+        log.debug("从模板租户复制会员等级 - 租户ID: {}", tenantId);
+
+        try {
+            Map<String, Object> response = businessServiceClient.copyMembershipTiersFromTemplate(tenantId);
+
+            if (response != null && Boolean.TRUE.equals(response.get("success"))) {
+                log.info("会员等级复制成功 - 租户ID: {}", tenantId);
+            } else {
+                String errorMsg = response != null ? String.valueOf(response.get("message")) : "未知错误";
+                log.error("会员等级复制失败 - 租户ID: {}, 错误: {}", tenantId, errorMsg);
+                throw new BusinessException("复制会员等级失败：" + errorMsg);
+            }
+        } catch (Exception e) {
+            log.error("复制会员等级失败 - 租户ID: {}", tenantId, e);
+            throw new BusinessException("复制会员等级失败：" + e.getMessage());
         }
     }
 }

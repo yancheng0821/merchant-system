@@ -42,6 +42,13 @@
             <result property="lastName" column="customer_last_name"/>
             <result property="phone" column="customer_phone"/>
             <result property="email" column="customer_email"/>
+            <result property="countryCode" column="customer_country_code"/>
+            <association property="membershipTier" javaType="com.merchant.server.businessservice.entity.MembershipTier">
+                <id property="id" column="membership_tier_id"/>
+                <result property="name" column="membership_tier_name"/>
+                <result property="color" column="membership_tier_color"/>
+                <result property="icon" column="membership_tier_icon"/>
+            </association>
         </association>
         <collection property="appointmentServices" ofType="com.merchant.server.businessservice.entity.AppointmentService">
             <id property="id" column="appointment_service_id"/>
@@ -69,18 +76,22 @@
 
     <!-- 根据ID查询预约 -->
     <select id="findById" resultMap="AppointmentWithDetailsResultMap">
-        SELECT 
+        SELECT
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
-            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
-            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id, 
-            aps.service_name as appointment_service_name, aps.price as appointment_service_price, 
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
+            c.email as customer_email, c.country_code as customer_country_code,
+            mt.id as membership_tier_id, mt.name as membership_tier_name,
+            mt.color as membership_tier_color, mt.icon as membership_tier_icon,
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
             ar.id as appointment_resource_id, ar.resource_id as appointment_resource_resource_id,
             ar.resource_type as appointment_resource_type, ar.is_primary as appointment_resource_is_primary,
             ar.created_at as appointment_resource_created_at
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
         WHERE a.id = #{id}
@@ -88,18 +99,22 @@
 
     <!-- 根据租户ID查询所有预约 -->
     <select id="findByTenantId" resultMap="AppointmentWithDetailsResultMap">
-        SELECT 
+        SELECT
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
-            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
-            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id, 
-            aps.service_name as appointment_service_name, aps.price as appointment_service_price, 
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
+            c.email as customer_email, c.country_code as customer_country_code,
+            mt.id as membership_tier_id, mt.name as membership_tier_name,
+            mt.color as membership_tier_color, mt.icon as membership_tier_icon,
+            aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
+            aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
             ar.id as appointment_resource_id, ar.resource_id as appointment_resource_resource_id,
             ar.resource_type as appointment_resource_type, ar.is_primary as appointment_resource_is_primary,
             ar.created_at as appointment_resource_created_at
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
         WHERE a.tenant_id = #{tenantId}
@@ -255,7 +270,9 @@
             a.reminder_24h_sent, a.reminder_30min_sent,
             a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name,
-            c.phone as customer_phone, c.email as customer_email,
+            c.phone as customer_phone, c.email as customer_email, c.country_code as customer_country_code,
+            mt.id as membership_tier_id, mt.name as membership_tier_name,
+            mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
             aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
@@ -265,6 +282,7 @@
             ar.created_at as appointment_resource_created_at
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
         LEFT JOIN resource r ON ar.resource_id = r.id
@@ -319,7 +337,10 @@
         SELECT
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
-            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
+            c.email as customer_email, c.country_code as customer_country_code,
+            mt.id as membership_tier_id, mt.name as membership_tier_name,
+            mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
             aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
@@ -328,6 +349,7 @@
             ar.created_at as appointment_resource_created_at
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
         WHERE a.appointment_date = #{date}
@@ -342,7 +364,9 @@
             a.duration, a.total_amount, a.status,
             a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name,
-            c.phone as customer_phone, c.email as customer_email,
+            c.phone as customer_phone, c.email as customer_email, c.country_code as customer_country_code,
+            mt.id as membership_tier_id, mt.name as membership_tier_name,
+            mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
             aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
@@ -354,6 +378,7 @@
         FROM appointments a
         INNER JOIN orders o ON a.id = o.appointment_id
         LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
         LEFT JOIN resource r ON ar.resource_id = r.id AND ar.resource_type = 'STAFF'
@@ -370,7 +395,9 @@
             a.duration, a.total_amount, a.status,
             a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name,
-            c.phone as customer_phone, c.email as customer_email,
+            c.phone as customer_phone, c.email as customer_email, c.country_code as customer_country_code,
+            mt.id as membership_tier_id, mt.name as membership_tier_name,
+            mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
             aps.service_name as appointment_service_name, aps.price as appointment_service_price,
             aps.duration as appointment_service_duration,
@@ -382,6 +409,7 @@
         FROM appointments a
         INNER JOIN orders o ON a.id = o.appointment_id
         LEFT JOIN customers c ON a.customer_id = c.id
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id
         LEFT JOIN appointment_services aps ON a.id = aps.appointment_id
         LEFT JOIN appointment_resources ar ON a.id = ar.appointment_id
         LEFT JOIN resource r ON ar.resource_id = r.id AND ar.resource_type = 'STAFF'

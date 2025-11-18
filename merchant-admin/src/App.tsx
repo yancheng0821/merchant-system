@@ -39,8 +39,10 @@ import {
   ServiceManagement,
   PaymentManagement,
   CustomerManagement,
+  MembershipTiers,
   AppointmentManagement,
   Analytics,
+  CostManagement,
   Settings,
   ResourceManagement
 } from './modules';
@@ -767,6 +769,7 @@ const MainAppContent: React.FC = () => {
               {selectedItem === 'schedule' && <ScheduleManagement />}
               {selectedItem === 'notifications' && <NotificationManagement />}
               {selectedItem === 'analytics' && <Analytics />}
+              {selectedItem === 'costs' && <CostManagement />}
               {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}
               {selectedItem === 'rbac' && <RBACManagement />}
               {selectedItem === 'profile' && <UserProfile />}

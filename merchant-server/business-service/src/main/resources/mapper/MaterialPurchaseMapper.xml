@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.MaterialPurchaseMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="MaterialPurchaseResultMap" type="com.merchant.server.businessservice.entity.MaterialPurchase">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="materialName" column="material_name"/>
+        <result property="materialCategory" column="material_category"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unit" column="unit"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="supplier" column="supplier"/>
+        <result property="purchaseDate" column="purchase_date"/>
+        <result property="paymentStatus" column="payment_status"/>
+        <result property="paymentMethod" column="payment_method"/>
+        <result property="notes" column="notes"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <!-- 根据租户ID查询所有物料采购记录 -->
+    <select id="selectByTenantId" resultMap="MaterialPurchaseResultMap">
+        SELECT * FROM material_purchases
+        WHERE tenant_id = #{tenantId}
+        ORDER BY purchase_date DESC
+    </select>
+
+    <!-- 根据ID查询物料采购记录 -->
+    <select id="selectById" resultMap="MaterialPurchaseResultMap">
+        SELECT * FROM material_purchases
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入物料采购记录 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.MaterialPurchase" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO material_purchases (
+            tenant_id, material_name, material_category, quantity, unit,
+            unit_price, total_amount, supplier, purchase_date, payment_status,
+            payment_method, notes, created_at, updated_at, created_by, updated_by
+        ) VALUES (
+            #{tenantId}, #{materialName}, #{materialCategory}, #{quantity}, #{unit},
+            #{unitPrice}, #{totalAmount}, #{supplier}, #{purchaseDate}, #{paymentStatus},
+            #{paymentMethod}, #{notes}, NOW(), NOW(), #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <!-- 更新物料采购记录 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.MaterialPurchase">
+        UPDATE material_purchases
+        SET material_name = #{materialName},
+            material_category = #{materialCategory},
+            quantity = #{quantity},
+            unit = #{unit},
+            unit_price = #{unitPrice},
+            total_amount = #{totalAmount},
+            supplier = #{supplier},
+            purchase_date = #{purchaseDate},
+            payment_status = #{paymentStatus},
+            payment_method = #{paymentMethod},
+            notes = #{notes},
+            updated_at = NOW(),
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除物料采购记录 -->
+    <delete id="deleteById">
+        DELETE FROM material_purchases WHERE id = #{id}
+    </delete>
+
+</mapper>

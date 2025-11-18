@@ -36,8 +36,10 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { enUS, zhCN } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { resourceApi, appointmentApi } from '../../services/api';
+import { resourceApi, appointmentApi, staffAttendanceApi } from '../../services/api';
 import i18n from '../../i18n/config';
+import { format as formatDate } from 'date-fns';
+import { getMerchantNow } from '../../utils/timezoneUtils';
 
 interface DetailedAvailabilityViewProps {
     resourceId: number;
@@ -63,6 +65,7 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     
     const [selectedDate, setSelectedDate] = useState(getLocalDateString(new Date()));
     const [availabilityData, setAvailabilityData] = useState<any>(null);
+    const [staffAttendance, setStaffAttendance] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const scrollPositionRef = React.useRef(0);
@@ -113,7 +116,18 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
         try {
             const data = await resourceApi.getResourceDetailedAvailability(resourceId, selectedDate);
             setAvailabilityData(data);
-            
+
+            // 如果是员工资源，同时获取当天的考勤数据（check-in/check-out时间）
+            if (resourceType === 'STAFF') {
+                try {
+                    const attendance = await staffAttendanceApi.getByResourceAndDate(resourceId, selectedDate);
+                    setStaffAttendance(attendance || null);
+                } catch (err) {
+                    console.warn('Failed to fetch staff attendance:', err);
+                    setStaffAttendance(null);
+                }
+            }
+
             // 如果需要保留滚动位置，在数据加载完成后恢复
             if (shouldPreserveScrollRef.current && scrollPositionRef.current > 0) {
                 requestAnimationFrame(() => {
@@ -151,19 +165,34 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
             return 'unavailable';
         }
 
-        // 检查是否在工作时间内
-        const isInWorkingHours = availabilityData.availabilities.some((av: any) => {
-            if (av.dayOfWeek !== dayOfWeek) return false;
-            
-            // 如果 isAvailable 为 false，则不可用
-            if (av.isAvailable === false) return false;
-            
+        // 如果是员工资源且有考勤记录（check-in/check-out），优先使用考勤时间
+        let isInWorkingHours = false;
+        if (resourceType === 'STAFF' && staffAttendance && staffAttendance.checkInTime && staffAttendance.checkOutTime) {
             const slotTime = timeSlot + ':00';
-            const startTime = av.startTime.length === 5 ? av.startTime + ':00' : av.startTime;
-            const endTime = av.endTime.length === 5 ? av.endTime + ':00' : av.endTime;
-            
-            return slotTime >= startTime && slotTime < endTime;
-        });
+            const checkInTime = staffAttendance.checkInTime.length === 5
+                ? staffAttendance.checkInTime + ':00'
+                : staffAttendance.checkInTime;
+            const checkOutTime = staffAttendance.checkOutTime.length === 5
+                ? staffAttendance.checkOutTime + ':00'
+                : staffAttendance.checkOutTime;
+
+            // 使用实际的check-in/check-out时间判断
+            isInWorkingHours = slotTime >= checkInTime && slotTime < checkOutTime;
+        } else {
+            // 没有考勤记录，使用排班时间
+            isInWorkingHours = availabilityData.availabilities.some((av: any) => {
+                if (av.dayOfWeek !== dayOfWeek) return false;
+
+                // 如果 isAvailable 为 false，则不可用
+                if (av.isAvailable === false) return false;
+
+                const slotTime = timeSlot + ':00';
+                const startTime = av.startTime.length === 5 ? av.startTime + ':00' : av.startTime;
+                const endTime = av.endTime.length === 5 ? av.endTime + ':00' : av.endTime;
+
+                return slotTime >= startTime && slotTime < endTime;
+            });
+        }
 
         if (!isInWorkingHours) return 'unavailable';
 

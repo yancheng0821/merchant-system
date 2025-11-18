@@ -27,4 +27,19 @@ public interface BusinessAnalyticsService {
      * 获取业务指标数据
      */
     Map<String, Object> getBusinessMetrics(Long tenantId, String startDate, String endDate);
+
+    /**
+     * 按服务维度统计订单
+     */
+    List<Map<String, Object>> getOrderStatsByService(Long tenantId, String startDate, String endDate);
+
+    /**
+     * 按支付方式维度统计订单
+     */
+    List<Map<String, Object>> getOrderStatsByPaymentMethod(Long tenantId, String startDate, String endDate);
+
+    /**
+     * 按支付方式统计package购买订单
+     */
+    List<Map<String, Object>> getPackagePurchaseStatsByPaymentMethod(Long tenantId, String startDate, String endDate);
 }

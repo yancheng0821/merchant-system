@@ -47,6 +47,10 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/api/notification/**
+        - id: analytics-service
+          uri: lb://analytics-service
+          predicates:
+            - Path=/api/analytics/**
         # 注释掉file-service，改用静态资源服务
         # - id: file-service
         #   uri: lb://file-service

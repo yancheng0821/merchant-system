@@ -30,9 +30,16 @@ import {
   Person as PersonIcon,
   CardMembership as MembershipIcon,
   Favorite as PreferencesIcon,
+  Star as StarIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Customer, Service, serviceApi } from '../../../services/api';
+import { Customer, Service, serviceApi, membershipTierApi, MembershipTier } from '../../../services/api';
 import CountryCodeSelector from '../../../components/common/CountryCodeSelector';
 
 interface CustomerDialogProps {
@@ -61,7 +68,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
     address: '',
     dateOfBirth: '',
     gender: 'prefer-not-to-say' as 'male' | 'female' | 'other' | 'prefer-not-to-say',
-    membershipLevel: 'regular' as 'regular' | 'silver' | 'gold' | 'platinum',
+    membershipTierId: null as number | null,
     status: 'active' as 'active' | 'inactive',
     preferredServiceIds: [] as number[],
     allergies: '',
@@ -71,6 +78,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
   const [countryCode, setCountryCode] = useState<string>('+1-CA');
   const [services, setServices] = useState<Service[]>([]);
+  const [membershipTiers, setMembershipTiers] = useState<MembershipTier[]>([]);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -80,6 +88,34 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
     message: '',
     severity: 'error',
   });
+
+  // 图标映射函数
+  const getTierIcon = (iconName?: string, color?: string) => {
+    if (!iconName) return null;
+
+    const iconProps = { sx: { fontSize: '0.875rem', color: color || 'inherit' } };
+
+    switch (iconName.toLowerCase()) {
+      case 'star':
+        return <StarIcon {...iconProps} />;
+      case 'stars':
+        return <StarsIcon {...iconProps} />;
+      case 'trophy':
+        return <TrophyIcon {...iconProps} />;
+      case 'medal':
+        return <MedalIcon {...iconProps} />;
+      case 'diamond':
+        return <DiamondIcon {...iconProps} />;
+      case 'premium':
+        return <PremiumIcon {...iconProps} />;
+      case 'verified':
+        return <VerifiedIcon {...iconProps} />;
+      case 'membership':
+        return <MembershipIcon {...iconProps} />;
+      default:
+        return <StarIcon {...iconProps} />;
+    }
+  };
 
   // 加载服务列表
   useEffect(() => {
@@ -102,6 +138,25 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
     }
   }, [open]);
 
+  // 加载会员等级列表
+  useEffect(() => {
+    const loadMembershipTiers = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const tenantId = user.tenantId || 1;
+        const tierList = await membershipTierApi.getAllTiers(tenantId);
+        setMembershipTiers(Array.isArray(tierList) ? tierList : []);
+      } catch (error) {
+        console.error('Failed to load membership levels:', error);
+        setMembershipTiers([]);
+      }
+    };
+
+    if (open) {
+      loadMembershipTiers();
+    }
+  }, [open]);
+
   useEffect(() => {
     if (customer) {
       setFormData({
@@ -113,7 +168,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.split('T')[0] : '',
         // 转换后端大写枚举为前端小写
         gender: customer.gender ? customer.gender.toLowerCase().replace('_', '-') as 'male' | 'female' | 'other' | 'prefer-not-to-say' : 'prefer-not-to-say',
-        membershipLevel: customer.membershipLevel ? customer.membershipLevel.toLowerCase() as 'regular' | 'silver' | 'gold' | 'platinum' : 'regular',
+        membershipTierId: customer.membershipTierId || customer.membershipTier?.id || null,
         status: customer.status ? customer.status.toLowerCase() as 'active' | 'inactive' : 'active',
         preferredServiceIds: customer.preferredServiceIds || [],
         allergies: customer.allergies || '',
@@ -131,7 +186,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         address: '',
         dateOfBirth: '',
         gender: 'prefer-not-to-say' as 'male' | 'female' | 'other' | 'prefer-not-to-say',
-        membershipLevel: 'regular',
+        membershipTierId: membershipTiers.length > 0 && membershipTiers[0].id ? membershipTiers[0].id : null,
         status: 'active' as 'active' | 'inactive',
         preferredServiceIds: [],
         allergies: '',
@@ -140,7 +195,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       });
       setCountryCode('+1-CA');
     }
-  }, [customer, open]);
+  }, [customer, open, membershipTiers]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -265,8 +320,8 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         totalSpent: customer?.totalSpent || 0,
         // 转换状态为大写
         status: (formData.status === 'active' ? 'ACTIVE' : 'INACTIVE') as 'ACTIVE' | 'INACTIVE',
-        // 转换会员等级为大写
-        membershipLevel: (formData.membershipLevel || 'regular').toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM',
+        // 会员等级使用tierId
+        membershipTierId: formData.membershipTierId || undefined,
         // 使用安全的性别转换
         gender: convertGender(formData.gender),
         // 使用安全的通信偏好转换
@@ -625,9 +680,9 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                 <FormControl fullWidth>
                   <InputLabel>{t('customers.membershipLevel')}</InputLabel>
                   <Select
-                    value={formData.membershipLevel}
+                    value={formData.membershipTierId || ''}
                     label={t('customers.membershipLevel')}
-                    onChange={(e) => handleChange('membershipLevel', e.target.value)}
+                    onChange={(e) => handleChange('membershipTierId', e.target.value)}
                     sx={{
                       borderRadius: 2,
                       '&:hover .MuiOutlinedInput-notchedOutline': {
@@ -638,50 +693,25 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
                       },
                     }}
                   >
-                    <MenuItem value="regular">
-                      <Chip
-                        label={t('customers.regular')}
-                        size="small"
-                        sx={{
-                          backgroundColor: alpha('#6B7280', 0.1),
-                          color: '#6B7280',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </MenuItem>
-                    <MenuItem value="silver">
-                      <Chip
-                        label={t('customers.silver')}
-                        size="small"
-                        sx={{
-                          backgroundColor: alpha('#9CA3AF', 0.1),
-                          color: '#9CA3AF',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </MenuItem>
-                    <MenuItem value="gold">
-                      <Chip
-                        label={t('customers.gold')}
-                        size="small"
-                        sx={{
-                          backgroundColor: alpha('#EC4899', 0.1),
-                          color: '#EC4899',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </MenuItem>
-                    <MenuItem value="platinum">
-                      <Chip
-                        label={t('customers.platinum')}
-                        size="small"
-                        sx={{
-                          backgroundColor: alpha('#8B5CF6', 0.1),
-                          color: '#8B5CF6',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </MenuItem>
+                    {membershipTiers.map((tier) => (
+                      <MenuItem key={tier.id} value={tier.id}>
+                        <Chip
+                          icon={getTierIcon(tier.icon, tier.color) || undefined}
+                          label={tier.name}
+                          size="small"
+                          sx={{
+                            backgroundColor: alpha(tier.color || '#6B7280', 0.1),
+                            color: tier.color || '#6B7280',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': {
+                              color: tier.color || '#6B7280',
+                              marginLeft: 1,
+                              marginRight: -0.5,
+                            },
+                          }}
+                        />
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>

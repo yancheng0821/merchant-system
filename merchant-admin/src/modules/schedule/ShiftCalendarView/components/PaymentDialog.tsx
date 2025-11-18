@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Dialog,
+  Drawer,
   Button,
   Box,
   Typography,
@@ -27,11 +27,35 @@ import {
   Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
   Sms as SmsIcon,
+  Check as CheckIcon,
+  Edit as EditIcon,
+  // Membership tier icons
+  Star as StarIcon,
+  StarHalf as StarHalfIcon,
+  StarRate as StarRateIcon,
+  Grade as GradeIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  CardGiftcard as GiftIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
+  CardMembership as MembershipIcon,
+  TrendingUp as TrendingUpIcon,
+  Loyalty as LoyaltyIcon,
+  Redeem as RedeemIcon,
+  Favorite as HeartIcon,
+  AutoAwesome as SparkleIcon,
+  Whatshot as FireIcon,
+  Celebration as CelebrationIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { usePermission } from '../../../../hooks/usePermission';
 import { customerApi, verificationApi, merchantConfigApi } from '../../../../services/api';
 import { CurrencyUtils } from '../../../../config/constants';
+import { SCHEDULE_PERMISSIONS } from '../../../../config/permissions';
 
 interface ServicePayment {
   serviceId: number;
@@ -58,7 +82,9 @@ interface PaymentDialogProps {
       tipPercentage: number;
       subtotal: number;
       totalAmount: number;
-    }
+    },
+    // Notes信息
+    notes?: string
   ) => void;
   appointmentId: number;
   customerId: number;
@@ -93,11 +119,39 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hasPermission } = usePermission();
+
+  // 获取会员等级图标
+  const getTierIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'star': return <StarIcon />;
+      case 'starhalf': return <StarHalfIcon />;
+      case 'starrate': return <StarRateIcon />;
+      case 'grade': return <GradeIcon />;
+      case 'stars': return <StarsIcon />;
+      case 'trophy': return <TrophyIcon />;
+      case 'medal': return <MedalIcon />;
+      case 'gift': return <GiftIcon />;
+      case 'diamond': return <DiamondIcon />;
+      case 'premium': return <PremiumIcon />;
+      case 'verified': return <VerifiedIcon />;
+      case 'membership': return <MembershipIcon />;
+      case 'trendingup': return <TrendingUpIcon />;
+      case 'loyalty': return <LoyaltyIcon />;
+      case 'redeem': return <RedeemIcon />;
+      case 'heart': return <HeartIcon />;
+      case 'sparkle': return <SparkleIcon />;
+      case 'fire': return <FireIcon />;
+      case 'celebration': return <CelebrationIcon />;
+      default: return <StarIcon />;
+    }
+  };
 
   // 单服务场景的状态
   const [paymentMethod, setPaymentMethod] = useState<string>('CREDIT_CARD');
   const [customerPackages, setCustomerPackages] = useState<CustomerPackage[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
+  const [customer, setCustomer] = useState<any>(null);
 
   // 多服务场景的状态：每个服务的支付方式和套餐选择
   const [servicePaymentMethods, setServicePaymentMethods] = useState<Record<number, string>>({});
@@ -124,6 +178,15 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   // 商户名称
   const [merchantName, setMerchantName] = useState<string>('');
 
+  // 订单金额编辑相关状态
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [editedTotalAmount, setEditedTotalAmount] = useState<string>('');
+  const [originalTotalAmount, setOriginalTotalAmount] = useState<number>(0);
+  const [amountModified, setAmountModified] = useState(false);
+
+  // Notes相关状态
+  const [paymentNotes, setPaymentNotes] = useState<string>('');
+
   // Refs for auto-scrolling
   const packageSelectionRef = useRef<HTMLDivElement>(null);
   const verificationSectionRef = useRef<HTMLDivElement>(null);
@@ -131,6 +194,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
   useEffect(() => {
     if (open && customerId && user?.tenantId) {
+      loadCustomer();
       loadCustomerPackages();
       loadTaxRate();
       loadMerchantName();
@@ -142,8 +206,14 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
         });
         setServicePaymentMethods(initialMethods);
       }
+      // 不在这里初始化originalTotalAmount，将在计算后的useEffect中设置
+      // setOriginalTotalAmount(amount); // 移除这行，因为amount不包含税费
+      setIsEditingAmount(false);
+      setEditedTotalAmount('');
+      setAmountModified(false);
+      setPaymentNotes('');
     }
-  }, [open, customerId, user?.tenantId, services]);
+  }, [open, customerId, user?.tenantId, services, amount]);
 
   // 确保 servicePaymentMethods 在渲染时有值
   useEffect(() => {
@@ -215,6 +285,17 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       return () => clearTimeout(timer);
     }
   }, [verificationError]);
+
+  const loadCustomer = async () => {
+    if (!customerId) return;
+
+    try {
+      const customerData = await customerApi.getCustomerById(customerId.toString());
+      setCustomer(customerData);
+    } catch (err) {
+      console.error('Failed to load customer:', err);
+    }
+  };
 
   const loadCustomerPackages = async () => {
     if (!user?.tenantId) return;
@@ -359,6 +440,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
   // 计算金额
   const calculateAmounts = () => {
+    let originalAmount = amount; // 原始金额
     let subtotal = amount; // 默认使用原始金额
 
     // 多服务场景：只计算非套餐支付的服务金额
@@ -377,15 +459,34 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           }
           return total + service.price;
         }, 0);
+        originalAmount = subtotal; // 记录原始金额
       }
     } else if (paymentMethod === 'PACKAGE') {
       // 单服务场景：如果选择套餐支付，金额为0
       subtotal = 0;
+      originalAmount = 0;
     }
 
-    const taxAmount = subtotal * taxRate; // 税额
+    // 应用会员折扣
+    // discountRate存储的是折后价格的百分比，例如90表示9折（支付原价的90%）
+    let discountAmount = 0;
+    let discountPercentage = 0;
+    if (customer?.membershipTier?.discountRate && subtotal > 0) {
+      const rate = parseFloat(customer.membershipTier.discountRate);
+      // 计算折扣后的价格
+      const discountedPrice = subtotal * (rate / 100);
+      // 折扣金额 = 原价 - 折扣后价格
+      discountAmount = subtotal - discountedPrice;
+      // 显示的折扣百分比 = 100 - rate（例如：90 -> 显示10%折扣）
+      discountPercentage = 100 - rate;
+      // 折扣后的小计
+      subtotal = discountedPrice;
+    }
 
-    // 计算小费金额
+    // 只有当subtotal > 0时才计算税费（package支付时subtotal为0，不计税）
+    const taxAmount = subtotal > 0 ? subtotal * taxRate : 0;
+
+    // 计算小费金额（基于折扣后的价格计算）
     let tipAmount = 0;
     if (customTipAmount && parseFloat(customTipAmount) > 0) {
       tipAmount = parseFloat(customTipAmount);
@@ -393,17 +494,61 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       tipAmount = subtotal * (tipPercentage / 100);
     }
 
-    const totalAmount = subtotal + taxAmount + tipAmount; // 总金额 = 小计 + 税额 + 小费
+    let totalAmount = subtotal + taxAmount + tipAmount; // 总金额 = 折扣后小计 + 税额 + 小费
+    let adjustedSubtotal = subtotal;
+    let adjustedTaxAmount = taxAmount;
+    let adjustedTipAmount = tipAmount;
+
+    // 如果用户编辑了总金额,反向计算各项金额
+    if (amountModified && editedTotalAmount) {
+      const parsedAmount = parseFloat(editedTotalAmount);
+      if (!isNaN(parsedAmount) && parsedAmount >= 0) {
+        totalAmount = parsedAmount;
+
+        // 根据原始subtotal判断支付类型
+        if (originalAmount === 0 || subtotal === 0) {
+          // Package支付：编辑的金额全部算作小费
+          adjustedSubtotal = 0;
+          adjustedTaxAmount = 0;
+          adjustedTipAmount = totalAmount;
+        } else {
+          // 正常支付：需要反向计算
+          // 计算小费率（基于原始subtotal）
+          const tipRate = tipAmount > 0 ? tipAmount / subtotal : 0;
+
+          // 反向计算：totalAmount = subtotal * (1 + taxRate + tipRate)
+          // 因此：subtotal = totalAmount / (1 + taxRate + tipRate)
+          const totalRate = 1 + taxRate + tipRate;
+          adjustedSubtotal = totalAmount / totalRate;
+          adjustedTaxAmount = adjustedSubtotal * taxRate;
+          adjustedTipAmount = adjustedSubtotal * tipRate;
+        }
+      }
+    }
 
     return {
-      subtotal,
-      taxAmount,
-      tipAmount,
+      originalAmount, // 原始金额（折扣前）
+      discountAmount, // 折扣金额
+      discountPercentage, // 折扣比例
+      subtotal: adjustedSubtotal, // 调整后的小计
+      taxAmount: adjustedTaxAmount, // 调整后的税额
+      tipAmount: adjustedTipAmount, // 调整后的小费
       totalAmount,
     };
   };
 
   const amounts = calculateAmounts();
+
+  // 初始化originalTotalAmount为计算后的总额（包含税费和小费）
+  useEffect(() => {
+    if (open && !amountModified && !isEditingAmount) {
+      // 只在对话框打开且用户还未修改金额时，更新原始总额
+      const calculatedTotal = amounts.subtotal + amounts.taxAmount + amounts.tipAmount;
+      if (calculatedTotal > 0 && Math.abs(originalTotalAmount - calculatedTotal) > 0.01) {
+        setOriginalTotalAmount(calculatedTotal);
+      }
+    }
+  }, [open, amounts.subtotal, amounts.taxAmount, amounts.tipAmount, amountModified, isEditingAmount]);
 
   // 倒计时效果
   useEffect(() => {
@@ -543,6 +688,13 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setLoading(true);
     setError(null);
 
+    // 验证：如果金额被修改，必须填写notes
+    if (amountModified && !paymentNotes.trim()) {
+      setError(t('payment.notesRequiredWhenAmountModified', 'Notes are required when the payment amount is modified'));
+      setLoading(false);
+      return;
+    }
+
     try {
       // 多服务场景
       if (services && services.length > 1) {
@@ -622,7 +774,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           tipPercentage,
           subtotal: amounts.subtotal,
           totalAmount: amounts.totalAmount,
-        });
+        }, paymentNotes.trim() || undefined);
       } else {
         // 单服务场景 - 保持原有逻辑
         let packageIdToUse = selectedPackageId;
@@ -665,7 +817,8 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             tipPercentage,
             subtotal: amounts.subtotal,
             totalAmount: amounts.totalAmount,
-          }
+          },
+          paymentNotes.trim() || undefined
         );
       }
 
@@ -692,6 +845,11 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setTipPercentage(0);
     setCustomTipAmount('');
     setShowCustomTip(false);
+    setIsEditingAmount(false);
+    setEditedTotalAmount('');
+    setAmountModified(false);
+    setPaymentNotes('');
+    setOriginalTotalAmount(0); // 重置原始金额
     onClose();
   };
 
@@ -770,82 +928,142 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   }, [t, customerPackages, loadingPackages, services, serviceId]);
 
   return (
-    <Dialog
+    <Drawer
+      anchor="right"
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
       sx={{
-        zIndex: 9999,
+        // Fixed higher zIndex to ensure it's always clickable
+        // Fullscreen mode: 10000 (higher than AppointmentDrawer's 9999)
+        // Normal mode: 1301 (higher than AppointmentDrawer's 1300)
+        zIndex: (container && container !== document.body) ? 10000 : 1301,
+        // Override MUI Drawer's default animation
+        '& .MuiDrawer-paper': {
+          // Desktop: always at final position (left of appointment drawer)
+          right: {
+            xs: 0,
+            sm: 0,
+            md: '400px !important',
+          },
+          // Use dynamic width for sliding effect - increased to 480px
+          width: {
+            xs: '100%',
+            sm: '100%',
+            md: open ? '480px !important' : '0px !important', // Animate width from 0 to 480px
+          },
+          // No transform on desktop
+          transform: {
+            xs: open ? 'translateX(0)' : 'translateX(100%)',
+            sm: open ? 'translateX(0)' : 'translateX(100%)',
+            md: 'translateX(0) !important', // No transform, use width animation instead
+          },
+          // Keep opacity at 1
+          opacity: 1,
+          // Add overflow hidden
+          overflow: 'hidden',
+          // Smooth width transition for sliding drawer effect
+          transition: {
+            xs: 'transform 350ms cubic-bezier(0.4, 0, 0.2, 1) !important',
+            sm: 'transform 350ms cubic-bezier(0.4, 0, 0.2, 1) !important',
+            md: 'width 350ms cubic-bezier(0.4, 0, 0.2, 1) !important',
+          },
+          // Disable pointer events when closed
+          pointerEvents: open ? 'auto' : 'none',
+        }
       }}
       container={container}
-      disablePortal={!!container}
+      disablePortal={!!(container && container !== document.body)}
+      hideBackdrop={false}
       PaperProps={{
         sx: {
-          borderRadius: 4,
-          boxShadow: '0 20px 60px -12px rgba(0,0,0,0.25), 0 8px 32px -8px rgba(0,0,0,0.15)',
-          maxHeight: '90vh',
+          width: {
+            xs: '100%',
+            sm: '100%',
+            md: '480px', // Desktop: increased width for better data display
+          },
+          maxWidth: '100vw',
+          height: '100%',
+          position: 'fixed',
+          boxShadow: '-4px 0 24px rgba(0,0,0,0.12), -2px 0 8px rgba(0,0,0,0.08)',
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
+          borderLeft: '1px solid #e2e8f0',
         }
       }}
       slotProps={{
         backdrop: {
           sx: {
-            position: container ? 'absolute' : 'fixed',
+            position: (container && container !== document.body) ? 'absolute' : 'fixed',
+            // Make backdrop semi-transparent to see both drawers
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
           }
         }
       }}
+      ModalProps={{
+        container: container,
+        style: { position: (container && container !== document.body) ? 'absolute' : 'fixed' },
+        keepMounted: true, // Keep mounted to ensure animation works
+      }}
     >
-      {/* Header */}
+      {/* Inner container to maintain fixed width during animation */}
       <Box
         sx={{
-          px: 4,
-          pt: 4,
-          pb: 3,
-          background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
-          borderBottom: '1px solid #e6eaee',
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
+          width: '480px', // Fixed width to prevent content reflow during animation - increased to 480px
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
-          <Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: '#0a0f1a',
-                mb: 0.5,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {t('payment.completePayment')}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.875rem' }}>
-              {serviceName}
-            </Typography>
-          </Box>
-          <IconButton
-            onClick={handleClose}
-            size="small"
-            sx={{
-              color: '#64748b',
-              bgcolor: '#f1f5f9',
-              '&:hover': {
-                bgcolor: '#e2e8f0',
-                color: '#475569',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-
-        {/* Amount Card */}
+        {/* Fixed Header - Title only */}
         <Box
           sx={{
-            p: 3,
+            px: 4,
+            pt: 3,
+            pb: 2.5,
+            background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
+            borderBottom: '1px solid #e6eaee',
+            flexShrink: 0,
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  color: '#0a0f1a',
+                  mb: 0,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {t('payment.completePayment')}
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={handleClose}
+              size="small"
+              sx={{
+                color: '#64748b',
+                bgcolor: '#f1f5f9',
+                '&:hover': {
+                  bgcolor: '#e2e8f0',
+                  color: '#475569',
+                },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Scrollable Content Area */}
+        <Box sx={{ px: 4, pt: 3, pb: 3, overflow: 'auto', flex: 1 }}>
+          {/* Amount Card */}
+        <Box
+          sx={{
+            p: 2.5,
             borderRadius: 3,
             bgcolor: '#ffffff',
             border: '1px solid #e6eaee',
@@ -853,7 +1071,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           }}
         >
           {/* Service Info */}
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
             <Typography
               variant="body1"
               sx={{
@@ -872,13 +1090,84 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 fontSize: '0.9375rem',
               }}
             >
-              {CurrencyUtils.formatAmount(amounts.subtotal)}
+              {CurrencyUtils.formatAmount(amounts.discountAmount > 0 ? amounts.originalAmount : amounts.subtotal)}
             </Typography>
           </Box>
 
+          {/* Member Discount */}
+          {amounts.discountAmount > 0 && (
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#10b981',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t('payment.memberDiscount', 'Member Discount')} ({amounts.discountPercentage}%)
+                </Typography>
+                {customer?.membershipTier && (
+                  <Chip
+                    icon={getTierIcon(customer.membershipTier.icon || 'star')}
+                    label={customer.membershipTier.name}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: '0.75rem',
+                      bgcolor: alpha(customer.membershipTier.color || '#9CA3AF', 0.1),
+                      color: customer.membershipTier.color || '#9CA3AF',
+                      border: 'none',
+                      '& .MuiChip-icon': {
+                        fontSize: 14,
+                        color: customer.membershipTier.color || '#9CA3AF',
+                      },
+                    }}
+                  />
+                )}
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#10b981',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                }}
+              >
+                -{CurrencyUtils.formatAmount(amounts.discountAmount)}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Subtotal after discount */}
+          {amounts.discountAmount > 0 && (
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#64748b',
+                  fontSize: '0.875rem',
+                }}
+              >
+                {t('payment.subtotal', 'Subtotal')}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#0a0f1a',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                }}
+              >
+                {CurrencyUtils.formatAmount(amounts.subtotal)}
+              </Typography>
+            </Box>
+          )}
+
           <Divider sx={{ my: 1.5 }} />
 
-          {/* Tax */}
+          {/* Tax - 始终显示，subtotal为0时显示$0.00 */}
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
             <Typography
               variant="body2"
@@ -928,7 +1217,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           <Divider sx={{ my: 1.5 }} />
 
           {/* Total */}
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
             <Typography
               variant="subtitle1"
               sx={{
@@ -939,20 +1228,126 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             >
               {t('payment.total')}
             </Typography>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: '#10b981',
-                fontSize: '1.5rem',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {CurrencyUtils.formatAmount(amounts.totalAmount)}
-            </Typography>
+            <Box display="flex" alignItems="center" gap={1}>
+              {isEditingAmount ? (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TextField
+                    value={editedTotalAmount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                        setEditedTotalAmount(value);
+                      }
+                    }}
+                    placeholder="0.00"
+                    size="small"
+                    autoFocus
+                    InputProps={{
+                      startAdornment: <Typography sx={{ mr: 0.5, color: '#64748b' }}>$</Typography>,
+                    }}
+                    sx={{
+                      width: 120,
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '1.125rem',
+                        fontWeight: 600,
+                        borderRadius: 1.5,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#10b981',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#10b981',
+                        },
+                      },
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      const parsedAmount = parseFloat(editedTotalAmount);
+                      const calculatedTotal = amounts.subtotal + amounts.taxAmount + amounts.tipAmount;
+
+                      if (!editedTotalAmount || isNaN(parsedAmount) || parsedAmount < 0) {
+                        setError(t('payment.invalidAmount', 'Please enter a valid amount'));
+                        return;
+                      }
+
+                      // 检查金额是否被修改（与初始金额比较，而不是与计算金额比较）
+                      if (Math.abs(parsedAmount - originalTotalAmount) > 0.01) {
+                        setAmountModified(true);
+                        // 不要更新originalTotalAmount，它应该保持为初始值
+                      } else {
+                        setAmountModified(false);
+                        setEditedTotalAmount(''); // 如果金额未修改，清空编辑值
+                      }
+
+                      setIsEditingAmount(false);
+                    }}
+                    sx={{ color: '#10b981' }}
+                  >
+                    <CheckIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setIsEditingAmount(false);
+                      setEditedTotalAmount('');
+                      setAmountModified(false);
+                      setPaymentNotes('');
+                    }}
+                    sx={{ color: '#64748b' }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: amountModified ? '#f59e0b' : '#10b981',
+                      fontSize: '1.5rem',
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {CurrencyUtils.formatAmount(amounts.totalAmount)}
+                  </Typography>
+                  {hasPermission(SCHEDULE_PERMISSIONS.EDIT_AMOUNT) && (
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setIsEditingAmount(true);
+                        setEditedTotalAmount(amounts.totalAmount.toFixed(2));
+                      }}
+                      sx={{
+                        color: '#64748b',
+                        '&:hover': { color: '#10b981' },
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </>
+              )}
+            </Box>
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          {/* 金额修改提示 */}
+          {amountModified && (
+            <Alert
+              severity="warning"
+              sx={{
+                mb: 1.5,
+                borderRadius: 2,
+                fontSize: '0.875rem',
+                py: 0.5,
+              }}
+            >
+              {t('payment.amountModifiedWarning', 'Amount has been modified from')} {CurrencyUtils.formatAmount(originalTotalAmount)} {t('to', 'to')} {CurrencyUtils.formatAmount(amounts.totalAmount)}. {t('payment.noteRequired', 'Notes are required.')}
+            </Alert>
+          )}
+
+          <Divider sx={{ my: 1.5 }} />
 
           {/* 小费选择 - 紧凑设计 */}
           <Box>
@@ -961,7 +1356,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
               sx={{
                 fontWeight: 600,
                 color: '#0a0f1a',
-                mb: 1.5,
+                mb: 1,
                 fontSize: '0.875rem',
               }}
             >
@@ -969,7 +1364,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             </Typography>
 
             {/* 快捷选项按钮 */}
-            <Stack direction="row" spacing={1} mb={showCustomTip ? 1.5 : 0}>
+            <Stack direction="row" spacing={1.5} mb={showCustomTip ? 1 : 0}>
               {[0, 10, 15, 20, 'custom'].map((option) => {
                 const isCustom = option === 'custom';
                 const isSelected = isCustom
@@ -979,7 +1374,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 return (
                   <Button
                     key={option}
-                    variant={isSelected ? 'contained' : 'outlined'}
+                    variant="outlined"
                     onClick={() => {
                       if (isCustom) {
                         setShowCustomTip(!showCustomTip);
@@ -995,18 +1390,30 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     }}
                     sx={{
                       flex: 1,
-                      borderRadius: 1.5,
-                      py: 1,
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
+                      borderRadius: 2,
+                      py: 1.25,
+                      px: 1,
+                      fontSize: '0.875rem',
+                      fontWeight: isSelected ? 600 : 500,
                       textTransform: 'none',
                       minWidth: 0,
+                      border: '1.5px solid',
                       borderColor: isSelected ? '#7BC68C' : '#e6eaee',
                       bgcolor: isSelected ? '#7BC68C' : '#ffffff',
-                      color: isSelected ? '#ffffff' : '#0a0f1a',
+                      color: isSelected ? '#ffffff' : '#475569',
+                      boxShadow: 'none',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': {
                         borderColor: '#7BC68C',
-                        bgcolor: isSelected ? '#5EAA6F' : alpha('#A8D5BA', 0.15),
+                        bgcolor: isSelected ? '#5EAA6F' : alpha('#7BC68C', 0.08),
+                        color: isSelected ? '#ffffff' : '#0a0f1a',
+                        transform: 'translateY(-1px)',
+                        boxShadow: isSelected
+                          ? '0 2px 8px rgba(123, 198, 140, 0.25)'
+                          : '0 2px 8px rgba(123, 198, 140, 0.12)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(0)',
                       },
                     }}
                   >
@@ -1054,14 +1461,79 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
               />
             )}
           </Box>
-        </Box>
-      </Box>
 
-      {/* Content */}
-      <Box sx={{ px: 4, py: 4, overflow: 'auto', flex: 1 }}>
+          <Divider sx={{ my: 1.5 }} />
+
+          {/* Notes输入框 */}
+          <Box>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color: '#0a0f1a',
+                mb: 1,
+                fontSize: '0.875rem',
+              }}
+            >
+              {t('payment.notes', 'Notes')}
+              {amountModified && (
+                <Typography
+                  component="span"
+                  sx={{
+                    color: '#ef4444',
+                    fontSize: '0.875rem',
+                    ml: 0.5,
+                  }}
+                >
+                  *
+                </Typography>
+              )}
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder={
+                amountModified
+                  ? t('payment.notesRequiredPlaceholder', 'Please explain why the amount was modified (required)')
+                  : t('payment.notesPlaceholder', 'Add notes about this payment (optional)')
+              }
+              value={paymentNotes}
+              onChange={(e) => setPaymentNotes(e.target.value)}
+              error={amountModified && !paymentNotes.trim()}
+              helperText={
+                amountModified && !paymentNotes.trim()
+                  ? t('payment.notesRequired', 'Notes are required when amount is modified')
+                  : ''
+              }
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  bgcolor: amountModified && !paymentNotes.trim() ? alpha('#ef4444', 0.05) : '#f8fafc',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: amountModified ? '#ef4444' : '#cbd5e1',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: amountModified ? '#ef4444' : '#10b981',
+                  },
+                  '&.Mui-error .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#ef4444',
+                  },
+                },
+                '& .MuiFormHelperText-root': {
+                  fontSize: '0.75rem',
+                  mt: 0.75,
+                },
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Payment Method Selection */}
         {/* 单服务场景 - 显示原来的支付方式选择 */}
         {(!services || services.length <= 1) && (
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 3, mt: 3 }}>
             <Typography
               variant="subtitle2"
               sx={{
@@ -1389,10 +1861,10 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                           }}
                           displayEmpty
                           MenuProps={{
-                            disablePortal: !!container,
-                            container: container,
+                            disablePortal: false,
+                            container: container || document.body,
                             sx: {
-                              zIndex: 10000,
+                              zIndex: 10001,
                               '& .MuiPaper-root': {
                                 borderRadius: 2,
                                 mt: 0.5,
@@ -1808,10 +2280,10 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                     }}
                     displayEmpty
                     MenuProps={{
-                      disablePortal: !!container,
-                      container: container,
+                      disablePortal: false,
+                      container: container || document.body,
                       sx: {
-                        zIndex: 10000,
+                        zIndex: 10001,
                         '& .MuiPaper-root': {
                           borderRadius: 2,
                           mt: 0.5,
@@ -2138,8 +2610,6 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           py: 3,
           bgcolor: '#fafbfc',
           flexShrink: 0,
-          borderBottomLeftRadius: 16,
-          borderBottomRightRadius: 16,
         }}
       >
         {/* 错误提示 - 放在按钮上方 */}
@@ -2171,13 +2641,26 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             {error || verificationError}
           </Alert>
         )}
+        </Box>
+        {/* End of Scrollable Content Area */}
 
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 3 }}>
-          <Button
-            onClick={handleClose}
-            disabled={loading}
-            variant="outlined"
-            sx={{
+        {/* Fixed Footer - Action Buttons */}
+        <Box
+          sx={{
+            px: 4,
+            pt: 2.5,
+            pb: 3,
+            borderTop: '1px solid #e6eaee',
+            flexShrink: 0,
+            background: '#ffffff',
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              onClick={handleClose}
+              disabled={loading}
+              variant="outlined"
+              sx={{
               flex: 1,
               height: 44,
               fontWeight: 600,
@@ -2236,9 +2719,12 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
               t('payment.confirmPayment')
             )}
           </Button>
+          </Box>
         </Box>
+        {/* End of Fixed Footer */}
       </Box>
-    </Dialog>
+      {/* End of inner container */}
+    </Drawer>
   );
 };
 

@@ -11,11 +11,14 @@ import jakarta.validation.constraints.Positive;
 public class OrderServiceCreateDTO {
     @NotNull(message = "Service ID is required")
     private Long serviceId;
-    
+
     @Positive(message = "Quantity must be positive")
     private Integer quantity = 1;
-    
+
     // 资源分配信息现在是可选的
     private Long assignedResourceId;
     private String assignedResourceType;
+
+    // Payment method for this service (for multi-service mixed payment scenarios)
+    private String paymentMethod;
 }

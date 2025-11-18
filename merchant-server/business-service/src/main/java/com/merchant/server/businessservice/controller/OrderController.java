@@ -40,6 +40,7 @@ public class OrderController {
             @RequestParam Long tenantId,
             @RequestParam(required = false) String searchTerm,
             @RequestParam(required = false) String paymentStatus,
+            @RequestParam(required = false) String paymentMethod,
             @RequestParam(required = false) String orderStatus,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) String startDate,
@@ -48,15 +49,15 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) {
-        
+
         log.info("Fetching orders for tenant: {}", tenantId);
-        
-        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection) ? 
+
+        Sort.Direction direction = "ASC".equalsIgnoreCase(sortDirection) ?
             Sort.Direction.ASC : Sort.Direction.DESC;
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        
+
         Page<OrderDTO> orders = orderService.getOrders(
-            tenantId, searchTerm, paymentStatus, orderStatus, customerId, 
+            tenantId, searchTerm, paymentStatus, paymentMethod, orderStatus, customerId,
             startDate, endDate, pageRequest);
         
         Map<String, Object> response = new HashMap<>();

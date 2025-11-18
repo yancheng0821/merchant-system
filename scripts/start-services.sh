@@ -23,6 +23,7 @@ SERVICES=(
     "merchant-service:8082"
     "business-service:8083"
     "notification-service:8084"
+    "analytics-service:8086"
     "gateway-service:8080"
 )
 
@@ -59,7 +60,7 @@ start_service() {
     
     # Start the service
     cd "${BASE_DIR}/${service_name}"
-    nohup mvn spring-boot:run > "${LOG_DIR}/${service_name}.log" 2>&1 &
+    nohup mvn spring-boot:run >> "${LOG_DIR}/${service_name}.log" 2>&1 &
     local pid=$!
     echo $pid > "${PID_DIR}/${service_name}.pid"
     

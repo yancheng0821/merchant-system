@@ -65,19 +65,39 @@ public class AuditAspect {
         // 记录旧值（如果需要）
         String oldValueJson = null;
         Object oldValue = null;
-        if (auditable.recordOldValue() && resourceId != null) {
-            log.debug("About to get old value for resource={}, resourceId={}, action={}",
-                auditable.resource(), resourceId, auditable.action());
-            oldValue = getOldValue(auditable.resource(), resourceId, tenantId);
-            if (oldValue != null) {
-                oldValueJson = serializeToJson(oldValue);
-                log.debug("Old value captured: {}", oldValueJson);
-                // 如果tenantId为null，尝试从旧值中提取
-                if (tenantId == null) {
-                    tenantId = extractTenantIdFromObject(oldValue);
+        if (auditable.recordOldValue()) {
+            // STAFF_ATTENDANCE 特殊处理：通过 resourceId + date 查询
+            if ("STAFF_ATTENDANCE".equals(auditable.resource())) {
+                log.debug("About to get old value for STAFF_ATTENDANCE using resourceId + date");
+                oldValue = getOldValueForStaffAttendance(args, parameters);
+                if (oldValue != null) {
+                    oldValueJson = serializeToJson(oldValue);
+                    log.debug("Old value captured for STAFF_ATTENDANCE: {}", oldValueJson);
+                    // 从旧值中提取 resourceId 和 tenantId
+                    if (resourceId == null) {
+                        resourceId = extractResourceIdFromObject(oldValue);
+                    }
+                    if (tenantId == null) {
+                        tenantId = extractTenantIdFromObject(oldValue);
+                    }
+                } else {
+                    log.debug("No existing STAFF_ATTENDANCE record found (new record will be created)");
                 }
-            } else {
-                log.warn("Old value is null for resource={}, resourceId={}", auditable.resource(), resourceId);
+            } else if (resourceId != null) {
+                // 其他资源类型：通过 resourceId 查询
+                log.debug("About to get old value for resource={}, resourceId={}, action={}",
+                    auditable.resource(), resourceId, auditable.action());
+                oldValue = getOldValue(auditable.resource(), resourceId, tenantId);
+                if (oldValue != null) {
+                    oldValueJson = serializeToJson(oldValue);
+                    log.debug("Old value captured: {}", oldValueJson);
+                    // 如果tenantId为null，尝试从旧值中提取
+                    if (tenantId == null) {
+                        tenantId = extractTenantIdFromObject(oldValue);
+                    }
+                } else {
+                    log.warn("Old value is null for resource={}, resourceId={}", auditable.resource(), resourceId);
+                }
             }
         }
 
@@ -105,24 +125,21 @@ public class AuditAspect {
                 tenantId = extractTenantIdFromResource(auditable.resource(), resourceId);
             }
 
-            // 记录新值（如果需要）
-            if (auditable.recordOldValue()) {
-                // 对于CREATE/PURCHASE/UPDATE/UPDATE_STATUS操作，直接序列化返回结果
-                if ("CREATE".equals(auditable.action()) ||
-                    "PURCHASE".equals(auditable.action()) ||
-                    "UPDATE".equals(auditable.action()) ||
-                    "UPDATE_STATUS".equals(auditable.action())) {
-                    Object newValue = extractBodyFromResult(result);
-                    if (newValue != null) {
-                        newValueJson = serializeToJson(newValue);
-                        log.debug("New value captured from result: {}", newValueJson);
-                    } else {
-                        log.warn("New value is null after extracting from result");
-                    }
+            // 记录新值（对于CREATE/UPDATE/PURCHASE/UPDATE_STATUS操作）
+            if ("CREATE".equals(auditable.action()) ||
+                "PURCHASE".equals(auditable.action()) ||
+                "UPDATE".equals(auditable.action()) ||
+                "UPDATE_STATUS".equals(auditable.action())) {
+                Object newValue = extractBodyFromResult(result);
+                if (newValue != null) {
+                    newValueJson = serializeToJson(newValue);
+                    log.debug("New value captured from result: {}", newValueJson);
+                } else {
+                    log.warn("New value is null after extracting from result");
                 }
-                // 对于DELETE操作，由于已删除，newValue为null或空对象即可
-                // 不需要重新查询
             }
+            // 对于DELETE操作，由于已删除，newValue为null或空对象即可
+            // 不需要重新查询
 
         } catch (Exception e) {
             status = "FAILED";
@@ -252,7 +269,9 @@ public class AuditAspect {
             switch (resourceType) {
                 case "RESOURCE_SCHEDULE":
                 case "RESOURCE":
+                case "STAFF_NOTIFICATION":
                     // 通过Resource实体获取tenantId
+                    // STAFF_NOTIFICATION 的 resourceId 就是 staffId，也是一个 Resource
                     Object resourceService = applicationContext.getBean("resourceServiceImpl");
                     Method getResourceById = resourceService.getClass().getMethod("getResourceById", Long.class);
                     Object resource = getResourceById.invoke(resourceService, resourceId);
@@ -305,12 +324,41 @@ public class AuditAspect {
 
             // 检查 @RequestParam 注解
             RequestParam requestParam = param.getAnnotation(RequestParam.class);
-            if (requestParam != null && resourceIdParam.equals(requestParam.value()) && args[i] instanceof Long) {
-                return (Long) args[i];
+            if (requestParam != null) {
+                String requestParamName = requestParam.value().isEmpty() ? param.getName() : requestParam.value();
+                if (resourceIdParam.equals(requestParamName) && args[i] instanceof Long) {
+                    return (Long) args[i];
+                }
             }
 
             // 检查 @RequestBody 中的字段
             if (param.getAnnotation(RequestBody.class) != null && args[i] != null) {
+                try {
+                    // 尝试通过反射调用 getter 方法
+                    String getterName = "get" + resourceIdParam.substring(0, 1).toUpperCase() + resourceIdParam.substring(1);
+                    Method getter = args[i].getClass().getMethod(getterName);
+                    Object value = getter.invoke(args[i]);
+                    if (value instanceof Long) {
+                        return (Long) value;
+                    }
+                } catch (Exception ignored) {
+                    // Ignore if getter method doesn't exist
+                }
+            }
+        }
+
+        // 如果上述方法都没找到，尝试从参数名直接匹配（例如：Long id）
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter param = parameters[i];
+            // 检查参数名是否与resourceIdParam匹配
+            if (resourceIdParam.equals(param.getName()) && args[i] instanceof Long) {
+                return (Long) args[i];
+            }
+        }
+
+        // 最后尝试从普通对象参数中提取（Service层常见情况）
+        for (int i = 0; i < parameters.length; i++) {
+            if (args[i] != null && !isPrimitiveOrWrapper(args[i])) {
                 try {
                     // 尝试通过反射调用 getter 方法
                     String getterName = "get" + resourceIdParam.substring(0, 1).toUpperCase() + resourceIdParam.substring(1);
@@ -412,6 +460,78 @@ public class AuditAspect {
     }
 
     /**
+     * 从任意对象中提取resourceId（用于从旧值中提取）
+     */
+    private Long extractResourceIdFromObject(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        try {
+            Method getResourceId = obj.getClass().getMethod("getResourceId");
+            Object resourceId = getResourceId.invoke(obj);
+            if (resourceId instanceof Long) {
+                return (Long) resourceId;
+            } else if (resourceId instanceof Integer) {
+                return ((Integer) resourceId).longValue();
+            }
+        } catch (Exception ignored) {
+            // Ignore if getResourceId method doesn't exist
+        }
+
+        // 也尝试 getId
+        try {
+            Method getId = obj.getClass().getMethod("getId");
+            Object id = getId.invoke(obj);
+            if (id instanceof Long) {
+                return (Long) id;
+            } else if (id instanceof Integer) {
+                return ((Integer) id).longValue();
+            }
+        } catch (Exception ignored) {
+            // Ignore if getId method doesn't exist
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取 STAFF_ATTENDANCE 的旧值（通过 resourceId + attendanceDate 查询）
+     */
+    private Object getOldValueForStaffAttendance(Object[] args, Parameter[] parameters) {
+        return readOnlyTransactionTemplate.execute(status -> {
+            try {
+                // 从 @RequestBody 中提取 StaffAttendance 对象
+                for (int i = 0; i < parameters.length; i++) {
+                    if (parameters[i].getAnnotation(RequestBody.class) != null && args[i] != null) {
+                        Object staffAttendance = args[i];
+
+                        // 提取 resourceId
+                        Method getResourceId = staffAttendance.getClass().getMethod("getResourceId");
+                        Object resourceIdObj = getResourceId.invoke(staffAttendance);
+                        Long resourceId = resourceIdObj instanceof Long ? (Long) resourceIdObj : null;
+
+                        // 提取 attendanceDate
+                        Method getAttendanceDate = staffAttendance.getClass().getMethod("getAttendanceDate");
+                        Object attendanceDate = getAttendanceDate.invoke(staffAttendance);
+
+                        if (resourceId != null && attendanceDate != null) {
+                            // 调用 StaffAttendanceService 查询
+                            Object staffAttendanceService = applicationContext.getBean("staffAttendanceService");
+                            Method getByResourceIdAndDate = staffAttendanceService.getClass()
+                                .getMethod("getByResourceIdAndDate", Long.class, java.time.LocalDate.class);
+                            return getByResourceIdAndDate.invoke(staffAttendanceService, resourceId, attendanceDate);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to get old value for STAFF_ATTENDANCE", e);
+            }
+            return null;
+        });
+    }
+
+    /**
      * 获取旧值
      * 使用REQUIRES_NEW事务传播级别，确保在独立事务中读取，不受当前事务的修改影响
      */
@@ -455,7 +575,31 @@ public class AuditAspect {
                     Object resourceService = applicationContext.getBean("resourceServiceImpl");
                     Method getWeekAvailability = resourceService.getClass().getMethod("getWeekAvailability", Long.class);
                     return getWeekAvailability.invoke(resourceService, resourceId);
+                } else if ("MEMBERSHIP_TIER".equals(resource)) {
+                    // 获取MembershipTierService
+                    Object membershipTierService = applicationContext.getBean("membershipTierServiceImpl");
+                    Method getById = membershipTierService.getClass().getMethod("getById", Long.class);
+                    return getById.invoke(membershipTierService, resourceId);
+                } else if ("COST_MANAGEMENT".equals(resource)) {
+                    // 获取CostManagementService - 根据请求URI确定具体类型
+                    Object costManagementService = applicationContext.getBean("costManagementServiceImpl");
+                    String requestUri = request.getRequestURI();
+                    Method getById;
+
+                    if (requestUri.contains("/certificates/")) {
+                        getById = costManagementService.getClass().getMethod("getCertificateById", Long.class);
+                    } else if (requestUri.contains("/fixed-costs/")) {
+                        getById = costManagementService.getClass().getMethod("getFixedCostById", Long.class);
+                    } else if (requestUri.contains("/materials/")) {
+                        getById = costManagementService.getClass().getMethod("getMaterialPurchaseById", Long.class);
+                    } else {
+                        log.warn("Unknown cost management resource type from URI: {}", requestUri);
+                        return null;
+                    }
+
+                    return getById.invoke(costManagementService, resourceId);
                 }
+                // STAFF_ATTENDANCE 由 getOldValueForStaffAttendance 专门处理
                 // 可以添加其他资源类型的处理
             } catch (Exception e) {
                 log.warn("Failed to get old value for resource: {}, id: {}", resource, resourceId, e);
@@ -625,7 +769,21 @@ public class AuditAspect {
                 "icon", "color", "sortOrder", "serviceCount",
                 // 资源（员工/房间）相关
                 "type", "capacity", "location", "equipment", "specialties",
-                "hourlyRate", "position", "startDate", "avatar"
+                "hourlyRate", "position", "startDate", "avatar",
+                // 员工签到签退相关
+                "resourceId", "attendanceDate", "checkInTime", "checkOutTime",
+                "summarySent", "summarySentAt", "summarySentBy",
+                // 会员等级相关
+                "requiredPoints", "discountRate", "benefits", "isActive", "isDeleted",
+                // 成本管理 - 证书相关
+                "certificateName", "certificateType", "certificateNumber", "issueDate",
+                "expiryDate", "issuingAuthority", "renewalFee", "attachmentUrl",
+                // 成本管理 - 固定成本相关
+                "costType", "costName", "amount", "billingCycle", "paymentDate",
+                "startDate", "endDate", "vendor", "paymentMethod",
+                // 成本管理 - 物料采购相关
+                "materialName", "materialCategory", "quantity", "unit", "unitPrice",
+                "totalAmount", "supplier", "purchaseDate"
             };
 
             Class<?> clazz = obj.getClass();

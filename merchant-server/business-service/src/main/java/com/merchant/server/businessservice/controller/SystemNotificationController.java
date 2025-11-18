@@ -25,7 +25,7 @@ public class SystemNotificationController {
      */
     @GetMapping
     public ResponseEntity<List<BusinessNotification>> getAllSystemNotifications() {
-        log.info("Fetching all system notifications");
+        log.debug("Fetching all system notifications");
         List<BusinessNotification> notifications = systemNotificationService.getAllSystemNotifications();
         return ResponseEntity.ok(notifications);
     }
@@ -35,7 +35,7 @@ public class SystemNotificationController {
      */
     @GetMapping("/tenant/{tenantId}")
     public ResponseEntity<List<BusinessNotification>> getTenantSystemNotifications(@PathVariable Long tenantId) {
-        log.info("Fetching system notifications for tenant: {}", tenantId);
+        log.debug("Fetching system notifications for tenant: {}", tenantId);
         List<BusinessNotification> notifications = systemNotificationService.getTenantSystemNotifications(tenantId);
         return ResponseEntity.ok(notifications);
     }

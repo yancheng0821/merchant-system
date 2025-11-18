@@ -33,6 +33,7 @@ public interface OrderMapper {
     List<Order> selectByConditions(@Param("tenantId") Long tenantId,
                                   @Param("searchTerm") String searchTerm,
                                   @Param("paymentStatus") String paymentStatus,
+                                  @Param("paymentMethod") String paymentMethod,
                                   @Param("orderStatus") String orderStatus,
                                   @Param("customerId") Long customerId,
                                   @Param("startDate") String startDate,
@@ -48,6 +49,7 @@ public interface OrderMapper {
     int countByConditions(@Param("tenantId") Long tenantId,
                          @Param("searchTerm") String searchTerm,
                          @Param("paymentStatus") String paymentStatus,
+                         @Param("paymentMethod") String paymentMethod,
                          @Param("orderStatus") String orderStatus,
                          @Param("customerId") Long customerId,
                          @Param("startDate") String startDate,
@@ -114,4 +116,25 @@ public interface OrderMapper {
      * 根据预约ID查询订单（用于员工通知）
      */
     Order selectByAppointmentId(@Param("appointmentId") Long appointmentId);
+
+    /**
+     * 按服务维度统计订单
+     */
+    List<java.util.Map<String, Object>> getOrderStatsByService(@Param("tenantId") Long tenantId,
+                                                                @Param("startDate") String startDate,
+                                                                @Param("endDate") String endDate);
+
+    /**
+     * 按支付方式维度统计订单
+     */
+    List<java.util.Map<String, Object>> getOrderStatsByPaymentMethod(@Param("tenantId") Long tenantId,
+                                                                      @Param("startDate") String startDate,
+                                                                      @Param("endDate") String endDate);
+
+    /**
+     * 按支付方式统计package购买订单
+     */
+    List<java.util.Map<String, Object>> getPackagePurchaseStatsByPaymentMethod(@Param("tenantId") Long tenantId,
+                                                                                @Param("startDate") String startDate,
+                                                                                @Param("endDate") String endDate);
 }

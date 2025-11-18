@@ -18,7 +18,8 @@ public class OrderServiceDTO {
     private Long assignedResourceId;
     private String assignedResourceType;
     private String assignedResourceName;
-    
+    private String paymentMethod; // Payment method for this service (cash, credit_card, package, etc.)
+
     // 计算属性
     private Double totalPrice;
 }

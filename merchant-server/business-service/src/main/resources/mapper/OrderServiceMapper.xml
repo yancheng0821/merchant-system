@@ -13,6 +13,7 @@
         <result column="duration" property="duration" />
         <result column="assigned_resource_id" property="assignedResourceId" />
         <result column="assigned_resource_type" property="assignedResourceType" />
+        <result column="payment_method" property="paymentMethod" />
         <result column="created_at" property="createdAt" />
         <result column="updated_at" property="updatedAt" />
     </resultMap>
@@ -32,9 +33,9 @@
 
     <insert id="insert" parameterType="com.merchant.server.businessservice.entity.OrderService" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO order_services (order_id, service_id, service_name, service_category, price, quantity,
-        duration, assigned_resource_id, assigned_resource_type, created_at, updated_at)
+        duration, assigned_resource_id, assigned_resource_type, payment_method, created_at, updated_at)
         VALUES (#{orderId}, #{serviceId}, #{serviceName}, #{serviceCategory}, #{price}, #{quantity},
-        #{duration}, #{assignedResourceId}, #{assignedResourceType}, #{createdAt}, #{updatedAt})
+        #{duration}, #{assignedResourceId}, #{assignedResourceType}, #{paymentMethod}, #{createdAt}, #{updatedAt})
     </insert>
 
     <delete id="deleteByOrderId">

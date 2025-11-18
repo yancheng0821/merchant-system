@@ -29,8 +29,10 @@ import {
     Search as SearchIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { getFullImageUrl, ResourceStatus, Resource, ResourceAvailability } from '../../../services/api';
+import { getFullImageUrl, ResourceStatus, Resource, ResourceAvailability, staffAttendanceApi } from '../../../services/api';
 import DetailedAvailabilityView from '../../../components/common/DetailedAvailabilityView';
+import { format } from 'date-fns';
+import { getMerchantNow } from '../../../utils/timezoneUtils';
 
 interface ResourceAvailabilityViewProps {
     resourceType: 'STAFF' | 'ROOM';
@@ -43,6 +45,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     const [availabilities, setAvailabilities] = useState<Record<number, ResourceAvailability[]>>({});
     const [resourceStatuses, setResourceStatuses] = useState<Record<number, ResourceStatus>>({});
     const [todayBookings, setTodayBookings] = useState<Record<number, any[]>>({});
+    const [staffAttendance, setStaffAttendance] = useState<Map<number, any>>(new Map());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'today' | 'week'>('today');
@@ -137,6 +140,29 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
             setAvailabilities(availabilityMap);
             setResourceStatuses(statusMap);
             setTodayBookings(bookingsMap);
+
+            // 如果是员工类型，加载今日考勤数据（check-in/check-out时间）
+            if (resourceType === 'STAFF') {
+                const now = getMerchantNow();
+                const today = format(now, 'yyyy-MM-dd');
+                const attendanceMap = new Map<number, any>();
+
+                // 并行加载所有员工的今日考勤数据
+                const attendancePromises = activeResources.map((resource) =>
+                    staffAttendanceApi.getByResourceAndDate(resource.id, today)
+                        .then((attendance) => ({ resourceId: resource.id, attendance: attendance || null }))
+                        .catch(() => ({ resourceId: resource.id, attendance: null }))
+                );
+
+                const attendanceResults = await Promise.all(attendancePromises);
+                attendanceResults.forEach(({ resourceId, attendance }) => {
+                    if (attendance) {
+                        attendanceMap.set(resourceId, attendance);
+                    }
+                });
+
+                setStaffAttendance(attendanceMap);
+            }
         } catch (err) {
             console.error('获取资源数据失败:', err);
             setError(err instanceof Error ? err.message : '获取资源数据失败');
@@ -170,32 +196,105 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
         setFilteredResources(filtered);
     }, [resources, searchTerm, resourceType]);
 
-    // 检查资源在特定时间的可用性（包括检查预约占用）
+    // 检查员工当前是否可用（基于check-in/check-out时间）
+    const isResourceCurrentlyAvailable = (resourceId: number): boolean => {
+        // 获取当前时间
+        const now = getMerchantNow();
+        const currentTime = format(now, 'HH:mm');
+
+        // 检查是否有考勤记录
+        const attendance = staffAttendance.get(resourceId);
+        if (attendance && attendance.checkInTime && attendance.checkOutTime) {
+            // 有考勤记录，使用实际的check-in/check-out时间
+            const checkInTime = attendance.checkInTime.slice(0, 5);
+            const checkOutTime = attendance.checkOutTime.slice(0, 5);
+            return currentTime >= checkInTime && currentTime < checkOutTime;
+        }
+
+        // 没有考勤记录，使用排班时间判断
+        const resourceAvailability = availabilities[resourceId] || [];
+        const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+
+        return resourceAvailability.some((av: any) => {
+            if (av.dayOfWeek !== dayOfWeek || !av.isAvailable) {
+                return false;
+            }
+
+            const startTime = av.startTime.slice(0, 5);
+            const endTime = av.endTime.slice(0, 5);
+
+            return currentTime >= startTime && currentTime < endTime;
+        });
+    };
+
+    // 检查资源在特定时间的可用性（包括检查预约占用和员工check-in/check-out时间）
     const checkResourceAvailability = (resourceId: number, dayOfWeek: number, time: string, checkBookings: boolean = false): 'available' | 'booked' | 'unavailable' => {
         const resourceAvailability = availabilities[resourceId] || [];
         const timeHour = parseInt(time.split(':')[0]);
         const timeMinute = parseInt(time.split(':')[1]);
         const timeInMinutes = timeHour * 60 + timeMinute;
 
-        // 首先检查基础可用性
-        const isBasicallyAvailable = resourceAvailability.some(availability => {
-            if (availability.dayOfWeek !== dayOfWeek || !availability.isAvailable) {
-                return false;
+        // 如果是员工资源且是今日视图，优先检查实际的check-in/check-out时间
+        const isTodayView = dayOfWeek === getTodayDayOfWeek();
+        if (resourceType === 'STAFF' && isTodayView) {
+            const attendance = staffAttendance.get(resourceId);
+            if (attendance && attendance.checkInTime && attendance.checkOutTime) {
+                // 员工有check-in/check-out记录，使用实际时间
+                const checkInTime = attendance.checkInTime.slice(0, 5); // HH:mm
+                const checkOutTime = attendance.checkOutTime.slice(0, 5); // HH:mm
+
+                const [checkInHour, checkInMin] = checkInTime.split(':').map(Number);
+                const [checkOutHour, checkOutMin] = checkOutTime.split(':').map(Number);
+                const checkInMinutes = checkInHour * 60 + checkInMin;
+                const checkOutMinutes = checkOutHour * 60 + checkOutMin;
+
+                // 检查时间是否在check-in和check-out之间
+                if (timeInMinutes < checkInMinutes || timeInMinutes >= checkOutMinutes) {
+                    return 'unavailable';
+                }
+            } else {
+                // 没有check-in/check-out记录，使用基础排班检查
+                const isBasicallyAvailable = resourceAvailability.some(availability => {
+                    if (availability.dayOfWeek !== dayOfWeek || !availability.isAvailable) {
+                        return false;
+                    }
+
+                    const startHour = parseInt(availability.startTime.split(':')[0]);
+                    const startMinute = parseInt(availability.startTime.split(':')[1]);
+                    const startInMinutes = startHour * 60 + startMinute;
+
+                    const endHour = parseInt(availability.endTime.split(':')[0]);
+                    const endMinute = parseInt(availability.endTime.split(':')[1]);
+                    const endInMinutes = endHour * 60 + endMinute;
+
+                    return timeInMinutes >= startInMinutes && timeInMinutes <= endInMinutes;
+                });
+
+                if (!isBasicallyAvailable) {
+                    return 'unavailable';
+                }
             }
+        } else {
+            // 非今日视图或非员工资源，使用基础排班检查
+            const isBasicallyAvailable = resourceAvailability.some(availability => {
+                if (availability.dayOfWeek !== dayOfWeek || !availability.isAvailable) {
+                    return false;
+                }
 
-            const startHour = parseInt(availability.startTime.split(':')[0]);
-            const startMinute = parseInt(availability.startTime.split(':')[1]);
-            const startInMinutes = startHour * 60 + startMinute;
+                const startHour = parseInt(availability.startTime.split(':')[0]);
+                const startMinute = parseInt(availability.startTime.split(':')[1]);
+                const startInMinutes = startHour * 60 + startMinute;
 
-            const endHour = parseInt(availability.endTime.split(':')[0]);
-            const endMinute = parseInt(availability.endTime.split(':')[1]);
-            const endInMinutes = endHour * 60 + endMinute;
+                const endHour = parseInt(availability.endTime.split(':')[0]);
+                const endMinute = parseInt(availability.endTime.split(':')[1]);
+                const endInMinutes = endHour * 60 + endMinute;
 
-            return timeInMinutes >= startInMinutes && timeInMinutes <= endInMinutes;
-        });
+                return timeInMinutes >= startInMinutes && timeInMinutes <= endInMinutes;
+            });
 
-        if (!isBasicallyAvailable) {
-            return 'unavailable';
+            if (!isBasicallyAvailable) {
+                return 'unavailable';
+            }
         }
 
         // 如果需要检查预约占用
@@ -206,7 +305,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                 const endTime = booking.endTime.length === 5 ? booking.endTime + ':00' : booking.endTime;
                 return timeStr >= startTime && timeStr < endTime && booking.status === 'BOOKED';
             });
-            
+
             if (isBooked) {
                 return 'booked';
             }
@@ -333,54 +432,57 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a1a' }}>
                                                     {resource.name}
                                                 </Typography>
-                                                {/* 实时状态指示器 */}
-                                                {resourceStatuses[resource.id] && (
-                                                    <Box
-                                                        sx={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 0.5,
-                                                            px: 1.5,
-                                                            py: 0.5,
-                                                            borderRadius: 2,
-                                                            backgroundColor: resourceStatuses[resource.id].currentlyAvailable
-                                                                ? alpha('#10B981', 0.1)
-                                                                : alpha('#EF4444', 0.1),
-                                                            border: `1px solid ${resourceStatuses[resource.id].currentlyAvailable
-                                                                ? alpha('#10B981', 0.2)
-                                                                : alpha('#EF4444', 0.2)}`,
-                                                        }}
-                                                    >
+                                                {/* 实时状态指示器 - 基于check-in/check-out时间 */}
+                                                {(() => {
+                                                    const currentlyAvailable = isResourceCurrentlyAvailable(resource.id);
+                                                    return (
                                                         <Box
                                                             sx={{
-                                                                width: 6,
-                                                                height: 6,
-                                                                borderRadius: '50%',
-                                                                backgroundColor: resourceStatuses[resource.id].currentlyAvailable
-                                                                    ? '#10B981' : '#EF4444',
-                                                                animation: resourceStatuses[resource.id].currentlyAvailable 
-                                                                    ? 'pulse 2s infinite' : 'none',
-                                                                '@keyframes pulse': {
-                                                                    '0%': { opacity: 1 },
-                                                                    '50%': { opacity: 0.5 },
-                                                                    '100%': { opacity: 1 },
-                                                                },
-                                                            }}
-                                                        />
-                                                        <Typography
-                                                            variant="caption"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                color: resourceStatuses[resource.id].currentlyAvailable
-                                                                    ? '#10B981' : '#EF4444',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 0.5,
+                                                                px: 1.5,
+                                                                py: 0.5,
+                                                                borderRadius: 2,
+                                                                backgroundColor: currentlyAvailable
+                                                                    ? alpha('#10B981', 0.1)
+                                                                    : alpha('#EF4444', 0.1),
+                                                                border: `1px solid ${currentlyAvailable
+                                                                    ? alpha('#10B981', 0.2)
+                                                                    : alpha('#EF4444', 0.2)}`,
                                                             }}
                                                         >
-                                                            {resourceStatuses[resource.id].currentlyAvailable ?
-                                                                t('resources.availability.available') :
-                                                                t('resources.availability.unavailable')}
-                                                        </Typography>
-                                                    </Box>
-                                                )}
+                                                            <Box
+                                                                sx={{
+                                                                    width: 6,
+                                                                    height: 6,
+                                                                    borderRadius: '50%',
+                                                                    backgroundColor: currentlyAvailable
+                                                                        ? '#10B981' : '#EF4444',
+                                                                    animation: currentlyAvailable
+                                                                        ? 'pulse 2s infinite' : 'none',
+                                                                    '@keyframes pulse': {
+                                                                        '0%': { opacity: 1 },
+                                                                        '50%': { opacity: 0.5 },
+                                                                        '100%': { opacity: 1 },
+                                                                    },
+                                                                }}
+                                                            />
+                                                            <Typography
+                                                                variant="caption"
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    color: currentlyAvailable
+                                                                        ? '#10B981' : '#EF4444',
+                                                                }}
+                                                            >
+                                                                {currentlyAvailable ?
+                                                                    t('resources.availability.available') :
+                                                                    t('resources.availability.unavailable')}
+                                                            </Typography>
+                                                        </Box>
+                                                    );
+                                                })()}
                                             </Box>
                                             <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                                                 {resource.type === 'STAFF' ? t('resources.type.staff') : t('resources.type.room')}

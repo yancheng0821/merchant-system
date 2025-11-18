@@ -36,6 +36,7 @@ public class StaffNotificationService {
     private final CustomerMapper customerMapper;
     private final OrderMapper orderMapper;
     private final MerchantServiceClient merchantServiceClient;
+    private final StaffAttendanceMapper staffAttendanceMapper;
 
     @Value("${notification.use-mq:true}")
     private boolean useMQ;
@@ -359,23 +360,110 @@ public class StaffNotificationService {
                 groupAppointmentsByStaff(completedAppointments);
 
             // 3. 为每个员工生成汇总并发送邮件
+            int sentCount = 0;
+            int skippedCount = 0;
             for (Map.Entry<Long, List<Appointment>> entry : appointmentsByStaff.entrySet()) {
                 Long staffId = entry.getKey();
                 List<Appointment> staffAppointments = entry.getValue();
 
+                // 3.1 检查是否已经发送过汇总
+                StaffAttendance attendance = staffAttendanceMapper.findByResourceIdAndDate(staffId, date);
+                if (attendance != null && attendance.getSummarySent() != null && attendance.getSummarySent() == 1) {
+                    log.info("Summary already sent for staff {} on {}, skipping (sent by: {})",
+                        staffId, date, attendance.getSummarySentBy());
+                    skippedCount++;
+                    continue;
+                }
+
                 Resource staff = resourceMapper.findById(staffId);
                 if (staff != null && staff.getEmail() != null && !staff.getEmail().isEmpty()) {
+                    // 3.2 发送汇总邮件
                     sendDailySummaryToStaff(staff, staffAppointments, date);
+
+                    // 3.3 更新汇总发送状态（标记为定时任务发送）
+                    try {
+                        staffAttendanceMapper.updateSummarySentStatus(staffId, date, "scheduled");
+                        log.info("Updated summary_sent status for staff {} on {} (scheduled)",
+                            staffId, date);
+                        sentCount++;
+                    } catch (Exception updateEx) {
+                        log.warn("Failed to update summary_sent status for staff {} on {}: {}",
+                            staffId, date, updateEx.getMessage());
+                    }
                 } else {
                     log.warn("Staff {} has no email, skipping daily summary", staffId);
                 }
             }
 
-            log.info("Daily summary emails sent successfully for {} staff members in tenant {}",
-                appointmentsByStaff.size(), tenantId);
+            log.info("Daily summary emails sent for tenant {}: {} sent, {} skipped (already sent)",
+                tenantId, sentCount, skippedCount);
         } catch (Exception e) {
             log.error("Failed to send daily summary emails for tenant {} on {}: {}",
                 tenantId, date, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 为单个员工发送每日汇总
+     */
+    public void sendDailySummaryForSingleStaff(Long staffId, LocalDate date) {
+        log.info("Sending daily summary for staff {} on date: {}", staffId, date);
+
+        try {
+            // 1. 获取员工信息
+            Resource staff = resourceMapper.findById(staffId);
+            if (staff == null) {
+                log.warn("Staff not found: {}", staffId);
+                return;
+            }
+
+            if (staff.getEmail() == null || staff.getEmail().isEmpty()) {
+                log.warn("Staff {} has no email, skipping daily summary", staffId);
+                return;
+            }
+
+            // 2. 查询该员工在指定日期的所有已完成预约
+            List<Appointment> completedAppointments =
+                appointmentMapper.findCompletedAppointmentsByTenantAndDate(staff.getTenantId(), date);
+
+            if (completedAppointments == null || completedAppointments.isEmpty()) {
+                log.info("No completed appointments found for staff {} on {}", staffId, date);
+                return;
+            }
+
+            // 3. 过滤出该员工的预约
+            List<Appointment> staffAppointments = completedAppointments.stream()
+                .filter(apt -> apt.getAppointmentResources() != null &&
+                              apt.getAppointmentResources().stream()
+                                  .anyMatch(res -> res.getResourceId().equals(staffId)))
+                .collect(Collectors.toList());
+
+            if (staffAppointments.isEmpty()) {
+                log.info("No completed appointments found for staff {} on {}", staffId, date);
+                return;
+            }
+
+            log.info("Found {} completed appointments for staff {} on {}",
+                staffAppointments.size(), staffId, date);
+
+            // 4. 发送汇总邮件
+            sendDailySummaryToStaff(staff, staffAppointments, date);
+
+            // 5. 更新汇总发送状态（标记为手动发送）
+            try {
+                staffAttendanceMapper.updateSummarySentStatus(staffId, date, "manual");
+                log.info("Updated summary_sent status for staff {} on {}", staffId, date);
+            } catch (Exception updateEx) {
+                log.warn("Failed to update summary_sent status for staff {} on {}: {}",
+                    staffId, date, updateEx.getMessage());
+            }
+
+            log.info("Daily summary email sent successfully to staff {} ({}) for date {}",
+                staffId, staff.getEmail(), date);
+        } catch (Exception e) {
+            log.error("Failed to send daily summary for staff {} on {}: {}",
+                staffId, date, e.getMessage(), e);
+            throw e;  // 抛出异常，让前端知道发送失败
         }
     }
 
@@ -404,20 +492,43 @@ public class StaffNotificationService {
                 groupAppointmentsByStaff(completedAppointments);
 
             // 3. 为每个员工生成汇总并发送邮件
+            int sentCount = 0;
+            int skippedCount = 0;
             for (Map.Entry<Long, List<Appointment>> entry : appointmentsByStaff.entrySet()) {
                 Long staffId = entry.getKey();
                 List<Appointment> staffAppointments = entry.getValue();
 
+                // 3.1 检查是否已经发送过汇总
+                StaffAttendance attendance = staffAttendanceMapper.findByResourceIdAndDate(staffId, date);
+                if (attendance != null && attendance.getSummarySent() != null && attendance.getSummarySent() == 1) {
+                    log.info("Summary already sent for staff {} on {}, skipping (sent by: {})",
+                        staffId, date, attendance.getSummarySentBy());
+                    skippedCount++;
+                    continue;
+                }
+
                 Resource staff = resourceMapper.findById(staffId);
                 if (staff != null && staff.getEmail() != null && !staff.getEmail().isEmpty()) {
+                    // 3.2 发送汇总邮件
                     sendDailySummaryToStaff(staff, staffAppointments, date);
+
+                    // 3.3 更新汇总发送状态（标记为定时任务发送）
+                    try {
+                        staffAttendanceMapper.updateSummarySentStatus(staffId, date, "scheduled");
+                        log.info("Updated summary_sent status for staff {} on {} (scheduled)",
+                            staffId, date);
+                        sentCount++;
+                    } catch (Exception updateEx) {
+                        log.warn("Failed to update summary_sent status for staff {} on {}: {}",
+                            staffId, date, updateEx.getMessage());
+                    }
                 } else {
                     log.warn("Staff {} has no email, skipping daily summary", staffId);
                 }
             }
 
-            log.info("Daily summary emails sent successfully for {} staff members",
-                appointmentsByStaff.size());
+            log.info("Daily summary emails sent: {} sent, {} skipped (already sent)",
+                sentCount, skippedCount);
         } catch (Exception e) {
             log.error("Failed to send daily summary emails for {}: {}", date, e.getMessage(), e);
         }

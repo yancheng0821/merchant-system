@@ -27,12 +27,13 @@ export const ROUTE_PERMISSIONS: RoutePermissionConfig[] = [
   // 业务模块路由
   { path: 'products', permissions: ['products:view', 'packages:view'] },
   { path: 'orders', permissions: ['orders:view'] },
-  { path: 'customers', permissions: ['customers:view'] },
+  { path: 'customers', permissions: ['customers:view', 'membership_tiers:view'] },
   { path: 'appointments', permissions: ['appointments:view'] },
   { path: 'resources', permissions: ['staff:view', 'room:view'] },
   { path: 'schedule', permissions: ['schedule:view'] },
   { path: 'notifications', permissions: ['notifications:view_logs', 'notifications:manage_template'] },
-  { path: 'analytics', permissions: ['analytics:view'] },
+  { path: 'analytics', permissions: ['analytics:view_order_stats'] },
+  { path: 'costs', permissions: ['costs:view_certificates', 'costs:view_fixed_costs', 'costs:view_materials'] },
   { path: 'settings', permissions: ['settings:update_merchant', 'settings:update_tax', 'settings:update_system'] },
 
   // 权限管理路由 - 拥有任意子权限即可访问

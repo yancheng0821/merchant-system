@@ -41,10 +41,19 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
     ],
   },
 
-  // 3. Customers - 客户管理
+  // 3. Customers - 客户管理（多级结构）
   {
     name: 'customers',
-    resourceTypes: ['customers', 'customer_packages'],
+    subModules: [
+      {
+        name: 'customer_list',
+        resourceTypes: ['customers', 'customer_packages'],
+      },
+      {
+        name: 'membership_tiers',
+        resourceTypes: ['membership_tier'],
+      },
+    ],
   },
 
   // 4. Appointments - 预约管理
@@ -56,7 +65,7 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
   // 5. Schedule - 排班管理
   {
     name: 'schedule',
-    resourceTypes: ['schedule'],
+    resourceTypes: ['schedule', 'staff_attendance'],
   },
 
   // 6. Resources - 资源管理（多级结构）
@@ -106,10 +115,33 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
         name: 'ai_insights',
         resourceTypes: ['ai_insights'],
       },
+      {
+        name: 'order_stats',
+        resourceTypes: ['order_stats'],
+      },
     ],
   },
 
-  // 9. Notifications - 通知管理（多级结构）
+  // 9. Cost Management - 成本管理（多级结构）
+  {
+    name: 'costs',
+    subModules: [
+      {
+        name: 'certificates',
+        resourceTypes: ['certificate'],
+      },
+      {
+        name: 'fixed_costs',
+        resourceTypes: ['fixed_cost'],
+      },
+      {
+        name: 'materials',
+        resourceTypes: ['material'],
+      },
+    ],
+  },
+
+  // 10. Notifications - 通知管理（多级结构）
   {
     name: 'notifications',
     subModules: [
@@ -125,7 +157,7 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
     ],
   },
 
-  // 10. Access Control - 访问控制（多级结构）
+  // 11. Access Control - 访问控制（多级结构）
   {
     name: 'access_control',
     subModules: [
@@ -148,7 +180,7 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
     ],
   },
 
-  // 11. Settings - 系统设置（多级结构）
+  // 12. Settings - 系统设置（多级结构）
   {
     name: 'settings',
     subModules: [

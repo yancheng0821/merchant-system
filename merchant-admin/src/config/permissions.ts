@@ -55,6 +55,16 @@ export const CUSTOMER_PERMISSIONS = {
 } as const;
 
 // ============================================================================
+// Membership Tiers（会员等级）权限
+// ============================================================================
+export const MEMBERSHIP_TIER_PERMISSIONS = {
+  VIEW: 'membership_tiers:view',
+  CREATE: 'membership_tiers:create',
+  UPDATE: 'membership_tiers:update',
+  DELETE: 'membership_tiers:delete',
+} as const;
+
+// ============================================================================
 // Appointments（预约）权限
 // ============================================================================
 export const APPOINTMENT_PERMISSIONS = {
@@ -78,6 +88,9 @@ export const SCHEDULE_PERMISSIONS = {
   CANCEL: 'schedule:cancel',
   CHECKOUT: 'schedule:checkout',
   EDIT_NOTES: 'schedule:edit_notes',
+  EDIT_AMOUNT: 'schedule:edit_amount',
+  ADJUST_ATTENDANCE: 'schedule:adjust_attendance',
+  SEND_SUMMARY: 'schedule:send_summary',
   // 注意: 以下权限已废弃，暂不使用
   // VIEW_OWN: 'schedule:view_own',
   // DELETE: 'schedule:delete', // 已改为 CANCEL
@@ -114,9 +127,13 @@ export const ORDER_PERMISSIONS = {
 // ============================================================================
 export const ANALYTICS_PERMISSIONS = {
   VIEW: 'analytics:view',
-  VIEW_INSIGHTS: 'analytics:view_insights',
+  VIEW_REVENUE: 'analytics:view_revenue',
+  VIEW_SERVICE: 'analytics:view_service',
   VIEW_PERFORMANCE: 'analytics:view_performance',
   VIEW_OWN_PERFORMANCE: 'analytics:view_own_performance',
+  VIEW_HEATMAP: 'analytics:view_heatmap',
+  VIEW_INSIGHTS: 'analytics:view_insights',
+  VIEW_ORDER_STATS: 'analytics:view_order_stats',
 } as const;
 
 // ============================================================================
@@ -169,6 +186,27 @@ export const AUDIT_PERMISSIONS = {
 } as const;
 
 // ============================================================================
+// Cost Management（成本管理）权限
+// ============================================================================
+export const COST_PERMISSIONS = {
+  // 证书管理
+  VIEW_CERTIFICATES: 'costs:view_certificates',
+  CREATE_CERTIFICATE: 'costs:create_certificate',
+  UPDATE_CERTIFICATE: 'costs:update_certificate',
+  DELETE_CERTIFICATE: 'costs:delete_certificate',
+  // 固定成本
+  VIEW_FIXED_COSTS: 'costs:view_fixed_costs',
+  CREATE_FIXED_COST: 'costs:create_fixed_cost',
+  UPDATE_FIXED_COST: 'costs:update_fixed_cost',
+  DELETE_FIXED_COST: 'costs:delete_fixed_cost',
+  // 物料采购
+  VIEW_MATERIALS: 'costs:view_materials',
+  CREATE_MATERIAL: 'costs:create_material',
+  UPDATE_MATERIAL: 'costs:update_material',
+  DELETE_MATERIAL: 'costs:delete_material',
+} as const;
+
+// ============================================================================
 // 所有权限集合
 // ============================================================================
 export const ALL_PERMISSIONS = {
@@ -176,11 +214,13 @@ export const ALL_PERMISSIONS = {
   PRODUCT: PRODUCT_PERMISSIONS,
   PACKAGE: PACKAGE_PERMISSIONS,
   CUSTOMER: CUSTOMER_PERMISSIONS,
+  MEMBERSHIP_TIER: MEMBERSHIP_TIER_PERMISSIONS,
   APPOINTMENT: APPOINTMENT_PERMISSIONS,
   SCHEDULE: SCHEDULE_PERMISSIONS,
   RESOURCE: RESOURCE_PERMISSIONS,
   ORDER: ORDER_PERMISSIONS,
   ANALYTICS: ANALYTICS_PERMISSIONS,
+  COST: COST_PERMISSIONS,
   SETTINGS: SETTINGS_PERMISSIONS,
   NOTIFICATION: NOTIFICATION_PERMISSIONS,
   USER: USER_PERMISSIONS,
@@ -221,8 +261,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
-    name: 'customers',
-    displayName: '客户管理',
+    name: 'customer_list',
+    displayName: '客户列表',
     permissions: [
       { code: 'customers:view', name: '查看客户', resource: 'customers', action: 'view' },
       { code: 'customers:create', name: '新增客户', resource: 'customers', action: 'create' },
@@ -232,6 +272,16 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { code: 'customers:export', name: '导出客户', resource: 'customers', action: 'export' },
       { code: 'customer_packages:view', name: '查看客户套餐', resource: 'customer_packages', action: 'view' },
       { code: 'customer_packages:purchase', name: '购买套餐', resource: 'customer_packages', action: 'purchase' },
+    ],
+  },
+  {
+    name: 'membership_tiers',
+    displayName: '会员等级',
+    permissions: [
+      { code: 'membership_tiers:view', name: '查看会员等级', resource: 'membership_tiers', action: 'view' },
+      { code: 'membership_tiers:create', name: '新增会员等级', resource: 'membership_tiers', action: 'create' },
+      { code: 'membership_tiers:update', name: '编辑会员等级', resource: 'membership_tiers', action: 'update' },
+      { code: 'membership_tiers:delete', name: '删除会员等级', resource: 'membership_tiers', action: 'delete' },
     ],
   },
   {
@@ -294,9 +344,13 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     displayName: '数据分析',
     permissions: [
       { code: 'analytics:view', name: '查看数据分析', resource: 'analytics', action: 'view' },
-      { code: 'analytics:view_insights', name: '查看AI洞察', resource: 'analytics', action: 'view_insights' },
+      { code: 'analytics:view_revenue', name: '查看营收趋势', resource: 'analytics', action: 'view_revenue' },
+      { code: 'analytics:view_service', name: '查看服务分析', resource: 'analytics', action: 'view_service' },
       { code: 'analytics:view_performance', name: '查看业绩', resource: 'analytics', action: 'view_performance' },
       { code: 'analytics:view_own_performance', name: '查看自己的业绩', resource: 'analytics', action: 'view_performance', description: '仅查看自己的业绩' },
+      { code: 'analytics:view_heatmap', name: '查看预约热力图', resource: 'analytics', action: 'view_heatmap' },
+      { code: 'analytics:view_insights', name: '查看AI洞察', resource: 'analytics', action: 'view_insights' },
+      { code: 'analytics:view_order_stats', name: '查看订单统计', resource: 'analytics', action: 'view_order_stats' },
     ],
   },
   {

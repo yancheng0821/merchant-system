@@ -5,17 +5,52 @@ spring:
   application:
     name: analytics-service
   datasource:
-    url: jdbc:mysql://localhost:3306/merchant_analytics?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/merchant_analytics?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&zeroDateTimeBehavior=convertToNull
     username: merchant_app
     password: MerchantApp@2024
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 900000
+      connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
+  # HTTP编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  # 异步任务配置
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 100
+        keep-alive: 60s
+      thread-name-prefix: async-task-
+    scheduling:
+      pool:
+        size: 3
+      thread-name-prefix: scheduled-task-
 
-
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.merchant.server.analyticsservice.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    default-time-zone: UTC
 
 # 日志配置
 logging:
   level:
-    com.merchant.server.analyticsservice: INFO
+    com.merchant.server.analyticsservice.mapper: WARN
+    org.apache.ibatis: WARN
+    java.sql: WARN
+    org.mybatis: WARN
     org.springframework: WARN
     org.hibernate: WARN
     org.apache.catalina: WARN
@@ -25,7 +60,7 @@ logging:
 
 eureka:
   client:
-    enabled: true  # 启用Eureka客户端
+    enabled: true
     service-url:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
@@ -33,12 +68,6 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
-
-# MyBatis配置
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
-  configuration:
-    default-time-zone: UTC
 
 analytics:
   cache:

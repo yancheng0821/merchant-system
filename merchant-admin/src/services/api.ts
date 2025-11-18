@@ -761,7 +761,8 @@ export interface Customer {
   address?: string;
   dateOfBirth?: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
-  membershipLevel?: 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  membershipTierId?: number; // 会员等级ID（外键）
+  membershipTier?: MembershipTier; // 会员等级对象（关联查询）
   points?: number;
   totalSpent?: number;
   status?: 'ACTIVE' | 'INACTIVE';
@@ -817,7 +818,7 @@ export interface CustomerSearchParams {
   tenantId: string | number;
   keyword?: string;
   status?: 'ACTIVE' | 'INACTIVE';
-  membershipLevel?: 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  membershipLevel?: string; // 会员等级code（用于筛选）
   page?: number;
   size?: number;
   sortBy?: string;
@@ -923,7 +924,7 @@ export const customerApi = {
       preferredServiceIds: customer.preferredServiceIds,
       // 默认值
       status: customer.status || 'ACTIVE',
-      membershipLevel: customer.membershipLevel || 'REGULAR',
+      membershipTierId: customer.membershipTierId,
       communicationPreference: customer.communicationPreference || 'SMS',
       points: customer.points || 0,
       totalSpent: customer.totalSpent || 0,
@@ -1321,7 +1322,7 @@ export interface Appointment {
   appointmentTime: string;
   duration: number;
   totalAmount: number;
-  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'CANCELED' | 'NO_SHOW';
   notes?: string;
   rating?: number;
   review?: string;
@@ -1454,6 +1455,7 @@ export const appointmentApi = {
       subtotal: number;
       totalAmount: number;
     }; // 税率和小费信息
+    notes?: string; // 支付备注
   }): Promise<Appointment> => {
     const response = await createRequest(`/api/business/appointments/${appointmentId}/payment`, {
       method: 'POST',
@@ -1850,6 +1852,113 @@ export const resourceApi = {
     await createRequest(`/api/business/resources/${resourceId}/availability/apply-template?${queryParams.toString()}`, {
       method: 'POST',
     });
+  },
+
+  // 批量获取资源及其关联数据（优化性能）
+  getBatchDetails: async (tenantId: number, type?: string): Promise<{
+    resources: Resource[];
+    resourceServices: Record<number, number[]>;
+    resourceAvailabilities: Record<number, ResourceAvailability[]>;
+  }> => {
+    const queryParams = new URLSearchParams({ tenantId: tenantId.toString() });
+    if (type) {
+      queryParams.append('type', type);
+    }
+    const response = await createRequest(`/api/business/resources/batch-details?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+};
+
+// 员工签到签退管理API
+export interface StaffAttendance {
+  id?: number;
+  tenantId: number;
+  resourceId: number;
+  attendanceDate: string; // yyyy-MM-dd
+  checkInTime: string; // HH:mm:ss
+  checkOutTime: string; // HH:mm:ss
+  notes?: string;
+  createdBy?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const staffAttendanceApi = {
+  // 保存或更新签到签退记录
+  saveOrUpdate: async (attendance: StaffAttendance): Promise<StaffAttendance> => {
+    const response = await createRequest('/api/business/attendance', {
+      method: 'POST',
+      body: JSON.stringify(attendance),
+    });
+    return response;
+  },
+
+  // 根据资源ID和日期查询签到记录
+  getByResourceAndDate: async (resourceId: number, date: string): Promise<StaffAttendance | null> => {
+    try {
+      const queryParams = new URLSearchParams({ date });
+      const response = await createRequest(`/api/business/attendance/resource/${resourceId}?${queryParams.toString()}`, {
+        method: 'GET',
+      });
+      return response;
+    } catch (error: any) {
+      // 如果返回404，表示没有记录
+      if (error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  // 根据租户ID和日期查询所有员工的签到记录
+  getByTenantAndDate: async (tenantId: number, date: string): Promise<StaffAttendance[]> => {
+    const queryParams = new URLSearchParams({ date });
+    const response = await createRequest(`/api/business/attendance/tenant/${tenantId}?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 根据资源ID和日期范围查询签到记录
+  getByDateRange: async (resourceId: number, startDate: string, endDate: string): Promise<StaffAttendance[]> => {
+    const queryParams = new URLSearchParams({ startDate, endDate });
+    const response = await createRequest(`/api/business/attendance/resource/${resourceId}/range?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    return response;
+  },
+
+  // 删除签到记录（恢复为使用原始排班）
+  delete: async (resourceId: number, date: string): Promise<void> => {
+    const queryParams = new URLSearchParams({ date });
+    await createRequest(`/api/business/attendance/resource/${resourceId}?${queryParams.toString()}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 手动触发员工每日工作汇总邮件
+  sendDailySummary: async (date?: string): Promise<any> => {
+    const queryParams = date ? new URLSearchParams({ date }) : '';
+    const url = `/api/business/notifications/staff-daily-summary/trigger${queryParams ? '?' + queryParams.toString() : ''}`;
+    const response = await createRequest(url, {
+      method: 'POST',
+    });
+    return response;
+  },
+
+  // 手动触发单个员工的每日工作汇总邮件
+  sendSingleStaffDailySummary: async (staffId: number, date?: string): Promise<any> => {
+    const params = new URLSearchParams({ staffId: staffId.toString() });
+    if (date) {
+      params.append('date', date);
+    }
+    const url = `/api/business/notifications/staff-daily-summary/trigger-single?${params.toString()}`;
+    const response = await createRequest(url, {
+      method: 'POST',
+    });
+    return response;
   },
 };
 
@@ -2303,6 +2412,138 @@ export const analyticsApi = {
     await createRequest('/api/analytics/cache/clean', {
       method: 'POST',
     });
+  },
+
+  // 按服务维度统计订单
+  getOrderStatsByService: async (tenantId: number, startDate: string, endDate: string): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/analytics/orders/by-service?tenantId=${tenantId}&startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: 'GET',
+      }
+    );
+    return response;
+  },
+
+  // 按支付方式维度统计订单
+  getOrderStatsByPaymentMethod: async (tenantId: number, startDate: string, endDate: string): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/analytics/orders/by-payment-method?tenantId=${tenantId}&startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: 'GET',
+      }
+    );
+    return response;
+  },
+
+  // 按支付方式统计package购买订单
+  getPackagePurchaseStatsByPaymentMethod: async (tenantId: number, startDate: string, endDate: string): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/analytics/package-purchases/by-payment-method?tenantId=${tenantId}&startDate=${startDate}&endDate=${endDate}`,
+      {
+        method: 'GET',
+      }
+    );
+    return response;
+  },
+};
+
+// 成本管理 API
+export const costsApi = {
+  // 证书管理
+  getCertificates: async (tenantId: number): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/costs/certificates?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createCertificate: async (data: any): Promise<any> => {
+    const response = await createRequest(
+      '/api/business/costs/certificates',
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+    return response;
+  },
+
+  updateCertificate: async (id: number, data: any): Promise<any> => {
+    const response = await createRequest(
+      `/api/business/costs/certificates/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+    return response;
+  },
+
+  deleteCertificate: async (id: number, tenantId: number): Promise<void> => {
+    await createRequest(
+      `/api/business/costs/certificates/${id}?tenantId=${tenantId}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  // 固定成本管理
+  getFixedCosts: async (tenantId: number): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/costs/fixed-costs?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createFixedCost: async (data: any): Promise<any> => {
+    const response = await createRequest(
+      '/api/business/costs/fixed-costs',
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+    return response;
+  },
+
+  updateFixedCost: async (id: number, data: any): Promise<any> => {
+    const response = await createRequest(
+      `/api/business/costs/fixed-costs/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+    return response;
+  },
+
+  deleteFixedCost: async (id: number, tenantId: number): Promise<void> => {
+    await createRequest(
+      `/api/business/costs/fixed-costs/${id}?tenantId=${tenantId}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  // 物料采购管理
+  getMaterialPurchases: async (tenantId: number): Promise<any[]> => {
+    const response = await createRequest(
+      `/api/business/costs/materials?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response;
+  },
+
+  createMaterialPurchase: async (data: any): Promise<any> => {
+    const response = await createRequest(
+      '/api/business/costs/materials',
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+    return response;
+  },
+
+  updateMaterialPurchase: async (id: number, data: any): Promise<any> => {
+    const response = await createRequest(
+      `/api/business/costs/materials/${id}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+    return response;
+  },
+
+  deleteMaterialPurchase: async (id: number, tenantId: number): Promise<void> => {
+    await createRequest(
+      `/api/business/costs/materials/${id}?tenantId=${tenantId}`,
+      { method: 'DELETE' }
+    );
   },
 };
 
@@ -2776,19 +3017,25 @@ export const auditApi = {
     tenantId: number;
     page?: number;
     size?: number;
+    resource?: string;
+    status?: string;
     search?: string;
     action?: string;
     dateFrom?: string;
     dateTo?: string;
+    timezone?: string;
   }) => {
     const queryParams = new URLSearchParams();
     queryParams.append('tenantId', params.tenantId.toString());
     if (params.page !== undefined) queryParams.append('page', params.page.toString());
     if (params.size !== undefined) queryParams.append('size', params.size.toString());
+    if (params.resource) queryParams.append('resource', params.resource);
+    if (params.status) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
     if (params.action) queryParams.append('action', params.action);
-    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+    if (params.dateFrom) queryParams.append('startDate', params.dateFrom);
+    if (params.dateTo) queryParams.append('endDate', params.dateTo);
+    if (params.timezone) queryParams.append('timezone', params.timezone);
 
     const response = await createRequest(
       `/api/auth/audit-logs?${queryParams.toString()}`,
@@ -2799,17 +3046,23 @@ export const auditApi = {
 
   exportAuditLogs: async (params: {
     tenantId: number;
+    resource?: string;
+    status?: string;
     search?: string;
     action?: string;
     dateFrom?: string;
     dateTo?: string;
+    timezone?: string;
   }) => {
     const queryParams = new URLSearchParams();
     queryParams.append('tenantId', params.tenantId.toString());
+    if (params.resource) queryParams.append('resource', params.resource);
+    if (params.status) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
     if (params.action) queryParams.append('action', params.action);
-    if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-    if (params.dateTo) queryParams.append('dateTo', params.dateTo);
+    if (params.dateFrom) queryParams.append('startDate', params.dateFrom);
+    if (params.dateTo) queryParams.append('endDate', params.dateTo);
+    if (params.timezone) queryParams.append('timezone', params.timezone);
 
     const response = await fetch(`${API_BASE_URL}/api/auth/audit-logs/export?${queryParams.toString()}`, {
       method: 'GET',
@@ -2829,5 +3082,98 @@ export const auditApi = {
     link.download = `audit-logs-${new Date().getTime()}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
+  },
+};
+
+// 会员等级管理 API
+export interface MembershipTier {
+  id?: number;
+  tenantId: number;
+  name: string;
+  code: string;
+  requiredPoints: number;
+  discountRate: number;
+  color?: string;
+  icon?: string;
+  benefits?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const membershipTierApi = {
+  // 获取所有会员等级
+  getAllTiers: async (tenantId: number): Promise<MembershipTier[]> => {
+    const response = await createRequest(
+      `/api/business/membership-tiers?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response.data || [];
+  },
+
+  // 获取启用的会员等级
+  getActiveTiers: async (tenantId: number): Promise<MembershipTier[]> => {
+    const response = await createRequest(
+      `/api/business/membership-tiers/active?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response.data || [];
+  },
+
+  // 根据ID获取会员等级
+  getTierById: async (id: number): Promise<MembershipTier> => {
+    const response = await createRequest(
+      `/api/business/membership-tiers/${id}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // 创建会员等级
+  createTier: async (tier: MembershipTier): Promise<MembershipTier> => {
+    const response = await createRequest(
+      '/api/business/membership-tiers',
+      {
+        method: 'POST',
+        body: JSON.stringify(tier),
+      }
+    );
+    return response.data;
+  },
+
+  // 更新会员等级
+  updateTier: async (id: number, tier: MembershipTier): Promise<MembershipTier> => {
+    const response = await createRequest(
+      `/api/business/membership-tiers/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(tier),
+      }
+    );
+    return response.data;
+  },
+
+  // 删除会员等级
+  deleteTier: async (id: number): Promise<void> => {
+    await createRequest(
+      `/api/business/membership-tiers/${id}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  // 检查等级代码是否存在
+  checkCodeExists: async (tenantId: number, code: string, excludeId?: number): Promise<boolean> => {
+    const params = new URLSearchParams();
+    params.append('tenantId', tenantId.toString());
+    params.append('code', code);
+    if (excludeId) {
+      params.append('excludeId', excludeId.toString());
+    }
+
+    const response = await createRequest(
+      `/api/business/membership-tiers/check-code?${params.toString()}`,
+      { method: 'GET' }
+    );
+    return response.exists || false;
   },
 };

@@ -110,13 +110,12 @@ const NotificationLogManagement: React.FC = () => {
   ];
 
   const businessTypes = [
-    { value: 'APPOINTMENT', label: t('notifications.businessTypes.appointment', 'Appointment') },
-    { value: 'PAYMENT', label: t('notifications.businessTypes.payment', 'Payment') },
-    { value: 'PACKAGE', label: t('notifications.businessTypes.package', 'Package') },
-    { value: 'CUSTOMER', label: t('notifications.businessTypes.customer', 'Customer') },
-    { value: 'STAFF', label: t('notifications.businessTypes.staff', 'Staff') },
-    { value: 'SYSTEM', label: t('notifications.businessTypes.system', 'System') },
-    { value: 'OTHER', label: t('notifications.businessTypes.other', 'Other') }
+    { value: 'APPOINTMENT_CANCELLATION', label: t('notifications.businessTypes.APPOINTMENT_CANCELLATION', 'Appointment Cancellation') },
+    { value: 'APPOINTMENT_COMPLETION', label: t('notifications.businessTypes.APPOINTMENT_COMPLETION', 'Appointment Completion') },
+    { value: 'APPOINTMENT_CONFIRMATION', label: t('notifications.businessTypes.APPOINTMENT_CONFIRMATION', 'Appointment Confirmation') },
+    { value: 'APPOINTMENT_REMINDER', label: t('notifications.businessTypes.APPOINTMENT_REMINDER', 'Appointment Reminder') },
+    { value: 'PACKAGE_VERIFICATION', label: t('notifications.businessTypes.PACKAGE_VERIFICATION', 'Package Verification') },
+    { value: 'PACKAGE_PURCHASE_SUCCESS', label: t('notifications.businessTypes.PACKAGE_PURCHASE_SUCCESS', 'Package Purchase Success') }
   ];
 
   const fetchLogs = useCallback(async () => {
@@ -262,6 +261,23 @@ const NotificationLogManagement: React.FC = () => {
   const getTemplateLabel = (templateCode: string) => {
     const template = templateCodes.find(t => t.value === templateCode);
     return template ? template.label : templateCode;
+  };
+
+  // 掩码处理验证码内容
+  const maskVerificationCode = (content: string, templateCode: string): string => {
+    // 只对 PACKAGE_VERIFICATION 类型的通知进行掩码处理
+    if (templateCode !== 'PACKAGE_VERIFICATION') {
+      return content;
+    }
+
+    // 使用正则表达式匹配6位连续数字并替换为掩码
+    return content.replace(/\b\d{6}\b/g, '******');
+  };
+
+  // 获取业务类型标签
+  const getBusinessTypeLabel = (businessType: string) => {
+    const type = businessTypes.find(t => t.value === businessType);
+    return type ? type.label : businessType;
   };
 
   if (loading && logs.length === 0) {
@@ -596,7 +612,7 @@ const NotificationLogManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {log.businessType || '-'}
+                        {log.businessType ? getBusinessTypeLabel(log.businessType) : '-'}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -892,7 +908,7 @@ const NotificationLogManagement: React.FC = () => {
                         {t('notifications.businessType', 'Business Type')}
                       </Typography>
                       <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
-                        {selectedLog.businessType || '-'}
+                        {selectedLog.businessType ? getBusinessTypeLabel(selectedLog.businessType) : '-'}
                       </Typography>
                     </Box>
                   </Grid>
@@ -1026,7 +1042,7 @@ const NotificationLogManagement: React.FC = () => {
                             maxHeight: 400,
                             overflowY: 'auto',
                           }}
-                          dangerouslySetInnerHTML={{ __html: selectedLog.content }}
+                          dangerouslySetInnerHTML={{ __html: maskVerificationCode(selectedLog.content, selectedLog.templateCode) }}
                         />
                       </Box>
 
@@ -1063,7 +1079,7 @@ const NotificationLogManagement: React.FC = () => {
                             overflowY: 'auto',
                           }}
                         >
-                          {selectedLog.content}
+                          {maskVerificationCode(selectedLog.content, selectedLog.templateCode)}
                         </Typography>
                       </Box>
                     </Box>
@@ -1088,7 +1104,7 @@ const NotificationLogManagement: React.FC = () => {
                           lineHeight: 1.6,
                         }}
                       >
-                        {selectedLog.content}
+                        {maskVerificationCode(selectedLog.content, selectedLog.templateCode)}
                       </Typography>
                     </Box>
                   )}

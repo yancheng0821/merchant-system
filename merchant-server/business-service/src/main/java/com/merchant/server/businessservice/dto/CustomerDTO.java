@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.merchant.server.businessservice.entity.Customer;
+import com.merchant.server.businessservice.entity.MembershipTier;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
@@ -36,9 +37,11 @@ public class CustomerDTO {
     private LocalDate dateOfBirth;
     
     private Customer.Gender gender;
-    
-    private Customer.MembershipLevel membershipLevel;
-    
+
+    private Long membershipTierId;
+
+    private MembershipTier membershipTier;
+
     private Integer points;
     
     private BigDecimal totalSpent;
@@ -147,19 +150,27 @@ public class CustomerDTO {
     public Customer.Gender getGender() {
         return gender;
     }
-    
+
     public void setGender(Customer.Gender gender) {
         this.gender = gender;
     }
-    
-    public Customer.MembershipLevel getMembershipLevel() {
-        return membershipLevel;
+
+    public Long getMembershipTierId() {
+        return membershipTierId;
     }
-    
-    public void setMembershipLevel(Customer.MembershipLevel membershipLevel) {
-        this.membershipLevel = membershipLevel;
+
+    public void setMembershipTierId(Long membershipTierId) {
+        this.membershipTierId = membershipTierId;
     }
-    
+
+    public MembershipTier getMembershipTier() {
+        return membershipTier;
+    }
+
+    public void setMembershipTier(MembershipTier membershipTier) {
+        this.membershipTier = membershipTier;
+    }
+
     public Integer getPoints() {
         return points;
     }
@@ -283,7 +294,8 @@ public class CustomerDTO {
                 ", address='" + address + '\'' +
                 ", dateOfBirth=" + dateOfBirth +
                 ", gender=" + gender +
-                ", membershipLevel=" + membershipLevel +
+                ", membershipTierId=" + membershipTierId +
+                ", membershipTier=" + membershipTier +
                 ", points=" + points +
                 ", totalSpent=" + totalSpent +
                 ", status=" + status +

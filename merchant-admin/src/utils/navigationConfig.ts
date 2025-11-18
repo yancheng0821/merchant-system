@@ -13,6 +13,7 @@ import {
   ManageAccounts as ResourceIcon,
   EventNote as ShiftIcon,
   AdminPanelSettings as RBACIcon,
+  AccountBalance as CostsIcon,
 } from '@mui/icons-material';
 import { PermissionCode } from '../config/permissions';
 import { RoleCode } from '../config/roles';
@@ -76,7 +77,7 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     icon: React.createElement(CustomersIcon),
     id: 'customers',
     color: '#EC4899',
-    permission: 'customers:view' as PermissionCode
+    anyPermission: ['customers:view', 'membership_tiers:view'] as PermissionCode[]
   });
 
   // 5. 订单/收银 - 财务流程
@@ -112,7 +113,38 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     anyPermission: ['notifications:view_logs', 'notifications:manage_template'] as PermissionCode[]
   });
 
-  // 9. 用户权限 - 系统管理（分隔线上方最后一项）
+  // 9. 数据分析 - 业务洞察
+  baseMenuItems.push({
+    textKey: 'nav.analytics',
+    icon: React.createElement(AnalyticsIcon),
+    id: 'analytics',
+    color: '#0891B2',
+    anyPermission: [
+      'analytics:view',
+      'analytics:view_revenue',
+      'analytics:view_service',
+      'analytics:view_performance',
+      'analytics:view_own_performance',
+      'analytics:view_heatmap',
+      'analytics:view_insights',
+      'analytics:view_order_stats'
+    ] as PermissionCode[]
+  });
+
+  // 10. 成本管理 - 财务成本
+  baseMenuItems.push({
+    textKey: 'nav.costs',
+    icon: React.createElement(CostsIcon),
+    id: 'costs',
+    color: '#DC2626',
+    anyPermission: [
+      'costs:view_certificates',
+      'costs:view_fixed_costs',
+      'costs:view_materials'
+    ] as PermissionCode[]
+  });
+
+  // 11. 用户权限 - 系统管理（分隔线上方最后一项）
   baseMenuItems.push({
     textKey: 'nav.rbac',
     icon: React.createElement(RBACIcon),
@@ -121,7 +153,7 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     anyPermission: ['users:view', 'rbac:view_roles', 'rbac:view_permissions', 'audit:view'] as PermissionCode[]
   });
 
-  // 10. 设置 - 系统配置（最底部）
+  // 11. 设置 - 系统配置（最底部）
   baseMenuItems.push({
     textKey: 'nav.settings',
     icon: React.createElement(SettingsIcon),

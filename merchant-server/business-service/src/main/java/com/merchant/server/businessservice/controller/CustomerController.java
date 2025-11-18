@@ -48,7 +48,8 @@ public class CustomerController {
         dto.setAddress(customer.getAddress());
         dto.setDateOfBirth(customer.getDateOfBirth());
         dto.setGender(customer.getGender());
-        dto.setMembershipLevel(customer.getMembershipLevel());
+        dto.setMembershipTierId(customer.getMembershipTierId());
+        dto.setMembershipTier(customer.getMembershipTier());
         dto.setPoints(customer.getPoints());
         dto.setTotalSpent(customer.getTotalSpent());
         dto.setStatus(customer.getStatus());
@@ -79,7 +80,7 @@ public class CustomerController {
             @RequestParam Long tenantId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Customer.CustomerStatus status,
-            @RequestParam(required = false) Customer.MembershipLevel membershipLevel,
+            @RequestParam(required = false) String membershipLevel,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "updatedAt") String sortBy,
@@ -365,8 +366,6 @@ public class CustomerController {
         // 如果是枚举值错误，提供更友好的错误信息
         if (e.getMessage().contains("Gender")) {
             error.put("message", "Invalid gender value. Valid values are: MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY");
-        } else if (e.getMessage().contains("MembershipLevel")) {
-            error.put("message", "Invalid membership level. Valid values are: REGULAR, SILVER, GOLD, PLATINUM");
         } else if (e.getMessage().contains("CustomerStatus")) {
             error.put("message", "Invalid status. Valid values are: ACTIVE, INACTIVE");
         } else if (e.getMessage().contains("CommunicationPreference")) {

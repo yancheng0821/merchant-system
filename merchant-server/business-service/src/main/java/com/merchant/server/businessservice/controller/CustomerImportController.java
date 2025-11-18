@@ -39,9 +39,9 @@ public class CustomerImportController {
             @RequestParam("file") MultipartFile file) {
         
         try {
-            logger.info("收到文件上传请求 - tenantId: {}, 文件名: {}, 大小: {} bytes", 
+            logger.info("收到文件上传请求 - tenantId: {}, 文件名: {}, 大小: {} bytes",
                        tenantId, file.getOriginalFilename(), file.getSize());
-            
+
             if (file.isEmpty()) {
                 throw new RuntimeException(messageUtil.getMessage("error.import.file.empty"));
             }
@@ -56,9 +56,9 @@ public class CustomerImportController {
             if (fileName == null || (!fileName.endsWith(".csv") && !fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
                 throw new RuntimeException(messageUtil.getMessage("error.import.file.invalid.format"));
             }
-            
+
             CustomerImportDTO.UploadResponse response = customerImportService.uploadFile(tenantId, file);
-            logger.info("文件上传处理完成 - 检测到 {} 列，共 {} 行数据", 
+            logger.info("文件上传处理完成 - 检测到 {} 列，共 {} 行数据",
                        response.getDetectedColumns().size(), response.getTotalRecords());
             return ResponseEntity.ok(response);
             
@@ -77,14 +77,14 @@ public class CustomerImportController {
             @RequestBody CustomerImportDTO.MappingRequest request) {
         
         try {
-            logger.info("开始验证映射 - tenantId: {}, importSessionId: {}, fieldMapping: {}", 
+            logger.info("开始验证映射 - tenantId: {}, importSessionId: {}, fieldMapping: {}",
                        tenantId, request.getImportSessionId(), request.getFieldMapping());
-            
+
             CustomerImportDTO.PreviewResponse response = customerImportService.validateAndPreview(tenantId, request);
-            
-            logger.info("验证完成 - 总记录数: {}, 有效记录: {}, 无效记录: {}", 
+
+            logger.info("验证完成 - 总记录数: {}, 有效记录: {}, 无效记录: {}",
                        response.getTotalRecords(), response.getValidRecords(), response.getInvalidRecords());
-            
+
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
@@ -103,14 +103,14 @@ public class CustomerImportController {
             @RequestBody CustomerImportDTO.ExecuteRequest request) {
         
         try {
-            logger.info("收到导入执行请求 - tenantId: {}, importSessionId: {}", 
+            logger.info("收到导入执行请求 - tenantId: {}, importSessionId: {}",
                        tenantId, request.getImportSessionId());
-            
+
             CustomerImportDTO.ImportResult result = customerImportService.executeImport(tenantId, request);
-            
-            logger.info("导入执行完成 - 总记录数: {}, 成功记录: {}, 失败记录: {}", 
+
+            logger.info("导入执行完成 - 总记录数: {}, 成功记录: {}, 失败记录: {}",
                        result.getTotalRecords(), result.getSuccessRecords(), result.getFailedRecords());
-            
+
             return ResponseEntity.ok(result);
             
         } catch (Exception e) {

@@ -193,10 +193,10 @@ public interface CustomerMapper {
      */
     boolean existsByTenantIdAndEmail(@Param("tenantId") Long tenantId, @Param("email") String email);
 
-    List<Customer> findByCondition(@Param("tenantId") Long tenantId, 
-                                  @Param("keyword") String keyword, 
-                                  @Param("status") Customer.CustomerStatus status, 
-                                  @Param("level") Customer.MembershipLevel level,
+    List<Customer> findByCondition(@Param("tenantId") Long tenantId,
+                                  @Param("keyword") String keyword,
+                                  @Param("status") Customer.CustomerStatus status,
+                                  @Param("level") String level,
                                   @Param("sortBy") String sortBy,
                                   @Param("sortDir") String sortDir);
     

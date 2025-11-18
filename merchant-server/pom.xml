@@ -33,6 +33,7 @@
         <module>merchant-service</module>
         <module>business-service</module>
         <module>notification-service</module>
+        <module>analytics-service</module>
         <module>gateway-service</module>
     </modules>
 

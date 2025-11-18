@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.MembershipTierMapper">
+
+    <!-- Result Map -->
+    <resultMap id="MembershipTierResultMap" type="com.merchant.server.businessservice.entity.MembershipTier">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="requiredPoints" column="required_points"/>
+        <result property="discountRate" column="discount_rate"/>
+        <result property="color" column="color"/>
+        <result property="icon" column="icon"/>
+        <result property="benefits" column="benefits"/>
+        <result property="isActive" column="is_active"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="deletedAt" column="deleted_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- Base Column List -->
+    <sql id="Base_Column_List">
+        id, tenant_id, name, code, required_points, discount_rate,
+        color, icon, benefits, is_active, is_deleted, deleted_at, created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="MembershipTierResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM membership_tier
+        WHERE id = #{id}
+        AND is_deleted = false
+    </select>
+
+    <!-- 根据租户ID查询所有会员等级 -->
+    <select id="selectByTenantId" resultMap="MembershipTierResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM membership_tier
+        WHERE tenant_id = #{tenantId}
+        AND is_deleted = false
+        ORDER BY required_points ASC
+    </select>
+
+    <!-- 根据租户ID查询启用的会员等级 -->
+    <select id="selectActiveTiersByTenantId" resultMap="MembershipTierResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM membership_tier
+        WHERE tenant_id = #{tenantId}
+        AND is_active = true
+        AND is_deleted = false
+        ORDER BY required_points ASC
+    </select>
+
+    <!-- 根据租户ID和等级代码查询 -->
+    <select id="selectByTenantIdAndCode" resultMap="MembershipTierResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM membership_tier
+        WHERE tenant_id = #{tenantId}
+        AND code = #{code}
+        AND is_deleted = false
+    </select>
+
+    <!-- 插入会员等级 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.MembershipTier" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO membership_tier (
+            tenant_id, name, code, required_points, discount_rate,
+            color, icon, benefits, is_active, is_deleted
+        ) VALUES (
+            #{tenantId}, #{name}, #{code}, #{requiredPoints}, #{discountRate},
+            #{color}, #{icon}, #{benefits}, #{isActive}, false
+        )
+    </insert>
+
+    <!-- 更新会员等级 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.MembershipTier">
+        UPDATE membership_tier
+        SET
+            name = #{name},
+            code = #{code},
+            required_points = #{requiredPoints},
+            discount_rate = #{discountRate},
+            color = #{color},
+            icon = #{icon},
+            benefits = #{benefits},
+            is_active = #{isActive},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 软删除会员等级 -->
+    <update id="deleteById">
+        UPDATE membership_tier
+        SET is_deleted = true,
+            deleted_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- 检查等级代码是否存在 -->
+    <select id="existsByTenantIdAndCode" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM membership_tier
+        WHERE tenant_id = #{tenantId}
+        AND code = #{code}
+        AND is_deleted = false
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper>

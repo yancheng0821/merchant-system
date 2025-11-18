@@ -44,7 +44,7 @@ start_frontend() {
     
     # Start frontend
     cd "${BASE_DIR}"
-    nohup npm start > "${LOG_DIR}/frontend.log" 2>&1 &
+    nohup npm start >> "${LOG_DIR}/frontend.log" 2>&1 &
     local pid=$!
     echo $pid > "${PID_FILE}"
     

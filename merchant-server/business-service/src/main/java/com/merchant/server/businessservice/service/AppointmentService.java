@@ -72,11 +72,11 @@ public interface AppointmentService {
      * 处理预约支付
      */
     Appointment processPayment(Long appointmentId, String paymentMethod, Integer customerPackageId, Long tenantId, Long verificationCodeId,
-        Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount);
+        Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes);
 
     /**
      * 处理多服务预约支付
      */
     Appointment processMultiServicePayment(Long appointmentId, String paymentMethod, List<Map<String, Object>> servicePayments, Long tenantId,
-        Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount);
+        Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes);
 }

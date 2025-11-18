@@ -15,7 +15,7 @@ public interface OrderService {
     /**
      * 分页查询订单
      */
-    Page<OrderDTO> getOrders(Long tenantId, String searchTerm, String paymentStatus, 
+    Page<OrderDTO> getOrders(Long tenantId, String searchTerm, String paymentStatus, String paymentMethod,
                            String orderStatus, Long customerId, String startDate, String endDate, Pageable pageable);
     
     /**

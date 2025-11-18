@@ -37,9 +37,13 @@ public class Customer {
     private LocalDate dateOfBirth;
     
     private Gender gender;
-    
-    private MembershipLevel membershipLevel = MembershipLevel.REGULAR;
-    
+
+    // 会员等级外键ID
+    private Long membershipTierId;
+
+    // 会员等级对象（关联查询时填充）
+    private MembershipTier membershipTier;
+
     private Integer points = 0;
     
     private BigDecimal totalSpent = BigDecimal.ZERO;
@@ -75,15 +79,16 @@ public class Customer {
     public enum Gender {
         MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY
     }
-    
-    public enum MembershipLevel {
-        REGULAR, SILVER, GOLD, PLATINUM
-    }
-    
+
+    // MembershipLevel枚举已废弃，改用MembershipTier表
+    // public enum MembershipLevel {
+    //     REGULAR, SILVER, GOLD, PLATINUM
+    // }
+
     public enum CustomerStatus {
         ACTIVE, INACTIVE, DELETED
     }
-    
+
     public enum CommunicationPreference {
         SMS, EMAIL, BOTH
     }

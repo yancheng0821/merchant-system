@@ -64,7 +64,7 @@ const ShiftManagement: React.FC<ShiftManagementProps> = ({ resourceId }) => {
   const [selectedShift, setSelectedShift] = useState<ResourceShift | null>(null);
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(getMerchantNow(), { weekStartsOn: 1 }));
 
-  const locale = i18n.language === 'zh' ? zhCNLocale : enUSLocale;
+  const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
 
   useEffect(() => {
     loadShifts();

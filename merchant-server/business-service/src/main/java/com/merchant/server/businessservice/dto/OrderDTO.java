@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.dto;
 
+import com.merchant.server.businessservice.entity.MembershipTier;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +16,7 @@ public class OrderDTO {
     private Long customerId;
     private String customerName;
     private String customerPhone;
+    private MembershipTier customerMembershipTier; // Customer's membership tier
     private Long appointmentId;
     private Long resourceId;
     private String resourceName;

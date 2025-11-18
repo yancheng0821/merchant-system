@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.StaffAttendanceMapper">
+
+    <!-- 员工签到签退记录结果映射 -->
+    <resultMap id="StaffAttendanceResultMap" type="com.merchant.server.businessservice.entity.StaffAttendance">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="attendance_date" property="attendanceDate"/>
+        <result column="check_in_time" property="checkInTime"/>
+        <result column="check_out_time" property="checkOutTime"/>
+        <result column="notes" property="notes"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="summary_sent" property="summarySent"/>
+        <result column="summary_sent_at" property="summarySentAt"/>
+        <result column="summary_sent_by" property="summarySentBy"/>
+    </resultMap>
+
+    <!-- 根据ID查询签到记录 -->
+    <select id="findById" resultMap="StaffAttendanceResultMap">
+        SELECT * FROM staff_attendance WHERE id = #{id}
+    </select>
+
+    <!-- 根据资源ID和日期查询签到记录 -->
+    <select id="findByResourceIdAndDate" resultMap="StaffAttendanceResultMap">
+        SELECT * FROM staff_attendance
+        WHERE resource_id = #{resourceId} AND attendance_date = #{attendanceDate}
+    </select>
+
+    <!-- 根据租户ID和日期查询所有员工的签到记录 -->
+    <select id="findByTenantIdAndDate" resultMap="StaffAttendanceResultMap">
+        SELECT * FROM staff_attendance
+        WHERE tenant_id = #{tenantId} AND attendance_date = #{attendanceDate}
+        ORDER BY resource_id
+    </select>
+
+    <!-- 根据资源ID和日期范围查询签到记录 -->
+    <select id="findByResourceIdAndDateRange" resultMap="StaffAttendanceResultMap">
+        SELECT * FROM staff_attendance
+        WHERE resource_id = #{resourceId}
+        AND attendance_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY attendance_date DESC
+    </select>
+
+    <!-- 插入签到记录 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO staff_attendance (
+            tenant_id,
+            resource_id,
+            attendance_date,
+            check_in_time,
+            check_out_time,
+            notes,
+            created_by
+        ) VALUES (
+            #{tenantId},
+            #{resourceId},
+            #{attendanceDate},
+            #{checkInTime},
+            #{checkOutTime},
+            #{notes},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 更新签到记录 -->
+    <update id="update">
+        UPDATE staff_attendance
+        SET check_in_time = #{checkInTime},
+            check_out_time = #{checkOutTime},
+            notes = #{notes}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除签到记录 -->
+    <delete id="deleteById">
+        DELETE FROM staff_attendance WHERE id = #{id}
+    </delete>
+
+    <!-- 根据资源ID和日期删除签到记录 -->
+    <delete id="deleteByResourceIdAndDate">
+        DELETE FROM staff_attendance
+        WHERE resource_id = #{resourceId} AND attendance_date = #{attendanceDate}
+    </delete>
+
+    <!-- 更新汇总发送状态 -->
+    <update id="updateSummarySentStatus">
+        UPDATE staff_attendance
+        SET summary_sent = 1,
+            summary_sent_at = NOW(),
+            summary_sent_by = #{summarySentBy}
+        WHERE resource_id = #{resourceId}
+          AND attendance_date = #{attendanceDate}
+    </update>
+
+</mapper>

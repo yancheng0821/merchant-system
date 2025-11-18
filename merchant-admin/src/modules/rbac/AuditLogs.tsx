@@ -122,14 +122,19 @@ const AuditLogs: React.FC = () => {
         page: parseInt(params.get('page') || '0'),
         size: parseInt(params.get('size') || '10'),
       };
+      const resource = params.get('resource');
+      const status = params.get('status');
       const action = params.get('action');
       const search = params.get('search');
       const dateFrom = params.get('startDate');
       const dateTo = params.get('endDate');
+      if (resource) queryParams.resource = resource;
+      if (status) queryParams.status = status;
       if (action) queryParams.action = action;
       if (search) queryParams.search = search;
       if (dateFrom) queryParams.dateFrom = dateFrom;
       if (dateTo) queryParams.dateTo = dateTo;
+      if (user?.timezone) queryParams.timezone = user.timezone;
 
       const data = await auditApi.getAuditLogs(queryParams);
       setLogs(data.content || []);
@@ -193,15 +198,20 @@ const AuditLogs: React.FC = () => {
       const exportParams: any = {
         tenantId: user?.tenantId || 1,
       };
+      const resource = params.get('resource');
+      const status = params.get('status');
       const search = params.get('search');
       const action = params.get('action');
       const dateFrom = params.get('startDate');
       const dateTo = params.get('endDate');
 
+      if (resource) exportParams.resource = resource;
+      if (status) exportParams.status = status;
       if (search) exportParams.search = search;
       if (action) exportParams.action = action;
       if (dateFrom) exportParams.dateFrom = dateFrom;
       if (dateTo) exportParams.dateTo = dateTo;
+      if (user?.timezone) exportParams.timezone = user.timezone;
 
       await auditApi.exportAuditLogs(exportParams);
     } catch (err) {
@@ -272,6 +282,7 @@ const AuditLogs: React.FC = () => {
       LOGIN: t('audit.action.login'),
       LOGOUT: t('audit.action.logout'),
       BATCH_CREATE: t('audit.action.batchCreate'),
+      SEND_SUMMARY: t('audit.action.sendSummary'),
     };
     return actionMap[action] || action;
   };
@@ -284,15 +295,20 @@ const AuditLogs: React.FC = () => {
       // Business Resources
       CUSTOMER: t('audit.resource.customer'),
       CUSTOMER_PACKAGE: t('audit.resource.customerPackage'),
+      MEMBERSHIP_TIER: t('audit.resource.membershipTier'),
       APPOINTMENT: t('audit.resource.appointment'),
       SERVICE: t('audit.resource.service'),
       SERVICE_PACKAGE: t('audit.resource.servicePackage'),
       SERVICE_CATEGORY: t('audit.resource.serviceCategory'),
       RESOURCE: t('audit.resource.resource'),
       RESOURCE_SCHEDULE: t('audit.resource.resourceSchedule'),
+      STAFF_ATTENDANCE: t('audit.resource.staffAttendance'),
+      // Cost Management Resources
+      COST_MANAGEMENT: t('audit.resource.costManagement'),
       // Notification Resources
       NOTIFICATION_TEMPLATE: t('audit.resource.notificationTemplate'),
       NOTIFICATION_LOG: t('audit.resource.notificationLog'),
+      STAFF_NOTIFICATION: t('audit.resource.staffNotification'),
       // Merchant Resources
       MERCHANT: t('audit.resource.merchant'),
       MERCHANT_CONFIG_ITEM: t('audit.resource.merchantConfigItem'),
@@ -304,7 +320,7 @@ const AuditLogs: React.FC = () => {
     const normalizedResource = resource.toUpperCase();
 
     // Customer-related resources - Pink
-    if (normalizedResource.includes('CUSTOMER')) {
+    if (normalizedResource.includes('CUSTOMER') || normalizedResource.includes('MEMBERSHIP')) {
       return { bg: alpha('#DB2777', 0.1), color: '#DB2777' };
     }
 
@@ -331,6 +347,11 @@ const AuditLogs: React.FC = () => {
     // Notification resources - Orange
     if (normalizedResource.includes('NOTIFICATION')) {
       return { bg: alpha('#F97316', 0.1), color: '#F97316' };
+    }
+
+    // Cost Management resources - Red
+    if (normalizedResource.includes('COST')) {
+      return { bg: alpha('#EF4444', 0.1), color: '#EF4444' };
     }
 
     // Merchant/Settings resources - Teal
@@ -792,15 +813,20 @@ const AuditLogs: React.FC = () => {
                   {/* Business Resources */}
                   <MenuItem value="CUSTOMER">{t('audit.resource.customer')}</MenuItem>
                   <MenuItem value="CUSTOMER_PACKAGE">{t('audit.resource.customerPackage')}</MenuItem>
+                  <MenuItem value="MEMBERSHIP_TIER">{t('audit.resource.membershipTier')}</MenuItem>
                   <MenuItem value="APPOINTMENT">{t('audit.resource.appointment')}</MenuItem>
                   <MenuItem value="SERVICE">{t('audit.resource.service')}</MenuItem>
                   <MenuItem value="SERVICE_PACKAGE">{t('audit.resource.servicePackage')}</MenuItem>
                   <MenuItem value="SERVICE_CATEGORY">{t('audit.resource.serviceCategory')}</MenuItem>
                   <MenuItem value="RESOURCE">{t('audit.resource.resource')}</MenuItem>
                   <MenuItem value="RESOURCE_SCHEDULE">{t('audit.resource.resourceSchedule')}</MenuItem>
+                  <MenuItem value="STAFF_ATTENDANCE">{t('audit.resource.staffAttendance')}</MenuItem>
+                  {/* Cost Management Resources */}
+                  <MenuItem value="COST_MANAGEMENT">{t('audit.resource.costManagement')}</MenuItem>
                   {/* Notification Resources */}
                   <MenuItem value="NOTIFICATION_TEMPLATE">{t('audit.resource.notificationTemplate')}</MenuItem>
                   <MenuItem value="NOTIFICATION_LOG">{t('audit.resource.notificationLog')}</MenuItem>
+                  <MenuItem value="STAFF_NOTIFICATION">{t('audit.resource.staffNotification')}</MenuItem>
                   {/* Merchant Resources */}
                   <MenuItem value="MERCHANT">{t('audit.resource.merchant')}</MenuItem>
                   <MenuItem value="MERCHANT_CONFIG_ITEM">{t('audit.resource.merchantConfigItem')}</MenuItem>
@@ -848,6 +874,7 @@ const AuditLogs: React.FC = () => {
                   <MenuItem value="CANCEL">{t('audit.action.cancel')}</MenuItem>
                   <MenuItem value="RETRY">{t('audit.action.retry')}</MenuItem>
                   <MenuItem value="INIT">{t('audit.action.init')}</MenuItem>
+                  <MenuItem value="SEND_SUMMARY">{t('audit.action.sendSummary')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

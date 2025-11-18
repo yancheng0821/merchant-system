@@ -271,6 +271,7 @@ public class AppointmentController {
             ? Integer.valueOf(paymentData.get("customerPackageId").toString()) : null;
         Long verificationCodeId = paymentData.get("verificationCodeId") != null
             ? Long.valueOf(paymentData.get("verificationCodeId").toString()) : null;
+        String notes = (String) paymentData.get("notes");
 
         // 提取税率和小费信息
         @SuppressWarnings("unchecked")
@@ -304,11 +305,11 @@ public class AppointmentController {
             // 多服务场景
             log.info("Processing multi-service payment with {} services", servicePayments.size());
             updated = appointmentService.processMultiServicePayment(id, paymentMethod, servicePayments, tenantId,
-                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount);
+                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes);
         } else {
             // 单服务场景
             updated = appointmentService.processPayment(id, paymentMethod, customerPackageId, tenantId, verificationCodeId,
-                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount);
+                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes);
         }
 
         log.info("Payment processed successfully for appointment: {}", id);

@@ -282,28 +282,52 @@
 
     <!-- 检查资源在指定时间段是否已被预约 -->
     <select id="isResourceBookedInTimeSlot" resultType="boolean">
-        SELECT COUNT(*) > 0 FROM resource_booking_slots
-        WHERE resource_id = #{resourceId}
-        AND booking_date = #{bookingDate}
-        AND status = 'BOOKED'
+        SELECT COUNT(*) > 0 FROM resource_booking_slots rbs
+        INNER JOIN appointments a ON rbs.appointment_id = a.id
+        WHERE rbs.resource_id = #{resourceId}
+        AND rbs.booking_date = #{bookingDate}
+        AND rbs.status = 'BOOKED'
+        AND a.status NOT IN ('CANCELLED', 'CANCELED')
         AND (
-            (#{startTime} >= start_time AND #{startTime} &lt; end_time) OR
-            (#{endTime} > start_time AND #{endTime} &lt;= end_time) OR
-            (#{startTime} &lt;= start_time AND #{endTime} >= end_time)
+            -- 正常时间段检查（不跨午夜）：end_time > start_time
+            (rbs.end_time > rbs.start_time AND (
+                (#{startTime} >= rbs.start_time AND #{startTime} &lt; rbs.end_time) OR
+                (#{endTime} > rbs.start_time AND #{endTime} &lt;= rbs.end_time) OR
+                (#{startTime} &lt;= rbs.start_time AND #{endTime} >= rbs.end_time)
+            ))
+            OR
+            -- 跨午夜时间段检查：end_time = 00:00:00，表示从start_time到午夜
+            -- 只有当检查时间段的结束时间晚于booking slot开始时间时才冲突
+            (rbs.end_time = '00:00:00' AND (
+                (#{startTime} >= rbs.start_time) OR
+                (#{endTime} > rbs.start_time)
+            ))
         )
     </select>
 
     <!-- 检查资源在指定时间段是否已被预约（排除指定预约） -->
     <select id="isResourceBookedInTimeSlotExcluding" resultType="boolean">
-        SELECT COUNT(*) > 0 FROM resource_booking_slots
-        WHERE resource_id = #{resourceId}
-        AND booking_date = #{bookingDate}
-        AND status = 'BOOKED'
-        AND appointment_id != #{excludeAppointmentId}
+        SELECT COUNT(*) > 0 FROM resource_booking_slots rbs
+        INNER JOIN appointments a ON rbs.appointment_id = a.id
+        WHERE rbs.resource_id = #{resourceId}
+        AND rbs.booking_date = #{bookingDate}
+        AND rbs.status = 'BOOKED'
+        AND rbs.appointment_id != #{excludeAppointmentId}
+        AND a.status NOT IN ('CANCELLED', 'CANCELED')
         AND (
-            (#{startTime} >= start_time AND #{startTime} &lt; end_time) OR
-            (#{endTime} > start_time AND #{endTime} &lt;= end_time) OR
-            (#{startTime} &lt;= start_time AND #{endTime} >= end_time)
+            -- 正常时间段检查（不跨午夜）：end_time > start_time
+            (rbs.end_time > rbs.start_time AND (
+                (#{startTime} >= rbs.start_time AND #{startTime} &lt; rbs.end_time) OR
+                (#{endTime} > rbs.start_time AND #{endTime} &lt;= rbs.end_time) OR
+                (#{startTime} &lt;= rbs.start_time AND #{endTime} >= rbs.end_time)
+            ))
+            OR
+            -- 跨午夜时间段检查：end_time = 00:00:00，表示从start_time到午夜
+            -- 只有当检查时间段的结束时间晚于booking slot开始时间时才冲突
+            (rbs.end_time = '00:00:00' AND (
+                (#{startTime} >= rbs.start_time) OR
+                (#{endTime} > rbs.start_time)
+            ))
         )
     </select>
 

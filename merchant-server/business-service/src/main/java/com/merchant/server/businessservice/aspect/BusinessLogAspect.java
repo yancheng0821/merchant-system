@@ -40,11 +40,18 @@ public class BusinessLogAspect {
         String methodName = method.getName();
         String fullMethodName = className + "." + methodName;
 
+        // 判断是否为 GET 请求（查询操作）
+        boolean isGetRequest = isGetRequest(method);
+
         // 提取关键参数（避免打印完整对象）
         Map<String, Object> keyParams = extractKeyParameters(joinPoint, method);
 
-        // [REQUEST] 记录请求
-        log.info("[REQUEST] {} - {}", fullMethodName, formatParams(keyParams));
+        // [REQUEST] 记录请求 - GET 请求使用 debug，其他使用 info
+        if (isGetRequest) {
+            log.debug("[REQUEST] {} - {}", fullMethodName, formatParams(keyParams));
+        } else {
+            log.info("[REQUEST] {} - {}", fullMethodName, formatParams(keyParams));
+        }
 
         Object result = null;
         boolean success = false;
@@ -64,13 +71,28 @@ public class BusinessLogAspect {
             // [RESPONSE] 记录响应
             if (success) {
                 String resultSummary = extractResultSummary(result);
-                log.info("[RESPONSE] {} - success: true, duration: {}ms, result: {}",
-                    fullMethodName, duration, resultSummary);
+                if (isGetRequest) {
+                    log.debug("[RESPONSE] {} - success: true, duration: {}ms, result: {}",
+                        fullMethodName, duration, resultSummary);
+                } else {
+                    log.info("[RESPONSE] {} - success: true, duration: {}ms, result: {}",
+                        fullMethodName, duration, resultSummary);
+                }
             } else {
                 log.error("[RESPONSE] {} - success: false, duration: {}ms, error: {}",
                     fullMethodName, duration, errorMessage);
             }
         }
+    }
+
+    /**
+     * 判断是否为 GET 请求
+     */
+    private boolean isGetRequest(Method method) {
+        return method.isAnnotationPresent(GetMapping.class) ||
+               (method.isAnnotationPresent(RequestMapping.class) &&
+                method.getAnnotation(RequestMapping.class).method().length > 0 &&
+                method.getAnnotation(RequestMapping.class).method()[0] == RequestMethod.GET);
     }
 
     /**

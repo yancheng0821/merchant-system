@@ -5,11 +5,13 @@ import com.merchant.server.authservice.mapper.AuditLogMapper;
 import com.merchant.server.authservice.mapper.UserMapper;
 import com.merchant.server.authservice.service.AuditLogService;
 import com.merchant.server.authservice.util.MessageUtil;
+import com.merchant.server.common.util.TimeZoneUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -68,9 +70,9 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public Map<String, Object> getAuditLogs(Long tenantId, String resource, String action,
                                              String status, String search, String startDate,
-                                             String endDate, int page, int size) {
+                                             String endDate, String timezone, int page, int size) {
 
-        Map<String, Object> params = buildQueryParams(tenantId, resource, action, status, search, startDate, endDate);
+        Map<String, Object> params = buildQueryParams(tenantId, resource, action, status, search, startDate, endDate, timezone);
         params.put("offset", page * size);
         params.put("limit", size);
 
@@ -93,9 +95,9 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public List<Map<String, Object>> getAuditLogsForExport(Long tenantId, String resource,
                                                              String action, String status,
-                                                             String startDate, String endDate) {
+                                                             String startDate, String endDate, String timezone) {
 
-        Map<String, Object> params = buildQueryParams(tenantId, resource, action, status, null, startDate, endDate);
+        Map<String, Object> params = buildQueryParams(tenantId, resource, action, status, null, startDate, endDate, timezone);
         params.put("limit", 10000); // Export limit
 
         List<Map<String, Object>> logs = auditLogMapper.findByConditions(params);
@@ -132,8 +134,8 @@ public class AuditLogServiceImpl implements AuditLogService {
     }
 
     @Override
-    public Map<String, Object> getAuditStats(Long tenantId, String startDate, String endDate) {
-        Map<String, Object> params = buildQueryParams(tenantId, null, null, null, null, startDate, endDate);
+    public Map<String, Object> getAuditStats(Long tenantId, String startDate, String endDate, String timezone) {
+        Map<String, Object> params = buildQueryParams(tenantId, null, null, null, null, startDate, endDate, timezone);
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalLogs", auditLogMapper.countByConditions(params));
@@ -164,7 +166,7 @@ public class AuditLogServiceImpl implements AuditLogService {
 
     private Map<String, Object> buildQueryParams(Long tenantId, String resource, String action,
                                                    String status, String search, String startDate,
-                                                   String endDate) {
+                                                   String endDate, String timezone) {
         Map<String, Object> params = new HashMap<>();
         params.put("tenantId", tenantId);
 
@@ -184,12 +186,29 @@ public class AuditLogServiceImpl implements AuditLogService {
             params.put("search", "%" + search.trim() + "%");
         }
 
+        // 处理日期范围：将商户本地日期转换为UTC日期时间
         if (startDate != null && !startDate.trim().isEmpty()) {
-            params.put("startDate", startDate + " 00:00:00");
+            try {
+                LocalDate localDate = LocalDate.parse(startDate.trim());
+                LocalDateTime utcStart = TimeZoneUtils.getMerchantStartOfDayUTC(localDate, timezone);
+                params.put("startDate", utcStart.format(DATE_TIME_FORMATTER));
+                log.debug("Converted start date: {} (merchant local) -> {} (UTC)", startDate, utcStart);
+            } catch (Exception e) {
+                log.warn("Failed to parse start date: {}, using original value", startDate, e);
+                params.put("startDate", startDate + " 00:00:00");
+            }
         }
 
         if (endDate != null && !endDate.trim().isEmpty()) {
-            params.put("endDate", endDate + " 23:59:59");
+            try {
+                LocalDate localDate = LocalDate.parse(endDate.trim());
+                LocalDateTime utcEnd = TimeZoneUtils.getMerchantEndOfDayUTC(localDate, timezone);
+                params.put("endDate", utcEnd.format(DATE_TIME_FORMATTER));
+                log.debug("Converted end date: {} (merchant local) -> {} (UTC)", endDate, utcEnd);
+            } catch (Exception e) {
+                log.warn("Failed to parse end date: {}, using original value", endDate, e);
+                params.put("endDate", endDate + " 23:59:59");
+            }
         }
 
         return params;

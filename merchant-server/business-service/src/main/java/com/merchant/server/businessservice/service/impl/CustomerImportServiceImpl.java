@@ -52,6 +52,9 @@ public class CustomerImportServiceImpl implements CustomerImportService {
     @Autowired
     private MessageUtil messageUtil;
 
+    @Autowired
+    private com.merchant.server.businessservice.mapper.MembershipTierMapper membershipTierMapper;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 导入模板字段顺序（与customer_import_template.csv保持一致）
@@ -650,16 +653,25 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             }
         }
 
-        // 处理会员等级（如果CSV中有值则使用，否则使用默认值）
-        String membershipLevel = (String) data.get("membershipLevel");
-        if (membershipLevel != null && !membershipLevel.isEmpty()) {
+        // 处理会员等级（通过 code 查找对应的 tier ID）
+        String membershipLevelCode = (String) data.get("membershipLevel");
+        if (membershipLevelCode != null && !membershipLevelCode.trim().isEmpty()) {
             try {
-                dto.setMembershipLevel(Customer.MembershipLevel.valueOf(membershipLevel.toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                dto.setMembershipLevel(Customer.MembershipLevel.REGULAR);
+                String normalizedCode = membershipLevelCode.trim().toUpperCase();
+                // 根据租户ID和等级代码查找对应的会员等级
+                com.merchant.server.businessservice.entity.MembershipTier tier =
+                    membershipTierMapper.selectByTenantIdAndCode(tenantId, normalizedCode);
+                if (tier != null) {
+                    dto.setMembershipTierId(tier.getId());
+                } else {
+                    dto.setMembershipTierId(null);
+                }
+            } catch (Exception e) {
+                logger.error("查询会员等级时出错 - code: {}", membershipLevelCode, e);
+                dto.setMembershipTierId(null);
             }
         } else {
-            dto.setMembershipLevel(Customer.MembershipLevel.REGULAR);
+            dto.setMembershipTierId(null);
         }
 
         // 处理积分（如果CSV中有值则使用，否则使用默认值0）

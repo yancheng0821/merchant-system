@@ -14,7 +14,7 @@
         <result property="address" column="address"/>
         <result property="dateOfBirth" column="date_of_birth"/>
         <result property="gender" column="gender"/>
-        <result property="membershipLevel" column="membership_level"/>
+        <result property="membershipTierId" column="membership_tier_id"/>
         <result property="points" column="points"/>
         <result property="totalSpent" column="total_spent"/>
         <result property="status" column="status"/>
@@ -26,6 +26,19 @@
         <result property="updatedAt" column="updated_at"/>
         <result property="createdBy" column="created_by"/>
         <result property="updatedBy" column="updated_by"/>
+        <!-- 会员等级关联 -->
+        <association property="membershipTier" javaType="com.merchant.server.businessservice.entity.MembershipTier">
+            <id property="id" column="tier_id"/>
+            <result property="tenantId" column="tier_tenant_id"/>
+            <result property="name" column="tier_name"/>
+            <result property="code" column="tier_code"/>
+            <result property="requiredPoints" column="tier_required_points"/>
+            <result property="discountRate" column="tier_discount_rate"/>
+            <result property="color" column="tier_color"/>
+            <result property="icon" column="tier_icon"/>
+            <result property="benefits" column="tier_benefits"/>
+            <result property="isActive" column="tier_is_active"/>
+        </association>
         <!-- 偏好服务ID集合映射 -->
         <collection property="preferredServiceIds" ofType="java.lang.Long"
                    select="selectPreferredServiceIds" column="id"/>
@@ -33,18 +46,32 @@
 
     <!-- 基础查询SQL -->
     <sql id="Base_Column_List">
-        id, tenant_id, first_name, last_name, phone, country_code, email, address, date_of_birth,
-        gender, membership_level, points, total_spent, status, notes, allergies,
-        communication_preference, last_visit_date, created_at, updated_at, created_by, updated_by
+        c.id, c.tenant_id, c.first_name, c.last_name, c.phone, c.country_code, c.email, c.address, c.date_of_birth,
+        c.gender, c.membership_tier_id, c.points, c.total_spent, c.status, c.notes, c.allergies,
+        c.communication_preference, c.last_visit_date, c.created_at, c.updated_at, c.created_by, c.updated_by
+    </sql>
+
+    <!-- 会员等级关联查询SQL -->
+    <sql id="Tier_Column_List">
+        mt.id as tier_id,
+        mt.tenant_id as tier_tenant_id,
+        mt.name as tier_name,
+        mt.code as tier_code,
+        mt.required_points as tier_required_points,
+        mt.discount_rate as tier_discount_rate,
+        mt.color as tier_color,
+        mt.icon as tier_icon,
+        mt.benefits as tier_benefits,
+        mt.is_active as tier_is_active
     </sql>
 
     <!-- 搜索条件 -->
     <sql id="Search_Where_Clause">
         <if test="keyword != null and keyword != ''">
             AND (
-                LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
-                OR phone LIKE CONCAT('%', #{keyword}, '%')
-                OR LOWER(email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+                LOWER(CONCAT(c.first_name, ' ', c.last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+                OR c.phone LIKE CONCAT('%', #{keyword}, '%')
+                OR LOWER(c.email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
             )
         </if>
     </sql>
@@ -53,17 +80,17 @@
     <sql id="Order_By_Clause">
         ORDER BY
         <choose>
-            <when test="sortBy == 'firstName'">first_name</when>
-            <when test="sortBy == 'lastName'">last_name</when>
-            <when test="sortBy == 'phone'">phone</when>
-            <when test="sortBy == 'email'">email</when>
-            <when test="sortBy == 'membershipLevel'">membership_level</when>
-            <when test="sortBy == 'points'">points</when>
-            <when test="sortBy == 'totalSpent'">total_spent</when>
-            <when test="sortBy == 'status'">status</when>
-            <when test="sortBy == 'lastVisitDate'">last_visit_date</when>
-            <when test="sortBy == 'createdAt'">created_at</when>
-            <otherwise>updated_at</otherwise>
+            <when test="sortBy == 'firstName'">c.first_name</when>
+            <when test="sortBy == 'lastName'">c.last_name</when>
+            <when test="sortBy == 'phone'">c.phone</when>
+            <when test="sortBy == 'email'">c.email</when>
+            <when test="sortBy == 'membershipTier'">mt.required_points</when>
+            <when test="sortBy == 'points'">c.points</when>
+            <when test="sortBy == 'totalSpent'">c.total_spent</when>
+            <when test="sortBy == 'status'">c.status</when>
+            <when test="sortBy == 'lastVisitDate'">c.last_visit_date</when>
+            <when test="sortBy == 'createdAt'">c.created_at</when>
+            <otherwise>c.updated_at</otherwise>
         </choose>
         <choose>
             <when test="sortDir == 'ASC'">ASC</when>
@@ -73,66 +100,82 @@
 
     <!-- 根据ID查询客户 -->
     <select id="selectById" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE id = #{id}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.id = #{id}
     </select>
 
     <!-- 根据租户ID分页查询客户 -->
     <select id="selectByTenantId" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status != 'DELETED'
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <!-- 根据租户ID和状态分页查询客户 -->
     <select id="selectByTenantIdAndStatus" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status = #{status}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status = #{status}
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <!-- 根据租户ID和会员等级分页查询客户 -->
     <select id="selectByTenantIdAndMembershipLevel" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND mt.code = #{membershipLevel} AND c.status != 'DELETED'
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <!-- 根据租户ID、状态和会员等级分页查询客户 -->
     <select id="selectByTenantIdAndStatusAndMembershipLevel" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status = #{status} AND mt.code = #{membershipLevel}
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <!-- 根据租户ID和电话号码查询客户 -->
     <select id="selectByTenantIdAndPhone" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND phone = #{phone}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.phone = #{phone}
     </select>
 
     <!-- 根据租户ID和邮箱查询客户 -->
     <select id="selectByTenantIdAndEmail" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND email = #{email}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.email = #{email}
     </select>
 
     <!-- 搜索客户 -->
     <select id="searchCustomers" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status != 'DELETED'
         <include refid="Search_Where_Clause"/>
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
@@ -140,9 +183,11 @@
 
     <!-- 搜索客户（带状态过滤） -->
     <select id="searchCustomersByStatus" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status = #{status}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status = #{status}
         <include refid="Search_Where_Clause"/>
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
@@ -150,9 +195,11 @@
 
     <!-- 搜索客户（带会员等级过滤） -->
     <select id="searchCustomersByMembershipLevel" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND mt.code = #{membershipLevel} AND c.status != 'DELETED'
         <include refid="Search_Where_Clause"/>
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
@@ -160,9 +207,11 @@
 
     <!-- 搜索客户（带状态和会员等级过滤） -->
     <select id="searchCustomersByStatusAndMembershipLevel" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status = #{status} AND mt.code = #{membershipLevel}
         <include refid="Search_Where_Clause"/>
         <include refid="Order_By_Clause"/>
         LIMIT #{limit} OFFSET #{offset}
@@ -201,46 +250,53 @@
     <!-- 统计租户客户总数（带会员等级过滤） -->
     <select id="countByTenantIdAndMembershipLevel" resultType="long">
         SELECT COUNT(*)
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND mt.code = #{membershipLevel} AND c.status != 'DELETED'
     </select>
 
     <!-- 统计租户客户总数（带搜索和会员等级过滤） -->
     <select id="countSearchCustomersByMembershipLevel" resultType="long">
         SELECT COUNT(*)
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level = #{membershipLevel} AND status != 'DELETED'
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND mt.code = #{membershipLevel} AND c.status != 'DELETED'
         <include refid="Search_Where_Clause"/>
     </select>
 
     <!-- 统计租户客户总数（带状态和会员等级过滤） -->
     <select id="countByTenantIdAndStatusAndMembershipLevel" resultType="long">
         SELECT COUNT(*)
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status = #{status} AND mt.code = #{membershipLevel}
     </select>
 
     <!-- 统计租户客户总数（带搜索、状态和会员等级过滤） -->
     <select id="countSearchCustomersByStatusAndMembershipLevel" resultType="long">
         SELECT COUNT(*)
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status = #{status} AND membership_level = #{membershipLevel}
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status = #{status} AND mt.code = #{membershipLevel}
         <include refid="Search_Where_Clause"/>
     </select>
 
     <!-- 统计VIP客户数量 -->
     <select id="countVipCustomers" resultType="long">
         SELECT COUNT(*)
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND membership_level IN ('GOLD', 'PLATINUM') AND status != 'DELETED'
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND mt.code IN ('GOLD', 'PLATINUM') AND c.status != 'DELETED'
     </select>
 
     <!-- 获取客户消费排行 -->
     <select id="selectTopSpendingCustomers" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId} AND status != 'DELETED'
-        ORDER BY total_spent DESC
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId} AND c.status != 'DELETED'
+        ORDER BY c.total_spent DESC
         LIMIT #{limit}
     </select>
 
@@ -248,11 +304,11 @@
     <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Customer" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO customers (
             tenant_id, first_name, last_name, phone, country_code, email, address, date_of_birth,
-            gender, membership_level, points, total_spent, status, notes, allergies,
+            gender, membership_tier_id, points, total_spent, status, notes, allergies,
             communication_preference, last_visit_date, created_at, updated_at, created_by, updated_by
         ) VALUES (
             #{tenantId}, #{firstName}, #{lastName}, #{phone}, #{countryCode}, #{email}, #{address}, #{dateOfBirth},
-            #{gender}, #{membershipLevel}, #{points}, #{totalSpent}, #{status}, #{notes}, #{allergies},
+            #{gender}, #{membershipTierId}, #{points}, #{totalSpent}, #{status}, #{notes}, #{allergies},
             #{communicationPreference}, #{lastVisitDate}, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy}
         )
     </insert>
@@ -269,7 +325,7 @@
             address = #{address},
             date_of_birth = #{dateOfBirth},
             gender = #{gender},
-            membership_level = #{membershipLevel},
+            membership_tier_id = #{membershipTierId},
             points = #{points},
             total_spent = #{totalSpent},
             status = #{status},
@@ -302,24 +358,26 @@
     </select>
 
     <select id="findByCondition" resultMap="CustomerResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM customers
-        WHERE tenant_id = #{tenantId}
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId}
         <if test="status != null">
-            AND status = #{status}
+            AND c.status = #{status}
         </if>
         <if test="status == null">
-            AND status != 'DELETED'
+            AND c.status != 'DELETED'
         </if>
         <if test="keyword != null and keyword != ''">
             AND (
-                LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
-                OR phone LIKE CONCAT('%', #{keyword}, '%')
-                OR LOWER(email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+                LOWER(CONCAT(c.first_name, ' ', c.last_name)) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
+                OR c.phone LIKE CONCAT('%', #{keyword}, '%')
+                OR LOWER(c.email) LIKE LOWER(CONCAT('%', #{keyword}, '%'))
             )
         </if>
         <if test="level != null">
-            AND membership_level = #{level}
+            AND mt.code = #{level}
         </if>
         <include refid="Order_By_Clause"/>
     </select>

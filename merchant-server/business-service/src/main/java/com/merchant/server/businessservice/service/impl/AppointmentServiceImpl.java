@@ -285,14 +285,22 @@ public class AppointmentServiceImpl implements AppointmentService {
                 // 设置服务信息到预约对象中（用于返回和通知）
                 appointment.setAppointmentServices(appointmentServices);
             }
-            
-            // 4. 发送预约确认通知
+
+            // 4. 填充customer信息（前端需要显示客户姓名）
+            try {
+                Customer customer = customerMapper.selectById(appointment.getCustomerId());
+                appointment.setCustomer(customer);
+            } catch (Exception e) {
+                log.error("Failed to load customer for appointment: {}", appointment.getId(), e);
+            }
+
+            // 5. 发送预约确认通知
             try {
                 notificationService.sendConfirmationNotification(appointment);
             } catch (Exception e) {
                 log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
             }
-            
+
             return appointment;
         } catch (Exception e) {
             log.error("Error creating appointment with services: ", e);
@@ -454,6 +462,23 @@ public class AppointmentServiceImpl implements AppointmentService {
             // 加载资源关联
             List<AppointmentResource> resources = appointmentResourceMapper.selectByAppointmentId(id);
             appointment.setAppointmentResources(resources);
+
+            // 加载customer信息（前端需要显示客户姓名）
+            try {
+                Customer customer = customerMapper.selectById(appointment.getCustomerId());
+                appointment.setCustomer(customer);
+            } catch (Exception e) {
+                log.error("Failed to load customer for appointment: {}", id, e);
+            }
+
+            // 加载服务详情
+            try {
+                List<com.merchant.server.businessservice.entity.AppointmentService> services =
+                    appointmentMapper.findAppointmentServicesByAppointmentId(id);
+                appointment.setAppointmentServices(services);
+            } catch (Exception e) {
+                log.error("Failed to load services for appointment: {}", id, e);
+            }
         }
 
         return appointment;
@@ -478,7 +503,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Appointment processPayment(Long appointmentId, String paymentMethod, Integer customerPackageId, Long tenantId, Long verificationCodeId,
-            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount) {
+            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes) {
         // Get the appointment
         Appointment appointment = getAppointmentById(appointmentId);
         if (appointment == null) {
@@ -542,7 +567,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointmentMapper.update(appointment);
 
         // Create order record - must succeed or transaction rolls back
-        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount);
+        // For single service scenario, pass null for servicePayments
+        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes, null);
 
         // Update customer statistics (total spent, points, last visit)
         // The totalAmount from frontend already excludes package payments (0 for package payment)
@@ -575,7 +601,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Appointment processMultiServicePayment(Long appointmentId, String paymentMethod, List<Map<String, Object>> servicePayments, Long tenantId,
-            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount) {
+            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes) {
         // Get the appointment
         Appointment appointment = getAppointmentById(appointmentId);
         if (appointment == null) {
@@ -639,7 +665,8 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointmentMapper.update(appointment);
 
         // Create order record - must succeed or transaction rolls back
-        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount);
+        // For multi-service scenario, pass servicePayments to record each service's payment method
+        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes, servicePayments);
 
         // Update customer statistics (total spent, points, last visit)
         // The totalAmount from frontend already excludes package payments
@@ -727,7 +754,8 @@ public class AppointmentServiceImpl implements AppointmentService {
      * Create order from appointment
      */
     private void createOrderFromAppointment(Appointment appointment, String paymentMethod,
-            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount) {
+            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes,
+            List<Map<String, Object>> servicePayments) {
         // Build order create DTO
         OrderCreateDTO orderCreate = new OrderCreateDTO();
         orderCreate.setTenantId(appointment.getTenantId());
@@ -764,6 +792,24 @@ public class AppointmentServiceImpl implements AppointmentService {
                         resource.getResourceType().name() : null);
                 }
 
+                // Set payment method for this service (for multi-service mixed payment scenarios)
+                if (servicePayments != null && !servicePayments.isEmpty()) {
+                    // Multi-service scenario: find the payment method for this specific service
+                    for (Map<String, Object> servicePayment : servicePayments) {
+                        Long serviceId = servicePayment.get("serviceId") != null
+                            ? Long.valueOf(servicePayment.get("serviceId").toString()) : null;
+                        if (serviceId != null && serviceId.equals(appointmentService.getServiceId())) {
+                            String servicePaymentMethod = (String) servicePayment.get("paymentMethod");
+                            // Convert to lowercase for database ENUM compatibility
+                            orderService.setPaymentMethod(servicePaymentMethod != null ? servicePaymentMethod.toLowerCase() : null);
+                            break;
+                        }
+                    }
+                } else {
+                    // Single service scenario: use the overall payment method
+                    orderService.setPaymentMethod(paymentMethod != null ? paymentMethod.toLowerCase() : null);
+                }
+
                 orderServices.add(orderService);
             }
         }
@@ -778,6 +824,11 @@ public class AppointmentServiceImpl implements AppointmentService {
         // These values already exclude package payments, so use them directly
         orderCreate.setSubtotal(subtotal);
         orderCreate.setTotalAmount(totalAmount);
+
+        // Set notes if provided
+        if (notes != null && !notes.trim().isEmpty()) {
+            orderCreate.setNotes(notes);
+        }
 
         // Create the order
         com.merchant.server.businessservice.dto.OrderDTO createdOrder = orderService.createOrder(orderCreate);

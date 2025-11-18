@@ -68,7 +68,7 @@ const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onCl
     notes: '',
   });
 
-  const locale = i18n.language === 'zh' ? zhCNLocale : enUSLocale;
+  const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
 
   useEffect(() => {
     if (open) {

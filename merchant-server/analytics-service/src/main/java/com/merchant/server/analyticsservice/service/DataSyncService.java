@@ -37,22 +37,22 @@ public class DataSyncService {
      */
     @Transactional
     public void syncDataForTenant(Long tenantId) {
-        log.info("Syncing real data for tenant: {}", tenantId);
-        
+        log.debug("Syncing real data for tenant: {}", tenantId);
+
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(30);
-        
+
         try {
             // 同步收入统计数据
             syncRevenueStats(tenantId, startDate, endDate);
-            
+
             // 同步服务统计数据
             syncServiceStats(tenantId, startDate, endDate);
-            
+
             // 同步资源统计数据
             syncResourceStats(tenantId, startDate, endDate);
-            
-            log.info("Data sync completed for tenant: {}", tenantId);
+
+            log.debug("Data sync completed for tenant: {}", tenantId);
         } catch (Exception e) {
             log.error("Error syncing data for tenant: {}", tenantId, e);
             throw e;
@@ -60,18 +60,18 @@ public class DataSyncService {
     }
     
     private void syncRevenueStats(Long tenantId, LocalDate startDate, LocalDate endDate) {
-        log.info("Syncing revenue stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+        log.debug("Syncing revenue stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
         
         try {
             // 先删除该时间段的现有数据，避免重复
             revenueStatsMapper.deleteByTenantIdAndDateRange(tenantId, startDate, endDate);
-            log.info("Deleted existing revenue stats records for tenant: {}", tenantId);
+            log.debug("Deleted existing revenue stats records for tenant: {}", tenantId);
             
             // 从business-service获取订单统计数据
             List<Map<String, Object>> orderStats = businessServiceClient.getOrderStats(
                 tenantId, startDate.toString(), endDate.toString());
-            
-            log.info("Retrieved {} order stats records from business service for tenant: {}", orderStats.size(), tenantId);
+
+            log.debug("Retrieved {} order stats records from business service for tenant: {}", orderStats.size(), tenantId);
             
             int insertedCount = 0;
             for (Map<String, Object> stat : orderStats) {
@@ -87,11 +87,11 @@ public class DataSyncService {
                 
                 revenueStatsMapper.insert(revenueStats);
                 insertedCount++;
-                log.debug("Inserted revenue stat for date: {}, orders: {}, revenue: {}", 
+                log.debug("Inserted revenue stat for date: {}, orders: {}, revenue: {}",
                     revenueStats.getStatDate(), revenueStats.getTotalOrders(), revenueStats.getTotalRevenue());
             }
-            
-            log.info("Revenue stats sync completed for tenant: {}. Inserted {} records", tenantId, insertedCount);
+
+            log.debug("Revenue stats sync completed for tenant: {}. Inserted {} records", tenantId, insertedCount);
         } catch (Exception e) {
             log.error("Error syncing revenue stats for tenant: {}", tenantId, e);
             throw e;
@@ -99,18 +99,18 @@ public class DataSyncService {
     }
     
     private void syncServiceStats(Long tenantId, LocalDate startDate, LocalDate endDate) {
-        log.info("Syncing service stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+        log.debug("Syncing service stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
         
         try {
             // 先删除该时间段的现有数据，避免重复
             serviceStatsMapper.deleteByTenantIdAndDateRange(tenantId, startDate, endDate);
-            log.info("Deleted existing service stats records for tenant: {}", tenantId);
+            log.debug("Deleted existing service stats records for tenant: {}", tenantId);
             
             // 从business-service获取服务统计数据
             List<Map<String, Object>> serviceStats = businessServiceClient.getServiceStats(
                 tenantId, startDate.toString(), endDate.toString());
-            
-            log.info("Retrieved {} service stats records from business service for tenant: {}", serviceStats.size(), tenantId);
+
+            log.debug("Retrieved {} service stats records from business service for tenant: {}", serviceStats.size(), tenantId);
             
             int insertedCount = 0;
             for (Map<String, Object> stat : serviceStats) {
@@ -129,12 +129,12 @@ public class DataSyncService {
                 
                 serviceStatsMapper.insert(serviceStatsEntity);
                 insertedCount++;
-                log.debug("Inserted service stat for service: {}, date: {}, orders: {}, revenue: {}", 
-                    serviceStatsEntity.getServiceName(), serviceStatsEntity.getStatDate(), 
+                log.debug("Inserted service stat for service: {}, date: {}, orders: {}, revenue: {}",
+                    serviceStatsEntity.getServiceName(), serviceStatsEntity.getStatDate(),
                     serviceStatsEntity.getOrderCount(), serviceStatsEntity.getTotalRevenue());
             }
-            
-            log.info("Service stats sync completed for tenant: {}. Inserted {} records", tenantId, insertedCount);
+
+            log.debug("Service stats sync completed for tenant: {}. Inserted {} records", tenantId, insertedCount);
         } catch (Exception e) {
             log.error("Error syncing service stats for tenant: {}", tenantId, e);
             throw e;
@@ -142,7 +142,7 @@ public class DataSyncService {
     }
     
     private void syncResourceStats(Long tenantId, LocalDate startDate, LocalDate endDate) {
-        log.info("Syncing resource stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+        log.debug("Syncing resource stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
         
         try {
             // 先删除该时间段的现有数据，避免重复
@@ -172,10 +172,10 @@ public class DataSyncService {
                     }
                 }
             } else {
-                log.info("No resource stats data found for tenant: {}", tenantId);
+                log.debug("No resource stats data found for tenant: {}", tenantId);
             }
-            
-            log.info("Resource stats sync completed for tenant: {}", tenantId);
+
+            log.debug("Resource stats sync completed for tenant: {}", tenantId);
         } catch (Exception e) {
             log.error("Error syncing resource stats for tenant: {}", tenantId, e);
             throw e;

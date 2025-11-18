@@ -50,9 +50,20 @@ import {
   Upload as UploadIcon,
   History as HistoryIcon,
   CardGiftcard as PackageIcon,
+  // 会员等级图标
+  StarHalf as StarHalfIcon,
+  StarRate as StarRateIcon,
+  Grade as GradeIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
+  CardMembership as MembershipIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { customerApi, Customer, CustomerStats, handleApiError } from '../../services/api';
+import { customerApi, Customer, CustomerStats, handleApiError, membershipTierApi, MembershipTier } from '../../services/api';
 import { CurrencyUtils } from '../../config/constants';
 import { usePermission } from '../../hooks/usePermission';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
@@ -70,6 +81,7 @@ const CustomerManagement: React.FC = () => {
   const { hasPermission } = usePermission();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
+  const [membershipTiers, setMembershipTiers] = useState<MembershipTier[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [membershipFilter, setMembershipFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -116,7 +128,7 @@ const CustomerManagement: React.FC = () => {
     tenantId,
     keyword: searchTerm || undefined,
     status: statusFilter !== 'all' ? (statusFilter === 'active' ? 'ACTIVE' : statusFilter === 'inactive' ? 'INACTIVE' : undefined) as 'ACTIVE' | 'INACTIVE' | undefined : undefined,
-    membershipLevel: membershipFilter !== 'all' ? (membershipFilter.toUpperCase() as 'REGULAR' | 'SILVER' | 'GOLD' | 'PLATINUM') : undefined,
+    membershipLevel: membershipFilter !== 'all' ? membershipFilter.toUpperCase() : undefined,
     page: pageNum,
     size: rowsPerPage,
     sortBy: sortBy,
@@ -170,6 +182,16 @@ const CustomerManagement: React.FC = () => {
     }
   }, [tenantId]);
 
+  // 加载会员等级列表
+  const loadMembershipTiers = useCallback(async () => {
+    try {
+      const tiers = await membershipTierApi.getAllTiers(Number(tenantId));
+      setMembershipTiers(tiers);
+    } catch (err) {
+      console.error('Failed to load membership levels:', err);
+    }
+  }, [tenantId]);
+
   // 统一的数据加载逻辑
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -183,6 +205,11 @@ const CustomerManagement: React.FC = () => {
   useEffect(() => {
     loadCustomerStats();
   }, [loadCustomerStats]);
+
+  // 初始加载会员等级
+  useEffect(() => {
+    loadMembershipTiers();
+  }, [loadMembershipTiers]);
 
   // 删除客户
   const handleDeleteCustomer = async () => {
@@ -320,27 +347,64 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
-  const getMembershipChip = (level?: string) => {
-    const membershipConfig = {
-      REGULAR: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: t('customers.membershipLevels.regular') },
-      SILVER: { color: '#9CA3AF', bg: alpha('#9CA3AF', 0.1), label: t('customers.membershipLevels.silver') },
-      GOLD: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('customers.membershipLevels.gold') },
-      PLATINUM: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('customers.membershipLevels.platinum') },
-    };
+  // 获取会员等级图标
+  const getTierIcon = (iconName?: string, color?: string) => {
+    if (!iconName) return null;
 
-    const config = membershipConfig[level as keyof typeof membershipConfig] || membershipConfig.REGULAR;
+    const iconSx = { fontSize: '1rem', color: color || 'inherit' };
+
+    switch (iconName.toLowerCase()) {
+      case 'star': return <StarIcon sx={iconSx} />;
+      case 'starhalf': return <StarHalfIcon sx={iconSx} />;
+      case 'starrate': return <StarRateIcon sx={iconSx} />;
+      case 'grade': return <GradeIcon sx={iconSx} />;
+      case 'stars': return <StarsIcon sx={iconSx} />;
+      case 'trophy': return <TrophyIcon sx={iconSx} />;
+      case 'medal': return <MedalIcon sx={iconSx} />;
+      case 'diamond': return <DiamondIcon sx={iconSx} />;
+      case 'premium': return <PremiumIcon sx={iconSx} />;
+      case 'verified': return <VerifiedIcon sx={iconSx} />;
+      case 'membership': return <MembershipIcon sx={iconSx} />;
+      default: return <StarIcon sx={iconSx} />;
+    }
+  };
+
+  const getMembershipChip = (tier?: any) => {
+    if (!tier) {
+      return (
+        <Chip
+          label="-"
+          sx={{
+            backgroundColor: alpha('#6B7280', 0.1),
+            color: '#6B7280',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            height: 24,
+            '& .MuiChip-label': {
+              px: 2,
+            },
+          }}
+        />
+      );
+    }
 
     return (
       <Chip
-        label={config.label}
+        icon={getTierIcon(tier.icon, tier.color) || undefined}
+        label={tier.name}
         sx={{
-          backgroundColor: config.bg,
-          color: config.color,
+          backgroundColor: alpha(tier.color || '#6B7280', 0.1),
+          color: tier.color || '#6B7280',
           fontWeight: 600,
           fontSize: '0.75rem',
           height: 24,
           '& .MuiChip-label': {
             px: 2,
+          },
+          '& .MuiChip-icon': {
+            color: tier.color || '#6B7280',
+            marginLeft: 1,
+            marginRight: -0.5,
           },
         }}
       />
@@ -405,30 +469,6 @@ const CustomerManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化页面标题 */}
-      <Box mb={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #DB2777, #EC4899)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
-              }}
-            >
-              {t('customers.title')}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {t('customers.subtitle')}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
       {/* 现代化统计卡片 */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
@@ -662,10 +702,14 @@ const CustomerManagement: React.FC = () => {
                   }}
                 >
                   <MenuItem value="all">{t('customers.allLevels')}</MenuItem>
-                  <MenuItem value="regular">{t('customers.membershipLevels.regular')}</MenuItem>
-                  <MenuItem value="silver">{t('customers.membershipLevels.silver')}</MenuItem>
-                  <MenuItem value="gold">{t('customers.membershipLevels.gold')}</MenuItem>
-                  <MenuItem value="platinum">{t('customers.membershipLevels.platinum')}</MenuItem>
+                  {membershipTiers.map((tier) => (
+                    <MenuItem key={tier.id} value={tier.code}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {getTierIcon(tier.icon, tier.color)}
+                        <span style={{ color: tier.color || '#6B7280', fontWeight: 600 }}>{tier.name}</span>
+                      </Box>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -727,7 +771,7 @@ const CustomerManagement: React.FC = () => {
                   <MenuItem value="lastVisitDate">{t('customers.sortOptions.lastVisit')}</MenuItem>
                   <MenuItem value="totalSpent">{t('customers.sortOptions.totalSpent')}</MenuItem>
                   <MenuItem value="points">{t('customers.sortOptions.points')}</MenuItem>
-                  <MenuItem value="membershipLevel">{t('customers.sortOptions.membershipLevel')}</MenuItem>
+                  <MenuItem value="membershipTier">{t('customers.sortOptions.membershipLevel')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -907,7 +951,7 @@ const CustomerManagement: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      {getMembershipChip(customer.membershipLevel)}
+                      {getMembershipChip(customer.membershipTier)}
                     </TableCell>
                     <TableCell>
                       <Box>

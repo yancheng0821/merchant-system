@@ -30,9 +30,9 @@ public class AnalyticsController {
             @RequestParam Long tenantId,
             @RequestParam String startDate,
             @RequestParam String endDate) {
-        
-        log.info("Getting order stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
-        
+
+        log.debug("Getting order stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+
         try {
             List<Map<String, Object>> stats = businessAnalyticsService.getOrderStats(tenantId, startDate, endDate);
             return ResponseEntity.ok(stats);
@@ -51,9 +51,9 @@ public class AnalyticsController {
             @RequestParam Long tenantId,
             @RequestParam String startDate,
             @RequestParam String endDate) {
-        
-        log.info("Getting service stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
-        
+
+        log.debug("Getting service stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+
         try {
             List<Map<String, Object>> stats = businessAnalyticsService.getServiceStats(tenantId, startDate, endDate);
             return ResponseEntity.ok(stats);
@@ -72,9 +72,9 @@ public class AnalyticsController {
             @RequestParam Long tenantId,
             @RequestParam String startDate,
             @RequestParam String endDate) {
-        
-        log.info("Getting resource stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
-        
+
+        log.debug("Getting resource stats for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+
         try {
             List<Map<String, Object>> stats = businessAnalyticsService.getResourceStats(tenantId, startDate, endDate);
             return ResponseEntity.ok(stats);
@@ -93,14 +93,77 @@ public class AnalyticsController {
             @RequestParam Long tenantId,
             @RequestParam String startDate,
             @RequestParam String endDate) {
-        
+
         log.info("Getting business metrics for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
-        
+
         try {
             Map<String, Object> metrics = businessAnalyticsService.getBusinessMetrics(tenantId, startDate, endDate);
             return ResponseEntity.ok(metrics);
         } catch (Exception e) {
             log.error("Error getting business metrics for tenant: {}", tenantId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 按服务维度统计订单
+     */
+    @RequiresPermission("analytics:view_order_stats")
+    @GetMapping("/orders/by-service")
+    public ResponseEntity<List<Map<String, Object>>> getOrderStatsByService(
+            @RequestParam Long tenantId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+
+        log.debug("Getting order stats by service for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+
+        try {
+            List<Map<String, Object>> stats = businessAnalyticsService.getOrderStatsByService(tenantId, startDate, endDate);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error getting order stats by service for tenant: {}", tenantId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 按支付方式维度统计订单
+     */
+    @RequiresPermission("analytics:view_order_stats")
+    @GetMapping("/orders/by-payment-method")
+    public ResponseEntity<List<Map<String, Object>>> getOrderStatsByPaymentMethod(
+            @RequestParam Long tenantId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+
+        log.debug("Getting order stats by payment method for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+
+        try {
+            List<Map<String, Object>> stats = businessAnalyticsService.getOrderStatsByPaymentMethod(tenantId, startDate, endDate);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error getting order stats by payment method for tenant: {}", tenantId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 按支付方式统计package购买订单
+     */
+    @RequiresPermission("analytics:view_order_stats")
+    @GetMapping("/package-purchases/by-payment-method")
+    public ResponseEntity<List<Map<String, Object>>> getPackagePurchaseStatsByPaymentMethod(
+            @RequestParam Long tenantId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+
+        log.debug("Getting package purchase stats by payment method for tenant: {}, period: {} to {}", tenantId, startDate, endDate);
+
+        try {
+            List<Map<String, Object>> stats = businessAnalyticsService.getPackagePurchaseStatsByPaymentMethod(tenantId, startDate, endDate);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error getting package purchase stats by payment method for tenant: {}", tenantId, e);
             return ResponseEntity.internalServerError().build();
         }
     }

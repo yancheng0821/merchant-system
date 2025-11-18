@@ -37,6 +37,26 @@ import {
   AccessTime as TimeIcon,
   EventNote as AppointmentIcon,
   MeetingRoom as MeetingRoomIcon,
+  // Membership tier icons
+  Star as StarIcon,
+  StarHalf as StarHalfIcon,
+  StarRate as StarRateIcon,
+  Grade as GradeIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  CardGiftcard as GiftIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
+  CardMembership as MembershipIcon,
+  TrendingUp as TrendingUpIcon,
+  Loyalty as LoyaltyIcon,
+  Redeem as RedeemIcon,
+  Favorite as HeartIcon,
+  AutoAwesome as SparkleIcon,
+  Whatshot as FireIcon,
+  Celebration as CelebrationIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
@@ -84,6 +104,32 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       day: 'numeric',
       weekday: 'long'
     });
+  };
+
+  // 获取会员等级图标
+  const getTierIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'star': return <StarIcon />;
+      case 'starhalf': return <StarHalfIcon />;
+      case 'starrate': return <StarRateIcon />;
+      case 'grade': return <GradeIcon />;
+      case 'stars': return <StarsIcon />;
+      case 'trophy': return <TrophyIcon />;
+      case 'medal': return <MedalIcon />;
+      case 'gift': return <GiftIcon />;
+      case 'diamond': return <DiamondIcon />;
+      case 'premium': return <PremiumIcon />;
+      case 'verified': return <VerifiedIcon />;
+      case 'membership': return <MembershipIcon />;
+      case 'trendingup': return <TrendingUpIcon />;
+      case 'loyalty': return <LoyaltyIcon />;
+      case 'redeem': return <RedeemIcon />;
+      case 'heart': return <HeartIcon />;
+      case 'sparkle': return <SparkleIcon />;
+      case 'fire': return <FireIcon />;
+      case 'celebration': return <CelebrationIcon />;
+      default: return <StarIcon />;
+    }
   };
 
   // 表单数据
@@ -189,14 +235,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   }, [open, tenantId]);
 
   useEffect(() => {
-    if (!open) {
-      // Reset form when dialog closes
+    if (open) {
+      // Reset form when dialog opens to avoid flickering
       setActiveStep(0);
       setSelectedCustomer(null);
       setNewCustomerData({ firstName: '', lastName: '', phone: '', email: '' });
       setSelectedServices([]);
-      setServiceCategories([]);
-      setServices([]);
       setAppointmentDate('');
       setAppointmentTime('');
       setSelectedResource('');
@@ -467,7 +511,21 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                    {selectedCustomer?.membershipTier ? (
+                      <Box
+                        sx={{
+                          fontSize: 20,
+                          color: selectedCustomer.membershipTier.color || '#9CA3AF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          mr: 0.5,
+                        }}
+                      >
+                        {getTierIcon(selectedCustomer.membershipTier.icon || 'star')}
+                      </Box>
+                    ) : (
+                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                    )}
                   </InputAdornment>
                 ),
               }}
@@ -530,7 +588,23 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={`${customer.firstName} ${customer.lastName}`}
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <span>{customer.firstName} {customer.lastName}</span>
+                              {customer.membershipTier && (
+                                <Box
+                                  sx={{
+                                    fontSize: 16,
+                                    color: customer.membershipTier.color || '#9CA3AF',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  {getTierIcon(customer.membershipTier.icon || 'star')}
+                                </Box>
+                              )}
+                            </Box>
+                          }
                           secondary={
                             <>
                               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

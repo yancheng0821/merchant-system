@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -28,10 +28,30 @@ import {
   AccessTime as TimeIcon,
   AttachMoney as MoneyIcon,
   LocalOffer as ServiceIcon,
+  // Membership tier icons
+  Star as StarIcon,
+  StarHalf as StarHalfIcon,
+  StarRate as StarRateIcon,
+  Grade as GradeIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  CardGiftcard as GiftIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
+  CardMembership as MembershipIcon,
+  TrendingUp as TrendingUpIcon,
+  Loyalty as LoyaltyIcon,
+  Redeem as RedeemIcon,
+  Favorite as HeartIcon,
+  AutoAwesome as SparkleIcon,
+  Whatshot as FireIcon,
+  Celebration as CelebrationIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { api, Customer as ApiCustomer } from '../../../../services/api';
+import { api, Customer as ApiCustomer, staffAttendanceApi } from '../../../../services/api';
 import CustomTimePicker from './CustomTimePicker';
 import CountryCodeSelector from '../../../../components/common/CountryCodeSelector';
 import { getMerchantNow } from '../../../../utils/timezoneUtils';
@@ -80,6 +100,7 @@ interface AppointmentDialogProps {
     startTime: string;
     endTime: string;
     date: string;
+    status?: string;
   }>;
   // 编辑模式相关
   editMode?: boolean;
@@ -132,12 +153,133 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<ApiCustomer | null>(null);
   const [countryCode, setCountryCode] = useState<string>('+1-CA');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [usePlaceholderEmail, setUsePlaceholderEmail] = useState(false);
   const [customers, setCustomers] = useState<ApiCustomer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Array<{ id: number; name: string; duration: number; price: number; }>>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [exceedsWorkingHours, setExceedsWorkingHours] = useState(false);
   const [timeConflictError, setTimeConflictError] = useState<string>('');
+  const [staffAttendance, setStaffAttendance] = useState<any>(null);
+
+  // 生成占位邮箱的函数
+  const generatePlaceholderEmail = (countryCode: string, phone: string): string => {
+    // 提取国家码中的数字部分 ('+1-CA' -> '1', '+86-CN' -> '86')
+    const countryCodeDigits = countryCode.replace(/[^0-9]/g, '');
+    // 去除手机号中的特殊字符
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    return `${countryCodeDigits}${cleanPhone}.placeholder@vamerchant.app`;
+  };
+
+  // 获取会员等级图标
+  const getTierIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'star': return <StarIcon />;
+      case 'starhalf': return <StarHalfIcon />;
+      case 'starrate': return <StarRateIcon />;
+      case 'grade': return <GradeIcon />;
+      case 'stars': return <StarsIcon />;
+      case 'trophy': return <TrophyIcon />;
+      case 'medal': return <MedalIcon />;
+      case 'gift': return <GiftIcon />;
+      case 'diamond': return <DiamondIcon />;
+      case 'premium': return <PremiumIcon />;
+      case 'verified': return <VerifiedIcon />;
+      case 'membership': return <MembershipIcon />;
+      case 'trendingup': return <TrendingUpIcon />;
+      case 'loyalty': return <LoyaltyIcon />;
+      case 'redeem': return <RedeemIcon />;
+      case 'heart': return <HeartIcon />;
+      case 'sparkle': return <SparkleIcon />;
+      case 'fire': return <FireIcon />;
+      case 'celebration': return <CelebrationIcon />;
+      default: return <StarIcon />;
+    }
+  };
+
+  // Check if appointment exceeds staff working hours
+  // Returns true if exceeds, false otherwise
+  const checkWorkingHours = useCallback((endTime: string): boolean => {
+    // Convert appointment times to minutes
+    const [startHours, startMinutes] = (formData.startTime || '').split(':').map(Number);
+    const appointmentStartMinutes = startHours * 60 + startMinutes;
+
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const appointmentEndMinutes = endHours * 60 + endMinutes;
+
+    console.log('checkWorkingHours called:', {
+      appointmentTime: `${formData.startTime} - ${endTime}`,
+      hasAttendance: !!staffAttendance,
+      checkInTime: staffAttendance?.checkInTime,
+      checkOutTime: staffAttendance?.checkOutTime
+    });
+
+    // Priority 1: Check against today's check-in/check-out time if available
+    if (staffAttendance && staffAttendance.checkInTime && staffAttendance.checkOutTime) {
+      const checkInTime = staffAttendance.checkInTime.slice(0, 5); // HH:mm
+      const checkOutTime = staffAttendance.checkOutTime.slice(0, 5); // HH:mm
+
+      const [checkInHours, checkInMin] = checkInTime.split(':').map(Number);
+      const checkInMinutes = checkInHours * 60 + checkInMin;
+
+      const [checkOutHours, checkOutMin] = checkOutTime.split(':').map(Number);
+      const checkOutMinutes = checkOutHours * 60 + checkOutMin;
+
+      // Appointment must be completely within check-in/check-out time
+      const isWithinCheckInOut = appointmentStartMinutes >= checkInMinutes &&
+                                  appointmentEndMinutes <= checkOutMinutes;
+
+      console.log('Using check-in/out time:', {
+        checkIn: checkInTime,
+        checkOut: checkOutTime,
+        isWithin: isWithinCheckInOut
+      });
+
+      const exceeds = !isWithinCheckInOut;
+      setExceedsWorkingHours(exceeds);
+      return exceeds;
+    }
+
+    console.log('Falling back to scheduled availability');
+
+    // Priority 2: Fall back to scheduled availability
+    if (!resourceAvailability || resourceAvailability.length === 0) {
+      setExceedsWorkingHours(false);
+      return false;
+    }
+
+    const appointmentDate = new Date(date);
+    const dayOfWeek = appointmentDate.getDay();
+    const backendDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert to 1-7 format
+
+    // Get ALL availability segments for this day (支持多时间段)
+    const dayAvailabilities = resourceAvailability.filter(
+      (avail) => avail.dayOfWeek === backendDayOfWeek && avail.isAvailable
+    );
+
+    if (!dayAvailabilities || dayAvailabilities.length === 0) {
+      setExceedsWorkingHours(false);
+      return false;
+    }
+
+    // Check if appointment falls within ANY available time segment
+    const isWithinAnySegment = dayAvailabilities.some((segment) => {
+      const [segStartHours, segStartMinutes] = segment.startTime.split(':').map(Number);
+      const segmentStartMinutes = segStartHours * 60 + segStartMinutes;
+
+      const [segEndHours, segEndMinutes] = segment.endTime.split(':').map(Number);
+      const segmentEndMinutes = segEndHours * 60 + segEndMinutes;
+
+      // Appointment must be completely within this segment
+      return appointmentStartMinutes >= segmentStartMinutes &&
+             appointmentEndMinutes <= segmentEndMinutes;
+    });
+
+    // If not within any segment, then it exceeds working hours
+    const exceeds = !isWithinAnySegment;
+    setExceedsWorkingHours(exceeds);
+    return exceeds;
+  }, [formData.startTime, staffAttendance, resourceAvailability, date]);
 
   // Load customers when dialog opens
   useEffect(() => {
@@ -173,42 +315,98 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     loadCustomers();
   }, [open]);
 
-  // 对话框打开/关闭时的初始化逻辑
+  // Load staff attendance (check-in/check-out) for today
   useEffect(() => {
-    if (open) {
-      console.log('AppointmentDialog opened with:', { startTime, endTime, date, editMode, existingAppointment });
+    const loadAttendance = async () => {
+      if (!open || !resourceId) return;
 
-      // 立即重置为默认值，避免显示上次的状态
-      if (!editMode) {
-        setCountryCode('+1-CA');
-        setSelectedCustomer(null);
-        setSelectedServices([]);
-        setFormData({
-          customerFirstName: '',
-          customerLastName: '',
-          customerPhone: '',
-          customerCountryCode: '+1-CA',
-          customerEmail: '',
-          serviceName: '',
-          date: format(date, 'yyyy-MM-dd'),
-          startTime: startTime,
-          endTime: endTime,
-          resourceId: resourceId,
-          price: 0,
-          notes: '',
-        });
+      try {
+        // In edit mode, use formData.date if available (the actual appointment date)
+        // Otherwise use date prop (the selected date from calendar view)
+        const targetDate = editMode && formData.date ? formData.date : format(date, 'yyyy-MM-dd');
+        console.log('Loading staff attendance for date:', targetDate, { editMode, formDataDate: formData.date });
+        const attendance = await staffAttendanceApi.getByResourceAndDate(resourceId, targetDate);
+        setStaffAttendance(attendance);
+        console.log('Staff attendance loaded:', attendance);
+      } catch (error) {
+        console.error('Failed to load staff attendance:', error);
+        setStaffAttendance(null);
       }
+    };
 
+    loadAttendance();
+  }, [open, resourceId, date, editMode, formData.date]);
+
+  // Check working hours when in edit mode and attendance/form data is loaded
+  useEffect(() => {
+    if (open && editMode && formData.endTime && formData.startTime) {
+      // In edit mode, validate the existing appointment time against check-in/out
+      console.log('Edit mode validation triggered:', {
+        staffAttendance: !!staffAttendance,
+        startTime: formData.startTime,
+        endTime: formData.endTime
+      });
+      checkWorkingHours(formData.endTime);
+    }
+  }, [open, editMode, staffAttendance, formData.startTime, formData.endTime, checkWorkingHours]);
+
+  // 对话框打开/关闭时的统一初始化逻辑
+  useEffect(() => {
+    if (!open) {
+      // 对话框关闭时立即清空所有状态，避免下次打开时显示旧数据
+      setCountryCode('+1-CA');
+      setSelectedCustomer(null);
+      setSelectedServices([]);
+      setUsePlaceholderEmail(false);
+      setFormData({
+        customerFirstName: '',
+        customerLastName: '',
+        customerPhone: '',
+        customerCountryCode: '+1-CA',
+        customerEmail: '',
+        serviceName: '',
+        date: '',
+        startTime: '',
+        endTime: '',
+        resourceId: 0,
+        price: 0,
+        notes: '',
+      });
       setErrors({});
       setTimeConflictError('');
       setExceedsWorkingHours(false);
+      return;
     }
-  }, [open, date, startTime, endTime, resourceId, editMode]);
 
-  // 编辑模式下加载客户数据（仅当customers加载完成后执行）
-  useEffect(() => {
-    if (open && editMode && existingAppointment && customers.length > 0) {
-      console.log('Loading edit mode data with customers:', customers.length);
+    if (!editMode) {
+      // ========== 创建模式 ==========
+      console.log('AppointmentDialog opened (create mode)');
+
+      // 批量设置所有状态（React会自动批处理，只触发一次渲染）
+      setCountryCode('+1-CA');
+      setSelectedCustomer(null);
+      setSelectedServices([]);
+      setUsePlaceholderEmail(false);
+      setFormData({
+        customerFirstName: '',
+        customerLastName: '',
+        customerPhone: '',
+        customerCountryCode: '+1-CA',
+        customerEmail: '',
+        serviceName: '',
+        date: format(date, 'yyyy-MM-dd'),
+        startTime: startTime,
+        endTime: endTime,
+        resourceId: resourceId,
+        price: 0,
+        notes: '',
+      });
+      setErrors({});
+      setTimeConflictError('');
+      setExceedsWorkingHours(false);
+    } else if (editMode && existingAppointment && customers.length > 0) {
+      // ========== 编辑模式（仅当customers已加载）==========
+      console.log('AppointmentDialog opened (edit mode) with customers loaded');
 
       // 查找客户
       const customer = customers.find(c => c.id === existingAppointment.customerId);
@@ -224,10 +422,10 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         );
         totalPrice = preselectedServices.reduce((sum, service) => sum + service.price, 0);
         serviceNames = preselectedServices.map(s => s.name).join(', ');
-        setSelectedServices(preselectedServices);
       }
 
-      // 设置表单数据，包含客户信息和价格
+      // 批量设置所有状态（React会自动批处理，只触发一次渲染）
+      setSelectedServices(preselectedServices);
       setFormData({
         customerFirstName: customer?.firstName || '',
         customerLastName: customer?.lastName || '',
@@ -235,21 +433,20 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         customerCountryCode: customer?.countryCode || '+1-CA',
         customerEmail: customer?.email || '',
         serviceName: serviceNames,
-        date: existingAppointment.date, // 使用预约的原始日期
+        date: existingAppointment.date,
         startTime: startTime,
         endTime: endTime,
         resourceId: resourceId,
         price: totalPrice,
         notes: existingAppointment.notes || '',
       });
-
-      // 设置选中的客户和国家码
-      if (customer) {
-        setSelectedCustomer(customer);
-        setCountryCode(customer.countryCode || '+1-CA');
-      }
+      setSelectedCustomer(customer || null);
+      setCountryCode(customer?.countryCode || '+1-CA');
+      setErrors({});
+      setTimeConflictError('');
+      setExceedsWorkingHours(false);
     }
-  }, [open, editMode, existingAppointment, customers, services, startTime, endTime, resourceId]);
+  }, [open, editMode, existingAppointment, customers, services, date, startTime, endTime, resourceId]);
 
   const handleChange = (field: keyof AppointmentData, value: any) => {
     setFormData(prev => ({
@@ -277,6 +474,8 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         customerCountryCode: customerCountryCode,
         customerEmail: customer.email || '',
       }));
+      // 选择客户时，取消占位邮箱状态（因为客户已有邮箱）
+      setUsePlaceholderEmail(false);
     } else {
       // Clear input fields when customer is deselected
       setCountryCode('+1-CA');
@@ -288,6 +487,8 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         customerCountryCode: '+1-CA',
         customerEmail: '',
       }));
+      // 清除客户时，也重置占位邮箱状态
+      setUsePlaceholderEmail(false);
     }
   };
 
@@ -297,6 +498,38 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       ...prev,
       customerCountryCode: newCountryCode,
     }));
+    // 如果已勾选占位邮箱，需要重新生成
+    if (usePlaceholderEmail && formData.customerPhone) {
+      const placeholderEmail = generatePlaceholderEmail(newCountryCode, formData.customerPhone);
+      setFormData(prev => ({
+        ...prev,
+        customerEmail: placeholderEmail,
+      }));
+    }
+  };
+
+  const handlePlaceholderEmailChange = (checked: boolean) => {
+    setUsePlaceholderEmail(checked);
+    if (checked) {
+      // 勾选：生成并填充占位邮箱
+      if (formData.customerPhone) {
+        const placeholderEmail = generatePlaceholderEmail(countryCode, formData.customerPhone);
+        setFormData(prev => ({
+          ...prev,
+          customerEmail: placeholderEmail,
+        }));
+        // 清除邮箱错误
+        if (errors.customerEmail) {
+          setErrors(prev => ({ ...prev, customerEmail: '' }));
+        }
+      }
+    } else {
+      // 取消勾选：清空邮箱
+      setFormData(prev => ({
+        ...prev,
+        customerEmail: '',
+      }));
+    }
   };
 
   const handleServiceSelect = (services: Array<{ id: number; name: string; duration: number; price: number }>) => {
@@ -335,51 +568,6 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     }
   };
 
-  // Check if appointment exceeds staff working hours
-  const checkWorkingHours = (endTime: string) => {
-    if (!resourceAvailability || resourceAvailability.length === 0) {
-      setExceedsWorkingHours(false);
-      return;
-    }
-
-    const appointmentDate = new Date(date);
-    const dayOfWeek = appointmentDate.getDay();
-    const backendDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert to 1-7 format
-
-    // Get ALL availability segments for this day (支持多时间段)
-    const dayAvailabilities = resourceAvailability.filter(
-      (avail) => avail.dayOfWeek === backendDayOfWeek && avail.isAvailable
-    );
-
-    if (!dayAvailabilities || dayAvailabilities.length === 0) {
-      setExceedsWorkingHours(false);
-      return;
-    }
-
-    // Convert appointment times to minutes
-    const [startHours, startMinutes] = (formData.startTime || '').split(':').map(Number);
-    const appointmentStartMinutes = startHours * 60 + startMinutes;
-
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    const appointmentEndMinutes = endHours * 60 + endMinutes;
-
-    // Check if appointment falls within ANY available time segment
-    const isWithinAnySegment = dayAvailabilities.some((segment) => {
-      const [segStartHours, segStartMinutes] = segment.startTime.split(':').map(Number);
-      const segmentStartMinutes = segStartHours * 60 + segStartMinutes;
-
-      const [segEndHours, segEndMinutes] = segment.endTime.split(':').map(Number);
-      const segmentEndMinutes = segEndHours * 60 + segEndMinutes;
-
-      // Appointment must be completely within this segment
-      return appointmentStartMinutes >= segmentStartMinutes &&
-             appointmentEndMinutes <= segmentEndMinutes;
-    });
-
-    // If not within any segment, then it exceeds working hours
-    setExceedsWorkingHours(!isWithinAnySegment);
-  };
-
   // Check if the selected end time conflicts with existing appointments
   const checkTimeConflict = (newEndTime: string) => {
     if (!existingAppointments || existingAppointments.length === 0) {
@@ -391,8 +579,11 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
 
     // Filter appointments for the same date and resource
     // In edit mode, exclude the current appointment being edited
+    // Exclude cancelled appointments
     const sameResourceAppointments = existingAppointments.filter(
       apt => apt.date === currentDate &&
+      apt.status !== 'CANCELLED' &&
+      apt.status !== 'CANCELED' &&
       (!editMode || !existingAppointment || apt.id !== existingAppointment.id)
     );
 
@@ -459,10 +650,13 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     if (!formData.customerEmail?.trim()) {
       newErrors.customerEmail = t('appointments.emailRequired', 'Email is required');
     } else {
-      // 验证邮箱格式
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.customerEmail.trim())) {
-        newErrors.customerEmail = t('appointments.emailInvalid', 'Invalid email format');
+      // 验证邮箱格式（占位邮箱跳过格式验证）
+      const isPlaceholderEmail = formData.customerEmail.endsWith('.placeholder@vamerchant.app');
+      if (!isPlaceholderEmail) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.customerEmail.trim())) {
+          newErrors.customerEmail = t('appointments.emailInvalid', 'Invalid email format');
+        }
       }
     }
 
@@ -538,8 +732,12 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const handleSave = () => {
     if (!validateForm()) return;
 
+    // Re-validate working hours with latest staffAttendance data
+    // This ensures we check against actual check-in/out times
+    const exceeds = checkWorkingHours(formData.endTime);
+
     // Check if appointment exceeds working hours
-    if (exceedsWorkingHours) {
+    if (exceeds) {
       setShowConfirmDialog(true);
       return;
     }
@@ -564,6 +762,38 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     setShowConfirmDialog(false);
   };
 
+  // 对话框完全关闭后的清理函数
+  const handleExited = () => {
+    // 清空所有状态，为下次打开做准备
+    setCountryCode('+1-CA');
+    setSelectedCustomer(null);
+    setSelectedServices([]);
+    setUsePlaceholderEmail(false);
+    setFormData({
+      customerFirstName: '',
+      customerLastName: '',
+      customerPhone: '',
+      customerCountryCode: '+1-CA',
+      customerEmail: '',
+      serviceName: '',
+      date: format(date, 'yyyy-MM-dd'),
+      startTime: '',
+      endTime: '',
+      resourceId: 0,
+      price: 0,
+      notes: '',
+    });
+    setErrors({});
+    setTimeConflictError('');
+    setExceedsWorkingHours(false);
+    setStaffAttendance(null);
+
+    // 调用外部的onExited回调
+    if (onExited) {
+      onExited();
+    }
+  };
+
   return (
     <>
     <Dialog
@@ -571,22 +801,21 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      scroll="paper"
+      container={container || undefined}
       sx={{
         zIndex: 9999,
-      }}
-      container={container || undefined}
-      disablePortal={!!container}
-      TransitionProps={{
-        onExited: onExited,
       }}
       PaperProps={{
         sx: {
           borderRadius: 3,
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          bgcolor: 'background.paper',
           maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
         }
+      }}
+      TransitionProps={{
+        onExited: handleExited,
       }}
     >
       <DialogTitle
@@ -596,6 +825,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           borderColor: 'divider',
           pb: 3,
           pt: 3,
+          flexShrink: 0,
         }}
       >
         <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -631,7 +861,10 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
             </Box>
           </Box>
           <IconButton
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             sx={{
               '&:hover': {
                 backgroundColor: alpha(themeColor, 0.1),
@@ -643,7 +876,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, flex: 1, overflow: 'auto' }}>
         <Box sx={{ p: 3 }}>
           {/* 客户信息 */}
           <Paper
@@ -681,6 +914,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
               {/* 客户搜索 */}
               <Grid item xs={12}>
                 <Autocomplete
+                  key={editMode && existingAppointment ? `edit-${existingAppointment.id}` : 'add'}
                   options={customers}
                   value={selectedCustomer}
                   onChange={(_, value) => handleCustomerSelect(value)}
@@ -697,8 +931,20 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                     },
                   }}
                   renderOption={(props, option) => (
-                    <Box component="li" {...props} key={option.id}>
-                      <Box>
+                    <Box component="li" {...props} key={option.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      {option.membershipTier && (
+                        <Box
+                          sx={{
+                            fontSize: 20,
+                            color: option.membershipTier.color || '#9CA3AF',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {getTierIcon(option.membershipTier.icon || 'star')}
+                        </Box>
+                      )}
+                      <Box flex={1}>
                         <Typography variant="body2" fontWeight={600}>
                           {option.firstName} {option.lastName}
                         </Typography>
@@ -713,6 +959,27 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                       {...params}
                       label={t('appointments.searchCustomer', 'Search Customer')}
                       placeholder={t('appointments.searchCustomerPlaceholder', 'Type to search existing customers...')}
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <>
+                            {selectedCustomer?.membershipTier && (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  ml: 1,
+                                  mr: 0.5,
+                                  color: selectedCustomer.membershipTier.color || '#9CA3AF',
+                                }}
+                              >
+                                {getTierIcon(selectedCustomer.membershipTier.icon || 'star')}
+                              </Box>
+                            )}
+                            {params.InputProps.startAdornment}
+                          </>
+                        ),
+                      }}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 2,
@@ -743,7 +1010,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                       px: 1,
                     }}
                   >
-                    {t('appointments.orAddNewCustomer', 'Or Add New Customer')}
+                    {t('appointments.orAddNewCustomerPhoneBooking', '或快速添加新客户（电话预约）')}
                   </Typography>
                   <Box flex={1} height="2px" bgcolor={alpha(themeColor, 0.3)} />
                 </Box>
@@ -818,7 +1085,15 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                       fullWidth
                       label={t('appointments.customerPhone')}
                       value={formData.customerPhone}
-                      onChange={(e) => handleChange('customerPhone', e.target.value)}
+                      onChange={(e) => {
+                        const newPhone = e.target.value;
+                        handleChange('customerPhone', newPhone);
+                        // 如果已勾选占位邮箱，重新生成
+                        if (usePlaceholderEmail && newPhone) {
+                          const placeholderEmail = generatePlaceholderEmail(countryCode, newPhone);
+                          handleChange('customerEmail', placeholderEmail);
+                        }
+                      }}
                       error={!!errors.customerPhone}
                       helperText={errors.customerPhone}
                       required
@@ -852,9 +1127,28 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                   value={formData.customerEmail}
                   onChange={(e) => handleChange('customerEmail', e.target.value)}
                   error={!!errors.customerEmail}
-                  helperText={errors.customerEmail}
+                  helperText={
+                    errors.customerEmail || (
+                      !selectedCustomer && !usePlaceholderEmail && formData.customerPhone && (
+                        <Box
+                          component="span"
+                          onClick={() => handlePlaceholderEmailChange(true)}
+                          sx={{
+                            cursor: 'pointer',
+                            color: themeColor,
+                            textDecoration: 'underline',
+                            '&:hover': {
+                              color: themeColorDark,
+                            }
+                          }}
+                        >
+                          {t('appointments.noEmailClickToFill', '💡 暂无邮箱？点击自动填充')}
+                        </Box>
+                      )
+                    )
+                  }
                   required
-                  disabled={!!selectedCustomer}
+                  disabled={!!selectedCustomer || usePlaceholderEmail}
                   InputProps={{
                     startAdornment: <EmailIcon sx={{ mr: 1, fontSize: 20, color: themeColor }} />,
                   }}
@@ -1118,6 +1412,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
           borderTop: '1px solid',
           borderColor: 'divider',
           background: alpha(themeColor, 0.02),
+          flexShrink: 0,
         }}
       >
         <Button

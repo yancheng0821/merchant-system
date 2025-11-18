@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.controller;
 import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.dto.TimeSegmentDTO;
 import com.merchant.server.businessservice.dto.WeekAvailabilityDTO;
+import com.merchant.server.businessservice.dto.ResourceBatchDetailsDTO;
 import com.merchant.server.businessservice.entity.Resource;
 import com.merchant.server.businessservice.entity.ResourceAvailability;
 import com.merchant.server.businessservice.entity.ResourceBookingSlot;
@@ -20,7 +21,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/business/resources")
@@ -531,6 +535,80 @@ public class ResourceController {
                 sourceDayOfWeek, targetDaysOfWeek, resourceId);
         resourceService.copyDayAvailability(resourceId, sourceDayOfWeek, targetDaysOfWeek);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 批量获取资源详情（包含服务专长和可用性）
+     * 用于优化Schedule页面加载性能，一次性返回所有需要的数据
+     * GET /api/business/resources/batch-details?tenantId={tenantId}&type={type}
+     */
+    @RequiresPermission("resources:view")
+    @GetMapping("/batch-details")
+    public ResponseEntity<ResourceBatchDetailsDTO> getBatchDetails(
+            @RequestParam Long tenantId,
+            @RequestParam(required = false) String type) {
+        log.info("Getting batch details for tenant: {}, type: {}", tenantId, type);
+
+        try {
+            // 1. 获取资源列表
+            List<Resource> resources;
+            if (type != null && !type.isEmpty()) {
+                resources = resourceService.getResourcesByType(tenantId, type);
+            } else {
+                resources = resourceService.getAllResourcesByTenantId(tenantId);
+            }
+
+            log.info("Retrieved {} resources", resources.size());
+
+            // 2. 批量获取每个资源的服务专长
+            Map<Long, List<Long>> resourceServicesMap = new HashMap<>();
+            for (Resource resource : resources) {
+                try {
+                    List<ResourceServiceExpertise> expertise =
+                        resourceServiceExpertiseMapper.findByResourceId(resource.getId());
+                    List<Long> serviceIds = expertise.stream()
+                        .map(ResourceServiceExpertise::getServiceId)
+                        .collect(Collectors.toList());
+                    resourceServicesMap.put(resource.getId(), serviceIds);
+                } catch (Exception e) {
+                    log.warn("Failed to load services for resource {}: {}", resource.getId(), e.getMessage());
+                    resourceServicesMap.put(resource.getId(), new ArrayList<>());
+                }
+            }
+
+            // 3. 批量获取每个资源的可用性
+            Map<Long, List<ResourceAvailability>> resourceAvailabilitiesMap = new HashMap<>();
+            for (Resource resource : resources) {
+                try {
+                    List<ResourceAvailability> availabilities =
+                        resourceService.getResourceAvailability(resource.getId());
+                    resourceAvailabilitiesMap.put(resource.getId(), availabilities != null ? availabilities : new ArrayList<>());
+                } catch (Exception e) {
+                    log.warn("Failed to load availability for resource {}: {}", resource.getId(), e.getMessage());
+                    resourceAvailabilitiesMap.put(resource.getId(), new ArrayList<>());
+                }
+            }
+
+            // 4. 构建返回结果
+            ResourceBatchDetailsDTO result = ResourceBatchDetailsDTO.builder()
+                .resources(resources)
+                .resourceServices(resourceServicesMap)
+                .resourceAvailabilities(resourceAvailabilitiesMap)
+                .build();
+
+            log.info("Successfully built batch details with {} resources", resources.size());
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error getting batch details for tenant {}", tenantId, e);
+            // 返回空数据而不是错误，避免前端崩溃
+            ResourceBatchDetailsDTO emptyResult = ResourceBatchDetailsDTO.builder()
+                .resources(new ArrayList<>())
+                .resourceServices(new HashMap<>())
+                .resourceAvailabilities(new HashMap<>())
+                .build();
+            return ResponseEntity.ok(emptyResult);
+        }
     }
 
 }

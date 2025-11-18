@@ -129,7 +129,15 @@
       "Bash(git rm:*)",
       "Bash(yes:*)",
       "Bash(./cleanup-ecr-images.sh:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(/Users/aisenyc/merchant-system/scripts/start-all.sh:*)",
+      "Bash(javap:*)",
+      "Bash(unzip:*)",
+      "Bash(for service in analytics-service auth-service business-service eureka-server gateway-service merchant-service notification-service)",
+      "Bash(do echo '=== $service ===' ls merchant-server/$service/logs/*.log)",
+      "Bash(git restore:*)",
+      "Bash(/dev/null)"
     ],
     "deny": []
   }

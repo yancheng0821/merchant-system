@@ -45,12 +45,14 @@ public class AuditLogController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "America/Vancouver") String timezone) {
 
-        log.info("Fetching audit logs for tenant: {}, page: {}, size: {}", tenantId, page, size);
+        log.info("Fetching audit logs for tenant: {}, page: {}, size: {}, timezone: {}",
+                 tenantId, page, size, timezone);
 
         Map<String, Object> response = auditLogService.getAuditLogs(
-                tenantId, resource, action, status, search, startDate, endDate, page, size);
+                tenantId, resource, action, status, search, startDate, endDate, timezone, page, size);
 
         return ResponseEntity.ok(response);
     }
@@ -67,12 +69,13 @@ public class AuditLogController {
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "America/Vancouver") String timezone) {
 
-        log.info("Exporting audit logs for tenant: {}", tenantId);
+        log.info("Exporting audit logs for tenant: {}, timezone: {}", tenantId, timezone);
 
         List<Map<String, Object>> logs = auditLogService.getAuditLogsForExport(
-                tenantId, resource, action, status, startDate, endDate);
+                tenantId, resource, action, status, startDate, endDate, timezone);
 
         StringBuilder csv = new StringBuilder();
         // CSV Header
@@ -170,11 +173,12 @@ public class AuditLogController {
     public ResponseEntity<Map<String, Object>> getAuditStats(
             @RequestParam Long tenantId,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false, defaultValue = "America/Vancouver") String timezone) {
 
-        log.info("Fetching audit statistics for tenant: {}", tenantId);
+        log.info("Fetching audit statistics for tenant: {}, timezone: {}", tenantId, timezone);
 
-        Map<String, Object> stats = auditLogService.getAuditStats(tenantId, startDate, endDate);
+        Map<String, Object> stats = auditLogService.getAuditStats(tenantId, startDate, endDate, timezone);
         return ResponseEntity.ok(stats);
     }
 }

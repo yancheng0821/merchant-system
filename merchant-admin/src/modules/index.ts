@@ -8,13 +8,16 @@ export { ServiceManagement } from './products';
 export { PaymentManagement } from './payments';
 
 // Customer Management Module
-export { CustomerManagement } from './customers';
+export { CustomerManagement, MembershipTiers } from './customers';
 
 // Appointment Management Module
 export { AppointmentManagement } from './appointments';
 
 // Analytics Module
 export { Analytics } from './analytics';
+
+// Cost Management Module
+export { CostManagement } from './costs';
 
 // Settings Module
 export { Settings } from './settings';

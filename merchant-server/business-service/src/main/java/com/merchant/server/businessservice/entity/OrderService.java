@@ -19,7 +19,8 @@ public class OrderService {
     private Integer duration;
     private Long assignedResourceId;
     private String assignedResourceType;
-    
+    private String paymentMethod; // Payment method for this service (cash, credit_card, package, etc.)
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

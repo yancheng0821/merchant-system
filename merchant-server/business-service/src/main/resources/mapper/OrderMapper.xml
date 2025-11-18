@@ -34,16 +34,19 @@
     </resultMap>
 
     <select id="selectByConditions" resultMap="BaseResultMap">
-        SELECT o.* 
+        SELECT o.*
         FROM orders o
         LEFT JOIN customers c ON o.customer_id = c.id
         WHERE o.tenant_id = #{tenantId}
         <if test="searchTerm != null and searchTerm != ''">
-            AND (o.order_number LIKE CONCAT('%', #{searchTerm}, '%') 
+            AND (o.order_number LIKE CONCAT('%', #{searchTerm}, '%')
                  OR CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) LIKE CONCAT('%', #{searchTerm}, '%'))
         </if>
         <if test="paymentStatus != null and paymentStatus != ''">
             AND o.payment_status = #{paymentStatus}
+        </if>
+        <if test="paymentMethod != null and paymentMethod != ''">
+            AND o.payment_method = #{paymentMethod}
         </if>
         <if test="orderStatus != null and orderStatus != ''">
             AND o.order_status = #{orderStatus}
@@ -66,11 +69,14 @@
         LEFT JOIN customers c ON o.customer_id = c.id
         WHERE o.tenant_id = #{tenantId}
         <if test="searchTerm != null and searchTerm != ''">
-            AND (o.order_number LIKE CONCAT('%', #{searchTerm}, '%') 
+            AND (o.order_number LIKE CONCAT('%', #{searchTerm}, '%')
                  OR CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')) LIKE CONCAT('%', #{searchTerm}, '%'))
         </if>
         <if test="paymentStatus != null and paymentStatus != ''">
             AND o.payment_status = #{paymentStatus}
+        </if>
+        <if test="paymentMethod != null and paymentMethod != ''">
+            AND o.payment_method = #{paymentMethod}
         </if>
         <if test="orderStatus != null and orderStatus != ''">
             AND o.order_status = #{orderStatus}
@@ -258,6 +264,244 @@
         WHERE appointment_id = #{appointmentId}
         ORDER BY created_at DESC
         LIMIT 1
+    </select>
+
+    <!-- 按服务维度统计订单 -->
+    <select id="getOrderStatsByService" resultType="java.util.HashMap">
+        SELECT
+            os.service_id as serviceId,
+            COALESCE(s.name, os.service_name) as serviceName,
+            COALESCE(sc.name, '未分类') as serviceCategory,
+            COUNT(DISTINCT o.id) as orderCount,
+            s.price as originalPrice,
+            -- 小计：package支付的服务计为0，其他按比例分配订单的subtotal
+            SUM(
+                CASE
+                    WHEN os.payment_method = 'package' THEN 0
+                    WHEN o.subtotal > 0 THEN
+                        o.subtotal * (os.price * os.quantity) /
+                        -- 只使用非package服务的金额总和作为分配基础
+                        (SELECT SUM(os2.price * os2.quantity)
+                         FROM order_services os2
+                         WHERE os2.order_id = o.id AND os2.payment_method != 'package')
+                    ELSE 0
+                END
+            ) as totalSubtotal,
+            -- 税费：package支付的服务不分配税费，其他按非package服务金额比例分配
+            -- 只在收费服务之间分配税费
+            SUM(
+                CASE
+                    WHEN os.payment_method = 'package' THEN 0
+                    WHEN o.tax_amount > 0 THEN
+                        o.tax_amount * (os.price * os.quantity) /
+                        -- 只使用非package服务的原价总和作为分配基础
+                        (SELECT SUM(os2.price * os2.quantity)
+                         FROM order_services os2
+                         WHERE os2.order_id = o.id AND os2.payment_method != 'package')
+                    ELSE 0
+                END
+            ) as totalTax,
+            -- 小费：所有服务都按服务原价比例分配
+            -- 始终使用服务原价总和作为分配基础，确保分配总和等于订单小费
+            SUM(
+                CASE
+                    WHEN o.tip_amount > 0 THEN
+                        o.tip_amount * (os.price * os.quantity) /
+                        (SELECT SUM(os2.price * os2.quantity)
+                         FROM order_services os2
+                         WHERE os2.order_id = o.id)
+                    ELSE 0
+                END
+            ) as totalTips,
+            -- 总金额：package只计小费，非package按比例分配剩余金额
+            SUM(
+                CASE
+                    WHEN os.payment_method = 'package' THEN
+                        -- package只计算按比例分配的小费
+                        CASE
+                            WHEN o.tip_amount > 0 THEN
+                                o.tip_amount * (os.price * os.quantity) /
+                                (SELECT SUM(os2.price * os2.quantity)
+                                 FROM order_services os2
+                                 WHERE os2.order_id = o.id)
+                            ELSE 0
+                        END
+                    ELSE
+                        -- 非package：需要分配的金额 = 总金额 - package服务的小费
+                        -- 按非package服务的原价比例分配
+                        (o.total_amount -
+                            -- 减去所有package服务的小费
+                            COALESCE((SELECT SUM(
+                                o.tip_amount * (os3.price * os3.quantity) /
+                                (SELECT SUM(os4.price * os4.quantity) FROM order_services os4 WHERE os4.order_id = o.id)
+                            ) FROM order_services os3
+                            WHERE os3.order_id = o.id AND os3.payment_method = 'package'), 0)
+                        ) * (os.price * os.quantity) /
+                        -- 非package服务的原价总和
+                        (SELECT SUM(os2.price * os2.quantity)
+                         FROM order_services os2
+                         WHERE os2.order_id = o.id AND os2.payment_method != 'package')
+                END
+            ) as totalAmount
+        FROM orders o
+        INNER JOIN order_services os ON o.id = os.order_id
+        LEFT JOIN services s ON os.service_id = s.id
+        LEFT JOIN service_categories sc ON s.category_id = sc.id
+        WHERE o.tenant_id = #{tenantId}
+        AND o.created_at &gt;= #{startDate}
+        AND o.created_at &lt;= #{endDate}
+        AND o.payment_status = 'PAID'
+        GROUP BY os.service_id, s.name, os.service_name, sc.name, s.price
+        ORDER BY totalAmount DESC
+    </select>
+
+    <!-- 按支付方式维度统计订单 -->
+    <select id="getOrderStatsByPaymentMethod" resultType="java.util.HashMap">
+        SELECT
+            paymentMethod,
+            COUNT(DISTINCT orderKey) as orderCount,
+            SUM(itemAmount) as totalAmount,
+            SUM(itemSubtotal) as totalSubtotal,
+            SUM(itemTax) as totalTax,
+            SUM(itemTips) as totalTips,
+            AVG(itemAmount) as avgOrderValue,
+            SUM(hasRefund) as refundCount,
+            SUM(refundAmount) as totalRefunds
+        FROM (
+            SELECT
+                -- 支付方式：mixed订单使用order_services的payment_method，非mixed订单使用orders的payment_method
+                COALESCE(
+                    CASE
+                        WHEN o.payment_method = 'mixed' THEN os.payment_method
+                        ELSE o.payment_method
+                    END,
+                    'UNKNOWN'
+                ) as paymentMethod,
+
+                -- 订单唯一标识：mixed订单按服务拆分
+                CASE
+                    WHEN o.payment_method = 'mixed' THEN CONCAT(o.id, '-', os.id)
+                    ELSE CAST(o.id AS CHAR)
+                END as orderKey,
+
+                -- 单项金额（mixed订单特殊处理）
+                CASE
+                    WHEN o.payment_method = 'mixed' THEN
+                        CASE
+                            WHEN os.payment_method = 'package' THEN
+                                -- package: 只计算按比例分配的小费
+                                CASE
+                                    WHEN o.tip_amount > 0 THEN
+                                        o.tip_amount * (os.price * os.quantity) /
+                                        (SELECT SUM(os2.price * os2.quantity) FROM order_services os2 WHERE os2.order_id = o.id)
+                                    ELSE 0
+                                END
+                            ELSE
+                                -- 非package: 分配剩余金额
+                                (o.total_amount -
+                                    -- 减去所有package服务的小费
+                                    COALESCE((SELECT SUM(
+                                        o.tip_amount * (os3.price * os3.quantity) /
+                                        (SELECT SUM(os4.price * os4.quantity) FROM order_services os4 WHERE os4.order_id = o.id)
+                                    ) FROM order_services os3
+                                    WHERE os3.order_id = o.id AND os3.payment_method = 'package'), 0)
+                                ) * (os.price * os.quantity) /
+                                -- 非package服务的原价总和
+                                (SELECT SUM(os2.price * os2.quantity)
+                                 FROM order_services os2
+                                 WHERE os2.order_id = o.id AND os2.payment_method != 'package')
+                        END
+                    WHEN o.payment_method = 'package' THEN
+                        -- 整单package: 只有小费
+                        o.tip_amount
+                    ELSE
+                        -- 其他支付方式：显示实际支付金额
+                        o.total_amount
+                END as itemAmount,
+
+                -- 单项小计（按比例分配订单的subtotal）
+                CASE
+                    WHEN o.payment_method = 'mixed' THEN
+                        CASE
+                            WHEN os.payment_method = 'package' THEN 0
+                            WHEN o.subtotal > 0 THEN
+                                o.subtotal * (os.price * os.quantity) /
+                                -- 只使用非package服务的金额总和作为分配基础
+                                (SELECT SUM(os2.price * os2.quantity)
+                                 FROM order_services os2
+                                 WHERE os2.order_id = o.id AND os2.payment_method != 'package')
+                            ELSE 0
+                        END
+                    WHEN o.payment_method = 'package' THEN 0
+                    ELSE o.subtotal
+                END as itemSubtotal,
+
+                -- 单项税费（只在非package服务间分配）
+                CASE
+                    WHEN o.payment_method = 'mixed' THEN
+                        CASE
+                            WHEN os.payment_method = 'package' THEN 0
+                            WHEN o.tax_amount > 0 THEN
+                                o.tax_amount * (os.price * os.quantity) /
+                                -- 只使用非package服务的原价总和
+                                (SELECT SUM(os2.price * os2.quantity)
+                                 FROM order_services os2
+                                 WHERE os2.order_id = o.id AND os2.payment_method != 'package')
+                            ELSE 0
+                        END
+                    WHEN o.payment_method = 'package' THEN 0
+                    ELSE o.tax_amount
+                END as itemTax,
+
+                -- 单项小费（基于服务原价比例分配）
+                CASE
+                    WHEN o.payment_method = 'mixed' THEN
+                        CASE
+                            WHEN o.tip_amount > 0 THEN
+                                o.tip_amount * (os.price * os.quantity) /
+                                (SELECT SUM(os2.price * os2.quantity) FROM order_services os2 WHERE os2.order_id = o.id)
+                            ELSE 0
+                        END
+                    WHEN o.payment_method = 'package' THEN o.tip_amount
+                    ELSE o.tip_amount
+                END as itemTips,
+
+                -- 退款标记
+                CASE WHEN o.refund_amount > 0 THEN 1 ELSE 0 END as hasRefund,
+                COALESCE(o.refund_amount, 0) as refundAmount
+
+            FROM orders o
+            LEFT JOIN order_services os ON o.id = os.order_id
+            WHERE o.tenant_id = #{tenantId}
+            AND o.created_at &gt;= #{startDate}
+            AND o.created_at &lt;= #{endDate}
+            AND o.payment_status = 'PAID'
+            AND o.appointment_id IS NOT NULL
+        ) payment_items
+        GROUP BY paymentMethod
+        ORDER BY totalAmount DESC
+    </select>
+
+    <!-- 按支付方式统计package购买订单 -->
+    <select id="getPackagePurchaseStatsByPaymentMethod" resultType="java.util.HashMap">
+        SELECT
+            o.payment_method as paymentMethod,
+            COUNT(*) as orderCount,
+            SUM(o.total_amount) as totalAmount,
+            SUM(o.subtotal) as totalSubtotal,
+            SUM(o.tax_amount) as totalTax,
+            SUM(o.tip_amount) as totalTips,
+            AVG(o.total_amount) as avgOrderValue,
+            SUM(CASE WHEN o.refund_amount > 0 THEN 1 ELSE 0 END) as refundCount,
+            SUM(COALESCE(o.refund_amount, 0)) as totalRefunds
+        FROM orders o
+        WHERE o.tenant_id = #{tenantId}
+        AND o.created_at &gt;= #{startDate}
+        AND o.created_at &lt;= #{endDate}
+        AND o.payment_status = 'PAID'
+        AND o.appointment_id IS NULL
+        GROUP BY o.payment_method
+        ORDER BY totalAmount DESC
     </select>
 
 </mapper>

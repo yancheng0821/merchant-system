@@ -36,6 +36,12 @@ public interface BusinessServiceClient {
     @PostMapping("/api/business/notifications/system/init-for-tenant/{tenantId}")
     ResponseEntity<Void> initSystemNotificationCopiesForNewTenant(@PathVariable("tenantId") Long tenantId);
 
+    /**
+     * 从模板租户复制会员等级
+     */
+    @PostMapping("/api/business/membership-tiers/copy-from-template")
+    Map<String, Object> copyMembershipTiersFromTemplate(@RequestParam("tenantId") Long tenantId);
+
     class SendVerificationCodeRequest {
         public Long tenantId;
         public String businessType;

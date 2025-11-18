@@ -36,9 +36,12 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Autowired
     private com.merchant.server.businessservice.util.MessageUtil messageUtil;
+
+    @Autowired
+    private com.merchant.server.businessservice.mapper.MembershipTierMapper membershipTierMapper;
     
     @Override
-    public Page<Customer> getCustomers(Long tenantId, String keyword, Customer.CustomerStatus status, Customer.MembershipLevel level, Pageable pageable) {
+    public Page<Customer> getCustomers(Long tenantId, String keyword, Customer.CustomerStatus status, String level, Pageable pageable) {
         try {
             System.out.println("=== CustomerService.getCustomers called ===");
             System.out.println("tenantId: " + tenantId);
@@ -272,7 +275,7 @@ public class CustomerServiceImpl implements CustomerService {
             customer.setPoints(dto.getPoints() != null ? dto.getPoints() : 0);
             customer.setTotalSpent(dto.getTotalSpent() != null ? dto.getTotalSpent() : BigDecimal.ZERO);
             customer.setStatus(dto.getStatus() != null ? dto.getStatus() : Customer.CustomerStatus.ACTIVE);
-            customer.setMembershipLevel(dto.getMembershipLevel() != null ? dto.getMembershipLevel() : Customer.MembershipLevel.REGULAR);
+            customer.setMembershipTierId(dto.getMembershipTierId());
             
             // 设置通信偏好默认值（如果为空）
             if (customer.getCommunicationPreference() == null) {
@@ -315,7 +318,23 @@ public class CustomerServiceImpl implements CustomerService {
         walkInDTO.setPhone("0000000000"); // 默认电话号码
         walkInDTO.setEmail("walkin" + tenantId + "@vamerchant.app"); // Walk-in 客户占位邮箱
         walkInDTO.setGender(Customer.Gender.PREFER_NOT_TO_SAY);
-        walkInDTO.setMembershipLevel(Customer.MembershipLevel.REGULAR);
+
+        // 设置为REGULAR会员等级
+        try {
+            com.merchant.server.businessservice.entity.MembershipTier regularTier =
+                membershipTierMapper.selectByTenantIdAndCode(tenantId, "REGULAR");
+            if (regularTier != null) {
+                walkInDTO.setMembershipTierId(regularTier.getId());
+                System.out.println("Walk-in customer set to REGULAR membership tier - ID: " + regularTier.getId());
+            } else {
+                System.out.println("REGULAR membership tier not found for tenant: " + tenantId);
+                walkInDTO.setMembershipTierId(null);
+            }
+        } catch (Exception e) {
+            System.err.println("Error finding REGULAR membership tier: " + e.getMessage());
+            walkInDTO.setMembershipTierId(null);
+        }
+
         walkInDTO.setStatus(Customer.CustomerStatus.ACTIVE);
         walkInDTO.setCommunicationPreference(Customer.CommunicationPreference.SMS); // 默认使用SMS
         walkInDTO.setPoints(0);

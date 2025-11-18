@@ -23,9 +23,27 @@ import {
   MenuItem,
   Backdrop,
 } from '@mui/material';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { zhCN } from '@mui/x-date-pickers/locales';
 import {
   Search as SearchIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -39,6 +57,8 @@ import {
   CalendarToday as CalendarIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
+  ViewAgenda as ViewAgendaIcon,
+  ViewCompact as ViewCompactIcon,
   CheckCircle as CheckCircleIcon,
   CheckCircleOutline as CheckCircleOutlineIcon,
   AccessTime as AccessTimeIcon,
@@ -48,6 +68,26 @@ import {
   Check as CheckIcon,
   NoteAdd as NoteAddIcon,
   ModeEdit as ModeEditIcon,
+  // Membership tier icons
+  Star as StarIcon,
+  StarHalf as StarHalfIcon,
+  StarRate as StarRateIcon,
+  Grade as GradeIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  CardGiftcard as GiftIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
+  CardMembership as MembershipIcon,
+  TrendingUp as TrendingUpIcon,
+  Loyalty as LoyaltyIcon,
+  Redeem as RedeemIcon,
+  Favorite as HeartIcon,
+  AutoAwesome as SparkleIcon,
+  Whatshot as FireIcon,
+  Celebration as CelebrationIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format, addDays, subDays, addWeeks, subWeeks, startOfWeek, eachDayOfInterval, endOfWeek, parseISO } from 'date-fns';
@@ -57,10 +97,12 @@ import AppointmentDialog from './components/AppointmentDialog';
 import AppointmentCard from './components/AppointmentCard';
 import StaffInfoCard from './components/StaffInfoCard';
 import PaymentDialog, { ServicePayment } from './components/PaymentDialog';
+import AdjustAvailabilityDialog from './components/AdjustAvailabilityDialog';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNavigation } from '../../../contexts/NavigationContext';
 import { usePermission } from '../../../hooks/usePermission';
-import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi } from '../../../services/api';
-import type { Resource, Service as ApiService, Customer } from '../../../services/api';
+import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi, staffAttendanceApi } from '../../../services/api';
+import type { Resource, Service as ApiService, Customer, StaffAttendance } from '../../../services/api';
 import { getMerchantNow, getMerchantTimezone } from '../../../utils/timezoneUtils';
 
 interface ResourceShift {
@@ -95,6 +137,12 @@ interface Appointment {
   customerPhone?: string;
   customerCountryCode?: string;
   customerEmail?: string;
+  customerMembershipTier?: {
+    id: number;
+    name: string;
+    color: string;
+    icon: string;
+  };
   serviceId?: number; // 第一个服务ID（向后兼容）
   serviceIds?: number[]; // 所有服务ID数组（多服务支持）
   serviceName: string; // 服务名称（多个服务用逗号分隔）
@@ -103,7 +151,7 @@ interface Appointment {
   startTime: string;
   endTime: string;
   date: string;
-  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'CANCELED' | 'NO_SHOW';
   price: number;
   notes?: string;
   isNewPatient?: boolean;
@@ -154,6 +202,19 @@ const janeColors = {
   gray: '#C5CDD1',
 };
 
+// 员工头像专用颜色数组（不包含灰色，避免误导）
+const staffAvatarColors = [
+  '#5EBFB3', // primary
+  '#7BC68C', // green
+  '#A8D5BA', // lightGreen
+  '#7FC3D8', // blue
+  '#B3E0EC', // lightBlue
+  '#F5D76E', // yellow
+  '#FFB84D', // orange
+  '#E8A4C0', // pink
+  '#B7A4D5', // purple
+];
+
 // 状态颜色
 const statusColors = {
   CONFIRMED: janeColors.green,
@@ -166,11 +227,12 @@ const statusColors = {
 // 模拟员工数据 - 按字母顺序排序，使用 Jane App 原始配色
 // Mock data has been removed - all data now comes from API
 
-// 生成时间槽 - 从早上10点到晚上10点
+// 生成时间槽 - 从早上10点到午夜12点
 const generateTimeSlots = () => {
   const slots = [];
-  for (let hour = 10; hour <= 22; hour++) {
-    slots.push(`${hour.toString().padStart(2, '0')}:00`);
+  for (let hour = 10; hour <= 24; hour++) {
+    const displayHour = hour === 24 ? '00' : hour.toString().padStart(2, '0');
+    slots.push(`${displayHour}:00`);
   }
   return slots;
 };
@@ -179,17 +241,22 @@ const timeSlots = generateTimeSlots();
 
 // 每小时的像素高度 - 设置为200px，适合30分钟起步的服务
 const HOUR_HEIGHT = 200;
+const HOUR_HEIGHT_COMPACT = 80; // 紧凑模式下的每小时高度
 
 // 计算预约位置 - 基于10点开始
-const calculatePosition = (startTime: string, endTime: string) => {
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
+const calculatePosition = (startTime: string, endTime: string, hourHeight: number = HOUR_HEIGHT) => {
+  let [startHour, startMinute] = startTime.split(':').map(Number);
+  let [endHour, endMinute] = endTime.split(':').map(Number);
+
+  // 处理午夜情况：00:00 表示24:00（一天的结束）
+  if (startHour === 0) startHour = 24;
+  if (endHour === 0) endHour = 24;
 
   const startMinutes = (startHour - 10) * 60 + startMinute;
   const endMinutes = (endHour - 10) * 60 + endMinute;
 
-  const top = (startMinutes / 60) * HOUR_HEIGHT;
-  const height = ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT;
+  const top = (startMinutes / 60) * hourHeight;
+  const height = ((endMinutes - startMinutes) / 60) * hourHeight;
 
   return { top, height };
 };
@@ -290,6 +357,50 @@ const calculateAppointmentLayout = (appointments: Appointment[]): AppointmentLay
   return layouts;
 };
 
+// 可拖拽的员工列组件
+interface SortableStaffColumnProps {
+  staff: any;
+  children: React.ReactNode;
+  minWidth: number;
+  maxWidth: number;
+}
+
+const SortableStaffColumn: React.FC<SortableStaffColumnProps> = ({ staff, children, minWidth, maxWidth }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: staff.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
+  };
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      sx={{
+        position: 'relative',
+        flex: 1,
+        minWidth,
+        maxWidth,
+        touchAction: 'none', // 禁用触摸滚动以支持拖拽
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
 const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   shifts,
   weekStart,
@@ -300,13 +411,45 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { hasPermission } = usePermission();
-  const locale = i18n.language === 'zh' ? zhCNLocale : enUSLocale;
+  const { hasPermission, userPermissions } = usePermission();
+  const { isDrawerOpen, setDrawerOpen } = useNavigation();
+  const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
+
+  // 获取会员等级图标
+  const getTierIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'star': return <StarIcon />;
+      case 'starhalf': return <StarHalfIcon />;
+      case 'starrate': return <StarRateIcon />;
+      case 'grade': return <GradeIcon />;
+      case 'stars': return <StarsIcon />;
+      case 'trophy': return <TrophyIcon />;
+      case 'medal': return <MedalIcon />;
+      case 'gift': return <GiftIcon />;
+      case 'diamond': return <DiamondIcon />;
+      case 'premium': return <PremiumIcon />;
+      case 'verified': return <VerifiedIcon />;
+      case 'membership': return <MembershipIcon />;
+      case 'trendingup': return <TrendingUpIcon />;
+      case 'loyalty': return <LoyaltyIcon />;
+      case 'redeem': return <RedeemIcon />;
+      case 'heart': return <HeartIcon />;
+      case 'sparkle': return <SparkleIcon />;
+      case 'fire': return <FireIcon />;
+      case 'celebration': return <CelebrationIcon />;
+      default: return <StarIcon />;
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [currentDate, setCurrentDate] = useState(getMerchantNow());
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  // 从localStorage读取视图类型，默认为'day'
+  const [viewMode, setViewMode] = useState<'day' | 'week'>(() => {
+    const saved = localStorage.getItem('scheduleViewMode');
+    return (saved === 'week' ? 'week' : 'day');
+  });
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [selectedStaffIds, setSelectedStaffIds] = useState<number[]>([]);
@@ -321,6 +464,17 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     resourceId: number;
     resourceName?: string;
   } | null>(null);
+  const [adjustAvailabilityDialogOpen, setAdjustAvailabilityDialogOpen] = useState(false);
+  const [adjustAvailabilityData, setAdjustAvailabilityData] = useState<{
+    staffId: number;
+    staffName: string;
+    scheduledStart: string;
+    scheduledEnd: string;
+    actualStart?: string;
+    actualEnd?: string;
+  } | null>(null);
+  // 存储员工签到签退时间（只影响当天）- key: resourceId_date, value: {startTime: checkIn, endTime: checkOut}
+  const [temporaryAvailabilities, setTemporaryAvailabilities] = useState<Record<string, { startTime: string; endTime: string }>>({});
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -329,6 +483,11 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     open: false,
     message: '',
     severity: 'warning',
+  });
+  // 从localStorage读取视图模式，默认为false
+  const [isCompactMode, setIsCompactMode] = useState(() => {
+    const saved = localStorage.getItem('scheduleViewCompactMode');
+    return saved ? JSON.parse(saved) : false;
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const calendarContainerRef = React.useRef<HTMLDivElement>(null);
@@ -344,22 +503,79 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [resourceServicesLoading, setResourceServicesLoading] = useState(true);
 
-  // 加载真实数据
+  // 员工列拖拽排序状态
+  const [staffOrder, setStaffOrder] = useState<number[]>([]);
+
+  // 拖拽传感器配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 移动8px后才激活拖拽，避免误触
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 初始化时根据compact模式设置drawer状态
+  useEffect(() => {
+    if (isCompactMode) {
+      setDrawerOpen(false);
+    }
+  }, []); // 只在组件挂载时执行一次
+
+  // 从 localStorage 加载员工排序
+  useEffect(() => {
+    if (!user?.tenantId) return;
+
+    const storageKey = `staffOrder_${user.tenantId}`;
+    const savedOrder = localStorage.getItem(storageKey);
+
+    if (savedOrder) {
+      try {
+        const parsed = JSON.parse(savedOrder);
+        setStaffOrder(parsed);
+      } catch (error) {
+        console.error('Failed to parse staff order from localStorage:', error);
+      }
+    }
+  }, [user?.tenantId]);
+
+  // 保存员工排序到 localStorage
+  const saveStaffOrder = (order: number[]) => {
+    if (!user?.tenantId) return;
+
+    const storageKey = `staffOrder_${user.tenantId}`;
+    localStorage.setItem(storageKey, JSON.stringify(order));
+    setStaffOrder(order);
+  };
+
+  // 加载真实数据 - 使用批量API优化性能
   useEffect(() => {
     const loadData = async () => {
       if (!user?.tenantId) return;
 
       try {
         setDataLoading(true);
+        setResourceServicesLoading(true);
+        setAvailabilitiesLoading(true);
 
-        // 并行加载员工和服务数据
-        const [staffData, servicesData] = await Promise.all([
-          resourceApi.getResourcesByType(user.tenantId, 'STAFF'),
+        // 并行加载员工批量数据和服务数据
+        const [batchData, servicesData] = await Promise.all([
+          resourceApi.getBatchDetails(user.tenantId, 'STAFF'),
           serviceApi.getServices(user.tenantId.toString())
         ]);
 
-        setRealStaff(staffData || []);
+        // 设置员工数据
+        setRealStaff(batchData.resources || []);
         setRealServices(servicesData || []);
+
+        // 设置资源服务映射
+        setResourceServices(batchData.resourceServices || {});
+
+        // 设置资源可用性映射
+        setResourceAvailabilities(batchData.resourceAvailabilities || {});
       } catch (error) {
         console.error('Failed to load data:', error);
         setSnackbar({
@@ -369,84 +585,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         });
       } finally {
         setDataLoading(false);
+        setResourceServicesLoading(false);
+        setAvailabilitiesLoading(false);
       }
     };
 
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.tenantId]);
-
-  // 加载所有员工的服务专长（用于服务过滤）
-  useEffect(() => {
-    const loadAllResourceServices = async () => {
-      if (realStaff.length === 0) {
-        setResourceServicesLoading(false);
-        return;
-      }
-
-      try {
-        setResourceServicesLoading(true);
-        const servicesMap: Record<number, number[]> = {};
-
-        // 为所有员工加载其服务专长
-        await Promise.all(
-          realStaff.map(async (resource) => {
-            try {
-              const expertise = await resourceApi.getResourceServices(resource.id);
-              servicesMap[resource.id] = expertise.map((e: any) => e.serviceId);
-            } catch (error) {
-              console.error(`Failed to load services for resource ${resource.id}:`, error);
-              servicesMap[resource.id] = [];
-            }
-          })
-        );
-
-        setResourceServices(servicesMap);
-      } catch (error) {
-        console.error('Failed to load resource services:', error);
-      } finally {
-        setResourceServicesLoading(false);
-      }
-    };
-
-    loadAllResourceServices();
-  }, [realStaff]);
-
-  // 加载所有员工的可用性数据
-  useEffect(() => {
-    const loadResourceAvailabilities = async () => {
-      if (realStaff.length === 0) {
-        setAvailabilitiesLoading(false);
-        return;
-      }
-
-      try {
-        setAvailabilitiesLoading(true);
-        const availabilitiesMap: Record<number, any[]> = {};
-
-        // 为所有员工加载其每周可用性数据
-        await Promise.all(
-          realStaff.map(async (resource) => {
-            try {
-              const availabilities = await resourceApi.getResourceAvailability(resource.id);
-              availabilitiesMap[resource.id] = availabilities || [];
-            } catch (error) {
-              console.error(`Failed to load availability for resource ${resource.id}:`, error);
-              availabilitiesMap[resource.id] = [];
-            }
-          })
-        );
-
-        setResourceAvailabilities(availabilitiesMap);
-      } catch (error) {
-        console.error('Failed to load resource availabilities:', error);
-      } finally {
-        setAvailabilitiesLoading(false);
-      }
-    };
-
-    loadResourceAvailabilities();
-  }, [realStaff]); // 只在员工列表变化时加载
 
   // 加载预约数据
   const loadAppointments = React.useCallback(async () => {
@@ -459,48 +605,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       setAppointmentsLoading(true);
       const appointmentsData = await api.getAllAppointments(user.tenantId);
 
-      // Transform API data to local Appointment format
-      const transformedAppointments: Appointment[] = appointmentsData.map((apt: any) => {
-        // 处理多服务：将所有服务名称用逗号分隔
-        const serviceNames = apt.appointmentServices && apt.appointmentServices.length > 0
-          ? apt.appointmentServices.map((svc: any) =>
-              svc.serviceName || svc.service?.name || 'Unknown Service'
-            ).join(', ')
-          : 'Unknown Service';
-
-        // 获取所有服务ID（用于支付时筛选套餐）
-        const serviceIds = apt.appointmentServices?.map((svc: any) => svc.serviceId) || [];
-
-        // 获取服务详情数组（包含价格）
-        const services: AppointmentService[] = apt.appointmentServices?.map((svc: any) => ({
-          serviceId: svc.serviceId,
-          serviceName: svc.serviceName || svc.service?.name || 'Unknown Service',
-          price: svc.price || 0,
-          duration: svc.duration || svc.service?.duration,
-        })) || [];
-
-        return {
-          id: apt.id,
-          resourceId: apt.appointmentResources?.[0]?.resourceId || 0,
-          customerId: apt.customerId,
-          customerName: `${apt.customer?.firstName || ''} ${apt.customer?.lastName || ''}`.trim(),
-          customerPhone: apt.customer?.phone,
-          customerCountryCode: apt.customer?.countryCode,
-          customerEmail: apt.customer?.email,
-          serviceId: apt.appointmentServices?.[0]?.serviceId, // 保留第一个服务ID用于向后兼容
-          serviceIds: serviceIds, // 所有服务ID数组
-          serviceName: serviceNames, // 所有服务名称（逗号分隔）
-          serviceDetails: apt.appointmentServices?.[0]?.service?.description,
-          services: services, // 服务详情数组
-          startTime: apt.appointmentTime,
-          endTime: calculateEndTime(apt.appointmentTime, apt.duration),
-          date: apt.appointmentDate,
-          status: apt.status,
-          price: apt.totalAmount,
-          notes: apt.notes,
-          paid: apt.status === 'COMPLETED', // Set paid based on status
-        };
-      });
+      // Transform API data to local Appointment format using the helper function
+      const transformedAppointments: Appointment[] = appointmentsData.map(transformAppointment);
 
       setAllAppointments(transformedAppointments);
     } catch (error) {
@@ -519,9 +625,92 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00`;
   };
 
+  // Helper function to transform a single appointment from API format to local format
+  const transformAppointment = (apt: any): Appointment => {
+    // 处理多服务：将所有服务名称用逗号分隔
+    const serviceNames = apt.appointmentServices && apt.appointmentServices.length > 0
+      ? apt.appointmentServices.map((svc: any) =>
+          svc.serviceName || svc.service?.name || 'Unknown Service'
+        ).join(', ')
+      : 'Unknown Service';
+
+    // 获取所有服务ID（用于支付时筛选套餐）
+    const serviceIds = apt.appointmentServices?.map((svc: any) => svc.serviceId) || [];
+
+    // 获取服务详情数组（包含价格）
+    const services: AppointmentService[] = apt.appointmentServices?.map((svc: any) => ({
+      serviceId: svc.serviceId,
+      serviceName: svc.serviceName || svc.service?.name || 'Unknown Service',
+      price: svc.price || 0,
+      duration: svc.duration || svc.service?.duration,
+    })) || [];
+
+    return {
+      id: apt.id,
+      resourceId: apt.appointmentResources?.[0]?.resourceId || 0,
+      customerId: apt.customerId,
+      customerName: `${apt.customer?.firstName || ''} ${apt.customer?.lastName || ''}`.trim(),
+      customerPhone: apt.customer?.phone,
+      customerCountryCode: apt.customer?.countryCode,
+      customerEmail: apt.customer?.email,
+      customerMembershipTier: apt.customer?.membershipTier ? {
+        id: apt.customer.membershipTier.id,
+        name: apt.customer.membershipTier.name,
+        color: apt.customer.membershipTier.color,
+        icon: apt.customer.membershipTier.icon,
+      } : undefined,
+      serviceId: apt.appointmentServices?.[0]?.serviceId,
+      serviceIds: serviceIds,
+      serviceName: serviceNames,
+      serviceDetails: apt.appointmentServices?.[0]?.service?.description,
+      services: services,
+      startTime: apt.appointmentTime,
+      endTime: calculateEndTime(apt.appointmentTime, apt.duration),
+      date: apt.appointmentDate,
+      status: apt.status,
+      price: apt.totalAmount,
+      notes: apt.notes,
+      paid: apt.status === 'COMPLETED',
+    };
+  };
+
   useEffect(() => {
     loadAppointments();
   }, [loadAppointments]);
+
+  // 加载当天的签到签退记录
+  useEffect(() => {
+    const loadAttendanceRecords = async () => {
+      if (!user?.tenantId) return;
+
+      try {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        const records = await staffAttendanceApi.getByTenantAndDate(user.tenantId, dateStr);
+
+        // 转换为temporaryAvailabilities格式
+        const attendanceMap: Record<string, { startTime: string; endTime: string }> = {};
+        records.forEach((record) => {
+          const key = `${record.resourceId}_${dateStr}`;
+          attendanceMap[key] = {
+            startTime: record.checkInTime.substring(0, 5), // HH:mm
+            endTime: record.checkOutTime.substring(0, 5), // HH:mm
+          };
+        });
+
+        setTemporaryAvailabilities(attendanceMap);
+      } catch (error) {
+        console.error('Failed to load attendance records:', error);
+      }
+    };
+
+    loadAttendanceRecords();
+  }, [currentDate, user?.tenantId]);
+
+  // 动态计算每小时高度（根据紧凑模式）
+  const hourHeight = isCompactMode ? HOUR_HEIGHT_COMPACT : HOUR_HEIGHT;
+
+  // 动态计算员工列宽度（根据紧凑模式）
+  const staffColumnWidth = isCompactMode ? { min: 120, max: 150 } : { min: 280, max: 400 };
 
   // 计算整个日历的数据是否已全部加载完成
   const isCalendarDataReady = useMemo(() => {
@@ -561,47 +750,88 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       name: resource.name,
       role: resource.position || resource.description || t('resources.staff'),
       avatar: getFullImageUrl(resource.avatar),
-      color: janeColors[Object.keys(janeColors)[index % Object.keys(janeColors).length] as keyof typeof janeColors]
+      color: staffAvatarColors[index % staffAvatarColors.length]
     }));
   }, [realStaff, dataLoading, t]);
 
   // 转换真实员工数据为显示格式（用于日历显示区域）
-  const displayedStaff = useMemo(() => {
-    let staff = allStaffList;
+  // 返回所有员工及其可用状态，而不是直接过滤
+  const displayedStaffWithAvailability = useMemo(() => {
+    return allStaffList.map(staff => {
+      let isAvailable = true;
 
-    // 如果有搜索查询,过滤出有匹配客户的技师
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      // 如果有搜索查询，检查该技师是否有匹配客户的预约
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
 
-      // 找出所有匹配搜索条件的预约（排除已取消的）
-      const matchingAppointments = allAppointments.filter(apt =>
-        apt.date === dateStr &&
-        apt.status !== 'CANCELLED' &&
-        apt.customerName.toLowerCase().includes(query)
-      );
+        // 找出该技师的所有匹配搜索条件的预约（排除已取消的）
+        const hasMatchingAppointment = allAppointments.some(apt =>
+          apt.resourceId === staff.id &&
+          apt.date === dateStr &&
+          apt.status !== 'CANCELLED' &&
+          apt.customerName.toLowerCase().includes(query)
+        );
 
-      // 获取这些预约对应的技师ID
-      const staffIdsWithMatches = new Set(matchingAppointments.map(apt => apt.resourceId));
+        if (!hasMatchingAppointment) {
+          isAvailable = false;
+        }
+      }
 
-      // 只显示有匹配客户预约的技师
-      staff = staff.filter(s => staffIdsWithMatches.has(s.id));
-    }
+      // 如果选择了服务，检查该技师是否提供该服务
+      if (selectedServiceId && resourceServices && isAvailable) {
+        const staffServiceIds = resourceServices[staff.id] || [];
+        if (!staffServiceIds.includes(selectedServiceId)) {
+          isAvailable = false;
+        }
+      }
 
-    // 如果选择了服务，过滤出提供该服务的技师
-    if (selectedServiceId && resourceServices) {
-      const staffIdsWithService = Object.entries(resourceServices)
-        .filter(([_, serviceIds]) => serviceIds.includes(selectedServiceId))
-        .map(([resourceId, _]) => Number(resourceId));
+      // 如果选择了特定员工，检查当前员工是否在选择列表中
+      if (selectedStaffIds.length > 0 && isAvailable) {
+        if (!selectedStaffIds.includes(staff.id)) {
+          isAvailable = false;
+        }
+      }
 
-      staff = staff.filter(s => staffIdsWithService.includes(s.id));
-    }
-
-    if (selectedStaffIds.length > 0) {
-      staff = staff.filter(s => selectedStaffIds.includes(s.id));
-    }
-    return staff;
+      return {
+        ...staff,
+        isAvailable
+      };
+    });
   }, [searchQuery, selectedStaffIds, selectedServiceId, resourceServices, currentDate, allAppointments, allStaffList]);
+
+  // 为了兼容现有代码，保留displayedStaff（只返回可用的员工）
+  const displayedStaff = useMemo(() => {
+    return displayedStaffWithAvailability.filter(s => s.isAvailable);
+  }, [displayedStaffWithAvailability]);
+
+  // 应用拖拽排序后的员工列表
+  const sortedStaffWithAvailability = useMemo(() => {
+    // 如果没有自定义排序，返回原始顺序
+    if (staffOrder.length === 0) {
+      return displayedStaffWithAvailability;
+    }
+
+    // 创建一个按 staffOrder 排序的员工列表
+    const staffMap = new Map(displayedStaffWithAvailability.map(s => [s.id, s]));
+    const sorted: typeof displayedStaffWithAvailability = [];
+
+    // 首先添加已排序的员工
+    staffOrder.forEach(id => {
+      const staff = staffMap.get(id);
+      if (staff) {
+        sorted.push(staff);
+        staffMap.delete(id);
+      }
+    });
+
+    // 然后添加新员工（不在排序列表中的）
+    staffMap.forEach(staff => {
+      sorted.push(staff);
+    });
+
+    return sorted;
+  }, [displayedStaffWithAvailability, staffOrder]);
 
   // 转换真实服务数据为显示格式
   const availableServices = useMemo(() => {
@@ -738,6 +968,30 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       return true;
     }
 
+    let [hours, minutes] = timeStr.split(':').map(Number);
+    // 处理午夜情况
+    if (hours === 0) hours = 24;
+    const timeSlotStartMinutes = hours * 60 + minutes;
+    const timeSlotEndMinutes = timeSlotStartMinutes + 60; // 时间槽代表一个小时的时段
+
+    // 优先检查临时签到签退时间调整
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const tempKey = `${resourceId}_${dateStr}`;
+    if (temporaryAvailabilities[tempKey]) {
+      const tempAvail = temporaryAvailabilities[tempKey];
+      let [startHours, startMinutes] = tempAvail.startTime.split(':').map(Number);
+      let [endHours, endMinutes] = tempAvail.endTime.split(':').map(Number);
+      // 处理午夜情况
+      if (startHours === 0) startHours = 24;
+      if (endHours === 0) endHours = 24;
+      const staffStartMinutes = startHours * 60 + startMinutes;
+      const staffEndMinutes = endHours * 60 + endMinutes;
+
+      // 时间槽与员工工作时间有重叠即可用
+      return timeSlotEndMinutes > staffStartMinutes && timeSlotStartMinutes < staffEndMinutes;
+    }
+
+    // 如果没有临时调整，使用原始排班时间
     const availabilities = resourceAvailabilities[resourceId];
     if (!availabilities || availabilities.length === 0) {
       // 如果没有设置可用性，默认为不可用（必须先设置员工可用性才能添加预约）
@@ -747,9 +1001,6 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
     // 转换为后端格式 (1=Monday, ..., 7=Sunday)
     const backendDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
-
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const checkTimeMinutes = hours * 60 + minutes;
 
     // 获取当天的所有可用性记录（支持多个时间段）
     const dayAvailabilities = availabilities.filter(
@@ -761,17 +1012,20 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       return false;
     }
 
-    // 检查时间是否在任何一个可用时间段内
+    // 检查时间槽是否与任何一个可用时间段有重叠
     return dayAvailabilities.some((dayAvailability: any) => {
-      const [startHours, startMinutes] = dayAvailability.startTime.split(':').map(Number);
-      const [endHours, endMinutes] = dayAvailability.endTime.split(':').map(Number);
-      const startTimeMinutes = startHours * 60 + startMinutes;
-      const endTimeMinutes = endHours * 60 + endMinutes;
+      let [startHours, startMinutes] = dayAvailability.startTime.split(':').map(Number);
+      let [endHours, endMinutes] = dayAvailability.endTime.split(':').map(Number);
+      // 处理午夜情况
+      if (startHours === 0) startHours = 24;
+      if (endHours === 0) endHours = 24;
+      const staffStartMinutes = startHours * 60 + startMinutes;
+      const staffEndMinutes = endHours * 60 + endMinutes;
 
       return (
         dayAvailability.isAvailable &&
-        checkTimeMinutes >= startTimeMinutes &&
-        checkTimeMinutes < endTimeMinutes
+        timeSlotEndMinutes > staffStartMinutes &&
+        timeSlotStartMinutes < staffEndMinutes
       );
     });
   };
@@ -780,7 +1034,192 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     setSelectedAppointment(appointment);
     setNotesValue(appointment.notes || '');
     setEditingNotes(false);
-    setDrawerOpen(true);
+    setDetailsDrawerOpen(true);
+  };
+
+  // 获取员工的工作时间范围（优先使用签到签退时间，否则使用排班时间）
+  const getStaffAvailabilityTime = (staffId: number, date: Date): string | null => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const tempKey = `${staffId}_${dateStr}`;
+
+    // 如果有签到签退记录，使用签到签退时间
+    if (temporaryAvailabilities[tempKey]) {
+      const start = temporaryAvailabilities[tempKey].startTime.substring(0, 5);
+      const end = temporaryAvailabilities[tempKey].endTime.substring(0, 5);
+      return `${start}-${end}`;
+    }
+
+    // 否则使用原始排班时间
+    const dayOfWeek = date.getDay();
+    const isoWeekDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+    const availabilities = (resourceAvailabilities[staffId] || []).filter(
+      (availability: any) => availability.dayOfWeek === isoWeekDay && availability.isAvailable
+    );
+
+    if (availabilities.length === 0) {
+      return null;
+    }
+
+    // 按开始时间排序所有可用时间段
+    const sortedAvailabilities = availabilities
+      .map((availability: any) => ({
+        start: availability.startTime.substring(0, 5),
+        end: availability.endTime.substring(0, 5),
+      }))
+      .sort((a, b) => a.start.localeCompare(b.start));
+
+    // 合并连续或重叠的时间段
+    const mergedSlots: { start: string; end: string }[] = [];
+    sortedAvailabilities.forEach((slot) => {
+      if (mergedSlots.length === 0) {
+        mergedSlots.push(slot);
+      } else {
+        const lastSlot = mergedSlots[mergedSlots.length - 1];
+        // 如果当前时间段与上一个时间段连续或重叠，合并它们
+        if (slot.start <= lastSlot.end) {
+          lastSlot.end = slot.end > lastSlot.end ? slot.end : lastSlot.end;
+        } else {
+          mergedSlots.push(slot);
+        }
+      }
+    });
+
+    // 格式化为字符串，多个时间段用逗号分隔
+    return mergedSlots.map(slot => `${slot.start}-${slot.end}`).join(', ');
+  };
+
+  // 打开员工签到签退对话框
+  const handleOpenAdjustAvailability = (staffId: number, staffName: string) => {
+    // 检查权限 - 没有权限时静默返回，不显示提示
+    if (!hasPermission('schedule:adjust_attendance')) {
+      return;
+    }
+
+    const availability = getStaffAvailabilityTime(staffId, currentDate);
+    if (!availability) {
+      setSnackbar({
+        open: true,
+        message: t('schedule.noScheduledTime'),
+        severity: 'warning',
+      });
+      return;
+    }
+
+    const dateStr = format(currentDate, 'yyyy-MM-dd');
+    const tempKey = `${staffId}_${dateStr}`;
+    const tempAvailability = temporaryAvailabilities[tempKey];
+
+    // 获取原始排班时间（不含临时调整）
+    const dayOfWeek = currentDate.getDay();
+    const isoWeekDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+    const availabilities = (resourceAvailabilities[staffId] || []).filter(
+      (av: any) => av.dayOfWeek === isoWeekDay && av.isAvailable
+    );
+
+    let scheduledStart = '09:00';
+    let scheduledEnd = '18:00';
+
+    if (availabilities.length > 0) {
+      let earliestStart = '23:59';
+      let latestEnd = '00:00';
+      availabilities.forEach((av: any) => {
+        if (av.startTime < earliestStart) earliestStart = av.startTime;
+        if (av.endTime > latestEnd) latestEnd = av.endTime;
+      });
+      scheduledStart = earliestStart.substring(0, 5);
+      scheduledEnd = latestEnd.substring(0, 5);
+    }
+
+    setAdjustAvailabilityData({
+      staffId,
+      staffName,
+      scheduledStart,
+      scheduledEnd,
+      actualStart: tempAvailability?.startTime,
+      actualEnd: tempAvailability?.endTime,
+    });
+    setAdjustAvailabilityDialogOpen(true);
+  };
+
+  // 保存员工签到签退时间
+  const handleSaveAvailabilityAdjustment = async (startTime: string, endTime: string) => {
+    if (!adjustAvailabilityData || !user?.tenantId) return;
+
+    const dateStr = format(currentDate, 'yyyy-MM-dd');
+    const tempKey = `${adjustAvailabilityData.staffId}_${dateStr}`;
+
+    try {
+      // 如果签到签退时间与原始排班相同，删除记录（使用原始排班）
+      if (
+        startTime === adjustAvailabilityData.scheduledStart &&
+        endTime === adjustAvailabilityData.scheduledEnd
+      ) {
+        // 删除后端记录
+        await staffAttendanceApi.delete(adjustAvailabilityData.staffId, dateStr);
+
+        // 更新本地状态
+        setTemporaryAvailabilities(prev => {
+          const newTemp = { ...prev };
+          delete newTemp[tempKey];
+          return newTemp;
+        });
+      } else {
+        // 保存签到签退时间到后端
+        const attendance: StaffAttendance = {
+          tenantId: user.tenantId,
+          resourceId: adjustAvailabilityData.staffId,
+          attendanceDate: dateStr,
+          checkInTime: `${startTime}:00`,
+          checkOutTime: `${endTime}:00`,
+          createdBy: user.id,
+        };
+
+        await staffAttendanceApi.saveOrUpdate(attendance);
+
+        // 更新本地状态
+        setTemporaryAvailabilities(prev => ({
+          ...prev,
+          [tempKey]: { startTime, endTime },
+        }));
+      }
+
+      setSnackbar({
+        open: true,
+        message: t('schedule.checkInOutSaved'),
+        severity: 'success',
+      });
+    } catch (error: any) {
+      console.error('Failed to save attendance:', error);
+      setSnackbar({
+        open: true,
+        message: t('schedule.checkInOutSaveFailed'),
+        severity: 'error',
+      });
+      throw error; // 抛出错误让对话框处理
+    }
+  };
+
+  // 处理员工列拖拽结束
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = sortedStaffWithAvailability.findIndex(s => s.id === active.id);
+    const newIndex = sortedStaffWithAvailability.findIndex(s => s.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // 使用 arrayMove 重新排序
+    const reorderedStaff = arrayMove(sortedStaffWithAvailability, oldIndex, newIndex);
+    const newOrder = reorderedStaff.map(s => s.id);
+
+    // 保存新的排序
+    saveStaffOrder(newOrder);
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
@@ -829,21 +1268,73 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     // 获取该员工当天的所有预约,并按开始时间排序
     const dateStr = format(date, 'yyyy-MM-dd');
     const appointments = allAppointments
-      .filter(a => a.resourceId === staffId && a.date === dateStr && a.status !== 'CANCELLED')
+      .filter(a => a.resourceId === staffId && a.date === dateStr && a.status !== 'CANCELLED' && a.status !== 'CANCELED')
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     // 将时间字符串转换为分钟数
     const timeToMinutes = (timeStr: string) => {
-      const [hour, minute] = timeStr.split(':').map(Number);
+      let [hour, minute] = timeStr.split(':').map(Number);
+      // 处理午夜情况：00:00 表示24:00（一天的结束）
+      if (hour === 0) {
+        hour = 24;
+      }
       return (hour - 10) * 60 + minute;
     };
 
     // 将分钟数转换为时间字符串
     const minutesToTime = (minutes: number) => {
-      const hour = Math.floor(minutes / 60) + 10;
+      let hour = Math.floor(minutes / 60) + 10;
       const minute = minutes % 60;
+      // 处理午夜情况：24:00 -> 00:00
+      if (hour === 24) {
+        hour = 0;
+      }
       return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
     };
+
+    // 获取员工的实际工作时间（考虑签到签退）
+    const tempKey = `${staffId}_${dateStr}`;
+    let staffStartMinutes: number | null = null;
+    let staffEndMinutes: number | null = null;
+
+    if (temporaryAvailabilities[tempKey]) {
+      // 有临时调整，使用签到签退时间
+      const tempAvail = temporaryAvailabilities[tempKey];
+      let [startHours, startMin] = tempAvail.startTime.split(':').map(Number);
+      let [endHours, endMin] = tempAvail.endTime.split(':').map(Number);
+      // 处理午夜情况
+      if (startHours === 0) startHours = 24;
+      if (endHours === 0) endHours = 24;
+      staffStartMinutes = (startHours - 10) * 60 + startMin;
+      staffEndMinutes = (endHours - 10) * 60 + endMin;
+    } else {
+      // 使用原始排班时间
+      const dayOfWeek = date.getDay();
+      const backendDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      const availabilities = resourceAvailabilities[staffId];
+      if (availabilities && availabilities.length > 0) {
+        const dayAvailabilities = availabilities.filter(
+          (avail: any) => avail.dayOfWeek === backendDayOfWeek && avail.isAvailable
+        );
+        if (dayAvailabilities.length > 0) {
+          // 取最早开始和最晚结束时间
+          const starts = dayAvailabilities.map((avail: any) => {
+            let [h, m] = avail.startTime.split(':').map(Number);
+            // 处理午夜情况
+            if (h === 0) h = 24;
+            return (h - 10) * 60 + m;
+          });
+          const ends = dayAvailabilities.map((avail: any) => {
+            let [h, m] = avail.endTime.split(':').map(Number);
+            // 处理午夜情况
+            if (h === 0) h = 24;
+            return (h - 10) * 60 + m;
+          });
+          staffStartMinutes = Math.min(...starts);
+          staffEndMinutes = Math.max(...ends);
+        }
+      }
+    }
 
     // 最小预约时长(分钟)
     const MIN_DURATION = 30;
@@ -902,12 +1393,22 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       startMinutes = clickedHourStart;
     }
 
+    // 确保开始时间不早于员工签到时间
+    if (staffStartMinutes !== null) {
+      startMinutes = Math.max(startMinutes, staffStartMinutes);
+    }
+
     // 计算结束时间
     if (nextAppointment) {
       const nextStartMinutes = timeToMinutes(nextAppointment.startTime);
 
-      // 可用时间到下一个预约开始为止
-      const availableMinutes = nextStartMinutes - startMinutes;
+      // 可用时间到下一个预约开始为止，但不能超过员工签退时间
+      let maxEndMinutes = nextStartMinutes;
+      if (staffEndMinutes !== null) {
+        maxEndMinutes = Math.min(maxEndMinutes, staffEndMinutes);
+      }
+
+      const availableMinutes = maxEndMinutes - startMinutes;
 
       if (availableMinutes < MIN_DURATION) {
         // 时间不足30分钟,返回 null 表示无法添加预约
@@ -917,14 +1418,18 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       // 如果可用时间不足1小时,则占满整个时间槽
       if (availableMinutes < DEFAULT_DURATION) {
         // 直接使用所有可用时间
-        endMinutes = nextStartMinutes;
+        endMinutes = maxEndMinutes;
       } else {
         // 有足够空间,默认1小时
         endMinutes = startMinutes + DEFAULT_DURATION;
       }
     } else {
-      // 没有后面的预约,默认1小时,但不超过22:00
-      endMinutes = Math.min(startMinutes + DEFAULT_DURATION, 12 * 60); // 12小时 = 22:00
+      // 没有后面的预约,默认1小时,但不超过00:00(午夜)和员工签退时间
+      let maxEndMinutes = 14 * 60; // 14小时 = 24:00 (00:00)
+      if (staffEndMinutes !== null) {
+        maxEndMinutes = Math.min(maxEndMinutes, staffEndMinutes);
+      }
+      endMinutes = Math.min(startMinutes + DEFAULT_DURATION, maxEndMinutes);
 
       // 检查是否有足够时间
       const availableMinutes = endMinutes - startMinutes;
@@ -1069,8 +1574,17 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       // 编辑模式 vs 创建模式
       if (selectedAppointment) {
         // 编辑现有预约
-        await appointmentApi.updateAppointment(selectedAppointment.id, appointment);
+        const updatedAppointment = await appointmentApi.updateAppointment(selectedAppointment.id, appointment);
         console.log('Updated appointment:', selectedAppointment.id);
+
+        // 局部更新：替换数组中的预约对象
+        setAllAppointments(prevAppointments =>
+          prevAppointments.map(apt =>
+            apt.id === selectedAppointment.id
+              ? transformAppointment(updatedAppointment)
+              : apt
+          )
+        );
 
         setSnackbar({
           open: true,
@@ -1082,15 +1596,18 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         const createdAppointment = await api.createAppointment(appointment);
         console.log('Created appointment:', createdAppointment);
 
+        // 局部更新：将新预约添加到数组
+        setAllAppointments(prevAppointments => [
+          ...prevAppointments,
+          transformAppointment(createdAppointment)
+        ]);
+
         setSnackbar({
           open: true,
           message: t('appointments.createSuccess', 'Appointment created successfully'),
           severity: 'success'
         });
       }
-
-      // Refresh appointments list
-      loadAppointments();
 
       setAppointmentDialogOpen(false);
       setSelectedAppointment(null);
@@ -1193,7 +1710,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       tipPercentage: number;
       subtotal: number;
       totalAmount: number;
-    }
+    },
+    notes?: string
   ) => {
     if (!selectedAppointment || !user?.tenantId) return;
 
@@ -1219,6 +1737,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             servicePayments, // 传递服务支付数组
             tenantId: user.tenantId,
             taxInfo, // 传递税率和小费信息
+            notes, // 传递notes
           }
         );
       } else {
@@ -1231,6 +1750,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             verificationCodeId,
             tenantId: user.tenantId,
             taxInfo, // 传递税率和小费信息
+            notes, // 传递notes
           }
         );
       }
@@ -1414,7 +1934,6 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     }
   };
 
-
   // 监听全屏变化
   React.useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1433,10 +1952,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: isFullscreen ? '100vh' : 'calc(100vh - 80px)',
+        height: isCompactMode ? '100vh' : 'calc(100vh - 80px)',
         bgcolor: '#f1f3f5',
-        position: 'relative', // 确保作为抽屉的定位容器
-        overflow: 'hidden', // 防止内容溢出
+        position: isCompactMode ? 'fixed' : 'relative',
+        top: isCompactMode ? 0 : 'auto',
+        left: isCompactMode ? 0 : 'auto',
+        right: isCompactMode ? 0 : 'auto',
+        bottom: isCompactMode ? 0 : 'auto',
+        zIndex: isCompactMode ? 1300 : 'auto', // 高于AppBar的zIndex (1100)
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
       }}
     >
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', gap: 0 }}>
@@ -1444,7 +1969,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         <Paper
             elevation={0}
             sx={{
-              width: { xs: 200, sm: 220, md: 240, lg: 260 },
+              width: isCompactMode ? 160 : { xs: 200, sm: 220, md: 240, lg: 260 },
               flexShrink: 0,
               borderRight: '1px solid',
               borderColor: 'divider',
@@ -1452,9 +1977,10 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               flexDirection: 'column',
               background: 'linear-gradient(180deg, #fafbfc 0%, #f8f9fa 100%)',
               boxShadow: '2px 0 8px rgba(0,0,0,0.02)',
+              transition: 'width 0.3s ease',
             }}
           >
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: isCompactMode ? 1 : 2, transition: 'padding 0.3s ease' }}>
             <TextField
               fullWidth
               size="small"
@@ -1464,15 +1990,19 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" sx={{ color: themeColor }} />
+                    <SearchIcon sx={{ fontSize: isCompactMode ? 16 : 20, color: themeColor }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: isCompactMode ? 1.5 : 2,
                   backgroundColor: '#f8fafc',
                   border: '2px solid transparent',
+                  fontSize: isCompactMode ? '0.75rem' : '0.875rem',
+                  '& input': {
+                    padding: isCompactMode ? '6px 8px' : '8.5px 14px',
+                  },
                   '& fieldset': {
                     border: 'none',
                   },
@@ -1490,7 +2020,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             />
           </Box>
 
-          <Box sx={{ py: 1, px: 1 }}>
+          <Box sx={{ py: isCompactMode ? 0.5 : 1, px: 1, transition: 'padding 0.3s ease' }}>
             <Button
               fullWidth
               size="small"
@@ -1498,10 +2028,11 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 justifyContent: 'flex-start',
                 color: selectedStaffIds.length === 0 ? themeColor : 'text.primary',
                 textTransform: 'none',
-                borderRadius: 2,
+                borderRadius: isCompactMode ? 1.5 : 2,
                 fontWeight: 600,
-                px: 2,
-                py: 1.25,
+                fontSize: isCompactMode ? '0.75rem' : '0.875rem',
+                px: isCompactMode ? 1 : 2,
+                py: isCompactMode ? 0.5 : 1.25,
                 bgcolor: selectedStaffIds.length === 0 ? alpha(themeColor, 0.12) : 'transparent',
                 transition: 'all 0.2s ease',
                 '&:hover': {
@@ -1518,7 +2049,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
           <Divider />
 
-          <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
+          <Box sx={{ flex: 1, overflowY: 'auto', py: isCompactMode ? 0.5 : 1, transition: 'padding 0.3s ease' }}>
             {dataLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', py: 4 }}>
                 <CircularProgress size={40} sx={{ color: themeColor }} />
@@ -1539,8 +2070,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     selected={isSelected}
                     onClick={() => toggleStaffSelection(staff.id)}
                     sx={{
-                      py: 1.5,
-                      px: 2,
+                      py: isCompactMode ? 0.75 : 1.5,
+                      px: isCompactMode ? 1 : 2,
                       mb: 0.5,
                       borderRadius: 2,
                       transition: 'all 0.2s ease',
@@ -1555,18 +2086,24 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       },
                     }}
                   >
-                    <ListItemAvatar>
+                    <ListItemAvatar sx={{ minWidth: isCompactMode ? 36 : 56 }}>
                       <Avatar
-                        src={staff.avatar}
+                        src={staff.avatar || undefined}
                         sx={{
-                          width: 40,
-                          height: 40,
+                          width: isCompactMode ? 28 : 40,
+                          height: isCompactMode ? 28 : 40,
                           bgcolor: staff.color || '#5fa67a', // 使用员工颜色或默认绿色
                           color: 'white',
                           fontWeight: 600,
-                          fontSize: 16,
+                          fontSize: isCompactMode ? 12 : 16,
                           border: isSelected ? `2px solid ${themeColor}` : `2px solid ${alpha(staff.color || '#5fa67a', 0.2)}`,
                           transition: 'all 0.2s ease',
+                        }}
+                        imgProps={{
+                          onError: (e: any) => {
+                            // 图片加载失败时隐藏 img 标签，显示首字母背景
+                            e.target.style.display = 'none';
+                          }
                         }}
                       >
                         {staff.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -1578,15 +2115,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           variant="body2"
                           fontWeight={600}
                           color={isSelected ? themeColor : 'text.primary'}
+                          sx={{ fontSize: isCompactMode ? 11 : 14 }}
                         >
                           {staff.name}
                         </Typography>
                       }
-                      secondary={
+                      secondary={!isCompactMode && (
                         <Typography variant="caption" color="text.secondary" fontSize={10}>
                           {staff.role}
                         </Typography>
-                      }
+                      )}
                     />
                   </ListItemButton>
                 );
@@ -1597,25 +2135,25 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
           {/* 服务列表 - 始终显示所有服务 */}
           <Divider />
-          <Box sx={{ p: 2, pb: 1 }}>
-            <Typography variant="caption" fontWeight={600} color="text.secondary">
+          <Box sx={{ p: isCompactMode ? 1 : 2, pb: isCompactMode ? 0.5 : 1, transition: 'padding 0.3s ease' }}>
+            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ fontSize: isCompactMode ? '0.7rem' : '0.75rem' }}>
               {selectedStaffIds.length > 0 ? t('appointments.availableServices') : t('appointments.allServicesLabel')}
             </Typography>
           </Box>
-          <Box sx={{ flex: 1, overflowY: 'auto', pb: 2, px: 1 }}>
+          <Box sx={{ flex: 1, overflowY: 'auto', pb: isCompactMode ? 1 : 2, px: 1, transition: 'padding 0.3s ease' }}>
             {availableServices.map((service) => (
               <Box
                 key={service.id}
                 onClick={() => setSelectedServiceId(selectedServiceId === service.id ? null : service.id)}
                 sx={{
-                  mb: 1,
-                  p: 1.5,
+                  mb: isCompactMode ? 0.5 : 1,
+                  p: isCompactMode ? 1 : 1.5,
                   bgcolor: selectedServiceId === service.id ? alpha(service.color, 0.25) : alpha(service.color, 0.12),
                   borderRadius: 2,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
+                  gap: isCompactMode ? 0.75 : 1,
                   border: selectedServiceId === service.id ? `2px solid ${service.color}` : '2px solid transparent',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
@@ -1630,8 +2168,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               >
                 <Box
                   sx={{
-                    width: 36,
-                    height: 36,
+                    width: isCompactMode ? 28 : 36,
+                    height: isCompactMode ? 28 : 36,
                     borderRadius: '50%',
                     bgcolor: service.color,
                     color: 'white',
@@ -1639,20 +2177,32 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 700,
-                    fontSize: 14,
+                    fontSize: isCompactMode ? 12 : 14,
                     flexShrink: 0,
                     boxShadow: `0 2px 8px ${alpha(service.color, 0.4)}`,
                   }}
                 >
                   {service.icon}
                 </Box>
-                <Box flex={1}>
-                  <Typography variant="caption" fontWeight={600} display="block" fontSize={11}>
+                <Box flex={1} sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="caption"
+                    fontWeight={600}
+                    display="block"
+                    fontSize={isCompactMode ? 10 : 11}
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {service.name}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" fontSize={10}>
-                    {service.duration} min · ${service.price}
-                  </Typography>
+                  {!isCompactMode && (
+                    <Typography variant="caption" color="text.secondary" fontSize={10}>
+                      {service.duration} min · ${service.price}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             ))}
@@ -1664,12 +2214,13 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 2.5,
+              p: isCompactMode ? 1 : 2.5,
               borderBottom: '2px solid',
               borderColor: 'divider',
               bgcolor: 'white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
               zIndex: 10,
+              transition: 'padding 0.3s ease',
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -1681,13 +2232,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     bgcolor: 'white',
                     border: '1px solid',
                     borderColor: 'divider',
+                    p: isCompactMode ? 0.5 : 1,
                     '&:hover': {
                       bgcolor: alpha(themeColor, 0.05),
                       borderColor: themeColor,
                     },
                   }}
                 >
-                  <ChevronLeftIcon />
+                  <ChevronLeftIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} />
                 </IconButton>
                 <Box
                   onClick={handleDateClick}
@@ -1695,24 +2247,25 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: 3,
+                    gap: isCompactMode ? 1 : 1.5,
+                    px: isCompactMode ? 1.5 : 3,
+                    py: isCompactMode ? 0.5 : 1.5,
+                    borderRadius: isCompactMode ? 2 : 3,
                     bgcolor: 'white',
                     transition: 'all 0.2s ease',
-                    minWidth: 280,
+                    minWidth: isCompactMode ? 180 : 280,
                     justifyContent: 'center',
                     '&:hover': {
                       bgcolor: alpha(themeColor, 0.03),
                     }
                   }}
                 >
-                  <CalendarIcon sx={{ color: themeColor, fontSize: 20 }} />
+                  <CalendarIcon sx={{ color: themeColor, fontSize: isCompactMode ? 16 : 20 }} />
                   <Typography
-                    variant="h6"
+                    variant={isCompactMode ? "body2" : "h6"}
                     fontWeight={600}
                     color="text.primary"
+                    sx={{ fontSize: isCompactMode ? 13 : undefined }}
                   >
                     {format(currentDate, 'MMMM do, yyyy', { locale })}
                   </Typography>
@@ -1724,13 +2277,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     bgcolor: 'white',
                     border: '1px solid',
                     borderColor: 'divider',
+                    p: isCompactMode ? 0.5 : 1,
                     '&:hover': {
                       bgcolor: alpha(themeColor, 0.05),
                       borderColor: themeColor,
                     },
                   }}
                 >
-                  <ChevronRightIcon />
+                  <ChevronRightIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} />
                 </IconButton>
               </Box>
 
@@ -1740,21 +2294,24 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   sx={{
                     display: 'inline-flex',
                     bgcolor: '#f1f5f9',
-                    borderRadius: 2,
-                    p: 0.5,
+                    borderRadius: isCompactMode ? 1.5 : 2,
+                    p: isCompactMode ? 0.3 : 0.5,
                     gap: 0.5,
                   }}
                 >
                   {(['day', 'week'] as const).map((mode) => (
                     <Button
                       key={mode}
-                      onClick={() => setViewMode(mode)}
+                      onClick={() => {
+                        setViewMode(mode);
+                        localStorage.setItem('scheduleViewMode', mode);
+                      }}
                       sx={{
-                        minWidth: 70,
-                        px: 2.5,
-                        py: 0.75,
+                        minWidth: isCompactMode ? 50 : 70,
+                        px: isCompactMode ? 1.5 : 2.5,
+                        py: isCompactMode ? 0.3 : 0.75,
                         borderRadius: 1.5,
-                        fontSize: '0.875rem',
+                        fontSize: isCompactMode ? '0.75rem' : '0.875rem',
                         fontWeight: 600,
                         textTransform: 'capitalize',
                         color: viewMode === mode ? 'white' : '#64748b',
@@ -1774,19 +2331,19 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
                 {/* Today Button */}
                 <Button
-                  size="medium"
-                  startIcon={<TodayIcon />}
+                  size={isCompactMode ? "small" : "medium"}
+                  startIcon={<TodayIcon sx={{ fontSize: isCompactMode ? 16 : 20 }} />}
                   onClick={handleToday}
                   variant="contained"
                   sx={{
                     bgcolor: '#3b82f6',
                     color: 'white',
-                    px: 3,
-                    py: 0.75,
+                    px: isCompactMode ? 1.5 : 3,
+                    py: isCompactMode ? 0.3 : 0.75,
                     fontWeight: 600,
-                    fontSize: '0.875rem',
+                    fontSize: isCompactMode ? '0.75rem' : '0.875rem',
                     textTransform: 'none',
-                    borderRadius: 2,
+                    borderRadius: isCompactMode ? 1.5 : 2,
                     boxShadow: 'none',
                     '&:hover': {
                       bgcolor: '#2563eb',
@@ -1797,24 +2354,58 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   {t('common.today')}
                 </Button>
 
-                {/* Fullscreen Button */}
+                {/* Compact Fullscreen Mode Toggle - Always visible */}
                 <IconButton
-                  onClick={toggleFullscreen}
-                  size="medium"
+                  onClick={() => {
+                    // Toggle compact mode
+                    const newCompactMode = !isCompactMode;
+                    setIsCompactMode(newCompactMode);
+                    // 保存到localStorage
+                    localStorage.setItem('scheduleViewCompactMode', JSON.stringify(newCompactMode));
+
+                    // If entering compact mode, hide drawer/menu
+                    // If exiting compact mode, show drawer/menu
+                    setDrawerOpen(!newCompactMode);
+                  }}
+                  size={isCompactMode ? "small" : "medium"}
                   sx={{
-                    bgcolor: 'white',
-                    border: '2px solid',
-                    borderColor: 'divider',
-                    color: themeColor,
+                    bgcolor: isCompactMode ? themeColor : 'white',
+                    border: isCompactMode ? '1px solid' : '2px solid',
+                    borderColor: isCompactMode ? themeColor : 'divider',
+                    color: isCompactMode ? 'white' : themeColor,
+                    p: isCompactMode ? 0.5 : 1,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      bgcolor: alpha(themeColor, 0.05),
+                      bgcolor: isCompactMode ? '#2563eb' : alpha(themeColor, 0.05),
                       borderColor: themeColor,
                       transform: 'scale(1.05)',
                     },
                   }}
+                  title={isCompactMode ? t('calendar.exitCompactView', 'Exit Compact View') : t('calendar.compactView', 'Compact View')}
                 >
-                  {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                  {isCompactMode ? <ViewAgendaIcon sx={{ fontSize: 18 }} /> : <ViewCompactIcon sx={{ fontSize: 20 }} />}
+                </IconButton>
+
+                {/* Browser Fullscreen Toggle */}
+                <IconButton
+                  onClick={toggleFullscreen}
+                  size={isCompactMode ? "small" : "medium"}
+                  sx={{
+                    bgcolor: isFullscreen ? themeColor : 'white',
+                    border: isCompactMode ? '1px solid' : '2px solid',
+                    borderColor: isFullscreen ? themeColor : 'divider',
+                    color: isFullscreen ? 'white' : themeColor,
+                    p: isCompactMode ? 0.5 : 1,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: isFullscreen ? '#2563eb' : alpha(themeColor, 0.05),
+                      borderColor: themeColor,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                  title={isFullscreen ? t('calendar.exitFullscreen', 'Exit Fullscreen') : t('calendar.fullscreen', 'Fullscreen')}
+                >
+                  {isFullscreen ? <FullscreenExitIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} /> : <FullscreenIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} />}
                 </IconButton>
               </Box>
             </Box>
@@ -1861,30 +2452,32 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               >
                 <Box
                   sx={{
-                    height: 80,
+                    height: isCompactMode ? 50 : 80,
                     bgcolor: 'white',
                     position: 'sticky',
                     top: 0,
                     zIndex: 20, // 最高层级，确保角落块始终可见
                     borderBottom: '1px solid',
                     borderColor: alpha('#e5e7eb', 0.8),
+                    transition: 'height 0.3s ease',
                   }}
                 />
                 {timeSlots.map((time, index) => {
                   const hour = parseInt(time.split(':')[0]);
                   const isPM = hour >= 12;
-                  const displayHour = hour > 12 ? hour - 12 : hour;
-                  const period = isPM ? 'PM' : 'AM';
+                  // 处理午夜和中午的显示：0点显示为12 AM，12点显示为12 PM
+                  const displayHour = hour === 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+                  const period = isPM ? t('common.pm', 'PM') : t('common.am', 'AM');
 
                   return (
                     <Box
                       key={index}
                       sx={{
-                        height: HOUR_HEIGHT,
+                        height: hourHeight,
                         display: 'flex',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
-                        pt: 1.5,
+                        pt: isCompactMode ? 0.5 : 1.5,
                         borderBottom: '1px solid',
                         borderColor: alpha('#f3f4f6', 0.5),
                         bgcolor: 'white',
@@ -1892,7 +2485,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                         '&::before': {
                           content: '""',
                           position: 'absolute',
-                          top: HOUR_HEIGHT / 2,
+                          top: hourHeight / 2,
                           right: 0,
                           left: 20,
                           borderBottom: '1px solid',
@@ -1903,7 +2496,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       <Box
                         sx={{
                           textAlign: 'right',
-                          pr: 1.5,
+                          pr: isCompactMode ? 0.75 : 1.5,
                         }}
                       >
                         <Typography
@@ -1912,7 +2505,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                             display: 'block',
                             lineHeight: 1,
                             fontVariantNumeric: 'tabular-nums',
-                            fontSize: '0.875rem',
+                            fontSize: isCompactMode ? '0.625rem' : '0.875rem',
                             fontWeight: 700,
                             color: '#0f172a',
                           }}
@@ -1924,9 +2517,9 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           sx={{
                             display: 'block',
                             lineHeight: 1,
-                            mt: 0.5,
+                            mt: isCompactMode ? 0.25 : 0.5,
                             letterSpacing: '0.5px',
-                            fontSize: '0.6875rem',
+                            fontSize: isCompactMode ? '0.5rem' : '0.6875rem',
                             fontWeight: 600,
                             color: '#64748b',
                           }}
@@ -1940,28 +2533,102 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               </Box>
 
               {viewMode === 'day' && (
-                <Box sx={{ display: 'flex', flex: 1, gap: 0.5 }}>
-                  {displayedStaff.map((staff, index) => {
-                    const appointments = getStaffAppointments(staff.id, currentDate);
-                    const appointmentCount = appointments.filter(a => a.status !== 'CANCELLED').length;
-                    const appointmentLayouts = calculateAppointmentLayout(appointments);
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={sortedStaffWithAvailability.map(s => s.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <Box sx={{ display: 'flex', flex: 1, gap: 0.5 }}>
+                      {sortedStaffWithAvailability.map((staff, index) => {
+                        const appointments = getStaffAppointments(staff.id, currentDate);
+                        const appointmentCount = appointments.filter(a => a.status !== 'CANCELLED').length;
+                        const appointmentLayouts = calculateAppointmentLayout(appointments);
 
-                    return (
-                      <Box
-                        key={staff.id}
-                        sx={{
-                          flex: 1,
-                          minWidth: 280,
-                          maxWidth: 400,
-                          background: `linear-gradient(180deg, ${alpha(staff.color, 0.02)} 0%, ${alpha(staff.color, 0.01)} 50%, white 100%)`,
-                          borderRadius: 1,
-                        }}
-                      >
+                        return (
+                          <SortableStaffColumn
+                            key={staff.id}
+                            staff={staff}
+                            minWidth={staffColumnWidth.min}
+                            maxWidth={staffColumnWidth.max}
+                          >
+                            <Box
+                              sx={{
+                                position: 'relative',
+                                width: '100%',
+                                height: '100%',
+                                background: `linear-gradient(180deg, ${alpha(staff.color, 0.02)} 0%, ${alpha(staff.color, 0.01)} 50%, white 100%)`,
+                                borderRadius: 1,
+                                opacity: staff.isAvailable ? 1 : 0.5,
+                                transition: 'opacity 0.3s ease',
+                              }}
+                            >
+                        {/* 不可用时的覆盖层 - 阻止所有交互 */}
+                        {!staff.isAvailable && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              zIndex: 100,
+                              cursor: 'not-allowed',
+                              bgcolor: 'rgba(249, 250, 251, 0.15)',
+                            }}
+                          />
+                        )}
                         <StaffInfoCard
                           staff={staff}
                           appointmentCount={appointmentCount}
                           isSelected={selectedStaffIds.includes(staff.id)}
-                          onClick={() => toggleStaffSelection(staff.id)}
+                          onClick={() => handleOpenAdjustAvailability(staff.id, staff.name)}
+                          isUnavailable={!staff.isAvailable}
+                          availabilityTime={getStaffAvailabilityTime(staff.id, currentDate) || undefined}
+                          onAdjustAvailability={() => handleOpenAdjustAvailability(staff.id, staff.name)}
+                          hasTemporaryAdjustment={(() => {
+                            const dateStr = format(currentDate, 'yyyy-MM-dd');
+                            const tempKey = `${staff.id}_${dateStr}`;
+                            return !!temporaryAvailabilities[tempKey];
+                          })()}
+                          isWithinWorkingHours={(() => {
+                            // 检查当前时间是否在工作时间内
+                            const now = getMerchantNow();
+                            const currentTime = now.toTimeString().slice(0, 5); // HH:mm
+
+                            // 获取当前日期是星期几
+                            const dayOfWeek = currentDate.getDay();
+                            const isoWeekDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+                            // 获取今天的可用性
+                            const todayAvailabilities = (resourceAvailabilities[staff.id] || []).filter(
+                              (availability: any) => availability.dayOfWeek === isoWeekDay && availability.isAvailable
+                            );
+
+                            // 如果有临时调整，使用临时调整的时间
+                            const dateStr = format(currentDate, 'yyyy-MM-dd');
+                            const tempKey = `${staff.id}_${dateStr}`;
+                            const tempAvailability = temporaryAvailabilities[tempKey];
+
+                            if (tempAvailability) {
+                              // 使用临时调整的时间判断
+                              return currentTime >= tempAvailability.startTime && currentTime < tempAvailability.endTime;
+                            }
+
+                            // 使用原始排班时间判断
+                            if (todayAvailabilities.length > 0) {
+                              return todayAvailabilities.some((avail: any) => {
+                                const startTime = avail.startTime.slice(0, 5);
+                                const endTime = avail.endTime.slice(0, 5);
+                                return currentTime >= startTime && currentTime < endTime;
+                              });
+                            }
+
+                            return false;
+                          })()}
                           utilization={(() => {
                             // 计算该员工当天的实际工作时间和已预约时间
                             const dateStr = format(currentDate, 'yyyy-MM-dd');
@@ -2045,11 +2712,12 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                             return Math.min(Math.round((bookedMinutes / totalWorkMinutes) * 100), 100);
                           })()}
                           rating={4.5 + Math.random() * 0.5} // 示例评分，实际应从后端获取
+                          compact={isCompactMode}
                         />
 
                         <Box sx={{
                           position: 'relative',
-                          height: HOUR_HEIGHT * timeSlots.length,
+                          height: hourHeight * timeSlots.length,
                           overflow: 'hidden', // 限制内容不超出容器
                           '& > div': {
                             // 确保子元素在容器内
@@ -2070,12 +2738,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                   }
                                 }}
                                 sx={{
-                                  height: HOUR_HEIGHT,
+                                  height: hourHeight,
                                   borderBottom: '1px solid',
                                   borderColor: '#F3F4F6',
                                   bgcolor: isUnavailable ? undefined : '#FFFFFF',
                                   backgroundImage: isUnavailable
-                                    ? 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 10px, #e8eaed 10px, #e8eaed 20px)'
+                                    ? isCompactMode
+                                      ? 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 4px, #e8eaed 4px, #e8eaed 8px)'
+                                      : 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 10px, #e8eaed 10px, #e8eaed 20px)'
                                     : undefined,
                                   cursor: isPast || isUnavailable ? 'not-allowed' : 'pointer',
                                   position: 'relative',
@@ -2092,16 +2762,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           })}
 
                           {appointmentLayouts.map((layout) => {
-                            const { top, height } = calculatePosition(layout.startTime, layout.endTime);
+                            const { top, height } = calculatePosition(layout.startTime, layout.endTime, hourHeight);
 
                             // 改进的布局算法：更好的卡片间距
                             const hasOverlap = layout.totalColumns > 1;
                             const cardWidth = hasOverlap ? `${100 / layout.totalColumns}%` : '100%';
                             const leftPosition = hasOverlap ? `${(100 / layout.totalColumns) * layout.column}%` : '0';
 
-                            // 添加更大的间隙，让卡片之间有明显的分隔
-                            const HORIZONTAL_GAP = 3; // 水平间隙
-                            const VERTICAL_GAP = 3; // 垂直间隙
+                            // 卡片间隙 - 缩放模式下间隙更小
+                            const HORIZONTAL_GAP = isCompactMode ? 2 : 3; // 水平间隙
+                            const VERTICAL_GAP = isCompactMode ? 1 : 3; // 垂直间隙
 
                             return (
                               <Box
@@ -2140,15 +2810,20 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                     handleEditAppointment(layout);
                                   } : undefined}
                                   variant="day"
+                                  compact={isCompactMode}
+                                  cardHeight={Math.max(height - VERTICAL_GAP * 2, 30)}
                                 />
                               </Box>
                             );
                           })}
                         </Box>
-                      </Box>
-                    );
-                  })}
-                </Box>
+                            </Box>
+                          </SortableStaffColumn>
+                        );
+                      })}
+                    </Box>
+                  </SortableContext>
+                </DndContext>
               )}
 
               {viewMode === 'week' && (
@@ -2177,24 +2852,25 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       >
                         <Box
                           sx={{
-                            height: 80,
-                            p: 2,
+                            height: isCompactMode ? 50 : 80,
+                            p: isCompactMode ? 1 : 2,
                             borderBottom: '1px solid #dee2e6',
                             bgcolor: isToday ? alpha(themeColor, 0.1) : 'white',
                             textAlign: 'center',
+                            transition: 'all 0.3s ease',
                           }}
                         >
-                          <Typography variant="caption" color="text.secondary" fontSize={10}>
+                          <Typography variant="caption" color="text.secondary" fontSize={isCompactMode ? 9 : 10}>
                             {format(date, 'EEE', { locale })}
                           </Typography>
-                          <Typography variant="h5" fontWeight={600}>
+                          <Typography variant={isCompactMode ? 'h6' : 'h5'} fontWeight={600}>
                             {format(date, 'd')}
                           </Typography>
                         </Box>
 
                         <Box sx={{
                           position: 'relative',
-                          height: HOUR_HEIGHT * timeSlots.length,
+                          height: hourHeight * timeSlots.length,
                           overflow: 'hidden', // 限制内容不超出容器
                           '& > div': {
                             // 确保子元素在容器内
@@ -2211,7 +2887,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                 }
                               }}
                               sx={{
-                                height: HOUR_HEIGHT,
+                                height: hourHeight,
                                 borderBottom: '1px solid #dee2e6',
                                 cursor: 'pointer',
                                 '&:hover': {
@@ -2222,15 +2898,15 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           ))}
 
                           {appointmentLayouts.map((layout) => {
-                            const { top, height } = calculatePosition(layout.startTime, layout.endTime);
+                            const { top, height } = calculatePosition(layout.startTime, layout.endTime, hourHeight);
 
                             // 改进的布局算法：更好的卡片间距
                             const hasOverlap = layout.totalColumns > 1;
                             const cardWidth = hasOverlap ? `${90 / layout.totalColumns}%` : '90%';
                             const leftPosition = hasOverlap ? `${(90 / layout.totalColumns) * layout.column + 5}%` : '5%';
 
-                            // 添加更大的间隙
-                            const VERTICAL_GAP = 3;
+                            // 添加更大的间隙 - 缩放模式下间隙更小
+                            const VERTICAL_GAP = isCompactMode ? 1 : 3;
 
                             return (
                               <Box
@@ -2262,6 +2938,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                   } : undefined}
                                   variant="week"
                                   compact={true}
+                                  cardHeight={Math.max(height - VERTICAL_GAP * 2, 25)}
                                 />
                               </Box>
                             );
@@ -2283,6 +2960,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         open={Boolean(datePickerAnchor)}
         anchorEl={datePickerAnchor}
         onClose={handleDatePickerClose}
+        container={isFullscreen ? calendarContainerRef.current : undefined}
+        disablePortal={isFullscreen}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'center',
@@ -2292,7 +2971,11 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           horizontal: 'center',
         }}
       >
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={locale}>
+        <LocalizationProvider
+          dateAdapter={AdapterDateFns}
+          adapterLocale={locale}
+          localeText={i18n.language === 'zh-CN' ? zhCN.components.MuiLocalizationProvider.defaultProps.localeText : undefined}
+        >
           <StaticDatePicker
             displayStaticWrapperAs="desktop"
             value={currentDate}
@@ -2308,8 +2991,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
       <Drawer
         anchor="right"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        open={detailsDrawerOpen}
+        onClose={() => setDetailsDrawerOpen(false)}
         container={isFullscreen ? calendarContainerRef.current : document.body}
         PaperProps={{
           sx: {
@@ -2380,7 +3063,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 </Box>
                 <IconButton
                   size="small"
-                  onClick={() => setDrawerOpen(false)}
+                  onClick={() => setDetailsDrawerOpen(false)}
                   sx={{
                     color: '#64748b',
                     bgcolor: '#ffffff',
@@ -2403,9 +3086,40 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   {t('appointments.customer').toUpperCase()}
                 </Typography>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mt={1}>
-                  <Typography variant="h6" fontWeight={600}>
-                    {selectedAppointment.customerName}
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="h6" fontWeight={600}>
+                      {selectedAppointment.customerName}
+                    </Typography>
+                    {selectedAppointment.customerMembershipTier && (
+                      <Box display="flex" alignItems="center" gap={0.5} sx={{
+                        px: 1,
+                        py: 0.25,
+                        borderRadius: 1,
+                        bgcolor: alpha(selectedAppointment.customerMembershipTier.color || '#9CA3AF', 0.1),
+                      }}>
+                        <Box
+                          sx={{
+                            fontSize: 14,
+                            color: selectedAppointment.customerMembershipTier.color || '#9CA3AF',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {getTierIcon(selectedAppointment.customerMembershipTier.icon || 'star')}
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: selectedAppointment.customerMembershipTier.color || '#9CA3AF',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          {selectedAppointment.customerMembershipTier.name}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
 
                   {/* 签到状态或按钮 */}
                   {selectedAppointment.status === 'COMPLETED' ? (
@@ -2895,16 +3609,34 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           appointmentId={selectedAppointment.id}
           customerId={selectedAppointment.customerId}
           serviceId={selectedAppointment.serviceId}
-          services={selectedAppointment.serviceIds && selectedAppointment.serviceIds.length > 1
-            ? selectedAppointment.serviceIds.map((id, index) => ({
-                id,
-                name: selectedAppointment.serviceName.split(', ')[index] || 'Service',
-                price: selectedAppointment.price / (selectedAppointment.serviceIds?.length || 1), // 平均分配价格
+          services={selectedAppointment.services && selectedAppointment.services.length > 1
+            ? selectedAppointment.services.map(service => ({
+                id: service.serviceId,
+                name: service.serviceName,
+                price: service.price,
               }))
             : undefined
           }
           amount={selectedAppointment.price}
           serviceName={selectedAppointment.serviceName}
+          container={isFullscreen ? calendarContainerRef.current : document.body}
+        />
+      )}
+
+      {/* 调整可用性对话框 */}
+      {adjustAvailabilityData && (
+        <AdjustAvailabilityDialog
+          open={adjustAvailabilityDialogOpen}
+          onClose={() => setAdjustAvailabilityDialogOpen(false)}
+          staffId={adjustAvailabilityData.staffId}
+          staffName={adjustAvailabilityData.staffName}
+          date={currentDate}
+          scheduledStart={adjustAvailabilityData.scheduledStart}
+          scheduledEnd={adjustAvailabilityData.scheduledEnd}
+          actualStart={adjustAvailabilityData.actualStart}
+          actualEnd={adjustAvailabilityData.actualEnd}
+          onSave={handleSaveAvailabilityAdjustment}
+          onShowMessage={(message, severity) => setSnackbar({ open: true, message, severity })}
           container={isFullscreen ? calendarContainerRef.current : undefined}
         />
       )}
@@ -2915,6 +3647,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ zIndex: 99999 }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}

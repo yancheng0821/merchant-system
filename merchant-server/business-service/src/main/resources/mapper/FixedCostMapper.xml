@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.FixedCostMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="FixedCostResultMap" type="com.merchant.server.businessservice.entity.FixedCost">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="costType" column="cost_type"/>
+        <result property="costName" column="cost_name"/>
+        <result property="amount" column="amount"/>
+        <result property="billingCycle" column="billing_cycle"/>
+        <result property="paymentDate" column="payment_date"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="vendor" column="vendor"/>
+        <result property="paymentMethod" column="payment_method"/>
+        <result property="status" column="status"/>
+        <result property="notes" column="notes"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <!-- 根据租户ID查询所有固定成本 -->
+    <select id="selectByTenantId" resultMap="FixedCostResultMap">
+        SELECT * FROM fixed_costs
+        WHERE tenant_id = #{tenantId}
+        ORDER BY payment_date DESC
+    </select>
+
+    <!-- 根据ID查询固定成本 -->
+    <select id="selectById" resultMap="FixedCostResultMap">
+        SELECT * FROM fixed_costs
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入固定成本 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.FixedCost" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO fixed_costs (
+            tenant_id, cost_type, cost_name, amount, billing_cycle,
+            payment_date, start_date, end_date, vendor, payment_method,
+            status, notes, created_at, updated_at, created_by, updated_by
+        ) VALUES (
+            #{tenantId}, #{costType}, #{costName}, #{amount}, #{billingCycle},
+            #{paymentDate}, #{startDate}, #{endDate}, #{vendor}, #{paymentMethod},
+            #{status}, #{notes}, NOW(), NOW(), #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <!-- 更新固定成本 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.FixedCost">
+        UPDATE fixed_costs
+        SET cost_type = #{costType},
+            cost_name = #{costName},
+            amount = #{amount},
+            billing_cycle = #{billingCycle},
+            payment_date = #{paymentDate},
+            start_date = #{startDate},
+            end_date = #{endDate},
+            vendor = #{vendor},
+            payment_method = #{paymentMethod},
+            status = #{status},
+            notes = #{notes},
+            updated_at = NOW(),
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除固定成本 -->
+    <delete id="deleteById">
+        DELETE FROM fixed_costs WHERE id = #{id}
+    </delete>
+
+</mapper>

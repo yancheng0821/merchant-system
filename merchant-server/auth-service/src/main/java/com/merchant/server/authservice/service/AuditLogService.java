@@ -28,14 +28,14 @@ public interface AuditLogService {
      */
     Map<String, Object> getAuditLogs(Long tenantId, String resource, String action,
                                       String status, String search, String startDate,
-                                      String endDate, int page, int size);
+                                      String endDate, String timezone, int page, int size);
 
     /**
      * 导出审计日志
      */
     List<Map<String, Object>> getAuditLogsForExport(Long tenantId, String resource,
                                                       String action, String status,
-                                                      String startDate, String endDate);
+                                                      String startDate, String endDate, String timezone);
 
     /**
      * 获取资源历史记录
@@ -50,5 +50,5 @@ public interface AuditLogService {
     /**
      * 获取审计统计信息
      */
-    Map<String, Object> getAuditStats(Long tenantId, String startDate, String endDate);
+    Map<String, Object> getAuditStats(Long tenantId, String startDate, String endDate, String timezone);
 }

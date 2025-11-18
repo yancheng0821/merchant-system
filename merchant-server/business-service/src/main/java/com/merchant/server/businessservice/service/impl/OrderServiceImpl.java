@@ -41,7 +41,7 @@ public class OrderServiceImpl implements OrderService {
     
     @Override
     public org.springframework.data.domain.Page<OrderDTO> getOrders(
-            Long tenantId, String searchTerm, String paymentStatus,
+            Long tenantId, String searchTerm, String paymentStatus, String paymentMethod,
             String orderStatus, Long customerId, String startDate, String endDate, Pageable pageable) {
 
         // 计算分页参数
@@ -67,12 +67,12 @@ public class OrderServiceImpl implements OrderService {
 
         // 查询订单列表
         List<Order> orders = orderMapper.selectByConditions(
-            tenantId, searchTerm, paymentStatus, orderStatus, customerId,
+            tenantId, searchTerm, paymentStatus, paymentMethod, orderStatus, customerId,
             startDate, endDate, startDateTime, endDateTime, offset, limit);
 
         // 查询总数
         int total = orderMapper.countByConditions(
-            tenantId, searchTerm, paymentStatus, orderStatus, customerId,
+            tenantId, searchTerm, paymentStatus, paymentMethod, orderStatus, customerId,
             startDate, endDate, startDateTime, endDateTime);
         
         // 转换为DTO
@@ -235,9 +235,10 @@ public class OrderServiceImpl implements OrderService {
                     orderService.setDuration(service.getDuration());
                     orderService.setAssignedResourceId(serviceCreate.getAssignedResourceId());
                     orderService.setAssignedResourceType(serviceCreate.getAssignedResourceType());
+                    orderService.setPaymentMethod(serviceCreate.getPaymentMethod()); // Copy payment method from DTO
                     orderService.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
                     orderService.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
-                    
+
                     log.info("OrderService object: {}", orderService);
                     orderServiceMapper.insert(orderService);
                     log.info("Order service inserted with ID: {}", orderService.getId());
@@ -380,6 +381,8 @@ public class OrderServiceImpl implements OrderService {
             if (customer != null) {
                 dto.setCustomerName(customer.getFirstName() + " " + customer.getLastName());
                 dto.setCustomerPhone(customer.getPhone());
+                // 加载会员等级信息
+                dto.setCustomerMembershipTier(customer.getMembershipTier());
             }
         }
         
@@ -413,8 +416,9 @@ public class OrderServiceImpl implements OrderService {
         dto.setDuration(orderService.getDuration());
         dto.setAssignedResourceId(orderService.getAssignedResourceId());
         dto.setAssignedResourceType(orderService.getAssignedResourceType());
+        dto.setPaymentMethod(orderService.getPaymentMethod()); // Copy payment method
         dto.setTotalPrice(orderService.getPrice() * orderService.getQuantity());
-        
+
         // 加载资源名称
         if (orderService.getAssignedResourceId() != null) {
             Resource resource = resourceMapper.findById(orderService.getAssignedResourceId());
@@ -422,7 +426,7 @@ public class OrderServiceImpl implements OrderService {
                 dto.setAssignedResourceName(resource.getName());
             }
         }
-        
+
         return dto;
     }
     

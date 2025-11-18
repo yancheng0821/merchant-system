@@ -61,6 +61,25 @@ import {
   CardGiftcard as PackageIcon,
   Event as EventIcon,
   CompareArrows as MixedPaymentIcon,
+  // Membership tier icons
+  Star as StarIcon,
+  StarHalf as StarHalfIcon,
+  StarRate as StarRateIcon,
+  Grade as GradeIcon,
+  Stars as StarsIcon,
+  EmojiEvents as TrophyIcon,
+  MilitaryTech as MedalIcon,
+  Diamond as DiamondIcon,
+  WorkspacePremium as PremiumIcon,
+  Verified as VerifiedIcon,
+  CardMembership as MembershipIcon,
+  TrendingUp as TrendingUpIcon,
+  Loyalty as LoyaltyIcon,
+  Redeem as RedeemIcon,
+  Favorite as HeartIcon,
+  AutoAwesome as SparkleIcon,
+  Whatshot as FireIcon,
+  Celebration as CelebrationIcon,
 } from '@mui/icons-material';
 
 import { useAuth } from '../../../contexts/AuthContext';
@@ -71,12 +90,25 @@ import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../../hooks/usePermission';
 import { useNavigate } from 'react-router-dom';
 
+interface MembershipTier {
+  id: number;
+  name: string;
+  code: string;
+  requiredPoints: number;
+  discountRate: number;
+  color?: string;
+  icon?: string;
+  benefits?: string;
+  isActive: boolean;
+}
+
 interface Order {
   id: number;
   orderNumber: string;
   customerId: number;
   customerName: string;
   customerPhone: string;
+  customerMembershipTier?: MembershipTier;
   appointmentId?: number;
   resourceId?: number;
   resourceName?: string;
@@ -121,6 +153,7 @@ const OrderHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const [detailsDialog, setDetailsDialog] = useState(false);
@@ -146,6 +179,31 @@ const OrderHistory: React.FC = () => {
     };
   });
 
+  // Get membership tier icon
+  const getTierIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'star': return <StarIcon />;
+      case 'starhalf': return <StarHalfIcon />;
+      case 'starrate': return <StarRateIcon />;
+      case 'grade': return <GradeIcon />;
+      case 'stars': return <StarsIcon />;
+      case 'trophy': return <TrophyIcon />;
+      case 'medal': return <MedalIcon />;
+      case 'diamond': return <DiamondIcon />;
+      case 'premium': return <PremiumIcon />;
+      case 'verified': return <VerifiedIcon />;
+      case 'membership': return <MembershipIcon />;
+      case 'trendingup': return <TrendingUpIcon />;
+      case 'loyalty': return <LoyaltyIcon />;
+      case 'redeem': return <RedeemIcon />;
+      case 'heart': return <HeartIcon />;
+      case 'sparkle': return <SparkleIcon />;
+      case 'fire': return <FireIcon />;
+      case 'celebration': return <CelebrationIcon />;
+      default: return <StarIcon />;
+    }
+  };
+
   const fetchOrders = useCallback(async () => {
     try {
       // 后端会处理时区转换，前端只需发送商户本地日期
@@ -156,6 +214,7 @@ const OrderHistory: React.FC = () => {
         searchTerm: searchTerm || undefined,
         paymentStatus: paymentStatusFilter || undefined,
         orderStatus: orderStatusFilter || undefined,
+        paymentMethod: paymentMethodFilter || undefined,
         startDate: dateRange.start ? format(dateRange.start, 'yyyy-MM-dd') : undefined,
         endDate: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') : undefined,
       };
@@ -166,13 +225,13 @@ const OrderHistory: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     }
-  }, [user, page, rowsPerPage, searchTerm, paymentStatusFilter, orderStatusFilter, dateRange]);
+  }, [user, page, rowsPerPage, searchTerm, paymentStatusFilter, orderStatusFilter, paymentMethodFilter, dateRange]);
 
   useEffect(() => {
     if (user?.tenantId) {
       fetchOrders();
     }
-  }, [user, page, rowsPerPage, searchTerm, paymentStatusFilter, orderStatusFilter, dateRange, fetchOrders]);
+  }, [user, page, rowsPerPage, searchTerm, paymentStatusFilter, orderStatusFilter, paymentMethodFilter, dateRange, fetchOrders]);
 
   // 获取退款原因选项
   useEffect(() => {
@@ -370,9 +429,10 @@ const OrderHistory: React.FC = () => {
       <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
+                size="small"
                 placeholder={t('orders.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -394,8 +454,36 @@ const OrderHistory: React.FC = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth>
+            <Grid item xs={12} sm={6} md={2.25}>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ '&.Mui-focused': { color: ORDERS_COLOR } }}>
+                  {t('orders.paymentMethod')}
+                </InputLabel>
+                <Select
+                  value={paymentMethodFilter}
+                  label={t('orders.paymentMethod')}
+                  onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                  sx={{
+                    borderRadius: 2,
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: ORDERS_COLOR,
+                    },
+                  }}
+                >
+                  <MenuItem value="">{t('orders.allMethods')}</MenuItem>
+                  <MenuItem value="cash">{t('orders.cash')}</MenuItem>
+                  <MenuItem value="credit_card">{t('orders.credit_card')}</MenuItem>
+                  <MenuItem value="debit_card">{t('orders.debit_card')}</MenuItem>
+                  <MenuItem value="mobile_pay">{t('orders.mobile_pay')}</MenuItem>
+                  <MenuItem value="package">{t('orders.package')}</MenuItem>
+                  <MenuItem value="gift_card">{t('orders.gift_card')}</MenuItem>
+                  <MenuItem value="mixed">{t('orders.mixed')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={2.25}>
+              <FormControl fullWidth size="small">
                 <InputLabel sx={{ '&.Mui-focused': { color: ORDERS_COLOR } }}>
                   {t('orders.paymentStatus')}
                 </InputLabel>
@@ -419,8 +507,9 @@ const OrderHistory: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth>
+            {/* Order Status Filter - Temporarily Commented Out */}
+            {/* <Grid item xs={12} sm={6} md={1.5}>
+              <FormControl fullWidth size="small">
                 <InputLabel sx={{ '&.Mui-focused': { color: ORDERS_COLOR } }}>
                   {t('orders.orderStatus')}
                 </InputLabel>
@@ -443,11 +532,12 @@ const OrderHistory: React.FC = () => {
                   <MenuItem value="cancelled">{t('orders.cancelled')}</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </Grid> */}
 
             <Grid item xs={12} sm={6} md={2}>
               <TextField
                 fullWidth
+                size="small"
                 label={t('orders.startDate')}
                 value={format(dateRange.start, 'yyyy-MM-dd')}
                 onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
@@ -458,8 +548,9 @@ const OrderHistory: React.FC = () => {
                       <IconButton
                         onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
                         edge="end"
+                        size="small"
                       >
-                        <EventIcon />
+                        <EventIcon fontSize="small" />
                       </IconButton>
                     </InputAdornment>
                   ),
@@ -482,6 +573,7 @@ const OrderHistory: React.FC = () => {
             <Grid item xs={12} sm={6} md={2}>
               <TextField
                 fullWidth
+                size="small"
                 label={t('orders.endDate')}
                 value={format(dateRange.end, 'yyyy-MM-dd')}
                 onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
@@ -492,8 +584,9 @@ const OrderHistory: React.FC = () => {
                       <IconButton
                         onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
                         edge="end"
+                        size="small"
                       >
-                        <EventIcon />
+                        <EventIcon fontSize="small" />
                       </IconButton>
                     </InputAdornment>
                   ),
@@ -525,7 +618,10 @@ const OrderHistory: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('orders.orderNumber')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.customer')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.services')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.amount')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.subtotal')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.tax')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.tip')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.total')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.payment')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.paymentStatus')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.date')}</TableCell>
@@ -577,7 +673,22 @@ const OrderHistory: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {CurrencyUtils.formatAmount(order.subtotal)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {CurrencyUtils.formatAmount(order.taxAmount)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {CurrencyUtils.formatAmount(order.tipAmount)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
                         {CurrencyUtils.formatAmount(order.totalAmount)}
                       </Typography>
                     </TableCell>
@@ -729,12 +840,34 @@ const OrderHistory: React.FC = () => {
                       {selectedOrder.customerName}
                     </Typography>
                   </Box>
-                  <Box display="flex" alignItems="center" gap={1.5}>
+                  <Box display="flex" alignItems="center" gap={1.5} mb={1}>
                     <PhoneIcon sx={{ fontSize: 18, color: '#64748b' }} />
                     <Typography variant="body2" color="text.secondary">
                       {selectedOrder.customerPhone}
                     </Typography>
                   </Box>
+                  {selectedOrder.customerMembershipTier && (
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box
+                        sx={{
+                          fontSize: 18,
+                          color: selectedOrder.customerMembershipTier.color || '#9CA3AF',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        {getTierIcon(selectedOrder.customerMembershipTier.icon || 'star')}
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: selectedOrder.customerMembershipTier.color || '#9CA3AF' }}>
+                          {selectedOrder.customerMembershipTier.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          {t('orders.memberPrice')}: {selectedOrder.customerMembershipTier.discountRate}% ({(100 - selectedOrder.customerMembershipTier.discountRate).toFixed(0)}% {t('orders.off')})
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
@@ -868,10 +1001,31 @@ const OrderHistory: React.FC = () => {
                         alignItems="center"
                         sx={{ mb: 1.5 }}
                       >
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.3 }}>
-                            {service.serviceName}
-                          </Typography>
+                        <Box flex={1}>
+                          <Box display="flex" alignItems="center" gap={1} mb={0.3}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {service.serviceName}
+                            </Typography>
+                            {service.paymentMethod && (
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                gap={0.5}
+                                sx={{
+                                  px: 1,
+                                  py: 0.3,
+                                  borderRadius: 1,
+                                  bgcolor: alpha('#10B981', 0.1),
+                                  color: '#10B981',
+                                }}
+                              >
+                                {getPaymentMethodIcon(service.paymentMethod)}
+                                <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 500 }}>
+                                  {t(`orders.${service.paymentMethod}`)}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Box>
                           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                             {service.quantity} x {CurrencyUtils.formatAmount(service.price)}
                           </Typography>

@@ -52,9 +52,10 @@ import { useTranslation } from 'react-i18next';
 import StaffDialog from './StaffDialog';
 import StaffAvailabilityEditor from './StaffAvailabilityEditor';
 import { StaffResource, convertToStaffResource, convertStaffToResource } from '../types';
-import { getFullImageUrl } from '../../../services/api';
+import { getFullImageUrl, resourceApi, staffAttendanceApi } from '../../../services/api';
 import { usePermission } from '../../../hooks/usePermission';
 import { format, parseISO } from 'date-fns';
+import { getMerchantNow } from '../../../utils/timezoneUtils';
 
 const StaffResourceManagement: React.FC = () => {
     const { t } = useTranslation();
@@ -89,6 +90,9 @@ const StaffResourceManagement: React.FC = () => {
         skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT' | 'MASTER';
     }>>>({});
     const [services, setServices] = useState<any[]>([]);
+
+    // 员工考勤数据（check-in/out时间）
+    const [staffAttendance, setStaffAttendance] = useState<Map<number, any>>(new Map());
 
     // 主题色
     const themeColor = '#3B82F6';
@@ -129,6 +133,27 @@ const StaffResourceManagement: React.FC = () => {
                 staffData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                 setStaff(staffData);
                 setServices(servicesData || []);
+
+                // 加载今日考勤数据
+                const now = getMerchantNow();
+                const today = format(now, 'yyyy-MM-dd');
+                const attendanceMap = new Map<number, any>();
+
+                // 并行加载所有员工的今日考勤数据
+                const attendancePromises = staffData.map((staffMember) =>
+                    staffAttendanceApi.getByResourceAndDate(staffMember.id, today)
+                        .then((attendance) => ({ resourceId: staffMember.id, attendance: attendance || null }))
+                        .catch(() => ({ resourceId: staffMember.id, attendance: null }))
+                );
+
+                const attendanceResults = await Promise.all(attendancePromises);
+                attendanceResults.forEach(({ resourceId, attendance }) => {
+                    if (attendance) {
+                        attendanceMap.set(resourceId, attendance);
+                    }
+                });
+
+                setStaffAttendance(attendanceMap);
             } catch (err) {
                 console.error('Failed to fetch staff data:', err);
                 setError(err instanceof Error ? err.message : 'Failed to fetch staff data');
@@ -203,6 +228,31 @@ const StaffResourceManagement: React.FC = () => {
         setFilteredStaff(filtered);
         setPage(0);
     }, [staff, searchTerm, statusFilter]);
+
+    // 检查员工当前是否在工作（基于check-in/out时间）
+    const isStaffCurrentlyWorking = (staffMember: StaffResource): boolean => {
+        // 只检查ACTIVE状态的员工
+        if (staffMember.status !== 'ACTIVE') {
+            return false;
+        }
+
+        const attendance = staffAttendance.get(staffMember.id);
+        if (!attendance) {
+            return false;
+        }
+
+        // 如果有check-in和check-out时间，检查当前时间是否在范围内
+        if (attendance.checkInTime && attendance.checkOutTime) {
+            const now = getMerchantNow();
+            const currentTime = format(now, 'HH:mm');
+            const checkInTime = attendance.checkInTime.slice(0, 5);
+            const checkOutTime = attendance.checkOutTime.slice(0, 5);
+
+            return currentTime >= checkInTime && currentTime < checkOutTime;
+        }
+
+        return false;
+    };
 
     // 获取状态Chip（可点击）
     const getStatusChip = (staffMember: StaffResource) => {

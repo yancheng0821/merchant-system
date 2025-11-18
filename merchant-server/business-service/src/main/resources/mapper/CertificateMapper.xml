@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.CertificateMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="CertificateResultMap" type="com.merchant.server.businessservice.entity.Certificate">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="certificateName" column="certificate_name"/>
+        <result property="certificateType" column="certificate_type"/>
+        <result property="certificateNumber" column="certificate_number"/>
+        <result property="issueDate" column="issue_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="issuingAuthority" column="issuing_authority"/>
+        <result property="renewalFee" column="renewal_fee"/>
+        <result property="status" column="status"/>
+        <result property="attachmentUrl" column="attachment_url"/>
+        <result property="notes" column="notes"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <!-- 根据租户ID查询所有证书 -->
+    <select id="selectByTenantId" resultMap="CertificateResultMap">
+        SELECT * FROM certificates
+        WHERE tenant_id = #{tenantId}
+        ORDER BY expiry_date DESC
+    </select>
+
+    <!-- 根据ID查询证书 -->
+    <select id="selectById" resultMap="CertificateResultMap">
+        SELECT * FROM certificates
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入证书 -->
+    <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Certificate" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO certificates (
+            tenant_id, certificate_name, certificate_type, certificate_number,
+            issue_date, expiry_date, issuing_authority, renewal_fee,
+            status, attachment_url, notes, created_at, updated_at, created_by, updated_by
+        ) VALUES (
+            #{tenantId}, #{certificateName}, #{certificateType}, #{certificateNumber},
+            #{issueDate}, #{expiryDate}, #{issuingAuthority}, #{renewalFee},
+            #{status}, #{attachmentUrl}, #{notes}, NOW(), NOW(), #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <!-- 更新证书 -->
+    <update id="update" parameterType="com.merchant.server.businessservice.entity.Certificate">
+        UPDATE certificates
+        SET certificate_name = #{certificateName},
+            certificate_type = #{certificateType},
+            certificate_number = #{certificateNumber},
+            issue_date = #{issueDate},
+            expiry_date = #{expiryDate},
+            issuing_authority = #{issuingAuthority},
+            renewal_fee = #{renewalFee},
+            status = #{status},
+            attachment_url = #{attachmentUrl},
+            notes = #{notes},
+            updated_at = NOW(),
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除证书 -->
+    <delete id="deleteById">
+        DELETE FROM certificates WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -12,7 +12,7 @@ public interface CustomerService {
     /**
      * 分页查询客户
      */
-    Page<Customer> getCustomers(Long tenantId, String keyword, Customer.CustomerStatus status, Customer.MembershipLevel level, Pageable pageable);
+    Page<Customer> getCustomers(Long tenantId, String keyword, Customer.CustomerStatus status, String level, Pageable pageable);
     
     /**
      * 根据ID获取客户详情

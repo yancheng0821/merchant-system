@@ -63,7 +63,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_BASE_URL } from '../../config/environment';
-import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, shiftApi, getFullImageUrl } from '../../services/api';
+import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, shiftApi, staffAttendanceApi, getFullImageUrl } from '../../services/api';
 import { getMerchantNow, utcToMerchantTime } from '../../utils/timezoneUtils';
 
 // 时间范围类型
@@ -369,6 +369,38 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         }
       }
 
+      // 获取今天的员工签到签退记录
+      let staffAttendanceMap: Map<number, any> = new Map();
+      if ((resourceType === 'STAFF' || resourceType === 'BOTH') && staffList && staffList.length > 0) {
+        try {
+          const now = getMerchantNow();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const today = `${year}-${month}-${day}`;
+
+          const attendancePromises = staffList.map((staff: any) =>
+            staffAttendanceApi.getByResourceAndDate(staff.id, today)
+              .then((attendance: any) => ({
+                resourceId: staff.id,
+                attendance: attendance || null
+              }))
+              .catch(() => ({
+                resourceId: staff.id,
+                attendance: null
+              }))
+          );
+          const attendanceResults = await Promise.all(attendancePromises);
+          attendanceResults.forEach((result: any) => {
+            if (result.attendance) {
+              staffAttendanceMap.set(result.resourceId, result.attendance);
+            }
+          });
+        } catch (error) {
+          console.error('Failed to fetch staff attendance:', error);
+        }
+      }
+
       // 计算预约统计数据（基于过滤后的今日预约）
       const completedCount = appointments.filter((apt: any) => apt.status === 'COMPLETED').length;
       const inProgressCount = appointments.filter((apt: any) => apt.status === 'IN_PROGRESS').length;
@@ -475,17 +507,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           let endTime = null;
 
           // 检查员工是否在工作时间内
-          const staffAvailabilities = staffAvailabilitiesMap.get(staff.id) || [];
-          const todayAvailabilities = staffAvailabilities.filter((avail: any) => avail.dayOfWeek === dayOfWeek);
-
           let isWithinWorkingHours = false;
-          if (todayAvailabilities.length > 0) {
-            // 检查当前时间是否在任意一个工作时间段内
-            isWithinWorkingHours = todayAvailabilities.some((avail: any) => {
-              const startTime = avail.startTime.slice(0, 5); // HH:mm
-              const endTime = avail.endTime.slice(0, 5); // HH:mm
-              return currentTime >= startTime && currentTime < endTime;
-            });
+
+          // 优先检查签到签退记录
+          const attendance = staffAttendanceMap.get(staff.id);
+          if (attendance && attendance.checkInTime && attendance.checkOutTime) {
+            // 有签到签退记录，使用实际工作时间
+            const checkInTime = attendance.checkInTime.slice(0, 5); // HH:mm
+            const checkOutTime = attendance.checkOutTime.slice(0, 5); // HH:mm
+            isWithinWorkingHours = currentTime >= checkInTime && currentTime < checkOutTime;
+          } else {
+            // 没有签到签退记录，使用原始排班时间
+            const staffAvailabilities = staffAvailabilitiesMap.get(staff.id) || [];
+            const todayAvailabilities = staffAvailabilities.filter((avail: any) =>
+              avail.dayOfWeek === dayOfWeek && avail.isAvailable
+            );
+
+            if (todayAvailabilities.length > 0) {
+              // 检查当前时间是否在任意一个工作时间段内
+              isWithinWorkingHours = todayAvailabilities.some((avail: any) => {
+                const startTime = avail.startTime.slice(0, 5); // HH:mm
+                const endTime = avail.endTime.slice(0, 5); // HH:mm
+                return currentTime >= startTime && currentTime < endTime;
+              });
+            }
           }
 
           // 资源对象的status字段
@@ -517,7 +562,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             type: 'staff'
           };
         });
-        setStaffStatusList(staffWithStatus.slice(0, 8)); // 只显示前8个员工
+        setStaffStatusList(staffWithStatus); // 显示所有员工
       } else {
       }
       
@@ -588,7 +633,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             location: room.location
           };
         });
-        setResourceStatusList(roomWithStatus.slice(0, 8)); // 只显示前8个房间
+        setResourceStatusList(roomWithStatus); // 显示所有房间
       } else {
       }
 

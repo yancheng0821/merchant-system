@@ -41,7 +41,23 @@ public interface BusinessServiceClient {
      * 获取业务指标数据
      */
     @GetMapping("/api/business/analytics/metrics")
-    Map<String, Object> getBusinessMetrics(@RequestParam Long tenantId, 
-                                         @RequestParam String startDate, 
+    Map<String, Object> getBusinessMetrics(@RequestParam Long tenantId,
+                                         @RequestParam String startDate,
                                          @RequestParam String endDate);
+
+    /**
+     * 按服务维度统计订单
+     */
+    @GetMapping("/api/business/analytics/orders/by-service")
+    List<Map<String, Object>> getOrderStatsByService(@RequestParam Long tenantId,
+                                                     @RequestParam String startDate,
+                                                     @RequestParam String endDate);
+
+    /**
+     * 按支付方式维度统计订单
+     */
+    @GetMapping("/api/business/analytics/orders/by-payment-method")
+    List<Map<String, Object>> getOrderStatsByPaymentMethod(@RequestParam Long tenantId,
+                                                           @RequestParam String startDate,
+                                                           @RequestParam String endDate);
 }
