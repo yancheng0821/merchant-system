@@ -113,6 +113,7 @@ export const RESOURCE_PERMISSIONS = {
 // ============================================================================
 export const ORDER_PERMISSIONS = {
   VIEW: 'orders:view',
+  UPDATE_PAYMENT_METHOD: 'orders:update_payment_method',
   // 注意: 以下权限已废弃，暂不使用
   // CREATE: 'orders:create',
   // UPDATE: 'orders:update',
@@ -330,6 +331,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     displayName: '订单管理',
     permissions: [
       { code: 'orders:view', name: '查看订单', resource: 'orders', action: 'view' },
+      { code: 'orders:update_payment_method', name: '修改支付方式', resource: 'orders', action: 'update' },
       // 注意: 以下权限已废弃，暂不使用
       // { code: 'orders:create', name: '创建订单', resource: 'orders', action: 'create' },
       // { code: 'orders:update', name: '编辑订单', resource: 'orders', action: 'update' },

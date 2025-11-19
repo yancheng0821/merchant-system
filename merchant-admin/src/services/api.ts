@@ -2344,6 +2344,17 @@ export const api = {
     method: 'POST',
   }),
 
+  updatePaymentMethod: (data: {
+    orderId: number;
+    newPaymentMethod: string;
+    reason: string;
+  }) => createRequest(`/api/business/orders/${data.orderId}/payment-method`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      newPaymentMethod: data.newPaymentMethod,
+      reason: data.reason,
+    }),
+  }),
 
 };
 

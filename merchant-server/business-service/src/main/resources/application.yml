@@ -66,17 +66,17 @@ mybatis:
     default-time-zone: UTC
     # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 注释掉SQL日志输出
 
-# 日志配置
-logging:
-  level:
-    com.merchant.server.businessservice.mapper: WARN
-    org.apache.ibatis: WARN
-    java.sql: WARN
-    org.mybatis: WARN
-    org.springframework: WARN
-    com.merchant.server.businessservice.controller.CustomerImportController: INFO
-    com.merchant.server.businessservice.service.impl.CustomerImportServiceImpl: INFO
-    root: INFO
+# 日志配置 - 已迁移到logback-spring.xml，避免重复配置
+# logging:
+#   level:
+#     com.merchant.server.businessservice.mapper: WARN
+#     org.apache.ibatis: WARN
+#     java.sql: WARN
+#     org.mybatis: WARN
+#     org.springframework: WARN
+#     com.merchant.server.businessservice.controller.CustomerImportController: INFO
+#     com.merchant.server.businessservice.service.impl.CustomerImportServiceImpl: INFO
+#     root: INFO
 
 eureka:
   client:

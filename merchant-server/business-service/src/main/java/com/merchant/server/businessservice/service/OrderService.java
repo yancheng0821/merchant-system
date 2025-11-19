@@ -2,6 +2,7 @@ package com.merchant.server.businessservice.service;
 
 import com.merchant.server.businessservice.dto.OrderDTO;
 import com.merchant.server.businessservice.dto.OrderCreateDTO;
+import com.merchant.server.businessservice.dto.UpdatePaymentMethodRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
@@ -37,12 +38,17 @@ public interface OrderService {
      * 取消订单
      */
     boolean cancelOrder(Long id);
-    
+
+    /**
+     * 更新订单支付方式
+     */
+    OrderDTO updatePaymentMethod(Long id, UpdatePaymentMethodRequest request);
+
     /**
      * 获取订单统计
      */
     Map<String, Object> getOrderStats(Long tenantId);
-    
+
     /**
      * 获取今日订单
      */

@@ -20,6 +20,8 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - EUREKA_HOSTNAME=eureka-server
       - TZ=America/Vancouver
+    volumes:
+      - ./logs/eureka-server:/app/logs
     networks:
       - merchant-network
     restart: unless-stopped
@@ -62,6 +64,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - TZ=America/Vancouver
       - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dspring.data.redis.host=${REDIS_HOST} -Dspring.data.redis.port=${REDIS_PORT:-6379}
+    volumes:
+      - ./logs/gateway-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -116,6 +120,8 @@ services:
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - AWS_S3_REGION=${AWS_S3_REGION:-ca-central-1}
       - TZ=America/Vancouver
+    volumes:
+      - ./logs/auth-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -162,6 +168,8 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - TZ=America/Vancouver
+    volumes:
+      - ./logs/merchant-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -212,6 +220,8 @@ services:
       - RABBITMQ_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
       - STRIPE_API_KEY=${STRIPE_API_KEY}
       - TZ=America/Vancouver
+    volumes:
+      - ./logs/business-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -237,6 +247,49 @@ services:
           memory: 1024M
         reservations:
           memory: 512M
+
+  # ============================================
+  # 分析服务
+  # ============================================
+  analytics-service:
+    image: ${DOCKER_REGISTRY:-merchant}/analytics-service:${VERSION:-latest}
+    container_name: analytics-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_HOST=eureka-server
+      - EUREKA_PORT=8761
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=America/Vancouver
+    volumes:
+      - ./logs/analytics-service:/app/logs
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - merchant-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
 
   # ============================================
   # 通知服务
@@ -268,6 +321,8 @@ services:
       - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID}
       - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET}
       - TZ=America/Vancouver
+    volumes:
+      - ./logs/notification-service:/app/logs
     depends_on:
       eureka-server:
         condition: service_healthy

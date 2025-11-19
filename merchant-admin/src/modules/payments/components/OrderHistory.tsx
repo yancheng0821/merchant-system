@@ -167,6 +167,14 @@ const OrderHistory: React.FC = () => {
   const [refundError, setRefundError] = useState<string | null>(null);
   const [refundSuccess, setRefundSuccess] = useState(false);
 
+  // Update payment method dialog states
+  const [updatePaymentMethodDialog, setUpdatePaymentMethodDialog] = useState(false);
+  const [newPaymentMethod, setNewPaymentMethod] = useState('');
+  const [updateReason, setUpdateReason] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+
   // Date picker popover states
   const [startDateAnchorEl, setStartDateAnchorEl] = useState<null | HTMLElement>(null);
   const [endDateAnchorEl, setEndDateAnchorEl] = useState<null | HTMLElement>(null);
@@ -390,6 +398,82 @@ const OrderHistory: React.FC = () => {
     return order.paymentStatus === 'paid' && order.orderStatus === 'completed';
   };
 
+  // Update payment method handlers
+  const handleUpdatePaymentMethod = (order: Order) => {
+    setSelectedOrder(order);
+    setNewPaymentMethod('');
+    setUpdateReason('');
+    setUpdateError(null);
+    setUpdatePaymentMethodDialog(true);
+  };
+
+  const processUpdatePaymentMethod = async () => {
+    if (!selectedOrder || !newPaymentMethod || !updateReason) {
+      setUpdateError(t('orders.updateReasonRequired'));
+      return;
+    }
+
+    // 验证新支付方式与当前不同
+    if (newPaymentMethod === selectedOrder.paymentMethod) {
+      setUpdateError(t('orders.newPaymentMethodRequired'));
+      return;
+    }
+
+    setUpdateLoading(true);
+    setUpdateError(null);
+
+    try {
+      const response = await api.updatePaymentMethod({
+        orderId: selectedOrder.id,
+        newPaymentMethod: newPaymentMethod,
+        reason: updateReason,
+      });
+
+      // 检查响应是否成功
+      if (response && response.success !== false) {
+        // 刷新订单列表
+        await fetchOrders();
+
+        // 显示成功提示
+        setUpdateSuccess(true);
+
+        // 关闭对话框
+        setUpdatePaymentMethodDialog(false);
+        setNewPaymentMethod('');
+        setUpdateReason('');
+        setSelectedOrder(null);
+      } else {
+        setUpdateError(response?.message || t('orders.paymentMethodUpdateFailed'));
+      }
+    } catch (error: any) {
+      console.error('Failed to update payment method:', error);
+
+      // 提取错误信息
+      let errorMessage = t('orders.paymentMethodUpdateFailed');
+      if (error.responseData?.message) {
+        errorMessage = error.responseData.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setUpdateError(errorMessage);
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const canUpdatePaymentMethod = (order: Order) => {
+    // 只能修改已完成且已支付的订单
+    if (order.orderStatus !== 'completed' || order.paymentStatus !== 'paid') {
+      return false;
+    }
+    // 不能修改已退款的订单
+    if (order.refundAmount && order.refundAmount > 0) {
+      return false;
+    }
+    return true;
+  };
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, order: Order) => {
     setAnchorEl(event.currentTarget);
     setMenuOrder(order);
@@ -414,7 +498,12 @@ const OrderHistory: React.FC = () => {
     handleMenuClose();
   };
 
-
+  const handleMenuUpdatePaymentMethod = () => {
+    if (menuOrder) {
+      handleUpdatePaymentMethod(menuOrder);
+    }
+    handleMenuClose();
+  };
 
   const formatDateTime = (dateString: string) => {
     // 将 UTC 时间转换为商户本地时区
@@ -763,6 +852,14 @@ const OrderHistory: React.FC = () => {
           </ListItemIcon>
           <Typography variant="body2">{t('orders.viewDetails')}</Typography>
         </MenuItem>
+        {hasPermission('orders:update_payment_method') && menuOrder && canUpdatePaymentMethod(menuOrder) && (
+          <MenuItem onClick={handleMenuUpdatePaymentMethod}>
+            <ListItemIcon>
+              <CreditCardIcon sx={{ fontSize: 20, color: '#10B981' }} />
+            </ListItemIcon>
+            <Typography variant="body2">{t('orders.updatePaymentMethod')}</Typography>
+          </MenuItem>
+        )}
         {/* Refund functionality temporarily disabled */}
         {/* {hasPermission('orders:refund') && menuOrder && canRefund(menuOrder) && (
           <MenuItem onClick={handleMenuRefund}>
@@ -1193,6 +1290,172 @@ const OrderHistory: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog> */}
+
+      {/* Update Payment Method Dialog */}
+      <Dialog
+        open={updatePaymentMethodDialog}
+        onClose={() => setUpdatePaymentMethodDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h5" sx={{ fontWeight: 600, color: '#10B981' }}>
+              {t('orders.updatePaymentMethodTitle')}
+            </Typography>
+            <IconButton
+              onClick={() => setUpdatePaymentMethodDialog(false)}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { backgroundColor: alpha('#10B981', 0.08) }
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, pt: 2, pb: 3 }}>
+          {selectedOrder && (
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {t('orders.updatePaymentMethodInfo', { orderNumber: selectedOrder.orderNumber })}
+              </Typography>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    {t('orders.currentPaymentMethod')}
+                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
+                    {getPaymentMethodIcon(selectedOrder.paymentMethod)}
+                    <Chip
+                      label={t(`orders.${selectedOrder.paymentMethod}`)}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha('#10B981', 0.1),
+                        color: '#10B981',
+                        fontWeight: 600,
+                      }}
+                    />
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel sx={{ '&.Mui-focused': { color: '#10B981' } }}>
+                      {t('orders.newPaymentMethod')}
+                    </InputLabel>
+                    <Select
+                      value={newPaymentMethod}
+                      onChange={(e) => setNewPaymentMethod(e.target.value)}
+                      label={t('orders.newPaymentMethod')}
+                      error={Boolean(updateError)}
+                      sx={{
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#10B981',
+                        },
+                      }}
+                    >
+                      <MenuItem value="cash">{t('orders.cash')}</MenuItem>
+                      <MenuItem value="credit_card">{t('orders.credit_card')}</MenuItem>
+                      <MenuItem value="debit_card">{t('orders.debit_card')}</MenuItem>
+                      <MenuItem value="mobile_pay">{t('orders.mobile_pay')}</MenuItem>
+                      <MenuItem value="package">{t('orders.package')}</MenuItem>
+                      <MenuItem value="gift_card">{t('orders.gift_card')}</MenuItem>
+                      <MenuItem value="mixed">{t('orders.mixed')}</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label={t('orders.updateReason')}
+                    value={updateReason}
+                    onChange={(e) => setUpdateReason(e.target.value)}
+                    placeholder={t('orders.updateReasonPlaceholder')}
+                    error={Boolean(updateError)}
+                    sx={{
+                      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#10B981',
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: '#10B981',
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              {updateError && (
+                <Box mt={2}>
+                  <Alert severity="error" onClose={() => setUpdateError(null)}>
+                    {updateError}
+                  </Alert>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 2 }}>
+          <Button
+            onClick={() => setUpdatePaymentMethodDialog(false)}
+            sx={{
+              mr: 1,
+              color: 'text.secondary',
+              '&:hover': {
+                backgroundColor: alpha('#10B981', 0.08),
+              },
+            }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={processUpdatePaymentMethod}
+            variant="contained"
+            disabled={updateLoading || !newPaymentMethod || !updateReason}
+            sx={{
+              bgcolor: '#10B981',
+              color: '#fff',
+              fontWeight: 600,
+              px: 3,
+              '&:hover': {
+                bgcolor: '#059669',
+              },
+              '&:disabled': {
+                bgcolor: alpha('#10B981', 0.3),
+                color: alpha('#fff', 0.5),
+              },
+            }}
+          >
+            {updateLoading ? t('orders.processing') : t('common.update')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Update Payment Method Success Snackbar */}
+      <Snackbar
+        open={updateSuccess}
+        autoHideDuration={6000}
+        onClose={() => setUpdateSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setUpdateSuccess(false)}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          {t('orders.paymentMethodUpdateSuccess')}
+        </Alert>
+      </Snackbar>
 
       {/* Success Snackbar - Temporarily Disabled */}
       {/* <Snackbar

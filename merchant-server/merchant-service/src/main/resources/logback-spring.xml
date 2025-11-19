@@ -7,45 +7,35 @@
         </encoder>
     </appender>
 
-    <!-- 文件输出 -->
+    <!-- 文件输出 - 自动日志轮换 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>../logs/merchant-service.log</file>
-        <append>true</append> <!-- 明确设置为追加模式，服务重启时不覆盖日志 -->
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>../logs/merchant-service.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-NO_TRACE}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- 设置MyBatis相关的日志级别为WARN，减少SQL日志输出 -->
-    <logger name="com.merchant.server.merchantservice.mapper" level="WARN"/>
-    <logger name="org.apache.ibatis" level="WARN"/>
-    <logger name="java.sql" level="WARN"/>
-    <logger name="org.mybatis" level="WARN"/>
-    
-    <!-- 设置应用程序的日志级别 -->
-    <logger name="com.merchant.server.merchantservice" level="INFO"/>
-    
-    <!-- 设置Spring相关日志级别 -->
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="org.springframework.context.support.PostProcessorRegistrationDelegate" level="ERROR"/>
-    <logger name="org.springframework.cloud" level="WARN"/>
-    <logger name="org.springframework.cloud.client.loadbalancer" level="ERROR"/>
-    <logger name="org.springframework.cloud.loadbalancer" level="ERROR"/>
-    <logger name="org.springframework.cloud.commons" level="ERROR"/>
-    <logger name="org.hibernate" level="WARN"/>
-    <logger name="org.apache.catalina" level="WARN"/>
-    <logger name="org.apache.coyote" level="WARN"/>
-    <logger name="org.apache.tomcat" level="WARN"/>
-
-    <!-- 根日志级别 -->
-    <root level="INFO">
+    <!-- 应用程序日志 -->
+    <logger name="com.merchant.server.merchantservice" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
-    </root>
+    </logger>
+
+    <!-- 减少MyBatis和Spring框架的日志输出 -->
+    <logger name="com.merchant.server.merchantservice.mapper" level="WARN" additivity="false"/>
+    <logger name="org.apache.ibatis" level="WARN" additivity="false"/>
+    <logger name="java.sql" level="WARN" additivity="false"/>
+    <logger name="org.mybatis" level="WARN" additivity="false"/>
+    <logger name="org.springframework" level="WARN" additivity="false"/>
+    <logger name="org.springframework.cloud" level="WARN" additivity="false"/>
+    <logger name="org.hibernate" level="WARN" additivity="false"/>
+
+    <!-- 根日志级别 -->
+    <root level="WARN"/>
 </configuration>

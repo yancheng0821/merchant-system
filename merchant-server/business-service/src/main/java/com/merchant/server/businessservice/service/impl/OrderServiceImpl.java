@@ -286,7 +286,7 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             return false;
         }
-        
+
         // 只能取消未支付的订单
         if (!"pending".equals(order.getPaymentStatus())) {
             return false;
@@ -295,10 +295,56 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus("cancelled");
         order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         orderMapper.updateById(order);
-        
+
         return true;
     }
-    
+
+    @Override
+    @Transactional
+    public OrderDTO updatePaymentMethod(Long id, UpdatePaymentMethodRequest request) {
+        // 查找订单
+        Order order = orderMapper.selectById(id);
+        if (order == null) {
+            throw new IllegalStateException("Order not found");
+        }
+
+        // 验证业务规则
+        // 1. 只能修改已完成且已支付的订单
+        if (!"completed".equals(order.getOrderStatus())) {
+            throw new IllegalStateException("Only completed orders can have payment method updated");
+        }
+        if (!"paid".equals(order.getPaymentStatus())) {
+            throw new IllegalStateException("Only paid orders can have payment method updated");
+        }
+
+        // 2. 不能修改已退款的订单
+        if (order.getRefundAmount() != null && order.getRefundAmount() > 0) {
+            throw new IllegalStateException("Cannot update payment method for refunded orders");
+        }
+
+        // 3. 新支付方式不能与当前相同
+        if (request.getNewPaymentMethod().equals(order.getPaymentMethod())) {
+            throw new IllegalStateException("New payment method must be different from current payment method");
+        }
+
+        // 更新支付方式和备注
+        String oldPaymentMethod = order.getPaymentMethod();
+        order.setPaymentMethod(request.getNewPaymentMethod());
+
+        // 将修改原因添加到订单备注中
+        String updatedNotes = (order.getNotes() != null ? order.getNotes() + "\n" : "") +
+                              "[Payment Method Update] " +
+                              "Changed from " + oldPaymentMethod + " to " + request.getNewPaymentMethod() +
+                              ". Reason: " + request.getReason();
+        order.setNotes(updatedNotes);
+
+        order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        orderMapper.updateById(order);
+
+        // 返回更新后的订单DTO
+        return getOrderById(id);
+    }
+
     @Override
     public Map<String, Object> getOrderStats(Long tenantId) {
         Map<String, Object> stats = new HashMap<>();

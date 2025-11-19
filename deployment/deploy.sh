@@ -212,6 +212,10 @@ upload_to_ec2() {
     echo "创建远程目录..."
     ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "mkdir -p ${DEPLOY_DIR}/images"
 
+    # 创建日志目录（为日志持久化准备）
+    echo "创建日志目录..."
+    ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "mkdir -p ${DEPLOY_DIR}/logs/{eureka-server,gateway-service,auth-service,merchant-service,business-service,analytics-service,notification-service} && chmod -R 777 ${DEPLOY_DIR}/logs"
+
     # 上传镜像tar文件
     echo ""
     echo -e "${YELLOW}上传镜像文件...${NC}"
@@ -436,11 +440,14 @@ deploy_all() {
     echo -e "${BLUE}  Gateway: http://${EC2_HOST}:8080${NC}"
     echo ""
     echo "常用命令:"
-    echo "  # 查看所有服务日志"
+    echo "  # 查看所有服务日志（Docker输出）"
     echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'cd ${DEPLOY_DIR} && docker-compose logs -f'"
     echo ""
-    echo "  # 查看单个服务日志"
+    echo "  # 查看单个服务日志（Docker输出）"
     echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'cd ${DEPLOY_DIR} && docker-compose logs -f auth-service'"
+    echo ""
+    echo "  # 查看持久化日志文件"
+    echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'tail -f ${DEPLOY_DIR}/logs/business-service/business-service.log'"
     echo ""
     echo "  # 重启单个服务"
     echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'cd ${DEPLOY_DIR} && docker-compose restart auth-service'"

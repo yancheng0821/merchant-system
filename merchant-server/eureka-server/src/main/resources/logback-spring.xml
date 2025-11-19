@@ -4,55 +4,33 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <!-- 文件输出 -->
+    <!-- 文件输出 - 自动日志轮换 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>../logs/eureka-server.log</file>
-        <append>true</append> <!-- 明确设置为追加模式，服务重启时不覆盖日志 -->
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>../logs/eureka-server.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
-    </appender>
-
-    <!-- 错误日志单独输出 -->
-    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>../logs/eureka-server-error.log</file>
-        <append>true</append>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>ERROR</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
-        </filter>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            <charset>UTF-8</charset>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>../logs/eureka-server-error.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
-        </rollingPolicy>
     </appender>
 
-    <!-- 日志级别 -->
-    <logger name="com.merchant.server" level="INFO"/>
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="com.netflix" level="WARN"/>
-
-    <root level="INFO">
+    <!-- 应用程序日志 -->
+    <logger name="com.merchant.server" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-    </root>
+    </logger>
+
+    <!-- 减少Spring和Netflix框架的日志输出 -->
+    <logger name="org.springframework" level="WARN" additivity="false"/>
+    <logger name="com.netflix" level="WARN" additivity="false"/>
+
+    <!-- 根日志级别 -->
+    <root level="WARN"/>
 </configuration>

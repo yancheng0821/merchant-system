@@ -1,9 +1,11 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.Auditable;
 import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.businessservice.dto.OrderDTO;
 import com.merchant.server.businessservice.dto.OrderCreateDTO;
 import com.merchant.server.businessservice.dto.OrderServiceCreateDTO;
+import com.merchant.server.businessservice.dto.UpdatePaymentMethodRequest;
 import com.merchant.server.businessservice.entity.Order;
 import com.merchant.server.businessservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -175,7 +177,7 @@ public class OrderController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<Map<String, Object>> cancelOrder(@PathVariable Long id) {
         log.info("Cancelling order: {}", id);
-        
+
         Map<String, Object> response = new HashMap<>();
         try {
             boolean success = orderService.cancelOrder(id);
@@ -189,7 +191,50 @@ public class OrderController {
             return ResponseEntity.badRequest().body(response);
         }
     }
-    
+
+    /**
+     * 更新订单支付方式
+     */
+    @RequiresPermission("orders:update_payment_method")
+    @Auditable(
+        resource = "ORDER",
+        action = "UPDATE",
+        resourceIdParam = "id",
+        recordOldValue = true,
+        description = "Update order payment method"
+    )
+    @PutMapping("/{id}/payment-method")
+    public ResponseEntity<Map<String, Object>> updatePaymentMethod(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePaymentMethodRequest request) {
+        log.info("Updating payment method for order: {}, new method: {}, reason: {}",
+                 id, request.getNewPaymentMethod(), request.getReason());
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            OrderDTO updatedOrder = orderService.updatePaymentMethod(id, request);
+            if (updatedOrder == null) {
+                response.put("success", false);
+                response.put("message", "Order not found");
+                return ResponseEntity.notFound().build();
+            }
+            response.put("success", true);
+            response.put("message", "Payment method updated successfully");
+            response.put("order", updatedOrder);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            log.error("Cannot update payment method: {}", e.getMessage());
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Failed to update payment method: {}", e.getMessage());
+            response.put("success", false);
+            response.put("message", "Failed to update payment method");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     /**
      * 获取订单统计
      */

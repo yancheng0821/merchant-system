@@ -7,50 +7,38 @@
         </encoder>
     </appender>
 
-    <!-- 文件输出 -->
+    <!-- 文件输出 - 自动日志轮换 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>../logs/business-service.log</file>
-        <append>true</append> <!-- 明确设置为追加模式，服务重启时不覆盖日志 -->
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 每天轮换，文件名包含日期 -->
             <fileNamePattern>../logs/business-service.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 保留30天的历史日志 -->
             <maxHistory>30</maxHistory>
+            <!-- 总大小不超过3GB -->
             <totalSizeCap>3GB</totalSizeCap>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart> <!-- 启动时不清理历史日志 -->
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-NO_TRACE}] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- 设置MyBatis相关的日志级别为WARN，减少SQL日志输出 -->
-    <logger name="com.merchant.server.businessservice.mapper" level="WARN"/>
-    <logger name="org.apache.ibatis" level="WARN"/>
-    <logger name="java.sql" level="WARN"/>
-    <logger name="org.mybatis" level="ERROR"/>
-    <logger name="org.mybatis.spring.mapper.ClassPathMapperScanner" level="ERROR"/>
-
-    <!-- 设置应用程序的日志级别 -->
-    <logger name="com.merchant.server.businessservice" level="INFO"/>
-
-    <!-- Feign日志 -->
-    <logger name="com.merchant.server.businessservice.client" level="DEBUG"/>
-
-    <!-- 设置Spring相关日志级别 -->
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="org.springframework.context.support.PostProcessorRegistrationDelegate" level="ERROR"/>
-    <logger name="org.springframework.cloud" level="WARN"/>
-    <logger name="org.springframework.cloud.loadbalancer.cache.LoadBalancerCacheAutoConfiguration" level="ERROR"/>
-    <logger name="org.apache.catalina" level="WARN"/>
-    <logger name="org.apache.coyote" level="WARN"/>
-    <logger name="org.apache.tomcat" level="WARN"/>
-
-    <!-- Netflix Eureka -->
-    <logger name="com.netflix" level="WARN"/>
-    <logger name="com.netflix.discovery" level="WARN"/>
-    
-    <!-- 根日志级别 -->
-    <root level="INFO">
+    <!-- 应用程序日志 - 输出到控制台和文件 -->
+    <logger name="com.merchant.server.businessservice" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
-    </root>
+    </logger>
+
+    <!-- 减少MyBatis和Spring框架的日志输出 -->
+    <logger name="com.merchant.server.businessservice.mapper" level="WARN" additivity="false"/>
+    <logger name="org.apache.ibatis" level="WARN" additivity="false"/>
+    <logger name="java.sql" level="WARN" additivity="false"/>
+    <logger name="org.mybatis" level="ERROR" additivity="false"/>
+    <logger name="org.springframework" level="WARN" additivity="false"/>
+    <logger name="org.springframework.cloud" level="WARN" additivity="false"/>
+    <logger name="com.netflix" level="WARN" additivity="false"/>
+
+    <!-- 根日志级别 -->
+    <root level="WARN"/>
 </configuration>
