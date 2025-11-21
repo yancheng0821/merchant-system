@@ -44,6 +44,14 @@ public class OrderCreateDTO {
     private Double totalAmount;
 
     private String paymentMethod; // 支付方式
+    private String tipPaymentMethod; // 小费支付方式
+    private String paymentMode; // 支付模式: single(单服务), unified(多服务统一), mixed(多服务混合)
+
+    // 礼品卡支付相关字段
+    private Double giftCardAmount; // 礼品卡支付金额
+    private String giftCardNumber; // 礼品卡号
+    private String additionalPaymentMethod; // 礼品卡不足时的补充支付方式
+    private Double additionalPaymentAmount; // 补充支付金额（前端计算好的，可能包含小费）
 
     private String notes;
 }

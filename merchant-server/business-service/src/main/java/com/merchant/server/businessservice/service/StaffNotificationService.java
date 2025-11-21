@@ -159,22 +159,28 @@ public class StaffNotificationService {
                     .collect(Collectors.joining(", ")) : "N/A";
             variables.put("serviceName", serviceName);
 
-            // 金额和支付方式
+            // Payment Summary - 只显示小费、小费支付方式和订单号
             if (order != null) {
-                variables.put("subtotal", String.format("%.2f", order.getSubtotal()));
-                variables.put("taxAmount", String.format("%.2f", order.getTaxAmount()));
                 variables.put("tipAmount", String.format("%.2f", order.getTipAmount()));
-                variables.put("amount", String.format("%.2f", order.getTotalAmount()));
-                variables.put("paymentMethod", order.getPaymentMethod() != null ?
-                    order.getPaymentMethod() : "N/A");
+
+                // 获取小费支付方式，并转换为大写以便更好地显示
+                String tipPayMethod = order.getTipPaymentMethod();
+                if (tipPayMethod != null && !tipPayMethod.isEmpty()) {
+                    // 转换为大写并替换下划线为空格，例如：debit_card -> DEBIT CARD
+                    tipPayMethod = tipPayMethod.toUpperCase().replace("_", " ");
+                } else {
+                    tipPayMethod = "N/A";
+                }
+                variables.put("tipPaymentMethod", tipPayMethod);
+
                 variables.put("orderNumber", order.getOrderNumber() != null ?
                     order.getOrderNumber() : "N/A");
+
+                log.info("Staff notification payment info - Order: {}, Tip: {}, TipMethod: {}",
+                    order.getOrderNumber(), order.getTipAmount(), tipPayMethod);
             } else {
-                variables.put("subtotal", "0.00");
-                variables.put("taxAmount", "0.00");
                 variables.put("tipAmount", "0.00");
-                variables.put("amount", "0.00");
-                variables.put("paymentMethod", "N/A");
+                variables.put("tipPaymentMethod", "N/A");
                 variables.put("orderNumber", "N/A");
             }
 
@@ -564,20 +570,14 @@ public class StaffNotificationService {
         LocalDate date
     ) {
         try {
-            // 统计数据
+            // 统计数据 - 只统计总数和小费
             int totalCount = appointments.size();
-            double totalSubtotal = 0.0;
-            double totalTax = 0.0;
             double totalTips = 0.0;
-            double totalRevenue = 0.0;
 
             for (Appointment apt : appointments) {
                 Order order = orderMapper.selectByAppointmentId(apt.getId());
                 if (order != null) {
-                    totalSubtotal += order.getSubtotal().doubleValue();
-                    totalTax += order.getTaxAmount().doubleValue();
                     totalTips += order.getTipAmount().doubleValue();
-                    totalRevenue += order.getTotalAmount();
                 }
             }
 
@@ -596,22 +596,17 @@ public class StaffNotificationService {
                 String customerName = customer != null ?
                     customer.getLastName() + customer.getFirstName() : "N/A";
 
-                double subtotal = order != null ? order.getSubtotal().doubleValue() : 0.0;
-                double taxAmount = order != null ? order.getTaxAmount().doubleValue() : 0.0;
+                // 只获取小费金额和小费支付方式
                 double tipAmount = order != null ? order.getTipAmount().doubleValue() : 0.0;
-                double totalAmount = order != null ? order.getTotalAmount() : 0.0;
-                String paymentMethod = order != null && order.getPaymentMethod() != null ?
-                    order.getPaymentMethod() : "N/A";
+                String tipPaymentMethod = order != null && order.getTipPaymentMethod() != null ?
+                    order.getTipPaymentMethod() : "N/A";
 
                 appointmentListHtml.append("<tr>")
                     .append("<td>").append(apt.getAppointmentTime()).append("</td>")
                     .append("<td>").append(customerName).append("</td>")
                     .append("<td>").append(serviceName).append("</td>")
-                    .append("<td>$").append(String.format("%.2f", subtotal)).append("</td>")
-                    .append("<td>$").append(String.format("%.2f", taxAmount)).append("</td>")
                     .append("<td>$").append(String.format("%.2f", tipAmount)).append("</td>")
-                    .append("<td>$").append(String.format("%.2f", totalAmount)).append("</td>")
-                    .append("<td>").append(paymentMethod).append("</td>")
+                    .append("<td>").append(tipPaymentMethod).append("</td>")
                     .append("</tr>");
             }
 
@@ -629,16 +624,13 @@ public class StaffNotificationService {
                 log.warn("Failed to get merchant name for tenant {}: {}", staff.getTenantId(), e.getMessage());
             }
 
-            // 构建变量
+            // 构建变量 - 只包含必要的统计数据
             Map<String, String> variables = new HashMap<>();
             variables.put("staffName", staff.getName());
             variables.put("merchantName", merchantName);
             variables.put("date", date.toString());
             variables.put("totalCount", String.valueOf(totalCount));
-            variables.put("totalSubtotal", String.format("%.2f", totalSubtotal));
-            variables.put("totalTax", String.format("%.2f", totalTax));
             variables.put("totalTips", String.format("%.2f", totalTips));
-            variables.put("totalRevenue", String.format("%.2f", totalRevenue));
             variables.put("appointmentList", appointmentListHtml.toString());
             variables.put("serviceStats", generateServiceStats(appointments));
 
@@ -655,10 +647,7 @@ public class StaffNotificationService {
             notificationVariables.put("merchantName", merchantName);
             notificationVariables.put("date", date.toString());
             notificationVariables.put("totalCount", totalCount);
-            notificationVariables.put("totalSubtotal", String.format("%.2f", totalSubtotal));
-            notificationVariables.put("totalTax", String.format("%.2f", totalTax));
             notificationVariables.put("totalTips", String.format("%.2f", totalTips));
-            notificationVariables.put("totalRevenue", String.format("%.2f", totalRevenue));
             notificationVariables.put("appointmentList", appointmentListHtml.toString());
             notificationVariables.put("serviceStats", generateServiceStats(appointments));
             notificationVariables.put("totalHours", String.format("%.1f", totalHours));

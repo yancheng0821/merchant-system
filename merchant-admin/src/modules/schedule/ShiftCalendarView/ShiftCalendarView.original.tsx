@@ -22,6 +22,7 @@ import {
   Alert,
   MenuItem,
   Backdrop,
+  Portal,
 } from '@mui/material';
 import {
   DndContext,
@@ -1710,8 +1711,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       tipPercentage: number;
       subtotal: number;
       totalAmount: number;
+      tipPaymentMethod?: string;
     },
-    notes?: string
+    notes?: string,
+    giftCardAmount?: number,
+    giftCardNumber?: string,
+    additionalPaymentMethod?: string,
+    additionalPaymentAmount?: number,
+    paymentMode?: 'single' | 'unified' | 'mixed'
   ) => {
     if (!selectedAppointment || !user?.tenantId) return;
 
@@ -1738,6 +1745,11 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             tenantId: user.tenantId,
             taxInfo, // 传递税率和小费信息
             notes, // 传递notes
+            giftCardAmount,
+            giftCardNumber,
+            additionalPaymentMethod,
+            additionalPaymentAmount,
+            paymentMode, // 传递支付模式
           }
         );
       } else {
@@ -1751,6 +1763,11 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             tenantId: user.tenantId,
             taxInfo, // 传递税率和小费信息
             notes, // 传递notes
+            giftCardAmount,
+            giftCardNumber,
+            additionalPaymentMethod,
+            additionalPaymentAmount,
+            paymentMode: 'single', // 单服务支付模式
           }
         );
       }
@@ -1779,12 +1796,15 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         status: 'COMPLETED' as const,
       });
 
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: t('appointments.paymentSuccess', 'Payment completed successfully!'),
-        severity: 'success',
-      });
+      // Show success message (dialog will be closed by PaymentDialog component)
+      // Add delay to ensure dialog close animation completes
+      setTimeout(() => {
+        setSnackbar({
+          open: true,
+          message: t('appointments.paymentSuccess', 'Payment completed successfully!'),
+          severity: 'success',
+        });
+      }, 300);
     } catch (error: any) {
       console.error('Failed to process payment:', error);
 
@@ -3641,22 +3661,32 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         />
       )}
 
-      {/* 通知组件 */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ zIndex: 99999 }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+      {/* 通知组件 - 使用Portal渲染到document.body确保不被遮挡 */}
+      <Portal>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={(event, reason) => {
+            // 只允许用户手动关闭或超时关闭，忽略其他原因
+            if (reason === 'timeout' || reason === 'escapeKeyDown') {
+              setSnackbar({ ...snackbar, open: false });
+            }
+          }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          sx={{ zIndex: '100000 !important' }}
+          disableWindowBlurListener
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <Alert
+            onClose={() => {
+              setSnackbar({ ...snackbar, open: false });
+            }}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Portal>
     </Box>
   );
 };

@@ -21,21 +21,24 @@
         </encoder>
     </appender>
 
-    <!-- 应用程序日志 -->
+    <!-- 应用程序日志 - 只输出到文件，避免Maven重定向导致的重复日志 -->
     <logger name="com.merchant.server.merchantservice" level="INFO" additivity="false">
-        <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
 
     <!-- 减少MyBatis和Spring框架的日志输出 -->
-    <logger name="com.merchant.server.merchantservice.mapper" level="WARN" additivity="false"/>
-    <logger name="org.apache.ibatis" level="WARN" additivity="false"/>
-    <logger name="java.sql" level="WARN" additivity="false"/>
-    <logger name="org.mybatis" level="WARN" additivity="false"/>
-    <logger name="org.springframework" level="WARN" additivity="false"/>
-    <logger name="org.springframework.cloud" level="WARN" additivity="false"/>
-    <logger name="org.hibernate" level="WARN" additivity="false"/>
+    <logger name="com.merchant.server.merchantservice.mapper" level="WARN"/>
+    <logger name="org.apache.ibatis" level="WARN"/>
+    <logger name="java.sql" level="WARN"/>
+    <logger name="org.mybatis" level="ERROR"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.springframework.cloud" level="WARN"/>
+    <logger name="org.springframework.context.support.PostProcessorRegistrationDelegate" level="ERROR"/>
+    <logger name="org.springframework.cloud.loadbalancer" level="ERROR"/>
+    <logger name="org.hibernate" level="WARN"/>
 
-    <!-- 根日志级别 -->
-    <root level="WARN"/>
+    <!-- 根日志级别 - 只输出到文件 -->
+    <root level="INFO">
+        <appender-ref ref="FILE"/>
+    </root>
 </configuration>

@@ -503,7 +503,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Appointment processPayment(Long appointmentId, String paymentMethod, Integer customerPackageId, Long tenantId, Long verificationCodeId,
-            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes) {
+            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String tipPaymentMethod, String notes,
+            Double giftCardAmount, String giftCardNumber, String additionalPaymentMethod, Double additionalPaymentAmount) {
         // Get the appointment
         Appointment appointment = getAppointmentById(appointmentId);
         if (appointment == null) {
@@ -568,7 +569,8 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // Create order record - must succeed or transaction rolls back
         // For single service scenario, pass null for servicePayments
-        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes, null);
+        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount,
+                tipPaymentMethod, notes, null, giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount, "single");
 
         // Update customer statistics (total spent, points, last visit)
         // The totalAmount from frontend already excludes package payments (0 for package payment)
@@ -601,7 +603,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Appointment processMultiServicePayment(Long appointmentId, String paymentMethod, List<Map<String, Object>> servicePayments, Long tenantId,
-            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes) {
+            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String tipPaymentMethod, String notes,
+            Double giftCardAmount, String giftCardNumber, String additionalPaymentMethod, Double additionalPaymentAmount, String paymentMode) {
         // Get the appointment
         Appointment appointment = getAppointmentById(appointmentId);
         if (appointment == null) {
@@ -666,7 +669,8 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // Create order record - must succeed or transaction rolls back
         // For multi-service scenario, pass servicePayments to record each service's payment method
-        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes, servicePayments);
+        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount,
+                tipPaymentMethod, notes, servicePayments, giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount, paymentMode);
 
         // Update customer statistics (total spent, points, last visit)
         // The totalAmount from frontend already excludes package payments
@@ -754,8 +758,9 @@ public class AppointmentServiceImpl implements AppointmentService {
      * Create order from appointment
      */
     private void createOrderFromAppointment(Appointment appointment, String paymentMethod,
-            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String notes,
-            List<Map<String, Object>> servicePayments) {
+            Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String tipPaymentMethod, String notes,
+            List<Map<String, Object>> servicePayments,
+            Double giftCardAmount, String giftCardNumber, String additionalPaymentMethod, Double additionalPaymentAmount, String paymentMode) {
         // Build order create DTO
         OrderCreateDTO orderCreate = new OrderCreateDTO();
         orderCreate.setTenantId(appointment.getTenantId());
@@ -802,6 +807,49 @@ public class AppointmentServiceImpl implements AppointmentService {
                             String servicePaymentMethod = (String) servicePayment.get("paymentMethod");
                             // Convert to lowercase for database ENUM compatibility
                             orderService.setPaymentMethod(servicePaymentMethod != null ? servicePaymentMethod.toLowerCase() : null);
+
+                            // 提取礼品卡金额（如果有）
+                            Object giftCardAmountObj = servicePayment.get("giftCardAmount");
+                            if (giftCardAmountObj != null) {
+                                if (giftCardAmountObj instanceof Number) {
+                                    orderService.setGiftCardAmount(((Number) giftCardAmountObj).doubleValue());
+                                } else {
+                                    orderService.setGiftCardAmount(Double.valueOf(giftCardAmountObj.toString()));
+                                }
+                            }
+
+                            // 提取礼品卡号（如果有）
+                            String giftCardNumberStr = (String) servicePayment.get("giftCardNumber");
+                            if (giftCardNumberStr != null && !giftCardNumberStr.trim().isEmpty()) {
+                                orderService.setGiftCardNumber(giftCardNumberStr);
+                            }
+
+                            // 提取补充支付方式（如果有）
+                            String additionalMethodStr = (String) servicePayment.get("additionalPaymentMethod");
+                            if (additionalMethodStr != null && !additionalMethodStr.trim().isEmpty()) {
+                                orderService.setAdditionalPaymentMethod(additionalMethodStr.toLowerCase());
+                            }
+
+                            // 提取补充支付金额（如果有）
+                            Object additionalAmountObj = servicePayment.get("additionalPaymentAmount");
+                            if (additionalAmountObj != null) {
+                                if (additionalAmountObj instanceof Number) {
+                                    orderService.setAdditionalPaymentAmount(((Number) additionalAmountObj).doubleValue());
+                                } else {
+                                    orderService.setAdditionalPaymentAmount(Double.valueOf(additionalAmountObj.toString()));
+                                }
+                            }
+
+                            // 提取服务实际应付金额（混合支付场景下，用于普通支付方式）
+                            Object serviceAmountObj = servicePayment.get("serviceAmount");
+                            if (serviceAmountObj != null) {
+                                if (serviceAmountObj instanceof Number) {
+                                    orderService.setServiceAmount(((Number) serviceAmountObj).doubleValue());
+                                } else {
+                                    orderService.setServiceAmount(Double.valueOf(serviceAmountObj.toString()));
+                                }
+                            }
+
                             break;
                         }
                     }
@@ -820,15 +868,29 @@ public class AppointmentServiceImpl implements AppointmentService {
         orderCreate.setTipAmount(tipAmount != null ? tipAmount : 0.0);
         orderCreate.setTipPercentage(tipPercentage != null ? tipPercentage : 0.0);
 
+        // Set tip payment method (convert to lowercase for database ENUM compatibility)
+        if (tipPaymentMethod != null && !tipPaymentMethod.trim().isEmpty()) {
+            orderCreate.setTipPaymentMethod(tipPaymentMethod.toLowerCase());
+        }
+
         // IMPORTANT: Set subtotal and totalAmount from frontend
         // These values already exclude package payments, so use them directly
         orderCreate.setSubtotal(subtotal);
         orderCreate.setTotalAmount(totalAmount);
 
+        // Set gift card payment info if provided
+        orderCreate.setGiftCardAmount(giftCardAmount);
+        orderCreate.setGiftCardNumber(giftCardNumber);
+        orderCreate.setAdditionalPaymentMethod(additionalPaymentMethod != null ? additionalPaymentMethod.toLowerCase() : null);
+        orderCreate.setAdditionalPaymentAmount(additionalPaymentAmount);
+
         // Set notes if provided
         if (notes != null && !notes.trim().isEmpty()) {
             orderCreate.setNotes(notes);
         }
+
+        // Set payment mode
+        orderCreate.setPaymentMode(paymentMode);
 
         // Create the order
         com.merchant.server.businessservice.dto.OrderDTO createdOrder = orderService.createOrder(orderCreate);

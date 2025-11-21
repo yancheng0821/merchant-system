@@ -32,6 +32,7 @@ public class OrderDTO {
     
     // 支付信息
     private String paymentMethod;
+    private String tipPaymentMethod;
     private String paymentStatus;
     private String orderStatus;
     private String posTerminalId;

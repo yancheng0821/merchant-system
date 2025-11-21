@@ -101,7 +101,7 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
   customer,
   onPurchasePackage,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [packages, setPackages] = useState<CustomerPackage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -195,8 +195,9 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
     }
   };
 
-  const loadUsageLogs = async (packageId: number) => {
-    if (usageLogs.has(packageId)) {
+  const loadUsageLogs = async (packageId: number, forceReload: boolean = false) => {
+    // 如果已有缓存且不强制刷新，则跳过
+    if (usageLogs.has(packageId) && !forceReload) {
       return;
     }
 
@@ -224,7 +225,8 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
       setShowUsageHistory(false);
     } else {
       setShowUsageHistory(true);
-      loadUsageLogs(currentPackage.id);
+      // 总是强制刷新使用记录，确保显示最新数据
+      loadUsageLogs(currentPackage.id, true);
     }
   };
 
@@ -690,7 +692,10 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                                     </Typography>
                                   </Box>
                                   <Typography variant="caption" color="text.secondary">
-                                    {formatUtcToMerchantTime(log.usageDate, 'MMM d, h:mm a')}
+                                    {formatUtcToMerchantTime(
+                                      log.usageDate,
+                                      i18n.language === 'zh-CN' ? 'M月d日 HH:mm' : 'MMM d, h:mm a'
+                                    )}
                                   </Typography>
                                 </Box>
                               ))}

@@ -9,6 +9,7 @@ import {
   Select,
   MenuItem,
   FormControl,
+  InputLabel,
   Chip,
   alpha,
   IconButton,
@@ -18,6 +19,8 @@ import {
   FormControlLabel,
   Stack,
   TextField,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   CreditCard as CreditCardIcon,
@@ -29,6 +32,7 @@ import {
   Sms as SmsIcon,
   Check as CheckIcon,
   Edit as EditIcon,
+  Style as GiftCardIcon,
   // Membership tier icons
   Star as StarIcon,
   StarHalf as StarHalfIcon,
@@ -62,6 +66,14 @@ interface ServicePayment {
   paymentMethod: string;
   customerPackageId?: number;
   verificationCodeId?: number;
+  // 服务实际应付金额（混合支付模式下）
+  serviceAmount?: number;
+  // 礼品卡支付相关字段
+  giftCardAmount?: number;
+  giftCardNumber?: string;
+  // 混合支付：当礼品卡金额不足时使用的补充支付方式
+  additionalPaymentMethod?: string;
+  additionalPaymentAmount?: number;
 }
 
 interface PaymentDialogProps {
@@ -82,9 +94,17 @@ interface PaymentDialogProps {
       tipPercentage: number;
       subtotal: number;
       totalAmount: number;
+      tipPaymentMethod?: string;
     },
     // Notes信息
-    notes?: string
+    notes?: string,
+    // 礼品卡支付信息
+    giftCardAmount?: number,
+    giftCardNumber?: string,
+    additionalPaymentMethod?: string,
+    additionalPaymentAmount?: number,
+    // 支付模式：single(单服务), unified(多服务统一), mixed(多服务混合)
+    paymentMode?: 'single' | 'unified' | 'mixed'
   ) => void;
   appointmentId: number;
   customerId: number;
@@ -147,15 +167,578 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   };
 
+  /**
+   * 渲染支付方式选择器（可复用组件）
+   * @param currentValue - 当前选中的支付方式
+   * @param onValueChange - 值改变时的回调
+   * @param checkPackageAvailability - 是否检查套餐可用性（单服务不需要检查所有服务）
+   */
+  const renderPaymentMethodSelector = (
+    currentValue: string,
+    onValueChange: (value: string) => void,
+    checkPackageAvailability: boolean = false
+  ) => {
+    return (
+      <RadioGroup value={currentValue} onChange={(e) => onValueChange(e.target.value)}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+          {paymentMethods.map((method) => {
+            const Icon = method.icon;
+            const isSelected = currentValue === method.value;
+            let isDisabled = method.disabled || false;
+            let description = method.description;
+
+            // 套餐可用性检查
+            if (method.value === 'PACKAGE' && !loadingPackages && checkPackageAvailability && services && services.length > 1) {
+              const availablePackages = customerPackages.filter(
+                pkg => services.every(service =>
+                  ((pkg as any).service_remaining_map?.[service.id] || 0) > 0
+                )
+              ).length;
+
+              if (availablePackages === 0) {
+                isDisabled = true;
+                description = t('payment.noPackagesAvailableForAllServices');
+              } else {
+                description = t('payment.packageDescription', { count: availablePackages });
+              }
+            }
+
+            return (
+              <Box
+                key={method.value}
+                onClick={() => !isDisabled && onValueChange(method.value)}
+                sx={{
+                  position: 'relative',
+                  borderRadius: 2,
+                  border: '1.5px solid',
+                  borderColor: isSelected ? '#10b981' : '#e6eaee',
+                  bgcolor: isSelected ? alpha('#10b981', 0.04) : '#ffffff',
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  opacity: isDisabled ? 0.5 : 1,
+                  transition: 'all 0.2s',
+                  '&:hover': !isDisabled ? {
+                    borderColor: isSelected ? '#10b981' : '#cbd5e1',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  } : {},
+                }}
+              >
+                <FormControlLabel
+                  value={method.value}
+                  control={
+                    <Radio sx={{ color: '#cbd5e1', '&.Mui-checked': { color: '#10b981' } }} />
+                  }
+                  disabled={isDisabled}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.25, pr: 0.5, width: '100%' }}>
+                      <Box
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 1,
+                          bgcolor: isSelected ? alpha('#10b981', 0.12) : '#f8fafc',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Icon sx={{ fontSize: 16, color: isSelected ? '#10b981' : '#64748b' }} />
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#0a0f1a', fontSize: '0.8125rem' }}>
+                          {method.label}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {description}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                  sx={{
+                    m: 0,
+                    width: '100%',
+                    '& .MuiFormControlLabel-label': { width: '100%' },
+                  }}
+                />
+                {isSelected && (
+                  <CheckCircleIcon
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      fontSize: 16,
+                      color: '#10b981',
+                    }}
+                  />
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      </RadioGroup>
+    );
+  };
+
+  /**
+   * 渲染套餐选择器（可复用组件）
+   * @param currentValue - 当前选中的套餐ID
+   * @param onValueChange - 值改变时的回调
+   * @param forService - 针对特定服务（混合支付模式用）
+   */
+  const renderPackageSelector = (
+    currentValue: number | null,
+    onValueChange: (value: number) => void,
+    forService?: { id: number; name: string; price: number }
+  ) => {
+    const filteredPackages = customerPackages.filter(pkg => {
+      if (forService) {
+        // 混合支付模式：检查特定服务的剩余次数
+        return ((pkg as any).service_remaining_map?.[forService.id] || 0) > 0;
+      } else if (!services) {
+        // 单服务场景：检查 service_remaining
+        return pkg.service_remaining > 0;
+      } else {
+        // 多服务统一支付：检查每个服务的剩余次数
+        return services.every(service =>
+          ((pkg as any).service_remaining_map?.[service.id] || 0) > 0
+        );
+      }
+    });
+
+    return (
+      <Box sx={{ mt: 1.5 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            color: '#475569',
+            display: 'block',
+            mb: 0.5,
+            fontSize: '0.6875rem',
+          }}
+        >
+          {t('payment.selectPackage')}
+        </Typography>
+        <FormControl fullWidth size="small">
+          <Select
+            value={currentValue || ''}
+            onChange={(e) => onValueChange(e.target.value as number)}
+            displayEmpty
+            renderValue={(selected) => {
+              if (!selected) {
+                return (
+                  <Typography sx={{ color: '#94a3b8', fontSize: '0.8125rem' }}>
+                    {t('payment.choosePackage')}
+                  </Typography>
+                );
+              }
+              const selectedPkg = customerPackages.find(pkg => pkg.id === selected);
+              if (!selectedPkg) return null;
+
+              const showRemaining = forService || !services; // 混合支付或单服务时显示剩余
+              const remaining = forService
+                ? (selectedPkg as any).service_remaining_map?.[forService.id] || 0
+                : selectedPkg.service_remaining;
+
+              return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pr: 1 }}>
+                  <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981', flexShrink: 0 }} />
+                  <Typography
+                    sx={{
+                      fontSize: '0.8125rem',
+                      color: '#0f172a',
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                    }}
+                  >
+                    {selectedPkg.package_name}
+                  </Typography>
+                  {showRemaining && (
+                    <Typography
+                      sx={{
+                        fontSize: '0.75rem',
+                        color: '#10b981',
+                        fontWeight: 600,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {remaining} {t('common.remaining')}
+                    </Typography>
+                  )}
+                </Box>
+              );
+            }}
+            MenuProps={{
+              disablePortal: false,
+              container: container || document.body,
+              sx: {
+                zIndex: 10001,
+                '& .MuiPaper-root': {
+                  borderRadius: 1.5,
+                  mt: 0.5,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                }
+              }
+            }}
+            sx={{
+              height: 36,
+              borderRadius: 1.5,
+              bgcolor: '#f8fafc',
+              fontSize: '0.8125rem',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#e2e8f0',
+                borderWidth: '1px',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#cbd5e1',
+              },
+              '&.Mui-focused': {
+                bgcolor: '#ffffff',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#10b981',
+                borderWidth: '1.5px',
+              },
+              '& .MuiSelect-select': {
+                py: 1,
+              }
+            }}
+          >
+            <MenuItem value="" disabled>
+              <Typography sx={{ color: '#94a3b8', fontSize: '0.8125rem' }}>
+                {t('payment.choosePackage')}
+              </Typography>
+            </MenuItem>
+            {filteredPackages.map((pkg) => {
+              return (
+                <MenuItem
+                  key={pkg.id}
+                  value={pkg.id}
+                  sx={{
+                    py: 1.25,
+                    px: 2,
+                    '&:hover': {
+                      bgcolor: '#f8fafc',
+                    },
+                    '&.Mui-selected': {
+                      bgcolor: alpha('#10b981', 0.06),
+                      '&:hover': {
+                        bgcolor: alpha('#10b981', 0.1),
+                      }
+                    }
+                  }}
+                >
+                  <Box width="100%">
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: (services && !forService) ? 0.5 : 0 }}>
+                      <Typography sx={{ fontWeight: 500, color: '#0f172a', fontSize: '0.875rem' }}>
+                        {pkg.package_name}
+                      </Typography>
+                      {(forService || !services) && (
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#10b981', fontWeight: 600, ml: 2 }}>
+                          {forService
+                            ? `${(pkg as any).service_remaining_map?.[forService.id] || 0} ${t('common.remaining')}`
+                            : `${pkg.service_remaining} ${t('common.remaining')}`
+                          }
+                        </Typography>
+                      )}
+                    </Box>
+                    {services && !forService && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
+                        {services.map((service) => {
+                          const remaining = (pkg as any).service_remaining_map?.[service.id] || 0;
+                          return (
+                            <Chip
+                              key={service.id}
+                              label={
+                                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Typography component="span" sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#0f172a' }}>
+                                    {service.name}:
+                                  </Typography>
+                                  <Typography component="span" sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#15803d' }}>
+                                    {remaining} {t('common.remaining')}
+                                  </Typography>
+                                </Box>
+                              }
+                              size="small"
+                              sx={{
+                                height: 20,
+                                backgroundColor: '#dcfce7',
+                                borderRadius: 1,
+                                '& .MuiChip-label': { px: 1, py: 0 }
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </Box>
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
+      </Box>
+    );
+  };
+
+  /**
+   * 渲染SMS验证码输入（可复用组件）
+   * @param idPrefix - input元素id前缀，避免id冲突
+   */
+  const renderSmsVerification = (idPrefix: string = 'verification-code') => {
+    return (
+      <Box
+        sx={{
+          mt: 1.5,
+          p: 2,
+          borderRadius: 2,
+          bgcolor: '#ffffff',
+          border: '1px solid',
+          borderColor: verificationSent && !verificationError ? alpha('#10b981', 0.3) : '#e6eaee',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                bgcolor: alpha('#10b981', 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SmsIcon sx={{ fontSize: 16, color: '#10b981' }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#0a0f1a', lineHeight: 1.2 }}>
+                {t('payment.verification')}
+              </Typography>
+              <Typography sx={{ fontSize: '0.625rem', color: '#64748b', mt: 0.25 }}>
+                {verificationSent ? t('payment.enterVerificationCode') : t('payment.sendCode')}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Button
+            onClick={handleSendVerificationCode}
+            disabled={sendingCode || countdown > 0 || loading}
+            variant="contained"
+            size="small"
+            sx={{
+              minWidth: 80,
+              height: 28,
+              px: 1.25,
+              fontWeight: 600,
+              fontSize: '0.6875rem',
+              borderRadius: 1.5,
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              bgcolor: '#10b981',
+              color: '#ffffff',
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#059669', boxShadow: 'none' },
+              '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' },
+            }}
+          >
+            {sendingCode ? (
+              <CircularProgress size={12} sx={{ color: '#ffffff' }} />
+            ) : countdown > 0 ? (
+              `${t('payment.resend')} (${countdown}s)`
+            ) : verificationSent ? (
+              t('payment.resend')
+            ) : (
+              t('payment.sendCode')
+            )}
+          </Button>
+        </Box>
+
+        {/* 6位验证码输入框 */}
+        <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'center', mb: verificationError ? 1.5 : 0 }}>
+          {[0, 1, 2, 3, 4, 5].map((index) => (
+            <TextField
+              key={index}
+              id={`${idPrefix}-${index}`}
+              value={verificationCode[index] || ''}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                if (value.length <= 1) {
+                  const newCode = verificationCode.split('');
+                  newCode[index] = value;
+                  const finalCode = newCode.join('').slice(0, 6);
+                  setVerificationCode(finalCode);
+                  setVerificationError(null);
+                  if (value && index < 5) {
+                    const nextInput = document.getElementById(`${idPrefix}-${index + 1}`);
+                    nextInput?.focus();
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
+                  const prevInput = document.getElementById(`${idPrefix}-${index - 1}`);
+                  prevInput?.focus();
+                }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                setVerificationCode(pastedData);
+                setVerificationError(null);
+                const lastIndex = Math.min(pastedData.length, 5);
+                const lastInput = document.getElementById(`${idPrefix}-${lastIndex}`);
+                lastInput?.focus();
+              }}
+              disabled={!verificationSent || loading}
+              inputProps={{
+                maxLength: 1,
+                style: { textAlign: 'center', fontSize: '1rem', fontWeight: 600, padding: '8px 0' },
+              }}
+              sx={{
+                width: 40,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: verificationSent ? '#ffffff' : '#f8fafc',
+                  '& fieldset': {
+                    borderColor: verificationError ? '#ef4444' : (verificationCode[index] ? '#10b981' : '#e2e8f0'),
+                    borderWidth: verificationCode[index] ? '1.5px' : '1px',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: verificationError ? '#ef4444' : (verificationCode[index] ? '#10b981' : '#cbd5e1'),
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: verificationError ? '#ef4444' : '#10b981',
+                    borderWidth: '1.5px',
+                  },
+                  '&.Mui-disabled': { bgcolor: '#f8fafc' },
+                },
+              }}
+            />
+          ))}
+        </Box>
+
+        {verificationError && (
+          <Alert severity="error" sx={{ mt: 1.5, py: 0.5, fontSize: '0.6875rem' }}>
+            {verificationError}
+          </Alert>
+        )}
+
+        {verificationSent && !verificationError && verificationCode.length < 6 && (
+          <Alert severity="success" sx={{ mt: 1.5, py: 0.5, fontSize: '0.6875rem' }}>
+            {t('payment.codeSent')}
+          </Alert>
+        )}
+      </Box>
+    );
+  };
+
+  /**
+   * 渲染礼品卡输入（可复用组件）
+   * @param currentAmount - 当前金额
+   * @param onAmountChange - 金额改变回调
+   * @param maxAmount - 最大金额（通常是服务价格）
+   * @param bgColor - 背景色（统一支付用灰色，混合支付用白色）
+   */
+  const renderGiftCardInput = (
+    currentAmount: string,
+    onAmountChange: (value: string) => void,
+    maxAmount?: number,
+    bgColor: string = '#f8fafc'
+  ) => {
+    return (
+      <Box sx={{ mt: 1.5 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            color: '#475569',
+            display: 'block',
+            mb: 0.75,
+            fontSize: '0.75rem',
+          }}
+        >
+          {t('payment.giftCardAmount')}
+        </Typography>
+        <TextField
+          fullWidth
+          type="text"
+          value={currentAmount}
+          onChange={(e) => {
+            const value = e.target.value;
+            // 只允许数字和小数点，最多两位小数
+            if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+              onAmountChange(value);
+            }
+          }}
+          placeholder="0.00"
+          InputProps={{
+            startAdornment: <Typography sx={{ mr: 0.5, color: '#64748b', fontSize: '0.875rem' }}>$</Typography>,
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              height: 40,
+              borderRadius: 1.5,
+              bgcolor: bgColor,
+              fontSize: '0.875rem',
+              '& fieldset': {
+                borderColor: '#e2e8f0',
+                borderWidth: '1px',
+              },
+              '&:hover fieldset': {
+                borderColor: '#cbd5e1',
+              },
+              '&.Mui-focused': {
+                bgcolor: '#ffffff',
+                '& fieldset': {
+                  borderColor: '#10b981',
+                  borderWidth: '1.5px',
+                },
+              },
+            },
+          }}
+        />
+        {maxAmount && (parseFloat(currentAmount) - maxAmount) > 0.01 && (
+          <Typography key="gift-card-exceeds" sx={{ mt: 0.5, fontSize: '0.6875rem', color: '#ef4444' }}>
+            {t('payment.giftCardExceedsAmount', { amount: maxAmount.toFixed(2) })}
+          </Typography>
+        )}
+      </Box>
+    );
+  };
+
   // 单服务场景的状态
   const [paymentMethod, setPaymentMethod] = useState<string>('CREDIT_CARD');
   const [customerPackages, setCustomerPackages] = useState<CustomerPackage[]>([]);
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [customer, setCustomer] = useState<any>(null);
 
+  // 支付模式：unified（统一支付）或 mixed（混合支付）
+  // 默认使用统一支付模式
+  const [paymentMode, setPaymentMode] = useState<'unified' | 'mixed'>('unified');
+
+  // 统一支付模式的状态
+  const [unifiedPaymentMethod, setUnifiedPaymentMethod] = useState<string>('CREDIT_CARD');
+  const [unifiedPackageId, setUnifiedPackageId] = useState<number | null>(null);
+  const [unifiedGiftCardAmount, setUnifiedGiftCardAmount] = useState<string>('');
+  const [unifiedGiftCardNumber, setUnifiedGiftCardNumber] = useState<string>('');
+  const [unifiedAdditionalPaymentMethod, setUnifiedAdditionalPaymentMethod] = useState<string>('');
+  const [tipPaymentMethod, setTipPaymentMethod] = useState<string>(''); // 小费支付方式（空表示跟随订单支付方式）
+
   // 多服务场景的状态：每个服务的支付方式和套餐选择
   const [servicePaymentMethods, setServicePaymentMethods] = useState<Record<number, string>>({});
   const [servicePackageIds, setServicePackageIds] = useState<Record<number, number>>({});
+  // 多服务场景：每个服务的礼品卡金额和卡号
+  const [serviceGiftCardAmounts, setServiceGiftCardAmounts] = useState<Record<number, string>>({});
+  const [serviceGiftCardNumbers, setServiceGiftCardNumbers] = useState<Record<number, string>>({});
+  // 多服务场景：每个服务的补充支付方式（当礼品卡金额不足时）
+  const [serviceAdditionalPaymentMethods, setServiceAdditionalPaymentMethods] = useState<Record<number, string>>({});
+  // 多服务混合支付：每个服务的实际应付金额（含折扣和分摊税费）
+  const [serviceActualAmounts, setServiceActualAmounts] = useState<Record<number, number>>({});
 
   const [loading, setLoading] = useState(false);
   const [loadingPackages, setLoadingPackages] = useState(false);
@@ -187,10 +770,24 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   // Notes相关状态
   const [paymentNotes, setPaymentNotes] = useState<string>('');
 
+  // 礼品卡相关状态 - 简化版：只记录金额，礼品卡由POS系统管理
+  const [giftCardAmount, setGiftCardAmount] = useState<string>('');
+  const [giftCardNumber, setGiftCardNumber] = useState<string>(''); // 可选参考号
+
+  // 混合支付相关状态
+  const [isMixedPayment, setIsMixedPayment] = useState(false);
+  const [mixedPaymentMethods, setMixedPaymentMethods] = useState<{
+    giftCard?: number;
+    cash?: number;
+    creditCard?: number;
+    debitCard?: number;
+  }>({});
+
   // Refs for auto-scrolling
   const packageSelectionRef = useRef<HTMLDivElement>(null);
   const verificationSectionRef = useRef<HTMLDivElement>(null);
   const multiServiceVerificationRef = useRef<HTMLDivElement>(null);
+  const giftCardSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open && customerId && user?.tenantId) {
@@ -257,6 +854,144 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   }, [verificationSent]);
 
+  // 礼品卡混合支付场景：智能判断小费支付方式
+  // 如果补充支付金额 >= 小费金额，则小费使用补充支付方式
+  // 如果补充支付金额 < 小费金额，则小费使用礼品卡支付方式
+  useEffect(() => {
+    const isUnifiedGiftCard = unifiedPaymentMethod === 'GIFT_CARD';
+    const isSingleGiftCard = !services && paymentMethod === 'GIFT_CARD';
+    const isGiftCardPayment = isUnifiedGiftCard || isSingleGiftCard;
+
+    if (!isGiftCardPayment) return;
+
+    // 计算当前金额
+    const amounts = calculateAmounts();
+    const currentGiftCardAmount = parseFloat((services ? unifiedGiftCardAmount : giftCardAmount) || '0');
+    const additionalMethod = unifiedAdditionalPaymentMethod; // 统一和单服务都使用这个状态
+
+    // 如果有补充支付方式，自动判断小费支付方式
+    if (additionalMethod) {
+      // 计算补充支付金额（总金额 - 礼品卡金额，包含小费）
+      const totalAmountWithTip = amounts.subtotal + amounts.taxAmount + amounts.tipAmount;
+      const additionalPaymentAmount = totalAmountWithTip - currentGiftCardAmount;
+
+      // 智能判断小费支付方式
+      if (additionalPaymentAmount >= amounts.tipAmount) {
+        // 补充支付金额 >= 小费金额：说明补充支付不仅要支付小费，可能还要支付部分服务费税费，所以小费使用补充支付方式
+        setTipPaymentMethod(additionalMethod);
+      } else {
+        // 补充支付金额 < 小费金额：说明补充支付只需要支付部分小费或者剩余部分服务费，礼品卡已覆盖大部分费用，所以小费使用礼品卡
+        setTipPaymentMethod('GIFT_CARD');
+      }
+    } else if (currentGiftCardAmount > 0 && amounts.tipAmount > 0) {
+      // 纯礼品卡支付（无补充支付），小费使用礼品卡
+      setTipPaymentMethod('GIFT_CARD');
+    } else {
+      // 清除小费支付方式（让它使用默认值）
+      setTipPaymentMethod('');
+    }
+  }, [unifiedGiftCardAmount, giftCardAmount, unifiedAdditionalPaymentMethod, tipPercentage, customTipAmount, unifiedPaymentMethod, paymentMethod, services]);
+
+  // 当礼品卡支付或套餐支付且有小费时，自动设置小费支付方式默认值为CASH（仅用于套餐支付）
+  useEffect(() => {
+    const hasTip = (tipPercentage > 0 || (customTipAmount && parseFloat(customTipAmount) > 0));
+    const isPackage = paymentMethod === 'PACKAGE' || unifiedPaymentMethod === 'PACKAGE';
+
+    if (isPackage && hasTip && !tipPaymentMethod) {
+      setTipPaymentMethod('CASH');
+    }
+  }, [paymentMethod, unifiedPaymentMethod, tipPercentage, customTipAmount, tipPaymentMethod]);
+
+  // 多服务混合支付模式：不自动设置默认值，让用户主动选择
+  // 移除自动设置CASH的逻辑，避免用户忘记修改
+
+  // 计算多服务混合支付模式下每个服务的实际应付金额（含折扣和分摊税费）
+  useEffect(() => {
+    if (!services || services.length === 0 || paymentMode !== 'mixed') {
+      return;
+    }
+
+    // 1. 找出所有非套餐支付的服务
+    const nonPackageServices = services.filter(
+      service => servicePaymentMethods[service.id] !== 'PACKAGE'
+    );
+
+    if (nonPackageServices.length === 0) {
+      return;
+    }
+
+    // 2. 计算非套餐服务的总原价
+    const totalNonPackagePrice = nonPackageServices.reduce(
+      (sum, service) => sum + Number(service.price),
+      0
+    );
+
+    // 3. 应用会员折扣
+    let discountedTotalPrice = totalNonPackagePrice;
+    if (customer?.membershipTier?.discountRate && totalNonPackagePrice > 0) {
+      const rate = parseFloat(customer.membershipTier.discountRate);
+      discountedTotalPrice = totalNonPackagePrice * (rate / 100);
+    }
+
+    // 4. 计算税费（基于折扣后的总价）
+    const totalTax = discountedTotalPrice * taxRate;
+
+    // 5. 计算小费
+    let tipAmount = 0;
+    const tipBaseAmount = discountedTotalPrice; // 小费基于折扣后的价格
+    if (customTipAmount && parseFloat(customTipAmount) > 0) {
+      tipAmount = parseFloat(customTipAmount);
+    } else if (tipPercentage > 0 && tipBaseAmount > 0) {
+      tipAmount = tipBaseAmount * (tipPercentage / 100);
+    }
+
+    // 6. 订单总金额（已包含折扣、税费和小费）
+    const orderTotal = discountedTotalPrice + totalTax + tipAmount;
+
+    // 7. 需要分配的金额（总金额 - 小费）= 服务费 + 税费
+    const amountToAllocate = orderTotal - tipAmount;
+
+    // 8. 为每个非套餐服务计算实际应付金额
+    const newServiceActualAmounts: Record<number, number> = {};
+    let allocatedTotal = 0;
+
+    nonPackageServices.forEach((service, index) => {
+      const servicePrice = Number(service.price);
+      const serviceRatio = servicePrice / totalNonPackagePrice; // 该服务占比
+
+      // 如果是最后一个服务，使用剩余金额避免舍入误差
+      if (index === nonPackageServices.length - 1) {
+        const actualAmount = amountToAllocate - allocatedTotal;
+        newServiceActualAmounts[service.id] = Math.round(actualAmount * 100) / 100;
+      } else {
+        // 应用会员折扣后的服务价格
+        let discountedServicePrice = servicePrice;
+        if (customer?.membershipTier?.discountRate) {
+          const rate = parseFloat(customer.membershipTier.discountRate);
+          discountedServicePrice = servicePrice * (rate / 100);
+        }
+
+        // 分摊税费
+        const serviceTax = totalTax * serviceRatio;
+
+        // 实际应付金额 = 折扣后价格 + 分摊税费（不包括小费）
+        const actualAmount = Math.round((discountedServicePrice + serviceTax) * 100) / 100;
+
+        newServiceActualAmounts[service.id] = actualAmount;
+        allocatedTotal += actualAmount;
+      }
+    });
+
+    setServiceActualAmounts(newServiceActualAmounts);
+  }, [services, servicePaymentMethods, paymentMode, customer, taxRate, tipPercentage, customTipAmount]);
+
+  // 当切换支付模式时，重置验证码状态
+  useEffect(() => {
+    setVerificationCode('');
+    setVerificationSent(false);
+    setVerificationError(null);
+  }, [paymentMode]);
+
   // 多服务场景：当验证码发送成功后，滚动到成功提示区域
   useEffect(() => {
     if (services && services.length > 1 && verificationSent && multiServiceVerificationRef.current) {
@@ -321,9 +1056,13 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           }
         });
 
+        // 单服务场景：service_remaining 是当前 serviceId 的剩余次数
+        const serviceRemaining = serviceId ? (serviceRemainingMap[serviceId] || 0) : totalRemaining;
+
         return {
           ...pkg,
           remaining_count: totalRemaining, // Total remaining
+          service_remaining: serviceRemaining, // 当前服务的剩余次数
           service_remaining_map: serviceRemainingMap, // Map of service_id -> remaining
         };
       });
@@ -338,7 +1077,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       // 单服务场景：自动选择唯一可用套餐
       if (serviceId && !services) {
         const suitablePackages = activePackages.filter((pkg: any) => {
-          return pkg.service_remaining_map[serviceId] > 0;
+          return pkg.service_remaining > 0;
         });
         if (suitablePackages.length === 1) {
           setSelectedPackageId(suitablePackages[0].id);
@@ -442,8 +1181,9 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
   const calculateAmounts = () => {
     let originalAmount = amount; // 原始金额
     let subtotal = amount; // 默认使用原始金额
+    let packageDiscountAmount = 0; // 套餐抵扣金额
 
-    // 多服务场景：只计算非套餐支付的服务金额
+    // 多服务场景：计算套餐抵扣金额
     if (services && services.length > 1) {
       // 检查是否所有服务都有支付方式
       const allServicesHavePaymentMethod = services.every(service =>
@@ -451,20 +1191,41 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       );
 
       if (allServicesHavePaymentMethod) {
-        subtotal = services.reduce((total, service) => {
+        // 先计算总金额（包含所有服务）
+        subtotal = services.reduce((total, service) => total + service.price, 0);
+        originalAmount = subtotal;
+
+        // 计算套餐抵扣金额（套餐支付的服务价格总和）
+        packageDiscountAmount = services.reduce((total, service) => {
           const payMethod = servicePaymentMethods[service.id];
-          // 如果是套餐支付，金额为0；否则累加服务价格
           if (payMethod === 'PACKAGE') {
-            return total;
+            return total + service.price;
           }
-          return total + service.price;
+          return total;
         }, 0);
-        originalAmount = subtotal; // 记录原始金额
+
+        // 从小计中减去套餐抵扣
+        subtotal = subtotal - packageDiscountAmount;
       }
     } else if (paymentMethod === 'PACKAGE') {
-      // 单服务场景：如果选择套餐支付，金额为0
+      // 单服务场景：如果选择套餐支付，套餐抵扣=服务价格
+      packageDiscountAmount = amount;
       subtotal = 0;
-      originalAmount = 0;
+      originalAmount = amount;
+    }
+
+    // 统一支付模式：如果选择套餐支付，所有服务金额使用套餐抵扣
+    if (paymentMode === 'unified' && unifiedPaymentMethod === 'PACKAGE') {
+      if (services && services.length > 0) {
+        const totalServicePrice = services.reduce((sum, s) => sum + Number(s.price), 0);
+        packageDiscountAmount = totalServicePrice;
+        subtotal = 0;
+        originalAmount = totalServicePrice;
+      } else {
+        packageDiscountAmount = amount;
+        subtotal = 0;
+        originalAmount = amount;
+      }
     }
 
     // 应用会员折扣
@@ -486,12 +1247,38 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     // 只有当subtotal > 0时才计算税费（package支付时subtotal为0，不计税）
     const taxAmount = subtotal > 0 ? subtotal * taxRate : 0;
 
-    // 计算小费金额（基于折扣后的价格计算）
+    // 计算小费金额
+    // 套餐支付模式：小费基于服务原价计算（因为服务费用已被套餐抵扣）
+    // 非套餐支付：小费基于折扣后的价格计算
     let tipAmount = 0;
+    let tipBaseAmount = subtotal; // 默认基于subtotal
+
+    // 判断是否为套餐支付模式
+    const isPackagePayment =
+      (!services && paymentMethod === 'PACKAGE') || // 单服务套餐支付
+      (paymentMode === 'unified' && unifiedPaymentMethod === 'PACKAGE'); // 多服务统一套餐支付
+
+    const isGiftCardPayment =
+      (!services && paymentMethod === 'GIFT_CARD') || // 单服务礼品卡支付
+      (paymentMode === 'unified' && unifiedPaymentMethod === 'GIFT_CARD') || // 多服务统一礼品卡支付
+      (services && services.some(s => servicePaymentMethods[s.id] === 'GIFT_CARD')); // 多服务混合支付中有礼品卡
+
+    // 套餐支付：小费基于服务原价
+    if (isPackagePayment) {
+      if (services && services.length > 0) {
+        // 多服务场景：累加所有服务原价
+        tipBaseAmount = services.reduce((sum, s) => sum + Number(s.price), 0);
+      } else {
+        // 单服务场景：使用原始金额
+        tipBaseAmount = amount;
+      }
+    }
+
+    // 计算小费：自定义金额优先，否则按百分比计算
     if (customTipAmount && parseFloat(customTipAmount) > 0) {
       tipAmount = parseFloat(customTipAmount);
-    } else if (tipPercentage > 0) {
-      tipAmount = subtotal * (tipPercentage / 100);
+    } else if (tipPercentage > 0 && tipBaseAmount > 0) {
+      tipAmount = tipBaseAmount * (tipPercentage / 100);
     }
 
     let totalAmount = subtotal + taxAmount + tipAmount; // 总金额 = 折扣后小计 + 税额 + 小费
@@ -528,12 +1315,15 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
     return {
       originalAmount, // 原始金额（折扣前）
+      packageDiscountAmount, // 套餐抵扣金额
       discountAmount, // 折扣金额
       discountPercentage, // 折扣比例
       subtotal: adjustedSubtotal, // 调整后的小计
       taxAmount: adjustedTaxAmount, // 调整后的税额
       tipAmount: adjustedTipAmount, // 调整后的小费
       totalAmount,
+      isPackagePayment, // 是否为套餐支付模式
+      isGiftCardPayment, // 是否为礼品卡支付模式
     };
   };
 
@@ -576,14 +1366,23 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       }
 
       // 确定要发送的packageId和packageName
-      // 多服务场景：收集所有选择了套餐支付的服务的packageId
+      // 统一支付模式：使用unifiedPackageId
+      // 混合支付模式：收集所有选择了套餐支付的服务的packageId
       // 单服务场景：使用selectedPackageId
       let packageIdToSend;
       let packageNameToSend;
       let serviceNameToSend;
 
-      if (services && services.length > 1) {
-        // 多服务场景：将所有套餐ID作为数组发送
+      if (paymentMode === 'unified' && unifiedPaymentMethod === 'PACKAGE') {
+        // 统一支付+套餐模式：使用统一选择的套餐
+        packageIdToSend = unifiedPackageId;
+        const selectedPkg = customerPackages.find(p => p.id === unifiedPackageId);
+        packageNameToSend = selectedPkg?.package_name || 'Package';
+        serviceNameToSend = services && services.length > 0
+          ? services.map(s => s.name).join(', ')
+          : serviceName;
+      } else if (services && services.length > 1) {
+        // 混合支付模式-多服务场景：将所有套餐ID作为数组发送
         const packageIds = services
           .filter(service => servicePaymentMethods[service.id] === 'PACKAGE')
           .map(service => servicePackageIds[service.id])
@@ -700,81 +1499,290 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       if (services && services.length > 1) {
         const servicePayments: ServicePayment[] = [];
 
-        // 检查是否有服务需要套餐支付和验证码
-        const hasPackagePayment = services.some(
-          service => servicePaymentMethods[service.id] === 'PACKAGE'
-        );
-
-        // 如果有套餐支付，统一验证一次验证码（避免重复验证）
-        if (hasPackagePayment) {
-          if (!verificationSent) {
-            setError(t('payment.pleaseVerify'));
+        // 统一支付模式
+        if (paymentMode === 'unified') {
+          // 验证统一支付方式
+          if (!unifiedPaymentMethod) {
+            setError(t('payment.pleaseSelectPaymentMethod'));
             setLoading(false);
             return;
           }
 
-          // 只验证一次验证码
-          const verified = await verifyAndProceed();
-          if (!verified) {
-            setLoading(false);
-            return;
-          }
-        }
-
-        // 为每个服务构建支付信息
-        for (const service of services) {
-          const payMethod = servicePaymentMethods[service.id];
-
-          if (!payMethod) {
-            setError(t('payment.pleaseSelectPaymentMethod', `请为服务 "${service.name}" 选择支付方式`));
-            setLoading(false);
-            return;
-          }
-
-          // 如果是套餐支付，检查是否选择了套餐
-          if (payMethod === 'PACKAGE') {
-            const packageId = servicePackageIds[service.id];
-
-            if (!packageId) {
-              setError(t('payment.pleaseSelectPackageForService', `请为服务 "${service.name}" 选择套餐`));
+          // 如果是套餐支付，需要验证码和套餐选择
+          if (unifiedPaymentMethod === 'PACKAGE') {
+            if (!unifiedPackageId) {
+              setError(t('payment.pleaseSelectPackage'));
               setLoading(false);
               return;
             }
 
-            servicePayments.push({
-              serviceId: service.id,
-              paymentMethod: payMethod,
-              customerPackageId: packageId,
-              verificationCodeId: verificationId || undefined,
-            });
+            if (!verificationSent) {
+              setError(t('payment.pleaseVerify'));
+              setLoading(false);
+              return;
+            }
+
+            const verified = await verifyAndProceed();
+            if (!verified) {
+              setLoading(false);
+              return;
+            }
+
+            // 为所有服务使用同一个套餐
+            for (const service of services) {
+              servicePayments.push({
+                serviceId: service.id,
+                paymentMethod: unifiedPaymentMethod,
+                customerPackageId: unifiedPackageId,
+                verificationCodeId: verificationId || undefined,
+              });
+            }
+          } else if (unifiedPaymentMethod === 'GIFT_CARD') {
+            // 礼品卡支付
+            const giftCardAmount = parseFloat(unifiedGiftCardAmount || '0');
+
+            if (giftCardAmount <= 0) {
+              setError(t('payment.pleaseEnterGiftCardAmount', { serviceName: '所有服务' }));
+              setLoading(false);
+              return;
+            }
+
+            // 检查礼品卡金额是否超过订单总额
+            if ((giftCardAmount - amounts.totalAmount) > 0.01) {
+              setError(t('payment.giftCardExceedsAmount', { amount: amounts.totalAmount.toFixed(2) }));
+              setLoading(false);
+              return;
+            }
+
+            // 如果礼品卡金额不足，需要补充支付方式（礼品卡应该覆盖包括税费和小费在内的所有金额）
+            if ((amounts.totalAmount - giftCardAmount) > 0.01) {
+              if (!unifiedAdditionalPaymentMethod) {
+                setError(t('payment.pleaseSelectAdditionalPaymentMethod'));
+                setLoading(false);
+                return;
+              }
+
+              for (const service of services) {
+                servicePayments.push({
+                  serviceId: service.id,
+                  paymentMethod: unifiedPaymentMethod,
+                  giftCardAmount: giftCardAmount / services.length, // 平均分配
+                  additionalPaymentMethod: unifiedAdditionalPaymentMethod,
+                });
+              }
+            } else {
+              // 礼品卡金额足够
+              for (const service of services) {
+                servicePayments.push({
+                  serviceId: service.id,
+                  paymentMethod: unifiedPaymentMethod,
+                  giftCardAmount: giftCardAmount / services.length, // 平均分配
+                });
+              }
+            }
           } else {
-            // 其他支付方式
-            servicePayments.push({
-              serviceId: service.id,
-              paymentMethod: payMethod,
-            });
+            // 其他支付方式（信用卡、借记卡、现金）
+            for (const service of services) {
+              servicePayments.push({
+                serviceId: service.id,
+                paymentMethod: unifiedPaymentMethod,
+              });
+            }
           }
+
+          // 使用 useEffect 自动设置的小费支付方式
+          let finalTipPaymentMethod = tipPaymentMethod;
+          if (!finalTipPaymentMethod && amounts.tipAmount > 0) {
+            // 如果没有选择小费支付方式，自动使用订单的主要支付方式
+            finalTipPaymentMethod = unifiedPaymentMethod;
+          }
+
+          // 计算补充支付金额（如果使用礼品卡且有补充支付方式）
+          let additionalPaymentAmountValue: number | undefined = undefined;
+          if (unifiedPaymentMethod === 'GIFT_CARD' && unifiedAdditionalPaymentMethod) {
+            const currentGiftCardAmount = parseFloat(unifiedGiftCardAmount || '0');
+            const totalAmountWithTip = amounts.subtotal + amounts.taxAmount + amounts.tipAmount;
+            const baseAdditionalAmount = totalAmountWithTip - currentGiftCardAmount;
+
+            // 只有当补充支付金额大于0时才设置，避免负数
+            additionalPaymentAmountValue = baseAdditionalAmount > 0 ? baseAdditionalAmount : undefined;
+          }
+
+          await onSuccess(unifiedPaymentMethod, undefined, undefined, servicePayments, {
+            taxRate,
+            taxAmount: amounts.taxAmount,
+            tipAmount: amounts.tipAmount,
+            tipPercentage,
+            subtotal: amounts.subtotal,
+            totalAmount: amounts.totalAmount,
+            tipPaymentMethod: finalTipPaymentMethod || undefined, // 添加小费支付方式
+          }, paymentNotes.trim() || undefined,
+          unifiedPaymentMethod === 'GIFT_CARD' ? parseFloat(unifiedGiftCardAmount || '0') : undefined,
+          unifiedGiftCardNumber,
+          unifiedAdditionalPaymentMethod || undefined,
+          additionalPaymentAmountValue,
+          'unified'); // 统一支付模式
+
+          // 支付成功，重置表单并关闭对话框
+          resetForm();
+          onClose();
+        } else {
+          // 混合支付模式
+          // 验证：如果有小费，必须选择小费支付方式
+          const hasTip = tipPercentage > 0 || (customTipAmount && parseFloat(customTipAmount) > 0);
+          if (hasTip && !tipPaymentMethod) {
+            setError(t('payment.pleaseSelectTipPaymentMethod', '请选择小费支付方式'));
+            setLoading(false);
+            return;
+          }
+
+          // 检查是否有服务需要套餐支付和验证码
+          const hasPackagePayment = services.some(
+            service => servicePaymentMethods[service.id] === 'PACKAGE'
+          );
+
+          // 如果有套餐支付，统一验证一次验证码（避免重复验证）
+          if (hasPackagePayment) {
+            if (!verificationSent) {
+              setError(t('payment.pleaseVerify'));
+              setLoading(false);
+              return;
+            }
+
+            // 只验证一次验证码
+            const verified = await verifyAndProceed();
+            if (!verified) {
+              setLoading(false);
+              return;
+            }
+          }
+
+          // 为每个服务构建支付信息
+          for (const service of services) {
+            const payMethod = servicePaymentMethods[service.id];
+
+            if (!payMethod) {
+              setError(t('payment.pleaseSelectPaymentMethod', `请为服务 "${service.name}" 选择支付方式`));
+              setLoading(false);
+              return;
+            }
+
+            // 如果是套餐支付，检查是否选择了套餐
+            if (payMethod === 'PACKAGE') {
+              const packageId = servicePackageIds[service.id];
+
+              if (!packageId) {
+                setError(t('payment.pleaseSelectPackageForService', `请为服务 "${service.name}" 选择套餐`));
+                setLoading(false);
+                return;
+              }
+
+              servicePayments.push({
+                serviceId: service.id,
+                paymentMethod: payMethod,
+                customerPackageId: packageId,
+                verificationCodeId: verificationId || undefined,
+              });
+            } else if (payMethod === 'GIFT_CARD') {
+              // 礼品卡支付，检查是否输入了金额
+              const giftCardAmount = parseFloat(serviceGiftCardAmounts[service.id] || '0');
+              // 使用实际应付金额（包含折扣和分摊税费）
+              const actualAmount = serviceActualAmounts[service.id] || Number(service.price);
+
+              if (giftCardAmount <= 0) {
+                setError(t('payment.pleaseEnterGiftCardAmount', { serviceName: service.name }));
+                setLoading(false);
+                return;
+              }
+
+              // 检查礼品卡金额是否超过实际应付金额
+              if ((giftCardAmount - actualAmount) > 0.01) {
+                setError(t('payment.giftCardExceedsAmount', { amount: actualAmount.toFixed(2) }));
+                setLoading(false);
+                return;
+              }
+
+              // 如果礼品卡金额小于实际应付金额，需要选择补充支付方式
+              if ((actualAmount - giftCardAmount) > 0.01) {
+                const additionalMethod = serviceAdditionalPaymentMethods[service.id];
+                if (!additionalMethod) {
+                  setError(t('payment.insufficientGiftCardPleaseSelectAdditional', { serviceName: service.name }));
+                  setLoading(false);
+                  return;
+                }
+
+                // 计算补充支付金额 = 实际应付金额 - 礼品卡金额
+                const additionalAmount = actualAmount - giftCardAmount;
+
+                servicePayments.push({
+                  serviceId: service.id,
+                  paymentMethod: payMethod,
+                  giftCardAmount: giftCardAmount,
+                  giftCardNumber: serviceGiftCardNumbers[service.id] || undefined,
+                  additionalPaymentMethod: additionalMethod,
+                  additionalPaymentAmount: additionalAmount,
+                });
+              } else {
+                // 礼品卡金额足够支付
+                servicePayments.push({
+                  serviceId: service.id,
+                  paymentMethod: payMethod,
+                  giftCardAmount: giftCardAmount,
+                  giftCardNumber: serviceGiftCardNumbers[service.id] || undefined,
+                });
+              }
+            } else {
+              // 其他支付方式（CASH, CREDIT_CARD, DEBIT_CARD等）
+              // 在混合支付模式下，传递该服务的实际应付金额
+              const serviceAmount = serviceActualAmounts[service.id] || Number(service.price);
+
+              servicePayments.push({
+                serviceId: service.id,
+                paymentMethod: payMethod,
+                serviceAmount: serviceAmount, // 传递服务实际应付金额
+              });
+            }
+          }
+
+          // 确定整体支付方式
+          // 如果所有服务都使用同一种支付方式，使用该方式；否则使用 MIXED
+          const uniquePaymentMethods = new Set(servicePayments.map(sp => sp.paymentMethod));
+
+          let overallPaymentMethod = 'MIXED';
+          if (uniquePaymentMethods.size === 1) {
+            // 所有服务使用同一种支付方式
+            overallPaymentMethod = servicePayments[0].paymentMethod;
+          }
+
+          // 如果没有选择小费支付方式，自动使用订单的主要支付方式
+          let finalTipPaymentMethod = tipPaymentMethod;
+          if (!finalTipPaymentMethod && amounts.tipAmount > 0) {
+            if (uniquePaymentMethods.size === 1) {
+              // 如果所有服务使用同一种支付方式，小费也使用该方式
+              finalTipPaymentMethod = servicePayments[0].paymentMethod;
+            } else {
+              // 混合支付情况下，默认使用现金支付小费
+              finalTipPaymentMethod = 'CASH';
+            }
+          }
+
+          // 调用回调，传递多服务支付信息和税率小费信息
+          await onSuccess(overallPaymentMethod, undefined, undefined, servicePayments, {
+            taxRate,
+            taxAmount: amounts.taxAmount,
+            tipAmount: amounts.tipAmount,
+            tipPercentage,
+            subtotal: amounts.subtotal,
+            totalAmount: amounts.totalAmount,
+            tipPaymentMethod: finalTipPaymentMethod || undefined, // 添加小费支付方式
+          }, paymentNotes.trim() || undefined,
+          undefined, undefined, undefined, undefined,
+          paymentMode); // 传递支付模式：unified 或 mixed
+
+          // 支付成功，重置表单并关闭对话框
+          resetForm();
+          onClose();
         }
-
-        // 确定整体支付方式
-        // 如果所有服务都使用同一种支付方式，使用该方式；否则使用 MIXED
-        const uniquePaymentMethods = new Set(servicePayments.map(sp => sp.paymentMethod));
-
-        let overallPaymentMethod = 'MIXED';
-        if (uniquePaymentMethods.size === 1) {
-          // 所有服务使用同一种支付方式
-          overallPaymentMethod = servicePayments[0].paymentMethod;
-        }
-
-        // 调用回调，传递多服务支付信息和税率小费信息
-        await onSuccess(overallPaymentMethod, undefined, undefined, servicePayments, {
-          taxRate,
-          taxAmount: amounts.taxAmount,
-          tipAmount: amounts.tipAmount,
-          tipPercentage,
-          subtotal: amounts.subtotal,
-          totalAmount: amounts.totalAmount,
-        }, paymentNotes.trim() || undefined);
       } else {
         // 单服务场景 - 保持原有逻辑
         let packageIdToUse = selectedPackageId;
@@ -805,6 +1813,23 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           }
         }
 
+        // 使用 useEffect 自动设置的小费支付方式
+        let finalTipPaymentMethod = tipPaymentMethod;
+        if (!finalTipPaymentMethod && amounts.tipAmount > 0) {
+          finalTipPaymentMethod = paymentMethod;
+        }
+
+        // 计算补充支付金额（如果是礼品卡支付且有补充支付方式）
+        let additionalPaymentAmountValue: number | undefined = undefined;
+        if (paymentMethod === 'GIFT_CARD' && unifiedAdditionalPaymentMethod) {
+          const currentGiftCardAmount = parseFloat(giftCardAmount || '0');
+          const totalAmountWithTip = amounts.subtotal + amounts.taxAmount + amounts.tipAmount;
+          const baseAdditionalAmount = totalAmountWithTip - currentGiftCardAmount;
+
+          // 只有当补充支付金额大于0时才设置，避免负数
+          additionalPaymentAmountValue = baseAdditionalAmount > 0 ? baseAdditionalAmount : undefined;
+        }
+
         await onSuccess(
           paymentMethod,
           paymentMethod === 'PACKAGE' ? packageIdToUse || undefined : undefined,
@@ -817,12 +1842,20 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             tipPercentage,
             subtotal: amounts.subtotal,
             totalAmount: amounts.totalAmount,
+            tipPaymentMethod: finalTipPaymentMethod || undefined, // 添加小费支付方式
           },
-          paymentNotes.trim() || undefined
+          paymentNotes.trim() || undefined,
+          paymentMethod === 'GIFT_CARD' ? parseFloat(giftCardAmount || '0') : undefined,
+          giftCardNumber,
+          unifiedAdditionalPaymentMethod || undefined,
+          additionalPaymentAmountValue,
+          'single' // 单服务支付模式
         );
       }
 
-      handleClose();
+      // 支付成功，重置表单并关闭对话框
+      resetForm();
+      onClose();
     } catch (err: any) {
       console.error('Payment failed:', err);
       setError(err.message || t('payment.paymentFailed'));
@@ -831,15 +1864,20 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     }
   };
 
-  const handleClose = () => {
+  // 重置表单状态（不关闭对话框）
+  const resetForm = () => {
     setPaymentMethod('CREDIT_CARD');
     setSelectedPackageId(null);
     setServicePaymentMethods({});
     setServicePackageIds({});
+    setServiceGiftCardAmounts({});
+    setServiceGiftCardNumbers({});
+    setServiceAdditionalPaymentMethods({});
     setError(null);
     setVerificationId(null);
     setVerificationCode('');
     setVerificationSent(false);
+    setSendingCode(false);
     setVerificationError(null);
     setCountdown(0);
     setTipPercentage(0);
@@ -850,6 +1888,23 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
     setAmountModified(false);
     setPaymentNotes('');
     setOriginalTotalAmount(0); // 重置原始金额
+    // 重置礼品卡状态
+    setGiftCardAmount('');
+    setGiftCardNumber('');
+    setIsMixedPayment(false);
+    setMixedPaymentMethods({});
+    // 重置统一支付模式状态
+    setPaymentMode('unified');
+    setUnifiedPaymentMethod('CREDIT_CARD');
+    setUnifiedPackageId(null);
+    setUnifiedGiftCardAmount('');
+    setUnifiedGiftCardNumber('');
+    setUnifiedAdditionalPaymentMethod('');
+    setTipPaymentMethod(''); // 空字符串表示跟随订单支付方式
+  };
+
+  const handleClose = () => {
+    resetForm();
     onClose();
   };
 
@@ -918,6 +1973,12 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
         description: t('payment.cashDescription'),
       },
       {
+        value: 'GIFT_CARD',
+        label: t('payment.giftCard'),
+        icon: GiftCardIcon,
+        description: t('payment.giftCardDescription'),
+      },
+      {
         value: 'PACKAGE',
         label: t('payment.package'),
         icon: PackageIcon,
@@ -945,11 +2006,11 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             sm: 0,
             md: '400px !important',
           },
-          // Use dynamic width for sliding effect - increased to 480px
+          // Use dynamic width for sliding effect - 统一宽度为700px
           width: {
             xs: '100%',
             sm: '100%',
-            md: open ? '480px !important' : '0px !important', // Animate width from 0 to 480px
+            md: open ? '700px !important' : '0px !important',
           },
           // No transform on desktop
           transform: {
@@ -979,7 +2040,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           width: {
             xs: '100%',
             sm: '100%',
-            md: '480px', // Desktop: increased width for better data display
+            md: '700px', // 统一宽度，单服务和多服务保持一致
           },
           maxWidth: '100vw',
           height: '100%',
@@ -1009,7 +2070,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
       {/* Inner container to maintain fixed width during animation */}
       <Box
         sx={{
-          width: '480px', // Fixed width to prevent content reflow during animation - increased to 480px
+          width: '700px', // 统一固定宽度，单服务和多服务保持一致
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -1090,9 +2151,35 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 fontSize: '0.9375rem',
               }}
             >
-              {CurrencyUtils.formatAmount(amounts.discountAmount > 0 ? amounts.originalAmount : amounts.subtotal)}
+              {CurrencyUtils.formatAmount((amounts.packageDiscountAmount > 0 || amounts.discountAmount > 0) ? amounts.originalAmount : amounts.subtotal)}
             </Typography>
           </Box>
+
+          {/* Package Discount */}
+          {amounts.packageDiscountAmount > 0 && (
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#10b981',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
+                {t('payment.packageDiscount', '套餐抵扣')}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#10b981',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                }}
+              >
+                -{CurrencyUtils.formatAmount(amounts.packageDiscountAmount)}
+              </Typography>
+            </Box>
+          )}
 
           {/* Member Discount */}
           {amounts.discountAmount > 0 && (
@@ -1141,7 +2228,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           )}
 
           {/* Subtotal after discount */}
-          {amounts.discountAmount > 0 && (
+          {(amounts.packageDiscountAmount > 0 || amounts.discountAmount > 0) && (
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
               <Typography
                 variant="body2"
@@ -1192,16 +2279,42 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           {/* Tip */}
           {amounts.tipAmount > 0 && (
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#64748b',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {t('payment.tip', 'Tip')}
-                {tipPercentage > 0 && ` (${tipPercentage}%)`}
-              </Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#64748b',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {t('payment.tip', 'Tip')}
+                  {tipPercentage > 0 && ` (${tipPercentage}%)`}
+                </Typography>
+                {/* 套餐支付或礼品卡支付或多服务混合支付模式下显示小费支付方式 */}
+                {(amounts.isPackagePayment || amounts.isGiftCardPayment || (services && services.length > 1 && paymentMode === 'mixed')) && tipPaymentMethod && (
+                  <Chip
+                    label={
+                      tipPaymentMethod === 'CASH' ? t('payment.cash') :
+                      tipPaymentMethod === 'CREDIT_CARD' ? t('payment.creditCard') :
+                      tipPaymentMethod === 'DEBIT_CARD' ? t('payment.debitCard') :
+                      tipPaymentMethod === 'GIFT_CARD' ? t('payment.giftCard') : ''
+                    }
+                    size="small"
+                    sx={{
+                      height: 18,
+                      fontSize: '0.625rem',
+                      fontWeight: 500,
+                      bgcolor: alpha('#7BC68C', 0.1),
+                      color: '#7BC68C',
+                      border: 'none',
+                      '& .MuiChip-label': {
+                        px: '6px',
+                        py: 0,
+                      },
+                    }}
+                  />
+                )}
+              </Box>
               <Typography
                 variant="body2"
                 sx={{
@@ -1365,7 +2478,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
             {/* 快捷选项按钮 */}
             <Stack direction="row" spacing={1.5} mb={showCustomTip ? 1 : 0}>
-              {[0, 10, 15, 20, 'custom'].map((option) => {
+              {[0, 12, 15, 18, 20, 'custom'].map((option) => {
                 const isCustom = option === 'custom';
                 const isSelected = isCustom
                   ? showCustomTip
@@ -1460,6 +2573,140 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                 }}
               />
             )}
+
+            {/* 混合支付模式：选择小费后的醒目提示 */}
+            {services && services.length > 1 && paymentMode === 'mixed' && (tipPercentage > 0 || (customTipAmount && parseFloat(customTipAmount) > 0)) && !tipPaymentMethod && (
+              <Alert
+                severity="warning"
+                sx={{
+                  mt: 1.5,
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': {
+                    fontSize: '1.25rem',
+                  },
+                  bgcolor: alpha('#f59e0b', 0.1),
+                  border: '1px solid',
+                  borderColor: alpha('#f59e0b', 0.3),
+                  color: '#92400e',
+                }}
+              >
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
+                  {t('payment.pleaseSelectTipPaymentMethodWarning', '请选择小费的支付方式')}
+                </Typography>
+              </Alert>
+            )}
+
+            {/* 小费支付方式 - 套餐支付或礼品卡支付或多服务混合支付且有小费时显示 - 简化为inline选择 */}
+            {(amounts.isPackagePayment || amounts.isGiftCardPayment || (services && services.length > 1 && paymentMode === 'mixed')) && (tipPercentage > 0 || (customTipAmount && parseFloat(customTipAmount) > 0)) && (
+              <Box sx={{ mt: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#64748b',
+                      fontSize: '0.8125rem',
+                      flexShrink: 0,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {t('payment.tipPaymentMethod', '小费支付方式')}
+                    {/* 混合支付模式下显示必填标记 */}
+                    {services && services.length > 1 && paymentMode === 'mixed' && (
+                      <Typography component="span" sx={{ color: '#ef4444', ml: 0.5 }}>*</Typography>
+                    )}:
+                  </Typography>
+                  <Select
+                    value={tipPaymentMethod}
+                    onChange={(e) => setTipPaymentMethod(e.target.value)}
+                    size="small"
+                    error={services && services.length > 1 && paymentMode === 'mixed' && !tipPaymentMethod}
+                    renderValue={(value) => {
+                      const iconStyle = { fontSize: '1.125rem', mr: 0.75, color: '#64748b' };
+                      return (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {value === 'CASH' && <CashIcon sx={iconStyle} />}
+                          {value === 'CREDIT_CARD' && <CreditCardIcon sx={iconStyle} />}
+                          {value === 'DEBIT_CARD' && <DebitCardIcon sx={iconStyle} />}
+                          {value === 'GIFT_CARD' && <GiftCardIcon sx={iconStyle} />}
+                          <span>
+                            {value === 'CASH' && t('payment.cash')}
+                            {value === 'CREDIT_CARD' && t('payment.creditCard')}
+                            {value === 'DEBIT_CARD' && t('payment.debitCard')}
+                            {value === 'GIFT_CARD' && t('payment.giftCard')}
+                          </span>
+                        </Box>
+                      );
+                    }}
+                    MenuProps={{
+                      container: container || undefined,
+                      disablePortal: false,
+                      sx: {
+                        zIndex: (container && container !== document.body) ? 10001 : 1302,
+                      },
+                      PaperProps: {
+                        sx: {
+                          mt: 0.5,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          borderRadius: 1.5,
+                        },
+                      },
+                    }}
+                    sx={{
+                      fontSize: '0.8125rem',
+                      minWidth: 140,
+                      flex: 1,
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: (services && services.length > 1 && paymentMode === 'mixed' && !tipPaymentMethod) ? '#ef4444' : '#e6eaee',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: (services && services.length > 1 && paymentMode === 'mixed' && !tipPaymentMethod) ? '#ef4444' : '#7BC68C',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: (services && services.length > 1 && paymentMode === 'mixed' && !tipPaymentMethod) ? '#ef4444' : '#7BC68C',
+                        borderWidth: '1.5px',
+                      },
+                      '& .MuiSelect-select': {
+                        py: 0.75,
+                        fontSize: '0.8125rem',
+                        fontWeight: 500,
+                        color: '#0a0f1a',
+                      },
+                    }}
+                  >
+                    <MenuItem value="CASH" sx={{ fontSize: '0.8125rem', py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CashIcon sx={{ fontSize: '1.125rem', color: '#64748b' }} />
+                      {t('payment.cash')}
+                    </MenuItem>
+                    <MenuItem value="CREDIT_CARD" sx={{ fontSize: '0.8125rem', py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CreditCardIcon sx={{ fontSize: '1.125rem', color: '#64748b' }} />
+                      {t('payment.creditCard')}
+                    </MenuItem>
+                    <MenuItem value="DEBIT_CARD" sx={{ fontSize: '0.8125rem', py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DebitCardIcon sx={{ fontSize: '1.125rem', color: '#64748b' }} />
+                      {t('payment.debitCard')}
+                    </MenuItem>
+                    <MenuItem value="GIFT_CARD" sx={{ fontSize: '0.8125rem', py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <GiftCardIcon sx={{ fontSize: '1.125rem', color: '#64748b' }} />
+                      {t('payment.giftCard')}
+                    </MenuItem>
+                  </Select>
+                </Box>
+                {/* 混合支付模式下显示提示文本 */}
+                {services && services.length > 1 && paymentMode === 'mixed' && !tipPaymentMethod && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#ef4444',
+                      fontSize: '0.75rem',
+                      mt: 0.5,
+                      display: 'block',
+                    }}
+                  >
+                    {t('payment.tipPaymentMethodRequired', '请选择小费的支付方式')}
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
 
           <Divider sx={{ my: 1.5 }} />
@@ -1530,436 +2777,592 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
           </Box>
         </Box>
 
-        {/* Payment Method Selection */}
-        {/* 单服务场景 - 显示原来的支付方式选择 */}
-        {(!services || services.length <= 1) && (
-          <Box sx={{ mb: 3, mt: 3 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                color: '#0a0f1a',
-                mb: 2.5,
-                fontSize: '0.9375rem',
-              }}
-            >
-              {t('payment.paymentMethod')}
-            </Typography>
-
-            <RadioGroup
-              value={paymentMethod}
-              onChange={(e) => {
-                setPaymentMethod(e.target.value);
+        {/* 多服务场景 - 支付模式切换（仅多服务时显示） */}
+        {services && services.length > 1 && (
+          <Box sx={{ mt: 3, mb: 2.5 }}>
+            <Tabs
+              value={paymentMode === 'unified' ? 0 : 1}
+              onChange={(_, newValue) => {
+                setPaymentMode(newValue === 0 ? 'unified' : 'mixed');
                 setError(null);
-                setVerificationError(null);
+              }}
+              sx={{
+                minHeight: 48,
+                '& .MuiTabs-flexContainer': {
+                  gap: 2,
+                },
+                '& .MuiTab-root': {
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                  textTransform: 'none',
+                  minHeight: 48,
+                  minWidth: 120,
+                  color: '#64748b',
+                  '&.Mui-selected': {
+                    fontWeight: 600,
+                    color: '#10b981',
+                  },
+                },
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
+                  backgroundColor: '#10b981',
+                },
               }}
             >
-              <Stack spacing={1.5}>
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon;
-                  const isSelected = paymentMethod === method.value;
-                  const isDisabled = method.disabled || false;
-
-                  return (
-                    <Box
-                      key={method.value}
-                      onClick={() => {
-                        if (!isDisabled) {
-                          setPaymentMethod(method.value);
-                          setError(null);
-                          setVerificationError(null);
-                        }
-                      }}
-                      sx={{
-                        position: 'relative',
-                        borderRadius: 2.5,
-                        border: '2px solid',
-                        borderColor: isSelected ? '#10b981' : '#e6eaee',
-                        bgcolor: isSelected ? alpha('#10b981', 0.04) : '#ffffff',
-                        cursor: isDisabled ? 'not-allowed' : 'pointer',
-                        opacity: isDisabled ? 0.5 : 1,
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': !isDisabled ? {
-                          borderColor: isSelected ? '#10b981' : '#cbd5e1',
-                          transform: 'translateY(-1px)',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                        } : {},
-                      }}
-                    >
-                      <FormControlLabel
-                        value={method.value}
-                        control={
-                          <Radio
-                            sx={{
-                              color: '#cbd5e1',
-                              '&.Mui-checked': {
-                                color: '#10b981',
-                              },
-                            }}
-                          />
-                        }
-                        disabled={isDisabled}
-                        label={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 2,
-                              py: 1.5,
-                              pr: 2,
-                              width: '100%',
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 2,
-                                bgcolor: isSelected ? alpha('#10b981', 0.12) : '#f8fafc',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.2s',
-                              }}
-                            >
-                              <Icon
-                                sx={{
-                                  fontSize: 22,
-                                  color: isSelected ? '#10b981' : '#64748b',
-                                }}
-                              />
-                            </Box>
-                            <Box sx={{ flex: 1 }}>
-                              <Typography
-                                variant="body1"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: '#0a0f1a',
-                                  fontSize: '0.9375rem',
-                                }}
-                              >
-                                {method.label}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: '#64748b',
-                                  fontSize: '0.8125rem',
-                                  display: 'block',
-                                  mt: 0.25,
-                                }}
-                              >
-                                {method.description}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        }
-                        sx={{
-                          m: 0,
-                          width: '100%',
-                          '& .MuiFormControlLabel-label': {
-                            width: '100%',
-                          },
-                        }}
-                      />
-                      {isSelected && (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: 12,
-                            right: 12,
-                          }}
-                        >
-                          <CheckCircleIcon
-                            sx={{
-                              fontSize: 20,
-                              color: '#10b981',
-                            }}
-                          />
-                        </Box>
-                      )}
-                    </Box>
-                  );
-                })}
-              </Stack>
-            </RadioGroup>
+              <Tab label={t('payment.unifiedPayment', '统一支付')} />
+              <Tab label={t('payment.mixedPayment', '混合支付')} />
+            </Tabs>
           </Box>
         )}
 
-        {/* 多服务场景 - 为每个服务选择支付方式 */}
-        {services && services.length > 1 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                color: '#0a0f1a',
-                mb: 2.5,
-                fontSize: '0.9375rem',
-              }}
-            >
-              {t('payment.selectPaymentForEachService', '为每个服务选择支付方式')}
-            </Typography>
+        {/* 统一支付模式 - 单服务和多服务统一支付共用 */}
+        {(!services || paymentMode === 'unified') && (
+          <Box sx={{ mt: 2.5, mb: 3 }}>
+            {/* 支付方式选择 */}
+            <Box>
+              {renderPaymentMethodSelector(
+                services ? unifiedPaymentMethod : paymentMethod,
+                (value) => {
+                  if (services) {
+                    setUnifiedPaymentMethod(value);
+                  } else {
+                    setPaymentMethod(value);
+                    setVerificationError(null);
+                  }
+                  setError(null);
+                },
+                services && services.length > 1 // 多服务时才需要检查所有服务的套餐可用性
+              )}
 
-            <Stack spacing={3}>
-              {services.map((service, serviceIndex) => (
-                <Box
-                  key={service.id}
-                  sx={{
-                    p: 3,
-                    borderRadius: 2.5,
-                    bgcolor: '#f8fafc',
-                    border: '1px solid #e6eaee',
-                  }}
-                >
-                  {/* 服务信息 */}
-                  <Box sx={{ mb: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#0a0f1a' }}>
-                      {service.name}
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: '#10b981' }}>
-                      ${service.price}
-                    </Typography>
-                  </Box>
-
-                  {/* 支付方式选择 */}
-                  <RadioGroup
-                    value={servicePaymentMethods[service.id] || 'CREDIT_CARD'}
-                    onChange={(e) => {
-                      setServicePaymentMethods({
-                        ...servicePaymentMethods,
-                        [service.id]: e.target.value
-                      });
+                {/* 套餐选择 */}
+                {(((services && services.length > 0) && paymentMode === 'unified' && unifiedPaymentMethod === 'PACKAGE') ||
+                  (!services && paymentMethod === 'PACKAGE')) &&
+                  customerPackages.length > 0 &&
+                  renderPackageSelector(
+                    services ? unifiedPackageId : selectedPackageId,
+                    (value) => {
+                      if (services) {
+                        setUnifiedPackageId(value);
+                      } else {
+                        setSelectedPackageId(value);
+                      }
                       setError(null);
-                    }}
-                  >
-                    <Stack spacing={1.5}>
-                      {paymentMethods.map((method) => {
-                        const Icon = method.icon;
-                        const isSelected = servicePaymentMethods[service.id] === method.value;
-                        let isDisabled = method.disabled || false;
-                        let description = method.description;
+                    }
+                  )
+                }
 
-                        // 为 PACKAGE 方式计算该服务特定的可用套餐数
-                        if (method.value === 'PACKAGE' && !loadingPackages) {
-                          const availableForThisService = customerPackages.filter(
-                            pkg => ((pkg as any).service_remaining_map?.[service.id] || 0) > 0
-                          ).length;
+                {/* 套餐验证码 */}
+                {((services && paymentMode === 'unified' && unifiedPaymentMethod === 'PACKAGE' && unifiedPackageId) ||
+                  (!services && paymentMethod === 'PACKAGE' && selectedPackageId)) &&
+                  renderSmsVerification('unified-verification-code')
+                }
 
-                          if (availableForThisService === 0) {
-                            isDisabled = true;
-                            description = t('payment.noPackagesAvailable');
+                {/* 礼品卡输入 */}
+                {((services && unifiedPaymentMethod === 'GIFT_CARD') ||
+                  (!services && paymentMethod === 'GIFT_CARD')) && (
+                  <Box sx={{ mt: 2 }}>
+                    {renderGiftCardInput(
+                      services ? unifiedGiftCardAmount : giftCardAmount,
+                      (value) => {
+                        if (services) {
+                          setUnifiedGiftCardAmount(value);
+                          const amount = parseFloat(value) || 0;
+                          if (amount > 0 && (amounts.totalAmount - amount) > 0.01) {
+                            // 金额不足，需要补充支付
                           } else {
-                            description = t('payment.packageDescription', { count: availableForThisService });
+                            setUnifiedAdditionalPaymentMethod('');
+                          }
+                        } else {
+                          setGiftCardAmount(value);
+                          const amount = parseFloat(value) || 0;
+                          const totalAmount = amounts.totalAmount;
+                          // 自动检测是否需要混合支付
+                          if (amount > 0 && (totalAmount - amount) > 0.01) {
+                            setIsMixedPayment(true);
+                            setMixedPaymentMethods({ giftCard: amount });
+                          } else {
+                            setIsMixedPayment(false);
+                            setMixedPaymentMethods({});
                           }
                         }
+                        setError(null);
+                      },
+                      amounts.totalAmount,
+                      '#f8fafc'
+                    )}
 
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: '0.75rem',
+                        color: '#64748b',
+                        display: 'block',
+                        mb: 2,
+                      }}
+                    >
+                      {t('payment.orderTotal')}: {CurrencyUtils.formatAmount(amounts.totalAmount)}
+                    </Typography>
+
+                    {/* 礼品卡支付金额提示 */}
+                    {(() => {
+                      const giftAmount = parseFloat((services ? unifiedGiftCardAmount : giftCardAmount) || '0');
+                      const remaining = amounts.totalAmount - giftAmount;
+
+                      if (giftAmount <= 0) return null;
+
+                      // 超过订单总额：不显示任何提示（已有红色错误提示）
+                      if (giftAmount - amounts.totalAmount > 0.01) return null;
+
+                      // 金额合适（差值在0.01以内）：显示绿色成功
+                      if (Math.abs(remaining) <= 0.01) {
                         return (
-                          <Box
-                            key={method.value}
-                            onClick={() => {
-                              if (!isDisabled) {
-                                setServicePaymentMethods({
-                                  ...servicePaymentMethods,
-                                  [service.id]: method.value
-                                });
-                                setError(null);
-                              }
-                            }}
+                          <Chip
+                            icon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
+                            label={`${t('payment.giftCardPayment')}: ${CurrencyUtils.formatAmount(giftAmount)}`}
+                            size="small"
                             sx={{
-                              position: 'relative',
-                              borderRadius: 2,
-                              border: '1.5px solid',
-                              borderColor: isSelected ? '#10b981' : '#e6eaee',
-                              bgcolor: isSelected ? alpha('#10b981', 0.04) : '#ffffff',
-                              cursor: isDisabled ? 'not-allowed' : 'pointer',
-                              opacity: isDisabled ? 0.5 : 1,
-                              transition: 'all 0.2s',
-                              '&:hover': !isDisabled ? {
-                                borderColor: isSelected ? '#10b981' : '#cbd5e1',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                              } : {},
+                              bgcolor: alpha('#10b981', 0.1),
+                              color: '#059669',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                              mb: 1,
+                              '& .MuiChip-icon': {
+                                color: '#059669',
+                              },
                             }}
-                          >
-                            <FormControlLabel
-                              value={method.value}
-                              control={
-                                <Radio
-                                  sx={{
-                                    color: '#cbd5e1',
-                                    '&.Mui-checked': { color: '#10b981' },
-                                  }}
-                                />
-                              }
-                              disabled={isDisabled}
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, pr: 1, width: '100%' }}>
-                                  <Box
-                                    sx={{
-                                      width: 36,
-                                      height: 36,
-                                      borderRadius: 1.5,
-                                      bgcolor: isSelected ? alpha('#10b981', 0.12) : '#f8fafc',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <Icon sx={{ fontSize: 18, color: isSelected ? '#10b981' : '#64748b' }} />
-                                  </Box>
-                                  <Box sx={{ flex: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#0a0f1a', fontSize: '0.875rem' }}>
-                                      {method.label}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
-                                      {description}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                              }
-                              sx={{
-                                m: 0,
-                                width: '100%',
-                                '& .MuiFormControlLabel-label': { width: '100%' },
-                              }}
-                            />
-                            {isSelected && (
-                              <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
-                                <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />
-                              </Box>
-                            )}
-                          </Box>
+                          />
                         );
-                      })}
-                    </Stack>
-                  </RadioGroup>
+                      }
 
-                  {/* 如果选择了 PACKAGE，显示套餐选择 */}
-                  {servicePaymentMethods[service.id] === 'PACKAGE' && customerPackages.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontWeight: 600,
-                          color: '#475569',
-                          display: 'block',
-                          mb: 0.75,
-                          fontSize: '0.75rem',
-                        }}
-                      >
-                        Select Package
-                      </Typography>
-                      <FormControl fullWidth size="small">
-                        <Select
-                          value={servicePackageIds[service.id] || ''}
+                      // 金额不足：显示黄色警告和剩余金额
+                      return (
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                          <Chip
+                            label={`${t('payment.giftCardPayment')}: ${CurrencyUtils.formatAmount(giftAmount)}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha('#fbbf24', 0.1),
+                              color: '#d97706',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                            }}
+                          />
+                          <Chip
+                            label={`${t('payment.remainingAmount')}: ${CurrencyUtils.formatAmount(remaining)}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha('#d97706', 0.1),
+                              color: '#d97706',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                            }}
+                          />
+                        </Box>
+                      );
+                    })()}
+
+                    {/* 补充支付方式 */}
+                    {parseFloat((services ? unifiedGiftCardAmount : giftCardAmount) || '0') > 0 &&
+                     (amounts.totalAmount - parseFloat((services ? unifiedGiftCardAmount : giftCardAmount) || '0')) > 0.01 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 600,
+                            color: '#64748b',
+                            mb: 1,
+                            fontSize: '0.75rem',
+                            display: 'block',
+                          }}
+                        >
+                          {t('payment.additionalPaymentMethod')}
+                        </Typography>
+                        <RadioGroup
+                          value={unifiedAdditionalPaymentMethod}
                           onChange={(e) => {
-                            setServicePackageIds({
-                              ...servicePackageIds,
-                              [service.id]: Number(e.target.value)
-                            });
+                            setUnifiedAdditionalPaymentMethod(e.target.value);
                             setError(null);
                           }}
-                          displayEmpty
-                          MenuProps={{
-                            disablePortal: false,
-                            container: container || document.body,
-                            sx: {
-                              zIndex: 10001,
-                              '& .MuiPaper-root': {
-                                borderRadius: 2,
-                                mt: 0.5,
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                              }
+                          sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}
+                        >
+                          <FormControlLabel
+                            value="CREDIT_CARD"
+                            control={<Radio size="small" sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' } }} />}
+                            label={<Typography sx={{ fontSize: '0.8125rem' }}>{t('payment.creditCard')}</Typography>}
+                          />
+                          <FormControlLabel
+                            value="DEBIT_CARD"
+                            control={<Radio size="small" sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' } }} />}
+                            label={<Typography sx={{ fontSize: '0.8125rem' }}>{t('payment.debitCard')}</Typography>}
+                          />
+                          <FormControlLabel
+                            value="CASH"
+                            control={<Radio size="small" sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' } }} />}
+                            label={<Typography sx={{ fontSize: '0.8125rem' }}>{t('payment.cash')}</Typography>}
+                          />
+                        </RadioGroup>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          )}
+
+        {/* 混合支付模式 */}
+        {paymentMode === 'mixed' && services && (
+          <Box sx={{ mt: 2.5 }}>
+            <Stack spacing={2}>
+            {services.map((service, serviceIndex) => (
+              <Box
+                key={service.id}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: '#f8fafc',
+                  border: '1px solid #e6eaee',
+                }}
+              >
+                {/* 服务信息 - 紧凑显示 */}
+                <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#0a0f1a', fontSize: '0.875rem' }}>
+                    {service.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    {/* 显示实际应付金额（含折扣和分摊税费）或原价 */}
+                    {servicePaymentMethods[service.id] === 'PACKAGE' ? (
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#9ca3af', fontSize: '0.875rem', textDecoration: 'line-through' }}>
+                        ${service.price}
+                      </Typography>
+                    ) : serviceActualAmounts[service.id] ? (
+                      <>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#10b981', fontSize: '0.875rem' }}>
+                          {CurrencyUtils.formatAmount(serviceActualAmounts[service.id])}
+                        </Typography>
+                        {customer?.membershipTier?.discountRate && (
+                          <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }}>
+                            {t('payment.originalPrice', '原价')} ${service.price}
+                          </Typography>
+                        )}
+                      </>
+                    ) : (
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#10b981', fontSize: '0.875rem' }}>
+                        ${service.price}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* 支付方式选择 - 使用Grid布局横向展示 */}
+                <RadioGroup
+                  value={servicePaymentMethods[service.id] || 'CREDIT_CARD'}
+                  onChange={(e) => {
+                    setServicePaymentMethods({
+                      ...servicePaymentMethods,
+                      [service.id]: e.target.value
+                    });
+                    setError(null);
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: 1,
+                    }}
+                  >
+                    {paymentMethods.map((method) => {
+                      const Icon = method.icon;
+                      const isSelected = servicePaymentMethods[service.id] === method.value;
+                      let isDisabled = method.disabled || false;
+                      let description = method.description;
+
+                      // 为 PACKAGE 方式计算该服务特定的可用套餐数
+                      if (method.value === 'PACKAGE' && !loadingPackages) {
+                        const availableForThisService = customerPackages.filter(
+                          pkg => ((pkg as any).service_remaining_map?.[service.id] || 0) > 0
+                        ).length;
+
+                        if (availableForThisService === 0) {
+                          isDisabled = true;
+                          description = t('payment.noPackagesAvailable');
+                        } else {
+                          description = t('payment.packageDescription', { count: availableForThisService });
+                        }
+                      }
+
+                      return (
+                        <Box
+                          key={method.value}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              setServicePaymentMethods({
+                                ...servicePaymentMethods,
+                                [service.id]: method.value
+                              });
+                              setError(null);
                             }
                           }}
                           sx={{
-                            height: 40,
-                            borderRadius: 1.5,
-                            bgcolor: '#f8fafc',
-                            fontSize: '0.875rem',
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#e2e8f0',
-                              borderWidth: '1px',
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#cbd5e1',
-                            },
-                            '&.Mui-focused': {
-                              bgcolor: '#ffffff',
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#10b981',
-                              borderWidth: '1.5px',
-                            },
-                            '& .MuiSelect-select': {
-                              py: 1.25,
-                            }
+                            position: 'relative',
+                            borderRadius: 2,
+                            border: '1.5px solid',
+                            borderColor: isSelected ? '#10b981' : '#e6eaee',
+                            bgcolor: isSelected ? alpha('#10b981', 0.04) : '#ffffff',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            opacity: isDisabled ? 0.5 : 1,
+                            transition: 'all 0.2s',
+                            '&:hover': !isDisabled ? {
+                              borderColor: isSelected ? '#10b981' : '#cbd5e1',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                            } : {},
                           }}
                         >
-                          <MenuItem value="" disabled>
-                            <Typography sx={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-                              Choose a package...
-                            </Typography>
-                          </MenuItem>
-                          {customerPackages
-                            .filter(pkg => {
-                              // 检查此套餐是否包含当前服务且有剩余次数
-                              const serviceRemaining = (pkg as any).service_remaining_map?.[service.id] || 0;
-                              return serviceRemaining > 0;
-                            })
-                            .map((pkg) => {
-                              const serviceRemaining = (pkg as any).service_remaining_map?.[service.id] || 0;
-                              return (
-                                <MenuItem
-                                  key={pkg.id}
-                                  value={pkg.id}
+                          <FormControlLabel
+                            value={method.value}
+                            control={
+                              <Radio
+                                sx={{
+                                  color: '#cbd5e1',
+                                  '&.Mui-checked': { color: '#10b981' },
+                                }}
+                              />
+                            }
+                            disabled={isDisabled}
+                            label={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.25, pr: 0.5, width: '100%' }}>
+                                <Box
                                   sx={{
-                                    py: 1.25,
-                                    px: 2,
-                                    '&:hover': {
-                                      bgcolor: alpha('#10b981', 0.04),
-                                    },
-                                    '&.Mui-selected': {
-                                      bgcolor: alpha('#10b981', 0.08),
-                                      '&:hover': {
-                                        bgcolor: alpha('#10b981', 0.12),
-                                      }
-                                    }
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 1,
+                                    bgcolor: isSelected ? alpha('#10b981', 0.12) : '#f8fafc',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                   }}
                                 >
-                                  <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
-                                    <Typography sx={{ fontWeight: 500, color: '#0f172a', fontSize: '0.875rem' }}>
-                                      {pkg.package_name}
+                                  <Icon sx={{ fontSize: 16, color: isSelected ? '#10b981' : '#64748b' }} />
+                                </Box>
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#0a0f1a', fontSize: '0.8125rem' }}>
+                                    {method.label}
+                                  </Typography>
+                                  {description && (
+                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {description}
                                     </Typography>
-                                    <Chip
-                                      label={`${serviceRemaining} ${t('remaining')}`}
-                                      size="small"
-                                      sx={{
-                                        height: 22,
-                                        backgroundColor: '#dcfce7',
-                                        color: '#15803d',
-                                        fontWeight: 600,
-                                        fontSize: '0.6875rem',
-                                        borderRadius: 1.5,
-                                        '& .MuiChip-label': { px: 1.25, py: 0 }
-                                      }}
-                                    />
-                                  </Box>
-                                </MenuItem>
-                              );
-                            })}
-                        </Select>
-                      </FormControl>
-                    </Box>
-                  )}
-                </Box>
+                                  )}
+                                </Box>
+                              </Box>
+                            }
+                            sx={{
+                              m: 0,
+                              width: '100%',
+                              '& .MuiFormControlLabel-label': { width: '100%' },
+                            }}
+                          />
+                          {isSelected && (
+                            <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                              <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </RadioGroup>
+
+                {/* 如果选择了 PACKAGE，显示套餐选择 */}
+                {servicePaymentMethods[service.id] === 'PACKAGE' && customerPackages.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    {renderPackageSelector(
+                      servicePackageIds[service.id] || null,
+                      (value) => {
+                        setServicePackageIds({
+                          ...servicePackageIds,
+                          [service.id]: value
+                        });
+                        setError(null);
+                      },
+                      service
+                    )}
+                  </Box>
+                )}
+
+                {/* 如果选择了 GIFT_CARD，显示礼品卡金额输入 */}
+                {servicePaymentMethods[service.id] === 'GIFT_CARD' && (
+                  <Box sx={{ mt: 2 }}>
+                    {/* 礼品卡支付金额输入 */}
+                    {renderGiftCardInput(
+                      serviceGiftCardAmounts[service.id] || '',
+                      (value) => {
+                        setServiceGiftCardAmounts({
+                          ...serviceGiftCardAmounts,
+                          [service.id]: value,
+                        });
+                        const amount = parseFloat(value) || 0;
+                        const actualAmount = serviceActualAmounts[service.id] || Number(service.price);
+
+                        // 如果礼品卡金额小于实际应付金额，需要选择补充支付方式
+                        if (amount > 0 && (actualAmount - amount) > 0.01) {
+                          // 不自动设置，让用户选择（UI已显示选项，无需提示错误）
+                        } else {
+                          // 清除补充支付方式
+                          const newAdditionalMethods = { ...serviceAdditionalPaymentMethods };
+                          delete newAdditionalMethods[service.id];
+                          setServiceAdditionalPaymentMethods(newAdditionalMethods);
+                        }
+                      },
+                      serviceActualAmounts[service.id] || Number(service.price),
+                      '#ffffff'
+                    )}
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: '0.75rem',
+                        color: '#64748b',
+                        display: 'block',
+                        mb: 2,
+                      }}
+                    >
+                      {t('payment.actualAmount', '实际应付')}: {CurrencyUtils.formatAmount(serviceActualAmounts[service.id] || Number(service.price))}
+                      {serviceActualAmounts[service.id] && customer?.membershipTier?.discountRate && (
+                        <Typography component="span" sx={{ ml: 1, color: '#9ca3af', fontSize: '0.6875rem' }}>
+                          ({t('payment.originalPrice', '原价')} ${service.price})
+                        </Typography>
+                      )}
+                    </Typography>
+
+                    {/* 显示支付金额信息 - 简化版 */}
+                    {(() => {
+                      const giftAmount = parseFloat(serviceGiftCardAmounts[service.id] || '0');
+                      const actualAmount = serviceActualAmounts[service.id] || Number(service.price);
+                      const remaining = actualAmount - giftAmount;
+
+                      if (giftAmount <= 0) return null;
+
+                      // 超过实际应付金额：不显示任何提示（已有红色错误提示）
+                      if (giftAmount - actualAmount > 0.01) return null;
+
+                      // 金额合适（差值在0.01以内）：显示绿色成功
+                      if (Math.abs(remaining) <= 0.01) {
+                        return (
+                          <Chip
+                            icon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
+                            label={`${t('payment.giftCardPayment')}: ${CurrencyUtils.formatAmount(giftAmount)}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha('#10b981', 0.1),
+                              color: '#059669',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                              mb: 1,
+                              '& .MuiChip-icon': {
+                                color: '#059669',
+                              },
+                            }}
+                          />
+                        );
+                      }
+
+                      // 金额不足：显示黄色警告和剩余金额
+                      return (
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            flexWrap: 'wrap',
+                            mb: 1,
+                          }}
+                        >
+                          <Chip
+                            label={`${t('payment.giftCardPayment')}: ${CurrencyUtils.formatAmount(giftAmount)}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha('#fbbf24', 0.1),
+                              color: '#d97706',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                            }}
+                          />
+                          <Chip
+                            label={`${t('payment.remainingAmount')}: ${CurrencyUtils.formatAmount(remaining)}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha('#d97706', 0.1),
+                              color: '#d97706',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                            }}
+                          />
+                        </Box>
+                      );
+                    })()}
+
+                    {/* 混合支付选项 - 当礼品卡金额不足时 */}
+                    {parseFloat(serviceGiftCardAmounts[service.id] || '0') > 0 &&
+                     ((serviceActualAmounts[service.id] || Number(service.price)) - parseFloat(serviceGiftCardAmounts[service.id] || '0')) > 0.01 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 600,
+                            color: '#64748b',
+                            mb: 1,
+                            fontSize: '0.75rem',
+                            display: 'block',
+                          }}
+                        >
+                          {t('payment.additionalPaymentMethod')}
+                        </Typography>
+                        <RadioGroup
+                          value={serviceAdditionalPaymentMethods[service.id] || ''}
+                          onChange={(e) => {
+                            setServiceAdditionalPaymentMethods({
+                              ...serviceAdditionalPaymentMethods,
+                              [service.id]: e.target.value,
+                            });
+                            setError(null);
+                          }}
+                          sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}
+                        >
+                          <FormControlLabel
+                            value="CREDIT_CARD"
+                            control={<Radio size="small" sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' } }} />}
+                            label={<Typography sx={{ fontSize: '0.8125rem' }}>{t('payment.creditCard')}</Typography>}
+                          />
+                          <FormControlLabel
+                            value="DEBIT_CARD"
+                            control={<Radio size="small" sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' } }} />}
+                            label={<Typography sx={{ fontSize: '0.8125rem' }}>{t('payment.debitCard')}</Typography>}
+                          />
+                          <FormControlLabel
+                            value="CASH"
+                            control={<Radio size="small" sx={{ color: '#10b981', '&.Mui-checked': { color: '#10b981' } }} />}
+                            label={<Typography sx={{ fontSize: '0.8125rem' }}>{t('payment.cash')}</Typography>}
+                          />
+                        </RadioGroup>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
               ))}
             </Stack>
           </Box>
         )}
 
         {/* 多服务场景 - 验证码输入区域 */}
-        {services && services.length > 1 && (() => {
+        {services && services.length > 1 && paymentMode === 'mixed' && (() => {
           // 检查是否有服务选择了套餐支付
           const hasPackagePayment = services.some(
             service => servicePaymentMethods[service.id] === 'PACKAGE' && servicePackageIds[service.id]
@@ -2011,7 +3414,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         lineHeight: 1.2,
                       }}
                     >
-                      SMS Verification
+                      {t('payment.verification')}
                     </Typography>
                     <Typography
                       sx={{
@@ -2020,7 +3423,7 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                         mt: 0.25,
                       }}
                     >
-                      {verificationSent ? 'Enter 6-digit code' : 'Click to receive code'}
+                      {verificationSent ? t('payment.enterVerificationCode') : t('payment.sendCode')}
                     </Typography>
                   </Box>
                 </Box>
@@ -2055,11 +3458,11 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
                   {sendingCode ? (
                     <CircularProgress size={14} sx={{ color: '#ffffff' }} />
                   ) : countdown > 0 ? (
-                    `Resend (${countdown}s)`
+                    `${t('payment.resend')} (${countdown}s)`
                   ) : verificationSent ? (
-                    'Resend'
+                    t('payment.resend')
                   ) : (
-                    'Send Code'
+                    t('payment.sendCode')
                   )}
                 </Button>
               </Box>
@@ -2196,451 +3599,6 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             </Box>
           );
         })()}
-
-        {/* Package Selection - 仅在单服务场景显示 */}
-        {paymentMethod === 'PACKAGE' && customerPackages.length > 0 && (!services || services.length <= 1) && (
-          <Box
-            ref={packageSelectionRef}
-            sx={{
-              mt: 3,
-              p: 3,
-              borderRadius: 2.5,
-              bgcolor: '#fafbfc',
-              border: '1px solid #e6eaee',
-            }}
-          >
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                color: '#0a0f1a',
-                mb: 2,
-                fontSize: '0.9375rem',
-              }}
-            >
-              {customerPackages.length === 1
-                ? t('payment.selectedPackage')
-                : t('payment.selectPackage')}
-            </Typography>
-            {loadingPackages ? (
-              <Box display="flex" justifyContent="center" py={3}>
-                <CircularProgress size={24} sx={{ color: '#10b981' }} />
-              </Box>
-            ) : (() => {
-              // Filter packages based on serviceId availability
-              const availablePackages = customerPackages.filter((pkg) => {
-                if (serviceId) {
-                  const remaining = (pkg as any).service_remaining_map?.[serviceId] || 0;
-                  return remaining > 0;
-                }
-                return pkg.remaining_count > 0;
-              });
-
-              return availablePackages.length === 1 ? (
-                // Single package - show as selected card
-                <Box
-                  sx={{
-                    p: 2.5,
-                    borderRadius: 2,
-                    bgcolor: '#ffffff',
-                    border: '2px solid #10b981',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <CheckCircleIcon sx={{ color: '#10b981', fontSize: 24 }} />
-                    <Typography sx={{ fontWeight: 600, color: '#0a0f1a', fontSize: '0.9375rem' }}>
-                      {availablePackages[0].package_name}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={`${serviceId ? ((availablePackages[0] as any).service_remaining_map?.[serviceId] || 0) : availablePackages[0].remaining_count} ${t('common.remaining')}`}
-                    size="small"
-                    sx={{
-                      height: 24,
-                      backgroundColor: '#d1fae5',
-                      color: '#059669',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      borderRadius: 1.5,
-                    }}
-                  />
-                </Box>
-              ) : (
-                // Multiple packages - show dropdown
-                <FormControl fullWidth>
-                  <Select
-                    value={selectedPackageId || ''}
-                    onChange={(e) => {
-                      setSelectedPackageId(Number(e.target.value));
-                      setError(null); // 选择套餐时清除错误
-                      setVerificationError(null); // 选择套餐时清除验证码错误
-                    }}
-                    displayEmpty
-                    MenuProps={{
-                      disablePortal: false,
-                      container: container || document.body,
-                      sx: {
-                        zIndex: 10001,
-                        '& .MuiPaper-root': {
-                          borderRadius: 2,
-                          mt: 0.5,
-                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                        }
-                      }
-                    }}
-                    sx={{
-                      height: 40,
-                      borderRadius: 1.5,
-                      bgcolor: '#f8fafc',
-                      fontSize: '0.875rem',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#e2e8f0',
-                        borderWidth: '1px',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#cbd5e1',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: '#ffffff',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#10b981',
-                        borderWidth: '1.5px',
-                      },
-                      '& .MuiSelect-select': {
-                        py: 1.25,
-                      }
-                    }}
-                  >
-                    <MenuItem value="" disabled>
-                      <Typography sx={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-                        {t('payment.choosePackage')}
-                      </Typography>
-                    </MenuItem>
-                    {customerPackages
-                      .filter((pkg) => {
-                        // 如果有 serviceId，只显示该服务有剩余次数的套餐
-                        if (serviceId) {
-                          const remaining = (pkg as any).service_remaining_map?.[serviceId] || 0;
-                          return remaining > 0;
-                        }
-                        // 否则显示所有有剩余次数的套餐
-                        return pkg.remaining_count > 0;
-                      })
-                      .map((pkg) => {
-                        const remaining = serviceId
-                          ? ((pkg as any).service_remaining_map?.[serviceId] || 0)
-                          : pkg.remaining_count;
-
-                        return (
-                          <MenuItem
-                            key={pkg.id}
-                            value={pkg.id}
-                            sx={{
-                              py: 1.25,
-                              px: 2,
-                              '&:hover': {
-                                bgcolor: alpha('#10b981', 0.04),
-                              },
-                              '&.Mui-selected': {
-                                bgcolor: alpha('#10b981', 0.08),
-                                '&:hover': {
-                                  bgcolor: alpha('#10b981', 0.12),
-                                }
-                              }
-                            }}
-                          >
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="space-between"
-                              width="100%"
-                            >
-                              <Typography sx={{ fontWeight: 500, color: '#0f172a', fontSize: '0.875rem' }}>
-                                {pkg.package_name}
-                              </Typography>
-                              <Chip
-                                label={`${remaining} ${t('common.remaining')}`}
-                                size="small"
-                                sx={{
-                                  height: 22,
-                                  backgroundColor: '#dcfce7',
-                                  color: '#15803d',
-                                  fontWeight: 600,
-                                  fontSize: '0.6875rem',
-                                  borderRadius: 1.5,
-                                  '& .MuiChip-label': { px: 1.25, py: 0 }
-                                }}
-                              />
-                            </Box>
-                          </MenuItem>
-                        );
-                      })}
-                  </Select>
-                </FormControl>
-              );
-            })()}
-          </Box>
-        )}
-
-        {/* 验证码输入区域 - 仅在单服务 + PACKAGE 场景显示 */}
-        {paymentMethod === 'PACKAGE' && (!services || services.length <= 1) && (selectedPackageId || customerPackages.length === 1) && (
-          <Box
-            ref={verificationSectionRef}
-            sx={{
-              mt: 3,
-              p: 2.5,
-              borderRadius: 2.5,
-              bgcolor: '#ffffff',
-              border: '1px solid',
-              borderColor: verificationSent && !verificationError ? alpha('#10b981', 0.3) : '#e6eaee',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mb: 2.5,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 1.5,
-                    bgcolor: alpha('#10b981', 0.1),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <SmsIcon sx={{ fontSize: 18, color: '#10b981' }} />
-                </Box>
-                <Box>
-                  <Typography
-                    sx={{
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      color: '#0a0f1a',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    SMS Verification
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontSize: '0.6875rem',
-                      color: '#64748b',
-                      mt: 0.25,
-                    }}
-                  >
-                    {verificationSent ? 'Enter 6-digit code' : 'Click to receive code'}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Button
-                onClick={handleSendVerificationCode}
-                disabled={sendingCode || countdown > 0 || loading}
-                variant="contained"
-                size="small"
-                sx={{
-                  minWidth: 85,
-                  height: 32,
-                  px: 1.5,
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  borderRadius: 1.5,
-                  textTransform: 'none',
-                  whiteSpace: 'nowrap',
-                  bgcolor: '#10b981',
-                  color: '#ffffff',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: '#059669',
-                    boxShadow: 'none',
-                  },
-                  '&.Mui-disabled': {
-                    bgcolor: '#e2e8f0',
-                    color: '#94a3b8',
-                  },
-                }}
-              >
-                {sendingCode ? (
-                  <CircularProgress size={14} sx={{ color: '#ffffff' }} />
-                ) : countdown > 0 ? (
-                  `Resend (${countdown}s)`
-                ) : verificationSent ? (
-                  'Resend'
-                ) : (
-                  'Send Code'
-                )}
-              </Button>
-            </Box>
-
-            {/* 6位验证码输入框 */}
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1,
-                justifyContent: 'center',
-                mb: verificationError ? 2 : 0,
-              }}
-            >
-              {[0, 1, 2, 3, 4, 5].map((index) => (
-                <TextField
-                  key={index}
-                  id={`verification-code-${index}`}
-                  value={verificationCode[index] || ''}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 1) {
-                      const newCode = verificationCode.split('');
-                      newCode[index] = value;
-                      const finalCode = newCode.join('').slice(0, 6);
-                      setVerificationCode(finalCode);
-                      setVerificationError(null);
-
-                      // 自动聚焦到下一个输入框
-                      if (value && index < 5) {
-                        const nextInput = document.getElementById(`verification-code-${index + 1}`);
-                        nextInput?.focus();
-                      }
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    // 按退格键时回到上一个输入框
-                    if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
-                      const prevInput = document.getElementById(`verification-code-${index - 1}`);
-                      prevInput?.focus();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    e.preventDefault();
-                    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-                    setVerificationCode(pastedData);
-                    setVerificationError(null);
-                    // 聚焦到最后一个有值的输入框
-                    const lastIndex = Math.min(pastedData.length, 5);
-                    const lastInput = document.getElementById(`verification-code-${lastIndex}`);
-                    lastInput?.focus();
-                  }}
-                  disabled={!verificationSent || loading}
-                  inputProps={{
-                    maxLength: 1,
-                    style: {
-                      textAlign: 'center',
-                      fontSize: '1.25rem',
-                      fontWeight: 600,
-                      padding: 0,
-                    },
-                  }}
-                  sx={{
-                    width: 42,
-                    '& .MuiOutlinedInput-root': {
-                      height: 48,
-                      borderRadius: 1.5,
-                      bgcolor: verificationCode[index] ? alpha('#10b981', 0.04) : '#f8fafc',
-                      transition: 'all 0.2s ease',
-                      '& fieldset': {
-                        borderColor: verificationError ? '#ef4444' : verificationCode[index] ? '#10b981' : '#e2e8f0',
-                        borderWidth: verificationCode[index] ? '1.5px' : '1px',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: verificationError ? '#ef4444' : verificationCode[index] ? '#10b981' : '#cbd5e1',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: verificationError ? '#ef4444' : '#10b981',
-                        borderWidth: '1.5px',
-                      },
-                      '&.Mui-disabled': {
-                        bgcolor: '#f8fafc',
-                        '& fieldset': {
-                          borderColor: '#e2e8f0',
-                        },
-                      },
-                    },
-                  }}
-                />
-              ))}
-            </Box>
-
-            {/* 成功提示 */}
-            {verificationSent && !verificationError && verificationCode.length < 6 && (
-              <Box
-                sx={{
-                  mt: 2,
-                  px: 2,
-                  py: 1.5,
-                  borderRadius: 2,
-                  bgcolor: alpha('#10b981', 0.08),
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                }}
-              >
-                <CheckCircleIcon sx={{ fontSize: 18, color: '#10b981' }} />
-                <Typography
-                  sx={{
-                    fontSize: '0.8125rem',
-                    color: '#059669',
-                    fontWeight: 500,
-                  }}
-                >
-                  {t('payment.codeSent')}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        )}
-      </Box>
-
-      <Divider sx={{ borderColor: '#e6eaee' }} />
-
-      {/* Actions */}
-      <Box
-        sx={{
-          px: 4,
-          py: 3,
-          bgcolor: '#fafbfc',
-          flexShrink: 0,
-        }}
-      >
-        {/* 错误提示 - 放在按钮上方 */}
-        {(error || verificationError) && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 2,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: '#fee2e2',
-              bgcolor: '#fef2f2',
-              animation: 'slideIn 0.3s ease-out',
-              '@keyframes slideIn': {
-                '0%': {
-                  opacity: 0,
-                  transform: 'translateY(-10px)',
-                },
-                '100%': {
-                  opacity: 1,
-                  transform: 'translateY(0)',
-                },
-              },
-              '& .MuiAlert-icon': {
-                color: '#ef4444',
-              },
-            }}
-          >
-            {error || verificationError}
-          </Alert>
-        )}
         </Box>
         {/* End of Scrollable Content Area */}
 
@@ -2692,7 +3650,53 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({
             disabled={
               loading ||
               // 单服务场景：如果选择了PACKAGE且有多个套餐可选，必须选择一个
-              ((!services || services.length <= 1) && paymentMethod === 'PACKAGE' && customerPackages.length > 1 && !selectedPackageId)
+              (!services && paymentMethod === 'PACKAGE' && customerPackages.length > 1 && !selectedPackageId) ||
+              // 单服务场景：选择了礼品卡但未输入金额
+              (!services && paymentMethod === 'GIFT_CARD' && (!giftCardAmount || parseFloat(giftCardAmount) <= 0)) ||
+              // 单服务场景：礼品卡金额超过订单总额
+              (!services && paymentMethod === 'GIFT_CARD' && (parseFloat(giftCardAmount || '0') - amounts.totalAmount) > 0.01) ||
+              // 单服务场景：礼品卡金额不足且未选择补充支付方式
+              (!services && paymentMethod === 'GIFT_CARD' &&
+                parseFloat(giftCardAmount || '0') > 0 &&
+                (amounts.totalAmount - parseFloat(giftCardAmount || '0')) > 0.01 &&
+                !unifiedAdditionalPaymentMethod) ||
+              // 多服务统一支付：如果选择了PACKAGE但没有选择具体的套餐
+              (services && paymentMode === 'unified' && unifiedPaymentMethod === 'PACKAGE' && !unifiedPackageId) ||
+              // 多服务统一支付：选择了礼品卡但未输入金额
+              (services && paymentMode === 'unified' && unifiedPaymentMethod === 'GIFT_CARD' && (!unifiedGiftCardAmount || parseFloat(unifiedGiftCardAmount) <= 0)) ||
+              // 多服务统一支付：礼品卡金额超过订单总额
+              (services && unifiedPaymentMethod === 'GIFT_CARD' && (parseFloat(unifiedGiftCardAmount || '0') - amounts.totalAmount) > 0.01) ||
+              // 多服务统一支付：礼品卡金额不足且未选择补充支付方式
+              (services && paymentMode === 'unified' && unifiedPaymentMethod === 'GIFT_CARD' &&
+                parseFloat(unifiedGiftCardAmount || '0') > 0 &&
+                (amounts.totalAmount - parseFloat(unifiedGiftCardAmount || '0')) > 0.01 &&
+                !unifiedAdditionalPaymentMethod) ||
+              // 多服务混合支付：如果选择了PACKAGE但没有选择具体的套餐
+              (services && paymentMode === 'mixed' && services.some(service =>
+                servicePaymentMethods[service.id] === 'PACKAGE' && !servicePackageIds[service.id]
+              )) ||
+              // 多服务混合支付：选择了礼品卡但未输入金额
+              (services && paymentMode === 'mixed' && services.some(service => {
+                const isGiftCard = servicePaymentMethods[service.id] === 'GIFT_CARD';
+                const giftAmount = parseFloat(serviceGiftCardAmounts[service.id] || '0');
+                return isGiftCard && giftAmount <= 0;
+              })) ||
+              // 多服务混合支付：礼品卡金额不足且未选择补充支付方式
+              (services && paymentMode === 'mixed' && services.some(service => {
+                const isGiftCard = servicePaymentMethods[service.id] === 'GIFT_CARD';
+                const giftAmount = parseFloat(serviceGiftCardAmounts[service.id] || '0');
+                const actualAmount = serviceActualAmounts[service.id] || Number(service.price);
+                const needsAdditional = giftAmount > 0 && (actualAmount - giftAmount) > 0.01;
+                const hasAdditional = !!serviceAdditionalPaymentMethods[service.id];
+                return isGiftCard && needsAdditional && !hasAdditional;
+              })) ||
+              // 多服务混合支付：检查每个服务的礼品卡金额是否超过实际应付金额
+              (services && paymentMode === 'mixed' && services.some(service => {
+                const isGiftCard = servicePaymentMethods[service.id] === 'GIFT_CARD';
+                const giftAmount = parseFloat(serviceGiftCardAmounts[service.id] || '0');
+                const actualAmount = serviceActualAmounts[service.id] || Number(service.price);
+                return isGiftCard && giftAmount > 0 && (giftAmount - actualAmount) > 0.01;
+              }))
             }
             sx={{
               flex: 1,

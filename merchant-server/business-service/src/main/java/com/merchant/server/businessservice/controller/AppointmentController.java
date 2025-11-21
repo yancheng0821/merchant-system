@@ -283,6 +283,11 @@ public class AppointmentController {
         Double tipPercentage = null;
         Double subtotal = null;
         Double totalAmount = null;
+        String tipPaymentMethod = null;
+        Double giftCardAmount = null;
+        String giftCardNumber = null;
+        String additionalPaymentMethod = null;
+        Double additionalPaymentAmount = null;
 
         if (taxInfo != null) {
             taxRate = taxInfo.get("taxRate") != null ? Double.valueOf(taxInfo.get("taxRate").toString()) : null;
@@ -291,10 +296,32 @@ public class AppointmentController {
             tipPercentage = taxInfo.get("tipPercentage") != null ? Double.valueOf(taxInfo.get("tipPercentage").toString()) : null;
             subtotal = taxInfo.get("subtotal") != null ? Double.valueOf(taxInfo.get("subtotal").toString()) : null;
             totalAmount = taxInfo.get("totalAmount") != null ? Double.valueOf(taxInfo.get("totalAmount").toString()) : null;
+            tipPaymentMethod = (String) taxInfo.get("tipPaymentMethod");
 
-            log.info("Tax info - taxRate: {}, taxAmount: {}, tipAmount: {}, tipPercentage: {}, subtotal: {}, totalAmount: {}",
-                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount);
+            log.info("Tax info - taxRate: {}, taxAmount: {}, tipAmount: {}, tipPercentage: {}, subtotal: {}, totalAmount: {}, tipPaymentMethod: {}",
+                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, tipPaymentMethod);
         }
+
+        // 提取礼品卡支付相关信息
+        if (paymentData != null) {
+            if (paymentData.get("giftCardAmount") != null) {
+                giftCardAmount = Double.valueOf(paymentData.get("giftCardAmount").toString());
+            }
+            giftCardNumber = (String) paymentData.get("giftCardNumber");
+            additionalPaymentMethod = (String) paymentData.get("additionalPaymentMethod");
+            if (paymentData.get("additionalPaymentAmount") != null) {
+                additionalPaymentAmount = Double.valueOf(paymentData.get("additionalPaymentAmount").toString());
+            }
+
+            if (giftCardAmount != null || giftCardNumber != null || additionalPaymentMethod != null || additionalPaymentAmount != null) {
+                log.info("Gift card info - amount: {}, number: {}, additionalMethod: {}, additionalAmount: {}",
+                    giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount);
+            }
+        }
+
+        // 提取支付模式 (single/unified/mixed)
+        String paymentMode = (String) paymentData.get("paymentMode");
+        log.info("Payment mode: {}", paymentMode);
 
         // 检查是否是多服务支付场景
         @SuppressWarnings("unchecked")
@@ -305,11 +332,13 @@ public class AppointmentController {
             // 多服务场景
             log.info("Processing multi-service payment with {} services", servicePayments.size());
             updated = appointmentService.processMultiServicePayment(id, paymentMethod, servicePayments, tenantId,
-                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes);
+                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, tipPaymentMethod, notes,
+                giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount, paymentMode);
         } else {
             // 单服务场景
             updated = appointmentService.processPayment(id, paymentMethod, customerPackageId, tenantId, verificationCodeId,
-                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, notes);
+                taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount, tipPaymentMethod, notes,
+                giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount);
         }
 
         log.info("Payment processed successfully for appointment: {}", id);

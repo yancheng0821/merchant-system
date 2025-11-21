@@ -598,6 +598,11 @@ public class AuditAspect {
                     }
 
                     return getById.invoke(costManagementService, resourceId);
+                } else if ("ORDER".equals(resource)) {
+                    // 获取OrderService
+                    Object orderService = applicationContext.getBean("orderServiceImpl");
+                    Method getById = orderService.getClass().getMethod("getOrderById", Long.class);
+                    return getById.invoke(orderService, resourceId);
                 }
                 // STAFF_ATTENDANCE 由 getOldValueForStaffAttendance 专门处理
                 // 可以添加其他资源类型的处理
@@ -745,9 +750,9 @@ public class AuditAspect {
                 // 预约相关
                 "appointmentDate", "appointmentTime", "duration",
                 // 支付相关
-                "totalAmount", "paid", "paymentMethod", "paymentStatus",
+                "totalAmount", "paid", "paymentMethod", "tipPaymentMethod", "paymentStatus",
                 // 订单相关
-                "orderStatus", "paymentDate",
+                "orderStatus", "paymentDate", "tipAmount",
                 // 用户相关
                 "username", "email", "phone", "enabled",
                 // 角色权限

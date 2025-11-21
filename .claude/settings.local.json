@@ -137,7 +137,15 @@
       "Bash(for service in analytics-service auth-service business-service eureka-server gateway-service merchant-service notification-service)",
       "Bash(do echo '=== $service ===' ls merchant-server/$service/logs/*.log)",
       "Bash(git restore:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(/tmp/payment_part1.tsx)",
+      "Bash(/tmp/payment_part2.tsx)",
+      "Bash(/Users/aisenyc/merchant-system/merchant-admin/src/modules/schedule/ShiftCalendarView/components/PaymentDialog.tsx)",
+      "Bash(javac:*)",
+      "Bash(java -version:*)",
+      "Bash(../../mvnw clean compile:*)",
+      "Bash(../mvnw clean compile:*)",
+      "Bash(../scripts/start-services.sh:*)"
     ],
     "deny": []
   }

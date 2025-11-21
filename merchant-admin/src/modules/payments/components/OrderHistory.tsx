@@ -49,6 +49,7 @@ import {
   AttachMoney as MoneyIcon,
   CreditCard as CreditCardIcon,
   Payment as PaymentIcon,
+  AccountBalance as DebitCardIcon,
   AccountBalanceWallet as WalletIcon,
   Close as CloseIcon,
   Person as PersonIcon,
@@ -59,6 +60,7 @@ import {
   Undo as RefundIcon,
   MoreVert as MoreVertIcon,
   CardGiftcard as PackageIcon,
+  Style as GiftCardIcon,
   Event as EventIcon,
   CompareArrows as MixedPaymentIcon,
   // Membership tier icons
@@ -75,7 +77,6 @@ import {
   CardMembership as MembershipIcon,
   TrendingUp as TrendingUpIcon,
   Loyalty as LoyaltyIcon,
-  Redeem as RedeemIcon,
   Favorite as HeartIcon,
   AutoAwesome as SparkleIcon,
   Whatshot as FireIcon,
@@ -117,6 +118,7 @@ interface Order {
   subtotal: number;
   taxAmount: number;
   tipAmount: number;
+  tipPaymentMethod?: string;
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: string;
@@ -203,7 +205,7 @@ const OrderHistory: React.FC = () => {
       case 'membership': return <MembershipIcon />;
       case 'trendingup': return <TrendingUpIcon />;
       case 'loyalty': return <LoyaltyIcon />;
-      case 'redeem': return <RedeemIcon />;
+      case 'redeem': return <GiftCardIcon />;
       case 'heart': return <HeartIcon />;
       case 'sparkle': return <SparkleIcon />;
       case 'fire': return <FireIcon />;
@@ -317,10 +319,10 @@ const OrderHistory: React.FC = () => {
     switch (method) {
       case 'cash': return <MoneyIcon sx={{ fontSize: 16 }} />;
       case 'credit_card': return <CreditCardIcon sx={{ fontSize: 16 }} />;
-      case 'debit_card': return <PaymentIcon sx={{ fontSize: 16 }} />;
+      case 'debit_card': return <DebitCardIcon sx={{ fontSize: 16 }} />;
       case 'mobile_pay': return <WalletIcon sx={{ fontSize: 16 }} />;
       case 'package': return <PackageIcon sx={{ fontSize: 16 }} />;
-      case 'gift_card': return <PackageIcon sx={{ fontSize: 16 }} />;
+      case 'gift_card': return <GiftCardIcon sx={{ fontSize: 16 }} />;
       case 'mixed': return <MixedPaymentIcon sx={{ fontSize: 16 }} />;
       default: return <PaymentIcon sx={{ fontSize: 16 }} />;
     }
@@ -414,7 +416,7 @@ const OrderHistory: React.FC = () => {
     }
 
     // 验证新支付方式与当前不同
-    if (newPaymentMethod === selectedOrder.paymentMethod) {
+    if (newPaymentMethod === selectedOrder.tipPaymentMethod) {
       setUpdateError(t('orders.newPaymentMethodRequired'));
       return;
     }
@@ -423,7 +425,7 @@ const OrderHistory: React.FC = () => {
     setUpdateError(null);
 
     try {
-      const response = await api.updatePaymentMethod({
+      const response = await api.updateTipPaymentMethod({
         orderId: selectedOrder.id,
         newPaymentMethod: newPaymentMethod,
         reason: updateReason,
@@ -469,6 +471,10 @@ const OrderHistory: React.FC = () => {
     }
     // 不能修改已退款的订单
     if (order.refundAmount && order.refundAmount > 0) {
+      return false;
+    }
+    // 只有有小费的订单才能修改小费支付方式
+    if (!order.tipAmount || order.tipAmount <= 0) {
       return false;
     }
     return true;
@@ -560,13 +566,42 @@ const OrderHistory: React.FC = () => {
                   }}
                 >
                   <MenuItem value="">{t('orders.allMethods')}</MenuItem>
-                  <MenuItem value="cash">{t('orders.cash')}</MenuItem>
-                  <MenuItem value="credit_card">{t('orders.credit_card')}</MenuItem>
-                  <MenuItem value="debit_card">{t('orders.debit_card')}</MenuItem>
-                  <MenuItem value="mobile_pay">{t('orders.mobile_pay')}</MenuItem>
-                  <MenuItem value="package">{t('orders.package')}</MenuItem>
-                  <MenuItem value="gift_card">{t('orders.gift_card')}</MenuItem>
-                  <MenuItem value="mixed">{t('orders.mixed')}</MenuItem>
+                  <MenuItem value="cash">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getPaymentMethodIcon('cash')}
+                      {t('orders.cash')}
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="credit_card">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getPaymentMethodIcon('credit_card')}
+                      {t('orders.credit_card')}
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="debit_card">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getPaymentMethodIcon('debit_card')}
+                      {t('orders.debit_card')}
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="package">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getPaymentMethodIcon('package')}
+                      {t('orders.package')}
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="gift_card">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getPaymentMethodIcon('gift_card')}
+                      {t('orders.gift_card')}
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="mixed">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getPaymentMethodIcon('mixed')}
+                      {t('orders.mixed')}
+                    </Box>
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -1153,9 +1188,23 @@ const OrderHistory: React.FC = () => {
                       </Typography>
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                        {t('orders.tip')}
-                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                          {t('orders.tip')}
+                        </Typography>
+                        {selectedOrder.tipPaymentMethod && (
+                          <Chip
+                            label={t(`orders.${selectedOrder.tipPaymentMethod}`)}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.7rem',
+                              bgcolor: alpha('#10B981', 0.1),
+                              color: '#10B981',
+                            }}
+                          />
+                        )}
+                      </Box>
                       <Typography variant="body2">
                         {CurrencyUtils.formatAmount(selectedOrder.tipAmount)}
                       </Typography>
@@ -1333,9 +1382,9 @@ const OrderHistory: React.FC = () => {
                     {t('orders.currentPaymentMethod')}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
-                    {getPaymentMethodIcon(selectedOrder.paymentMethod)}
+                    {selectedOrder.tipPaymentMethod && getPaymentMethodIcon(selectedOrder.tipPaymentMethod)}
                     <Chip
-                      label={t(`orders.${selectedOrder.paymentMethod}`)}
+                      label={selectedOrder.tipPaymentMethod ? t(`orders.${selectedOrder.tipPaymentMethod}`) : t('orders.notSet')}
                       size="small"
                       sx={{
                         bgcolor: alpha('#10B981', 0.1),
@@ -1353,7 +1402,10 @@ const OrderHistory: React.FC = () => {
                     </InputLabel>
                     <Select
                       value={newPaymentMethod}
-                      onChange={(e) => setNewPaymentMethod(e.target.value)}
+                      onChange={(e) => {
+                        setNewPaymentMethod(e.target.value);
+                        setUpdateError(null);
+                      }}
                       label={t('orders.newPaymentMethod')}
                       error={Boolean(updateError)}
                       sx={{
@@ -1365,10 +1417,7 @@ const OrderHistory: React.FC = () => {
                       <MenuItem value="cash">{t('orders.cash')}</MenuItem>
                       <MenuItem value="credit_card">{t('orders.credit_card')}</MenuItem>
                       <MenuItem value="debit_card">{t('orders.debit_card')}</MenuItem>
-                      <MenuItem value="mobile_pay">{t('orders.mobile_pay')}</MenuItem>
-                      <MenuItem value="package">{t('orders.package')}</MenuItem>
                       <MenuItem value="gift_card">{t('orders.gift_card')}</MenuItem>
-                      <MenuItem value="mixed">{t('orders.mixed')}</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1380,7 +1429,10 @@ const OrderHistory: React.FC = () => {
                     rows={3}
                     label={t('orders.updateReason')}
                     value={updateReason}
-                    onChange={(e) => setUpdateReason(e.target.value)}
+                    onChange={(e) => {
+                      setUpdateReason(e.target.value);
+                      setUpdateError(null);
+                    }}
                     placeholder={t('orders.updateReasonPlaceholder')}
                     error={Boolean(updateError)}
                     sx={{

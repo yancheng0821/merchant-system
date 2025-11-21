@@ -38,6 +38,11 @@ import {
   Business as AiIcon,
   CalendarMonth as CalendarIcon,
   AccessTime as TimeIcon,
+  AttachMoney as CashIcon,
+  CreditCard as CreditCardIcon,
+  AccountBalance as DebitCardIcon,
+  Style as GiftCardIcon,
+  CardGiftcard as PackageIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -64,6 +69,25 @@ import AiBusinessInsights from './components/AiBusinessInsights';
 
 // 颜色主题 - 使用现代化配色
 const COLORS = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#0891B2'];
+
+// 获取支付方式图标
+const getPaymentMethodIcon = (method: string) => {
+  const iconProps = { sx: { fontSize: '1rem', color: '#64748b' } };
+  switch (method?.toUpperCase()) {
+    case 'CASH':
+      return <CashIcon {...iconProps} />;
+    case 'CREDIT_CARD':
+      return <CreditCardIcon {...iconProps} />;
+    case 'DEBIT_CARD':
+      return <DebitCardIcon {...iconProps} />;
+    case 'GIFT_CARD':
+      return <GiftCardIcon {...iconProps} />;
+    case 'PACKAGE':
+      return <PackageIcon {...iconProps} />;
+    default:
+      return undefined;
+  }
+};
 
 const Analytics: React.FC = () => {
   const { t } = useTranslation();
@@ -1732,9 +1756,14 @@ const Analytics: React.FC = () => {
                                 <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.category')}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.salesCount')}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.originalPrice')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.totalAmount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.subtotal')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tax')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                  <Box>
+                                    {t('analytics.orderStats.totalAmount')}
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6, display: 'block' }}>
+                                      ({t('analytics.actualPaymentAmount')})
+                                    </Typography>
+                                  </Box>
+                                </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
@@ -1763,12 +1792,6 @@ const Analytics: React.FC = () => {
                                   <TableCell align="right" sx={{ fontWeight: 600, color: '#10B981' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount || 0)}
                                   </TableCell>
-                                  <TableCell align="right">
-                                    {CurrencyUtils.formatAmountWithCommas(row.totalSubtotal || 0)}
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {CurrencyUtils.formatAmountWithCommas(row.totalTax || 0)}
-                                  </TableCell>
                                   <TableCell align="right" sx={{ color: '#F59E0B' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
@@ -1790,12 +1813,6 @@ const Analytics: React.FC = () => {
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#10B981' }}>
                                   {CurrencyUtils.formatAmountWithCommas(summaryData.totalAmount)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                  {CurrencyUtils.formatAmountWithCommas(summaryData.totalSubtotal)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                  {CurrencyUtils.formatAmountWithCommas(summaryData.totalTax)}
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#F59E0B' }}>
                                   {CurrencyUtils.formatAmountWithCommas(summaryData.totalTips)}
@@ -2058,9 +2075,14 @@ const Analytics: React.FC = () => {
                               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                                 <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.paymentCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.totalAmount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.subtotal')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tax')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                  <Box>
+                                    {t('analytics.orderStats.totalAmount')}
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6, display: 'block' }}>
+                                      ({t('analytics.actualPaymentAmount')})
+                                    </Typography>
+                                  </Box>
+                                </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
@@ -2069,24 +2091,22 @@ const Analytics: React.FC = () => {
                                 <TableRow key={index} sx={{ '&:hover': { backgroundColor: alpha('#10B981', 0.04) } }}>
                                   <TableCell>
                                     <Chip
+                                      icon={getPaymentMethodIcon(row.paymentMethod)}
                                       label={row.paymentMethod}
                                       size="small"
                                       sx={{
                                         backgroundColor: alpha(COLORS[index % COLORS.length], 0.1),
                                         color: COLORS[index % COLORS.length],
-                                        fontWeight: 600
+                                        fontWeight: 600,
+                                        '& .MuiChip-icon': {
+                                          color: '#64748b',
+                                        }
                                       }}
                                     />
                                   </TableCell>
                                   <TableCell align="right">{row.orderCount}</TableCell>
                                   <TableCell align="right" sx={{ fontWeight: 600, color: '#10B981' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount)}
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {CurrencyUtils.formatAmountWithCommas(row.totalSubtotal)}
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {CurrencyUtils.formatAmountWithCommas(row.totalTax)}
                                   </TableCell>
                                   <TableCell align="right" sx={{ color: '#F59E0B' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
@@ -2104,12 +2124,6 @@ const Analytics: React.FC = () => {
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#10B981' }}>
                                   {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalAmount)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                  {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalSubtotal)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                  {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalTax)}
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#F59E0B' }}>
                                   {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalTips)}
@@ -2378,9 +2392,14 @@ const Analytics: React.FC = () => {
                               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                                 <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.orderCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.totalAmount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.subtotal')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tax')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                  <Box>
+                                    {t('analytics.orderStats.totalAmount')}
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6, display: 'block' }}>
+                                      ({t('analytics.actualPaymentAmount')})
+                                    </Typography>
+                                  </Box>
+                                </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
@@ -2389,6 +2408,7 @@ const Analytics: React.FC = () => {
                                 <TableRow key={index} sx={{ '&:hover': { backgroundColor: alpha('#8B5CF6', 0.04) } }}>
                                   <TableCell>
                                     <Chip
+                                      icon={getPaymentMethodIcon(row.paymentMethod)}
                                       label={row.paymentMethod}
                                       size="small"
                                       sx={{
@@ -2396,18 +2416,15 @@ const Analytics: React.FC = () => {
                                         color: COLORS[index % COLORS.length],
                                         fontWeight: 500,
                                         borderRadius: 1,
+                                        '& .MuiChip-icon': {
+                                          color: '#64748b',
+                                        }
                                       }}
                                     />
                                   </TableCell>
                                   <TableCell align="right">{row.orderCount}</TableCell>
                                   <TableCell align="right" sx={{ fontWeight: 600, color: '#10B981' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount)}
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {CurrencyUtils.formatAmountWithCommas(row.totalSubtotal)}
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {CurrencyUtils.formatAmountWithCommas(row.totalTax)}
                                   </TableCell>
                                   <TableCell align="right" sx={{ color: '#F59E0B' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
@@ -2425,12 +2442,6 @@ const Analytics: React.FC = () => {
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#10B981' }}>
                                   {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalAmount)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                  {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalSubtotal)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                                  {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalTax)}
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#F59E0B' }}>
                                   {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalTips)}

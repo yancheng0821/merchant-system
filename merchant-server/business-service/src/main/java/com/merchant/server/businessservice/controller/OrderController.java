@@ -236,13 +236,56 @@ public class OrderController {
     }
 
     /**
+     * 更新订单小费支付方式
+     */
+    @RequiresPermission("orders:update_payment_method")
+    @Auditable(
+        resource = "ORDER",
+        action = "UPDATE",
+        resourceIdParam = "id",
+        recordOldValue = true,
+        description = "Update order tip payment method"
+    )
+    @PutMapping("/{id}/tip-payment-method")
+    public ResponseEntity<Map<String, Object>> updateTipPaymentMethod(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePaymentMethodRequest request) {
+        log.info("Updating tip payment method for order: {}, new method: {}, reason: {}",
+                 id, request.getNewPaymentMethod(), request.getReason());
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            OrderDTO updatedOrder = orderService.updateTipPaymentMethod(id, request);
+            if (updatedOrder == null) {
+                response.put("success", false);
+                response.put("message", "Order not found");
+                return ResponseEntity.notFound().build();
+            }
+            response.put("success", true);
+            response.put("message", "Tip payment method updated successfully");
+            response.put("order", updatedOrder);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            log.error("Cannot update tip payment method: {}", e.getMessage());
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Failed to update tip payment method: {}", e.getMessage());
+            response.put("success", false);
+            response.put("message", "Failed to update tip payment method");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
      * 获取订单统计
      */
     @RequiresPermission("orders:view_stats")
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getOrderStats(@RequestParam Long tenantId) {
-        log.info("Fetching order statistics for tenant: {}", tenantId);
-        
+        log.debug("Fetching order statistics for tenant: {}", tenantId);
+
         Map<String, Object> stats = orderService.getOrderStats(tenantId);
         return ResponseEntity.ok(stats);
     }

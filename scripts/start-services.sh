@@ -82,9 +82,11 @@ start_service() {
         return 1
     fi
 
-    # Start the service (不再重定向到日志文件，logback会自动处理)
+    # Start the service (Maven编译和启动日志都输出到日志文件)
     cd "${BASE_DIR}/${service_name}"
-    nohup mvn spring-boot:run > /dev/null 2>&1 &
+    local log_file="${LOG_DIR}/${service_name}.log"
+    # 所有输出（stdout和stderr）都追加到日志文件，方便排查启动失败问题
+    nohup mvn spring-boot:run >> "${log_file}" 2>&1 &
     local pid=$!
     echo $pid > "${PID_DIR}/${service_name}.pid"
 

@@ -297,6 +297,7 @@ const AuditLogs: React.FC = () => {
       CUSTOMER_PACKAGE: t('audit.resource.customerPackage'),
       MEMBERSHIP_TIER: t('audit.resource.membershipTier'),
       APPOINTMENT: t('audit.resource.appointment'),
+      ORDER: t('audit.resource.order'),
       SERVICE: t('audit.resource.service'),
       SERVICE_PACKAGE: t('audit.resource.servicePackage'),
       SERVICE_CATEGORY: t('audit.resource.serviceCategory'),
@@ -815,6 +816,7 @@ const AuditLogs: React.FC = () => {
                   <MenuItem value="CUSTOMER_PACKAGE">{t('audit.resource.customerPackage')}</MenuItem>
                   <MenuItem value="MEMBERSHIP_TIER">{t('audit.resource.membershipTier')}</MenuItem>
                   <MenuItem value="APPOINTMENT">{t('audit.resource.appointment')}</MenuItem>
+                  <MenuItem value="ORDER">{t('audit.resource.order')}</MenuItem>
                   <MenuItem value="SERVICE">{t('audit.resource.service')}</MenuItem>
                   <MenuItem value="SERVICE_PACKAGE">{t('audit.resource.servicePackage')}</MenuItem>
                   <MenuItem value="SERVICE_CATEGORY">{t('audit.resource.serviceCategory')}</MenuItem>

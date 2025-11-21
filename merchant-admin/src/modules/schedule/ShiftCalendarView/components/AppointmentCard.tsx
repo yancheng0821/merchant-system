@@ -107,6 +107,27 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     const compactPadding = cardHeight < 45 ? '2px' : '8px';
     const compactGap = cardHeight < 45 ? '0px' : '4px';
 
+    // 动态计算服务名称可显示的行数
+    // 计算逻辑：
+    // - 第一行（时间+客户名）：约16-20px
+    // - padding：上下各2-8px
+    // - gap：0-4px
+    // - 每行服务名称：fontSize(11) * lineHeight(1.2) ≈ 13.2px
+    const calculateCompactServiceLines = () => {
+      const paddingTotal = cardHeight < 45 ? 4 : 16; // 上下padding总和
+      const firstLineHeight = cardHeight < 45 ? 12 : 14; // 第一行高度
+      const gapHeight = cardHeight < 45 ? 0 : 4; // gap高度
+      const serviceLineHeight = 13.2; // 11 * 1.2
+
+      const availableHeight = cardHeight - paddingTotal - firstLineHeight - gapHeight;
+      const maxLines = Math.floor(availableHeight / serviceLineHeight);
+
+      // 至少显示1行，最多不超过10行
+      return Math.max(1, Math.min(maxLines, 10));
+    };
+
+    const serviceLineClamp = calculateCompactServiceLines();
+
     return (
       <Box
         onClick={onClick}
@@ -207,7 +228,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             display: '-webkit-box',
-            WebkitLineClamp: cardHeight < 45 ? 1 : cardHeight >= 80 ? 3 : 2,
+            WebkitLineClamp: serviceLineClamp,
             WebkitBoxOrient: 'vertical',
             whiteSpace: 'pre-line',
           }}

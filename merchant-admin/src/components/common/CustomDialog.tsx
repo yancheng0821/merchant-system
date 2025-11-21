@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -35,6 +35,25 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   moduleColor,
 }) => {
   const { t } = useTranslation();
+  const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null);
+
+  // Auto-detect fullscreen element and use it as container
+  useEffect(() => {
+    const checkFullscreen = () => {
+      const fullscreenElement = document.fullscreenElement as HTMLElement | null;
+      setFullscreenContainer(fullscreenElement);
+    };
+
+    // Check immediately when dialog opens or fullscreen changes
+    checkFullscreen();
+
+    // Listen for fullscreen changes
+    document.addEventListener('fullscreenchange', checkFullscreen);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', checkFullscreen);
+    };
+  }, [open]); // Re-check when dialog opens
 
   const getTypeColor = () => {
     // 如果提供了模块色，优先使用模块色
@@ -64,14 +83,28 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
     }
   };
 
+  const isFullscreen = Boolean(fullscreenContainer);
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
+      container={fullscreenContainer || document.body}
+      sx={{
+        // Ensure this dialog is always on top of all other components
+        // Higher than PaymentDialog (10000) and AppointmentDialog (9999)
+        zIndex: 10100,
+        position: isFullscreen ? 'absolute' : 'fixed',
+      }}
       PaperProps={{
         sx: {
           borderRadius: 3,
           boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+        }
+      }}
+      BackdropProps={{
+        sx: {
+          position: isFullscreen ? 'absolute' : 'fixed',
         }
       }}
     >

@@ -16,6 +16,12 @@
         <result property="resourceType" column="resource_type"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
+
+        <!-- 关联 category 对象 -->
+        <association property="category" javaType="com.merchant.server.businessservice.entity.ServiceCategory">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+        </association>
     </resultMap>
 
     <!-- 基础查询SQL -->
@@ -67,9 +73,12 @@
 
     <!-- 根据ID查询服务 -->
     <select id="selectById" resultMap="ServiceResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM services
-        WHERE id = #{id}
+        SELECT s.id, s.tenant_id, s.category_id, s.name, s.description,
+               s.price, s.duration, s.status, s.resource_type, s.created_at, s.updated_at,
+               sc.name as category_name
+        FROM services s
+        LEFT JOIN service_categories sc ON s.category_id = sc.id
+        WHERE s.id = #{id}
     </select>
 
     <!-- 插入服务 -->

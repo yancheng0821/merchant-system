@@ -1445,6 +1445,11 @@ export const appointmentApi = {
       paymentMethod: string;
       customerPackageId?: number;
       verificationCodeId?: number;
+      serviceAmount?: number; // 服务实际应付金额（混合支付模式下）
+      giftCardAmount?: number;
+      giftCardNumber?: string;
+      additionalPaymentMethod?: string;
+      additionalPaymentAmount?: number;
     }>; // 多服务支付（每个服务独立选择支付方式）
     tenantId: number;
     taxInfo?: {
@@ -1454,8 +1459,14 @@ export const appointmentApi = {
       tipPercentage: number;
       subtotal: number;
       totalAmount: number;
+      tipPaymentMethod?: string;
     }; // 税率和小费信息
     notes?: string; // 支付备注
+    giftCardAmount?: number; // 礼品卡支付金额
+    giftCardNumber?: string; // 礼品卡卡号
+    additionalPaymentMethod?: string; // 补充支付方式（当礼品卡不足时）
+    additionalPaymentAmount?: number; // 补充支付金额（前端计算好的）
+    paymentMode?: 'single' | 'unified' | 'mixed'; // 支付模式
   }): Promise<Appointment> => {
     const response = await createRequest(`/api/business/appointments/${appointmentId}/payment`, {
       method: 'POST',
@@ -2356,6 +2367,18 @@ export const api = {
     }),
   }),
 
+  updateTipPaymentMethod: (data: {
+    orderId: number;
+    newPaymentMethod: string;
+    reason: string;
+  }) => createRequest(`/api/business/orders/${data.orderId}/tip-payment-method`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      newPaymentMethod: data.newPaymentMethod,
+      reason: data.reason,
+    }),
+  }),
+
 };
 
 // Dashboard API
@@ -3188,3 +3211,6 @@ export const membershipTierApi = {
     return response.exists || false;
   },
 };
+
+// 礼品卡相关API - 已移除
+// 礼品卡由POS系统管理，本系统只记录礼品卡支付金额

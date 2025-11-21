@@ -45,6 +45,11 @@ public interface OrderService {
     OrderDTO updatePaymentMethod(Long id, UpdatePaymentMethodRequest request);
 
     /**
+     * 更新订单小费支付方式
+     */
+    OrderDTO updateTipPaymentMethod(Long id, UpdatePaymentMethodRequest request);
+
+    /**
      * 获取订单统计
      */
     Map<String, Object> getOrderStats(Long tenantId);

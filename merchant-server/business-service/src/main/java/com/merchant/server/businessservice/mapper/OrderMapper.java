@@ -81,7 +81,14 @@ public interface OrderMapper {
      * 查询本月订单
      */
     List<Order> selectMonthOrders(@Param("tenantId") Long tenantId);
-    
+
+    /**
+     * 根据时间范围查询订单实体（使用UTC时间，支持时区转换）
+     */
+    List<Order> selectOrdersEntityByDateTimeRange(@Param("tenantId") Long tenantId,
+                                                   @Param("startDateTime") LocalDateTime startDateTime,
+                                                   @Param("endDateTime") LocalDateTime endDateTime);
+
     /**
      * Dashboard 相关查询
      */
