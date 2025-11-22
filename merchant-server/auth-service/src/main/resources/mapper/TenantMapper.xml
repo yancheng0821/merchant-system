@@ -86,5 +86,19 @@
         WHERE status = 'ACTIVE'
         ORDER BY id
     </select>
-    
+
+    <select id="selectInactiveTenants" resultMap="TenantResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenants
+        WHERE status = 'INACTIVE'
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE tenants
+        SET status = #{status},
+            updated_at = UTC_TIMESTAMP()
+        WHERE id = #{id}
+    </update>
+
 </mapper> 

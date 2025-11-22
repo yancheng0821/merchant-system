@@ -53,10 +53,13 @@ const UserProfile: React.FC = () => {
   const { userPermissions, isSuperAdmin } = usePermission();
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
+    username: user?.username || '',
     email: user?.email || '',
     realName: user?.realName || '',
+    phone: user?.phone || '',
   });
   const [emailError, setEmailError] = useState<string>('');
+  const [usernameError, setUsernameError] = useState<string>('');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -182,6 +185,19 @@ const UserProfile: React.FC = () => {
       [name]: value
     });
 
+    // 实时验证用户名格式
+    if (name === 'username') {
+      if (!value) {
+        setUsernameError(t('auth.usernameRequired'));
+      } else if (value.length < 3 || value.length > 50) {
+        setUsernameError(t('auth.usernameLengthError'));
+      } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+        setUsernameError(t('auth.usernameFormatError'));
+      } else {
+        setUsernameError('');
+      }
+    }
+
     // 实时验证邮箱格式
     if (name === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -196,14 +212,18 @@ const UserProfile: React.FC = () => {
   const handleEdit = () => {
     setEditing(true);
     setEmailError('');
+    setUsernameError('');
   };
 
   const handleCancel = () => {
     setEditing(false);
     setEmailError('');
+    setUsernameError('');
     setFormData({
+      username: user?.username || '',
       email: user?.email || '',
       realName: user?.realName || '',
+      phone: user?.phone || '',
     });
   };
 
@@ -231,6 +251,20 @@ const UserProfile: React.FC = () => {
         return;
       }
 
+      // 验证用户名格式
+      if (!formData.username) {
+        setUsernameError(t('auth.usernameRequired'));
+        return;
+      }
+      if (formData.username.length < 3 || formData.username.length > 50) {
+        setUsernameError(t('auth.usernameLengthError'));
+        return;
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+        setUsernameError(t('auth.usernameFormatError'));
+        return;
+      }
+
       // 验证邮箱格式
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (formData.email && !emailRegex.test(formData.email)) {
@@ -240,8 +274,10 @@ const UserProfile: React.FC = () => {
 
       // 确保userId是数字类型，而不是undefined或null
       const updateData = {
+        username: formData.username,
         email: formData.email,
         realName: formData.realName,
+        phone: formData.phone,
         userId: Number(user.id) // 确保userId是数字类型
       };
 
@@ -269,8 +305,10 @@ const UserProfile: React.FC = () => {
         });
       } else {
         setFormData({
+          username: user?.username || '',
           email: user?.email || '',
           realName: user?.realName || '',
+          phone: user?.phone || '',
         });
         // Use the actual error message from AuthContext, or fallback to generic message
         const errorMessage = authError || t('auth.updateFailed');
@@ -296,8 +334,10 @@ const UserProfile: React.FC = () => {
     } catch (error) {
       console.error('Profile update error:', error);
       setFormData({
+        username: user?.username || '',
         email: user?.email || '',
         realName: user?.realName || '',
+        phone: user?.phone || '',
       });
       // Use the actual error message from AuthContext, or fallback to generic message
       const errorMessage = authError || t('auth.updateFailed');
@@ -736,15 +776,19 @@ const UserProfile: React.FC = () => {
               <TextField
                 fullWidth
                 label={t('auth.username')}
-                value={user.username}
-                disabled
+                name="username"
+                value={editing ? formData.username : user.username}
+                onChange={handleChange}
+                disabled={!editing}
+                error={editing && !!usernameError}
+                helperText={editing && usernameError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
                   },
                 }}
               />
-              
+
               <TextField
                 fullWidth
                 label={t('auth.email')}
@@ -761,7 +805,7 @@ const UserProfile: React.FC = () => {
                   },
                 }}
               />
-              
+
               <TextField
                 fullWidth
                 label={t('auth.realName')}
@@ -775,7 +819,21 @@ const UserProfile: React.FC = () => {
                   },
                 }}
               />
-              
+
+              <TextField
+                fullWidth
+                label={t('auth.phone')}
+                name="phone"
+                value={editing ? formData.phone : (user.phone || '')}
+                onChange={handleChange}
+                disabled={!editing}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  },
+                }}
+              />
+
               <TextField
                 fullWidth
                 label={t('auth.userId')}

@@ -38,6 +38,9 @@ export const ROUTE_PERMISSIONS: RoutePermissionConfig[] = [
 
   // 权限管理路由 - 拥有任意子权限即可访问
   { path: 'rbac', permissions: ['users:view', 'rbac:view_roles', 'rbac:view_permissions', 'audit:view'] },
+
+  // 商户管理路由 - 仅超级管理员可访问
+  { path: 'tenant-activation', requireSuperAdmin: true },
 ];
 
 /**

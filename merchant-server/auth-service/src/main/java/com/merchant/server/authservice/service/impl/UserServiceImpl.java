@@ -195,32 +195,11 @@ public class UserServiceImpl implements UserService {
         return exists;
     }
     
-    @Override
-    public UserProfileResponse getUserProfile(String token) {
-        logger.debug("获取用户信息 - token: {}", token.substring(0, Math.min(20, token.length())) + "...");
-        
-        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
-        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
-        Optional<User> userOpt = findById(userId);
-        
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
-        }
-        
-        User user = userOpt.get();
-        Tenant tenant = tenantMapper.selectById(user.getTenantId());
-        
-        UserProfileResponse response = new UserProfileResponse();
-        response.setUserId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setRealName(user.getRealName());
-        response.setEmail(user.getEmail());
-        response.setAvatar(user.getAvatarUrl());
-        response.setTenantId(user.getTenantId());
-        response.setTenantName(tenant != null ? tenant.getTenantName() : null);
-        response.setLastLoginTime(user.getLastLoginAt());
-        response.setUpdateTime(user.getUpdatedAt());
-
+    /**
+     * 填充用户资料响应的完整信息（角色、权限、时区等）
+     * 这是一个公共方法，避免代码重复
+     */
+    private void fillUserProfileDetails(User user, UserProfileResponse response) {
         // 获取商户时区信息
         try {
             ApiResponse<Map<String, Object>> merchantResponse = merchantServiceClient.getMerchantByTenantId(user.getTenantId());
@@ -259,9 +238,40 @@ public class UserServiceImpl implements UserService {
             new java.util.ArrayList<>();
         response.setPermissions(permissionCodes);
         logger.debug("用户权限数量: {}", permissionCodes.size());
+    }
+
+    @Override
+    public UserProfileResponse getUserProfile(String token) {
+        logger.debug("获取用户信息 - token: {}", token.substring(0, Math.min(20, token.length())) + "...");
+
+        // 从token中提取用户ID，而不是用户名，避免多租户中相同用户名的问题
+        Long userId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Optional<User> userOpt = findById(userId);
+
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
+        }
+
+        User user = userOpt.get();
+        Tenant tenant = tenantMapper.selectById(user.getTenantId());
+
+        UserProfileResponse response = new UserProfileResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setRealName(user.getRealName());
+        response.setEmail(user.getEmail());
+        response.setPhone(user.getPhone());
+        response.setAvatar(user.getAvatarUrl());
+        response.setTenantId(user.getTenantId());
+        response.setTenantName(tenant != null ? tenant.getTenantName() : null);
+        response.setLastLoginTime(user.getLastLoginAt());
+        response.setUpdateTime(user.getUpdatedAt());
+
+        // 填充完整信息（角色、权限、时区）
+        fillUserProfileDetails(user, response);
 
         logger.info("获取用户信息成功 - userId: {}, roles: {}, permissions: {}",
-                    user.getId(), roleCodes.size(), permissionCodes.size());
+                    user.getId(), response.getRoles().size(), response.getPermissions().size());
         return response;
     }
     
@@ -293,8 +303,16 @@ public class UserServiceImpl implements UserService {
                 throw new RuntimeException(messageUtil.getMessage("error.user.id.mismatch"));
             }
 
-            // 用户名不允许修改，忽略请求中的用户名
-            // 保持原有的用户名不变
+            // 检查用户名是否已被其他用户使用（在同一租户内）
+            logger.debug("检查用户名 - 当前用户名: {}, 新用户名: {}, 租户ID: {}", user.getUsername(), request.getUsername(), user.getTenantId());
+            if (request.getUsername() != null && !user.getUsername().equals(request.getUsername())) {
+                User existingUser = userMapper.selectByUsernameAndTenantId(request.getUsername(), user.getTenantId());
+                if (existingUser != null && !existingUser.getId().equals(user.getId())) {
+                    logger.error("Username already in use - username: {}, existing user ID: {}, tenant ID: {}",
+                                request.getUsername(), existingUser.getId(), user.getTenantId());
+                    throw new RuntimeException(messageUtil.getMessage("error.user.username.already.in.use"));
+                }
+            }
 
             // 检查邮箱是否已被其他用户使用（在同一租户内）
             logger.debug("检查邮箱 - 当前邮箱: {}, 新邮箱: {}, 租户ID: {}", user.getEmail(), request.getEmail(), user.getTenantId());
@@ -308,12 +326,18 @@ public class UserServiceImpl implements UserService {
                 }
             }
 
-            // 更新用户信息（不更新用户名）
-            logger.debug("更新用户信息 - realName: {} -> {}, email: {} -> {}",
+            // 更新用户信息
+            logger.debug("更新用户信息 - username: {} -> {}, realName: {} -> {}, email: {} -> {}, phone: {} -> {}",
+                        user.getUsername(), request.getUsername(),
                         user.getRealName(), request.getRealName(),
-                        user.getEmail(), request.getEmail());
+                        user.getEmail(), request.getEmail(),
+                        user.getPhone(), request.getPhone());
+            if (request.getUsername() != null) {
+                user.setUsername(request.getUsername());
+            }
             user.setRealName(request.getRealName());
             user.setEmail(request.getEmail());
+            user.setPhone(request.getPhone());
             user.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
 
             logger.debug("保存用户信息到数据库");
@@ -327,15 +351,18 @@ public class UserServiceImpl implements UserService {
             response.setUsername(user.getUsername());
             response.setRealName(user.getRealName());
             response.setEmail(user.getEmail());
+            response.setPhone(user.getPhone());
             response.setAvatar(user.getAvatarUrl());
             response.setTenantId(user.getTenantId());
             response.setTenantName(tenant != null ? tenant.getTenantName() : null);
             response.setLastLoginTime(user.getLastLoginAt());
             response.setUpdateTime(user.getUpdatedAt());
-            response.setRoles(List.of("ROLE_MERCHANT_ADMIN"));
-            response.setPermissions(List.of("READ", "WRITE"));
 
-            logger.info("更新用户信息成功 - userId: {}", user.getId());
+            // 填充完整信息（角色、权限、时区） - 使用公共方法避免重复代码
+            fillUserProfileDetails(user, response);
+
+            logger.info("更新用户信息成功 - userId: {}, roles: {}, permissions: {}",
+                        user.getId(), response.getRoles().size(), response.getPermissions().size());
             return response;
         } catch (Exception e) {
             logger.error("更新用户信息异常 - 请求userId: {}, 错误类型: {}, 错误信息: {}",

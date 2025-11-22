@@ -15,10 +15,16 @@ public interface TenantService {
     List<Tenant> findByParentTenantId(Long parentTenantId);
     
     List<Tenant> findActiveTenants();
-    
+
+    List<Tenant> findInactiveTenants();
+
+    void activateTenant(Long tenantId);
+
+    void deactivateTenant(Long tenantId);
+
     Tenant save(Tenant tenant);
-    
+
     void deleteById(Long id);
-    
+
     boolean existsByTenantCode(String tenantCode);
 } 

@@ -61,4 +61,19 @@ public class TenantServiceImpl implements TenantService {
     public List<Tenant> findActiveTenants() {
         return tenantMapper.selectActiveTenants();
     }
+
+    @Override
+    public List<Tenant> findInactiveTenants() {
+        return tenantMapper.selectInactiveTenants();
+    }
+
+    @Override
+    public void activateTenant(Long tenantId) {
+        tenantMapper.updateStatus(tenantId, Tenant.TenantStatus.ACTIVE);
+    }
+
+    @Override
+    public void deactivateTenant(Long tenantId) {
+        tenantMapper.updateStatus(tenantId, Tenant.TenantStatus.INACTIVE);
+    }
 } 

@@ -23,6 +23,10 @@ public interface TenantMapper {
     int deleteById(Long id);
     
     boolean existsByTenantCode(String tenantCode);
-    
+
     List<Tenant> selectActiveTenants();
+
+    List<Tenant> selectInactiveTenants();
+
+    int updateStatus(Long id, Tenant.TenantStatus status);
 } 

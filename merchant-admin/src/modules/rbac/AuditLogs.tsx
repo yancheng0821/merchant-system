@@ -313,6 +313,7 @@ const AuditLogs: React.FC = () => {
       // Merchant Resources
       MERCHANT: t('audit.resource.merchant'),
       MERCHANT_CONFIG_ITEM: t('audit.resource.merchantConfigItem'),
+      TENANT: t('audit.resource.tenant'),
     };
     return resourceMap[resource] || resource;
   };
@@ -356,7 +357,7 @@ const AuditLogs: React.FC = () => {
     }
 
     // Merchant/Settings resources - Teal
-    if (normalizedResource.includes('MERCHANT')) {
+    if (normalizedResource.includes('MERCHANT') || normalizedResource === 'TENANT') {
       return { bg: alpha('#14B8A6', 0.1), color: '#14B8A6' };
     }
 
@@ -832,6 +833,7 @@ const AuditLogs: React.FC = () => {
                   {/* Merchant Resources */}
                   <MenuItem value="MERCHANT">{t('audit.resource.merchant')}</MenuItem>
                   <MenuItem value="MERCHANT_CONFIG_ITEM">{t('audit.resource.merchantConfigItem')}</MenuItem>
+                  <MenuItem value="TENANT">{t('audit.resource.tenant')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

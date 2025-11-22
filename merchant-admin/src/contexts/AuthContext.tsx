@@ -18,6 +18,7 @@ export interface User {
   username: string;
   realName: string;
   email: string;
+  phone?: string;
   avatar?: string;
   tenantId: number;
   tenantName?: string;
@@ -325,17 +326,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await userApi.updateProfile(updateData);
 
       if (response.success && response.data) {
-        // 更新成功后，重新获取完整的用户资料
-        try {
-          const profileResp = await userApi.getProfile();
-          if (profileResp.success && profileResp.data) {
-            const fixedUser = { ...profileResp.data, id: Number((profileResp.data as any).userId) };
-            setUser(fixedUser);
-            localStorage.setItem('user', JSON.stringify(fixedUser));
-          }
-        } catch (e) {
-          console.error('Failed to fetch latest profile:', e);
-        }
+        // 直接使用updateProfile返回的数据，它已经包含了最新的完整信息
+        const responseData = response.data as any;
+        const updatedUser: User = {
+          id: Number(responseData.userId),
+          username: responseData.username,
+          realName: responseData.realName,
+          email: responseData.email,
+          phone: responseData.phone,
+          avatar: responseData.avatar,
+          tenantId: responseData.tenantId,
+          tenantName: responseData.tenantName,
+          timezone: responseData.timezone,
+          roles: responseData.roles,
+          permissions: responseData.permissions,
+          lastLoginTime: responseData.lastLoginTime,
+          createdAt: user.createdAt, // 保留原有的createdAt
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
         return true;
       } else {
         console.error('Update failed:', response.message);

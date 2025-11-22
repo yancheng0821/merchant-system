@@ -3215,3 +3215,48 @@ export const membershipTierApi = {
 
 // 礼品卡相关API - 已移除
 // 礼品卡由POS系统管理，本系统只记录礼品卡支付金额
+
+// 租户管理API
+export interface TenantInfo {
+  id: number;
+  tenantCode: string;
+  tenantName: string;
+  tenantType: string;
+  status: string;
+  contactPerson: string;
+  contactPhone: string;
+  contactEmail: string;
+  address: string;
+  businessLicense: string;
+  createdAt: string;
+}
+
+export const tenantApi = {
+  // 获取所有商户
+  getAllTenants: async (): Promise<ApiResponse<TenantInfo[]>> => {
+    return createRequest('/api/auth/tenants/all', {
+      method: 'GET',
+    });
+  },
+
+  // 获取所有待激活的商户
+  getInactiveTenants: async (): Promise<ApiResponse<TenantInfo[]>> => {
+    return createRequest('/api/auth/tenants/inactive', {
+      method: 'GET',
+    });
+  },
+
+  // 激活商户
+  activateTenant: async (tenantId: number): Promise<ApiResponse<void>> => {
+    return createRequest(`/api/auth/tenants/${tenantId}/activate`, {
+      method: 'PUT',
+    });
+  },
+
+  // 停用商户
+  deactivateTenant: async (tenantId: number): Promise<ApiResponse<void>> => {
+    return createRequest(`/api/auth/tenants/${tenantId}/deactivate`, {
+      method: 'PUT',
+    });
+  },
+};

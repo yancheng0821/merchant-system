@@ -50,6 +50,7 @@ import {
 import NotificationManagement from './modules/notifications/NotificationManagement';
 import ScheduleManagement from './modules/schedule/components/ShiftManagement';
 import { RBACManagement } from './modules/rbac';
+import { TenantActivation } from './modules/admin';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
 import { getFullImageUrl } from './services/api';
@@ -773,6 +774,7 @@ const MainAppContent: React.FC = () => {
               {selectedItem === 'costs' && <CostManagement />}
               {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}
               {selectedItem === 'rbac' && <RBACManagement />}
+              {selectedItem === 'tenant-activation' && <TenantActivation />}
               {selectedItem === 'profile' && <UserProfile />}
             </Container>
           </Box>

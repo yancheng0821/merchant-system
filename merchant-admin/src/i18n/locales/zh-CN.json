@@ -53,6 +53,13 @@
     "noPermission": "您没有权限执行此操作"
   },
   "auth": {
+    "and": "和",
+    "iAgreeToThe": "我同意",
+    "privacyPolicy": "隐私政策",
+    "termsOfService": "服务条款",
+    "termsRequired": "您必须同意服务条款",
+    "acceptTerms": "同意并继续",
+    "termsLoadError": "无法加载服务条款",
     "merchantRegister": "商户注册",
     "merchantRegisterPage": {
       "title": "商户注册",
@@ -110,7 +117,8 @@
         "contactPhoneInvalid": "联系电话格式不正确",
         "contactEmailInvalid": "联系邮箱格式不正确",
         "resourceTypesRequired": "请至少选择一种资源类型",
-        "registrationFailed": "注册失败，请重试"
+        "registrationFailed": "注册失败，请重试",
+        "termsRequired": "您必须同意服务条款才能继续"
       },
       "success": {
         "title": "注册成功！",
@@ -206,6 +214,7 @@
     "email": "邮箱",
     "realName": "真实姓名",
     "fullName": "姓名",
+    "phone": "手机号",
     "phoneNumber": "电话号码",
     "role": "角色",
     "userId": "用户ID",
@@ -256,6 +265,8 @@
     "invalidFileType": "请选择有效的图片文件",
     "fileTooLarge": "文件大小不能超过5MB",
     "invalidEmailFormat": "请输入有效的邮箱地址",
+    "usernameLengthError": "用户名长度必须在3-50个字符之间",
+    "usernameFormatError": "用户名只能包含字母、数字和下划线",
     "userProfile": "用户资料",
     "userProfileSubtitle": "管理您的个人信息和账户设置",
     "avatarUploadTip": "点击头像上的相机图标上传新头像。支持 JPG、PNG 格式，文件大小不超过 5MB。",
@@ -379,6 +390,7 @@
     "costs": "成本管理",
     "settings": "设置",
     "rbac": "权限设置",
+    "tenantActivation": "商户管理",
     "userRoleManagement": "用户管理",
     "rolePermissionManagement": "权限管理",
     "userProfile": "用户资料",
@@ -3646,9 +3658,48 @@
       "notificationLog": "通知日志",
       "merchant": "商户",
       "merchantConfigItem": "商户配置项",
+      "tenant": "商户管理",
       "staffAttendance": "员工考勤",
       "staffNotification": "员工通知",
       "costManagement": "成本管理"
+    }
+  },
+  "admin": {
+    "tenantActivation": {
+      "title": "商户管理",
+      "subtitle": "管理商户账户的激活与停用",
+      "infoMessage": "您可以在此页面查看所有商户，并对商户进行激活或停用操作。新注册的商户需要激活后才能使用系统。",
+      "loadFailed": "加载商户列表失败",
+      "noTenants": "暂无商户",
+      "tenantCode": "商户代码",
+      "tenantName": "商户名称",
+      "contactPerson": "联系人",
+      "contactPhone": "联系电话",
+      "contactEmail": "联系邮箱",
+      "status": "状态",
+      "createdAt": "注册时间",
+      "actions": "操作",
+      "activate": "激活",
+      "deactivate": "停用",
+      "statusActive": "已激活",
+      "statusInactive": "待激活",
+      "statusSuspended": "已暂停",
+      "activateConfirm": "确认激活商户",
+      "deactivateConfirm": "确认停用商户",
+      "activateConfirmMessage": "您确定要激活商户 \"{{tenantName}}\" 吗？激活后该商户将可以正常使用系统。",
+      "deactivateConfirmMessage": "您确定要停用商户 \"{{tenantName}}\" 吗？停用后该商户将无法登录系统。",
+      "activateSuccess": "商户激活成功",
+      "activateFailed": "商户激活失败",
+      "deactivateSuccess": "商户停用成功",
+      "deactivateFailed": "商户停用失败",
+      "filterByStatus": "按状态筛选",
+      "allStatus": "全部状态",
+      "sortByDate": "按注册时间排序",
+      "newest": "最新",
+      "oldest": "最早",
+      "showing": "显示",
+      "merchants": "个商户",
+      "noTenantsWithFilter": "没有符合筛选条件的商户"
     }
   },
   "modules": {

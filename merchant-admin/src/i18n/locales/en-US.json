@@ -54,6 +54,13 @@
     "noPermission": "You don't have permission to perform this action"
   },
   "auth": {
+    "and": "and",
+    "iAgreeToThe": "I agree to the",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "termsRequired": "You must accept the terms of service",
+    "acceptTerms": "Accept and Continue",
+    "termsLoadError": "Failed to load terms of service",
     "merchantRegister": "Merchant Registration",
     "merchantRegisterPage": {
       "title": "Merchant Registration",
@@ -111,7 +118,8 @@
         "contactPhoneInvalid": "Invalid contact phone format",
         "contactEmailInvalid": "Invalid contact email format",
         "resourceTypesRequired": "Please select at least one resource type",
-        "registrationFailed": "Registration failed, please try again"
+        "registrationFailed": "Registration failed, please try again",
+        "termsRequired": "You must accept the terms of service to continue"
       },
       "success": {
         "title": "Registration Successful!",
@@ -209,6 +217,7 @@
     "confirmPassword": "Confirm Password",
     "realName": "Real Name",
     "email": "Email",
+    "phone": "Phone",
     "phoneNumber": "Phone Number",
     "invitationCode": "Invitation Code",
     "invitationCodeHelp": "Invitation code is used to join existing merchant organizations, contact administrator to get one",
@@ -265,6 +274,8 @@
     "invalidFileType": "Please select a valid image file",
     "fileTooLarge": "File size cannot exceed 5MB",
     "invalidEmailFormat": "Please enter a valid email address",
+    "usernameLengthError": "Username must be between 3 and 50 characters",
+    "usernameFormatError": "Username can only contain letters, numbers and underscores",
     "userProfile": "User Profile",
     "userProfileSubtitle": "Manage your personal information and account settings",
     "avatarUploadTip": "Click the camera icon on the avatar to upload a new one. Supports JPG, PNG formats, file size not exceeding 5MB.",
@@ -384,6 +395,7 @@
     "costs": "Cost Management",
     "settings": "Settings",
     "rbac": "Access Control",
+    "tenantActivation": "Merchants",
     "userRoleManagement": "User Management",
     "rolePermissionManagement": "Permission Management",
     "userProfile": "User Profile",
@@ -3561,9 +3573,48 @@
       "notificationLog": "Notification Log",
       "merchant": "Merchant",
       "merchantConfigItem": "Merchant Config Item",
+      "tenant": "Merchant Management",
       "staffAttendance": "Staff Attendance",
       "staffNotification": "Staff Notification",
       "costManagement": "Cost Management"
+    }
+  },
+  "admin": {
+    "tenantActivation": {
+      "title": "Merchant Management",
+      "subtitle": "Manage merchant account activation and deactivation",
+      "infoMessage": "You can view all merchants on this page and activate or deactivate them. Newly registered merchants need to be activated before they can use the system.",
+      "loadFailed": "Failed to load merchant list",
+      "noTenants": "No merchants",
+      "tenantCode": "Merchant Code",
+      "tenantName": "Merchant Name",
+      "contactPerson": "Contact Person",
+      "contactPhone": "Contact Phone",
+      "contactEmail": "Contact Email",
+      "status": "Status",
+      "createdAt": "Registration Date",
+      "actions": "Actions",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "statusSuspended": "Suspended",
+      "activateConfirm": "Confirm Activation",
+      "deactivateConfirm": "Confirm Deactivation",
+      "activateConfirmMessage": "Are you sure you want to activate merchant \"{{tenantName}}\"? After activation, the merchant will be able to use the system normally.",
+      "deactivateConfirmMessage": "Are you sure you want to deactivate merchant \"{{tenantName}}\"? After deactivation, the merchant will not be able to log in to the system.",
+      "activateSuccess": "Merchant activated successfully",
+      "activateFailed": "Failed to activate merchant",
+      "deactivateSuccess": "Merchant deactivated successfully",
+      "deactivateFailed": "Failed to deactivate merchant",
+      "filterByStatus": "Filter by Status",
+      "allStatus": "All Status",
+      "sortByDate": "Sort by Date",
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "showing": "Showing",
+      "merchants": "merchants",
+      "noTenantsWithFilter": "No merchants match the filter criteria"
     }
   },
   "modules": {

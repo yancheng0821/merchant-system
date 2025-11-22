@@ -9,6 +9,7 @@ public class UserProfileResponse {
     private String username;
     private String realName;
     private String email;
+    private String phone;
     private String avatar;
     private Long tenantId;
     private String tenantName;
@@ -50,7 +51,15 @@ public class UserProfileResponse {
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     public String getAvatar() {
         return avatar;
     }
@@ -122,6 +131,7 @@ public class UserProfileResponse {
                 ", username='" + username + '\'' +
                 ", realName='" + realName + '\'' +
                 ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
                 ", avatar='" + avatar + '\'' +
                 ", tenantId=" + tenantId +
                 ", tenantName='" + tenantName + '\'' +

@@ -14,6 +14,7 @@ import {
   EventNote as ShiftIcon,
   AdminPanelSettings as RBACIcon,
   AccountBalance as CostsIcon,
+  Business as TenantIcon,
 } from '@mui/icons-material';
 import { PermissionCode } from '../config/permissions';
 import { RoleCode } from '../config/roles';
@@ -144,7 +145,16 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     anyPermission: ['users:view', 'rbac:view_roles', 'rbac:view_permissions', 'audit:view'] as PermissionCode[]
   });
 
-  // 11. 设置 - 系统配置（最底部）
+  // 12. 商户管理 - 超级管理员专用
+  baseMenuItems.push({
+    textKey: 'nav.tenantActivation',
+    icon: React.createElement(TenantIcon),
+    id: 'tenant-activation',
+    color: '#14B8A6',
+    requireSuperAdmin: true
+  });
+
+  // 13. 设置 - 系统配置（最底部）
   baseMenuItems.push({
     textKey: 'nav.settings',
     icon: React.createElement(SettingsIcon),

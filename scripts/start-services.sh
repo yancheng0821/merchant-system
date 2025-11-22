@@ -101,6 +101,7 @@ start_service() {
 # Function to stop a single service
 stop_service() {
     local service_name=$1
+    local service_port=$2
 
     echo -e "${BLUE}Stopping ${service_name}...${NC}"
 
@@ -108,6 +109,33 @@ stop_service() {
         local pid=$(cat "${PID_DIR}/${service_name}.pid")
         if ps -p $pid > /dev/null 2>&1; then
             kill $pid
+
+            # Wait for the process to terminate (up to 30 seconds)
+            local count=0
+            while ps -p $pid > /dev/null 2>&1; do
+                if [ $count -ge 30 ]; then
+                    echo -e "${YELLOW}Process did not stop gracefully, forcing kill...${NC}"
+                    kill -9 $pid 2>/dev/null
+                    sleep 2
+                    break
+                fi
+                sleep 1
+                count=$((count + 1))
+            done
+
+            # Wait for port to be released (up to 10 seconds)
+            if [ -n "$service_port" ]; then
+                local port_count=0
+                while lsof -Pi :${service_port} -sTCP:LISTEN -t >/dev/null 2>&1; do
+                    if [ $port_count -ge 10 ]; then
+                        echo -e "${YELLOW}Port ${service_port} still in use after 10 seconds${NC}"
+                        break
+                    fi
+                    sleep 1
+                    port_count=$((port_count + 1))
+                done
+            fi
+
             echo -e "${GREEN}${service_name} stopped${NC}"
         else
             echo -e "${YELLOW}${service_name} is not running${NC}"
@@ -115,6 +143,16 @@ stop_service() {
         rm -f "${PID_DIR}/${service_name}.pid"
     else
         echo -e "${YELLOW}${service_name} PID file not found${NC}"
+
+        # Even without PID file, try to kill any process using the port
+        if [ -n "$service_port" ]; then
+            local port_pid=$(lsof -Pi :${service_port} -sTCP:LISTEN -t 2>/dev/null)
+            if [ -n "$port_pid" ]; then
+                echo -e "${YELLOW}Found process using port ${service_port}, killing it...${NC}"
+                kill $port_pid 2>/dev/null
+                sleep 2
+            fi
+        fi
     fi
 }
 
@@ -171,7 +209,7 @@ stop_all() {
     for ((i=${#SERVICES[@]}-1; i>=0; i--)); do
         local service_info="${SERVICES[$i]}"
         IFS=':' read -r service_name service_port <<< "$service_info"
-        stop_service "$service_name"
+        stop_service "$service_name" "$service_port"
     done
 
     echo -e "${GREEN}All services stopped!${NC}"
@@ -182,6 +220,7 @@ restart_services() {
     if [ -z "$1" ]; then
         # Restart all services
         stop_all
+        sleep 3  # Extra wait between stop and start
         start_all
     else
         # Restart specific service
@@ -191,7 +230,7 @@ restart_services() {
         for service_info in "${SERVICES[@]}"; do
             IFS=':' read -r service_name service_port <<< "$service_info"
             if [ "$service_name" == "$target_service" ]; then
-                stop_service "$service_name"
+                stop_service "$service_name" "$service_port"
                 start_service "$service_name" "$service_port"
                 found=true
                 break
@@ -246,7 +285,21 @@ case "$1" in
         if [ -z "$2" ]; then
             stop_all
         else
-            stop_service "$2"
+            # Stop specific service - need to find its port
+            found=false
+            for service_info in "${SERVICES[@]}"; do
+                IFS=':' read -r service_name service_port <<< "$service_info"
+                if [ "$service_name" == "$2" ]; then
+                    stop_service "$service_name" "$service_port"
+                    found=true
+                    break
+                fi
+            done
+
+            if [ "$found" = false ]; then
+                echo -e "${RED}Service '$2' not found${NC}"
+                exit 1
+            fi
         fi
         ;;
     restart)

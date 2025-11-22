@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.merchant.server.authservice.entity.AuditLog;
 import com.merchant.server.authservice.entity.User;
 import com.merchant.server.authservice.entity.Role;
+import com.merchant.server.authservice.entity.Tenant;
 import com.merchant.server.authservice.service.AuditLogService;
 import com.merchant.server.authservice.service.UserService;
 import com.merchant.server.authservice.service.RoleService;
+import com.merchant.server.authservice.service.TenantService;
 import com.merchant.server.authservice.util.JwtUtil;
 import com.merchant.server.common.annotation.Auditable;
 import lombok.extern.slf4j.Slf4j;
@@ -129,7 +131,8 @@ public class AuditAspect {
         try {
             AuditLog auditLog = new AuditLog();
             auditLog.setUserId(userId);
-            auditLog.setTenantId(tenantId);
+            // 如果tenantId为null，使用默认值1（默认商户/超级管理员商户）
+            auditLog.setTenantId(tenantId != null ? tenantId : 1L);
             auditLog.setResource(auditable.resource());
             auditLog.setAction(auditable.action());
             auditLog.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
@@ -200,6 +203,20 @@ public class AuditAspect {
                     })
                     .orElse(null);
                 return userMap != null ? userMap : returnValue;
+            } else if ("TENANT".equals(resource)) {
+                // 获取商户新值
+                TenantService tenantService = applicationContext.getBean(TenantService.class);
+                Map<String, Object> tenantMap = tenantService.findById(resourceId)
+                    .map(tenant -> {
+                        Map<String, Object> map = new HashMap<String, Object>();
+                        map.put("id", tenant.getId());
+                        map.put("tenantCode", tenant.getTenantCode());
+                        map.put("tenantName", tenant.getTenantName());
+                        map.put("status", tenant.getStatus().toString());
+                        return map;
+                    })
+                    .orElse(null);
+                return tenantMap != null ? tenantMap : returnValue;
             } else if ("USER_ROLE".equals(resource)) {
                 // 获取用户角色新值
                 RoleService roleService = applicationContext.getBean(RoleService.class);
@@ -253,6 +270,19 @@ public class AuditAspect {
                         userMap.put("phone", user.getPhone());
                         userMap.put("status", user.getStatus());
                         return userMap;
+                    })
+                    .orElse(null);
+            } else if ("TENANT".equals(resource)) {
+                // 获取商户旧值
+                TenantService tenantService = applicationContext.getBean(TenantService.class);
+                return tenantService.findById(resourceId)
+                    .map(tenant -> {
+                        Map<String, Object> tenantMap = new HashMap<>();
+                        tenantMap.put("id", tenant.getId());
+                        tenantMap.put("tenantCode", tenant.getTenantCode());
+                        tenantMap.put("tenantName", tenant.getTenantName());
+                        tenantMap.put("status", tenant.getStatus().toString());
+                        return tenantMap;
                     })
                     .orElse(null);
             } else if ("USER_ROLE".equals(resource)) {

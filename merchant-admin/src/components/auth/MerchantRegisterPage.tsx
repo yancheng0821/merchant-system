@@ -48,6 +48,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import CountryCodeSelector from '../common/CountryCodeSelector';
+import TermsOfServiceCheckbox from './TermsOfServiceCheckbox';
 
 interface MerchantRegisterData {
   // 管理员信息
@@ -75,6 +76,9 @@ interface MerchantRegisterData {
   
   // 资源类型
   resourceTypes: string[];
+
+  // 服务条款
+  acceptedTerms: boolean;
 }
 
 interface MerchantRegisterPageProps {
@@ -265,6 +269,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     postCode: '',
     timezone: detectUserTimezone(), // 自动检测用户时区
     resourceTypes: ['STAFF'],
+    acceptedTerms: false,
   });
 
   const steps = [
@@ -568,6 +573,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
       case 2: // 业务配置
         // 资源类型已默认设置为 STAFF，无需验证
+        if (!formData.acceptedTerms) {
+          setError(t('auth.merchantRegisterPage.validation.termsRequired') || 'You must accept the terms of service');
+          return false;
+        }
         break;
     }
     return true;
@@ -1191,6 +1200,18 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
                   {t('auth.merchantRegisterPage.businessConfig.resourceTypesInfo')}
                 </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ mt: 2 }}>
+                <TermsOfServiceCheckbox
+                  checked={formData.acceptedTerms}
+                  onChange={(checked) => {
+                    setFormData(prev => ({ ...prev, acceptedTerms: checked }));
+                    setError(null); // 清除错误提示
+                  }}
+                  error={!!error && !formData.acceptedTerms}
+                />
               </Box>
             </Grid>
           </Grid>

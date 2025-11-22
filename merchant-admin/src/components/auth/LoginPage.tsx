@@ -37,6 +37,7 @@ import LanguageSwitcher from '../common/LanguageSwitcher';
 import HelpTooltip from '../common/HelpTooltip';
 import CountryCodeSelector from '../common/CountryCodeSelector';
 import { authApi, handleApiError } from '../../services/api';
+import TermsOfServiceCheckbox from './TermsOfServiceCheckbox';
 
 
 interface RegisterData {
@@ -48,6 +49,7 @@ interface RegisterData {
   phone: string;
   phoneCountryCode: string;
   invitationCode: string;
+  acceptedTerms: boolean;
 }
 
 const LoginPage: React.FC = () => {
@@ -93,7 +95,8 @@ const LoginPage: React.FC = () => {
     realName: '',
     phone: '',
     phoneCountryCode: '+1-CA',
-    invitationCode: ''
+    invitationCode: '',
+    acceptedTerms: false
   });
 
   // 实时验证状态
@@ -386,6 +389,11 @@ const LoginPage: React.FC = () => {
 
     if (registerData.password !== registerData.confirmPassword) {
       setError(t('auth.passwordMismatch') || '两次输入的密码不一致');
+      return;
+    }
+
+    if (!registerData.acceptedTerms) {
+      setError(t('auth.termsRequired') || '您必须同意服务条款');
       return;
     }
 
@@ -1161,6 +1169,14 @@ const LoginPage: React.FC = () => {
                       },
                     }}
                   />
+
+                  <Box sx={{ mt: 3 }}>
+                    <TermsOfServiceCheckbox
+                      checked={registerData.acceptedTerms}
+                      onChange={(checked) => setRegisterData(prev => ({ ...prev, acceptedTerms: checked }))}
+                      error={!!error && !registerData.acceptedTerms}
+                    />
+                  </Box>
 
                   <Button
                     type="submit"
