@@ -11,11 +11,14 @@ import {
   InputAdornment,
   IconButton,
   Snackbar,
+  Fade,
 } from '@mui/material';
 import {
   Lock as LockIcon,
   Visibility,
   VisibilityOff,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -37,6 +40,54 @@ const ResetPasswordPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
+
+  // 实时验证状态
+  const [validationErrors, setValidationErrors] = useState({
+    password: '',
+    confirmPassword: '',
+  });
+
+  // 跟踪字段是否已被用户触摸过
+  const [touchedFields, setTouchedFields] = useState({
+    password: false,
+    confirmPassword: false,
+  });
+
+  // 验证函数
+  const validatePasswordStrength = (password: string): string => {
+    if (!password) return '';
+
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const isLongEnough = password.length >= 8;
+
+    if (!isLongEnough) {
+      return t('auth.passwordMinLength') || 'Password must be at least 8 characters';
+    }
+    if (!hasUpperCase) {
+      return t('auth.passwordNeedsUpperCase') || 'Password must contain at least one uppercase letter';
+    }
+    if (!hasLowerCase) {
+      return t('auth.passwordNeedsLowerCase') || 'Password must contain at least one lowercase letter';
+    }
+    if (!hasNumber) {
+      return t('auth.passwordNeedsNumber') || 'Password must contain at least one number';
+    }
+    if (!hasSpecialChar) {
+      return t('auth.passwordNeedsSpecialChar') || 'Password must contain at least one special character';
+    }
+    return '';
+  };
+
+  const validateConfirmPasswordMatch = (password: string, confirmPassword: string): string => {
+    if (!confirmPassword) return '';
+    if (password !== confirmPassword) {
+      return t('auth.passwordMismatch') || 'Passwords do not match';
+    }
+    return '';
+  };
 
   useEffect(() => {
     const validateToken = async () => {
@@ -64,29 +115,69 @@ const ResetPasswordPage: React.FC = () => {
     validateToken();
   }, [token, t]);
 
+  // 处理密码变化
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setNewPassword(newValue);
+
+    // 标记字段为已触摸
+    setTouchedFields(prev => ({
+      ...prev,
+      password: true,
+    }));
+
+    // 实时验证密码强度
+    const passwordError = validatePasswordStrength(newValue);
+    const confirmPasswordError = touchedFields.confirmPassword
+      ? validateConfirmPasswordMatch(newValue, confirmPassword)
+      : '';
+    setValidationErrors({
+      password: passwordError,
+      confirmPassword: confirmPasswordError,
+    });
+  };
+
+  // 处理确认密码变化
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setConfirmPassword(newValue);
+
+    // 标记字段为已触摸
+    setTouchedFields(prev => ({
+      ...prev,
+      confirmPassword: true,
+    }));
+
+    // 实时验证确认密码是否匹配
+    const confirmPasswordError = validateConfirmPasswordMatch(newPassword, newValue);
+    setValidationErrors(prev => ({
+      ...prev,
+      confirmPassword: confirmPasswordError,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!newPassword) {
-      setError(t('auth.passwordRequired') || 'Password is required');
+    // 验证密码强度
+    const passwordError = validatePasswordStrength(newPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError(t('auth.passwordTooShort') || 'Password must be at least 6 characters');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError(t('auth.passwordMismatch') || 'Passwords do not match');
+    // 验证确认密码匹配
+    const confirmPasswordError = validateConfirmPasswordMatch(newPassword, confirmPassword);
+    if (confirmPasswordError) {
+      setError(confirmPasswordError);
       return;
     }
 
     setLoading(true);
 
     try {
-      const result = await authApi.resetPassword(token!, newPassword);
+      const result = await authApi.resetPassword(token!, newPassword, confirmPassword);
 
       if (result.success) {
         setSuccess(true);
@@ -196,47 +287,156 @@ const ResetPasswordPage: React.FC = () => {
             </Box>
           ) : (
             <form onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                label={t('auth.newPassword')}
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                margin="normal"
-                required
-                autoFocus
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        edge="end"
-                      >
-                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
+              <Box>
+                <TextField
+                  fullWidth
+                  label={t('auth.newPassword')}
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={handlePasswordChange}
+                  onFocus={() => setTouchedFields(prev => ({ ...prev, password: true }))}
+                  margin="normal"
+                  required
+                  autoFocus
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          edge="end"
+                        >
+                          {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+                {/* 只有在用户点击密码框且未全部满足时才显示密码要求 */}
+                {touchedFields.password && !(
+                  newPassword &&
+                  newPassword.length >= 8 &&
+                  /[A-Z]/.test(newPassword) &&
+                  /[a-z]/.test(newPassword) &&
+                  /[0-9]/.test(newPassword) &&
+                  /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+                ) && (
+                  <Fade in={true}>
+                    <Box sx={{ mt: 0.5, mb: 1, px: 1 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500 }}>
+                        {t('auth.passwordRequirements')}:
+                      </Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        {/* 至少8位 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                          {newPassword.length >= 8 ? (
+                            <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                          ) : (
+                            <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: newPassword.length >= 8 ? 'success.main' : 'text.secondary',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            {t('auth.passwordMinLength')}
+                          </Typography>
+                        </Box>
+                        {/* 大写字母 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                          {/[A-Z]/.test(newPassword) ? (
+                            <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                          ) : (
+                            <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: /[A-Z]/.test(newPassword) ? 'success.main' : 'text.secondary',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            {t('auth.passwordNeedsUpperCase')}
+                          </Typography>
+                        </Box>
+                        {/* 小写字母 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                          {/[a-z]/.test(newPassword) ? (
+                            <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                          ) : (
+                            <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: /[a-z]/.test(newPassword) ? 'success.main' : 'text.secondary',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            {t('auth.passwordNeedsLowerCase')}
+                          </Typography>
+                        </Box>
+                        {/* 数字 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                          {/[0-9]/.test(newPassword) ? (
+                            <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                          ) : (
+                            <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: /[0-9]/.test(newPassword) ? 'success.main' : 'text.secondary',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            {t('auth.passwordNeedsNumber')}
+                          </Typography>
+                        </Box>
+                        {/* 特殊字符 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
+                          {/[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? (
+                            <CheckCircleIcon sx={{ fontSize: '0.85rem', color: 'success.main' }} />
+                          ) : (
+                            <CancelIcon sx={{ fontSize: '0.85rem', color: 'text.disabled' }} />
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? 'success.main' : 'text.secondary',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            {t('auth.passwordNeedsSpecialChar')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Fade>
+                )}
+              </Box>
 
               <TextField
                 fullWidth
                 label={t('auth.confirmPassword')}
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={handleConfirmPasswordChange}
                 margin="normal"
                 required
+                error={touchedFields.confirmPassword && !!validationErrors.confirmPassword}
+                helperText={touchedFields.confirmPassword ? validationErrors.confirmPassword : ''}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">

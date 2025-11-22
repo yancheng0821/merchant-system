@@ -611,10 +611,10 @@ export const authApi = {
     });
   },
 
-  resetPassword: async (token: string, newPassword: string): Promise<ApiResponse<any>> => {
+  resetPassword: async (token: string, newPassword: string, confirmPassword: string): Promise<ApiResponse<any>> => {
     return createRequest('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
+      body: JSON.stringify({ token, newPassword, confirmPassword }),
     });
   },
 

@@ -339,6 +339,7 @@
     "resetPasswordError": "重置密码出错",
     "forgotPasswordFailed": "发送重置邮件失败",
     "forgotPasswordError": "发送重置邮件出错",
+    "backToLogin": "返回登录",
     "twoFactorAuth": "二次验证",
     "enterVerificationCode": "请输入发送到您手机的验证码",
     "verificationCode": "验证码",

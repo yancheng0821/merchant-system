@@ -340,6 +340,7 @@
     "resetPasswordError": "Error resetting password",
     "forgotPasswordFailed": "Failed to send reset email",
     "forgotPasswordError": "Error sending reset email",
+    "backToLogin": "Back to Login",
     "twoFactorAuth": "Two-Factor Authentication",
     "enterVerificationCode": "Please enter the verification code sent to your phone",
     "verificationCode": "Verification Code",

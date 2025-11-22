@@ -34,6 +34,7 @@ import { TaxProvider } from './contexts/TaxContext';
 import { SessionProvider } from './contexts/SessionContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { LoginPage, UserProfile } from './components';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import {
   Dashboard,
   ServiceManagement,
@@ -779,7 +780,12 @@ const MainAppContent: React.FC = () => {
           </SessionProvider>
         </TaxProvider>
       ) : (
-        <LoginPage />
+        // 公开页面路由（未登录状态）
+        location.pathname === '/reset-password' ? (
+          <ResetPasswordPage />
+        ) : (
+          <LoginPage />
+        )
       );
 };
 
