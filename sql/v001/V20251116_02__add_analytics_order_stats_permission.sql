@@ -2,6 +2,8 @@
 -- Author: System
 -- Date: 2025-11-16
 
+USE merchant_auth;
+
 -- 插入新权限（如果不存在）
 INSERT INTO permissions (permission_code, permission_name, display_name, resource, action, scope, resource_type, module, resource_path, http_method, description, status, created_at, updated_at)
 SELECT 'analytics:view_order_stats', 'View Order Stats', '查看订单统计', 'analytics', 'view_order_stats', 'all', 'order_stats', 'analytics', '/api/business/analytics/orders*', 'GET', '查看订单统计数据和报表', 'ACTIVE', NOW(), NOW()

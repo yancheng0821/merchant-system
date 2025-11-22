@@ -1,6 +1,8 @@
 -- 添加员工考勤汇总发送状态字段
 -- 用于记录每日工作汇总邮件的发送情况，避免重复发送
 
+use merchant_business;
+
 ALTER TABLE staff_attendance
 ADD COLUMN summary_sent TINYINT(1) DEFAULT 0 COMMENT '是否已发送汇总 0-未发送 1-已发送',
 ADD COLUMN summary_sent_at DATETIME NULL COMMENT '汇总发送时间',

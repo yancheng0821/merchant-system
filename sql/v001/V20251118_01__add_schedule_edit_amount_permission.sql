@@ -1,5 +1,6 @@
 -- Add permission for editing order amount in schedule payment dialog
 -- V20251118_01__add_schedule_edit_amount_permission.sql
+USE merchant_auth;
 
 INSERT INTO merchant_auth.permissions (
     permission_name,

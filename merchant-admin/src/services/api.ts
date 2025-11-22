@@ -1890,6 +1890,7 @@ export interface StaffAttendance {
   attendanceDate: string; // yyyy-MM-dd
   checkInTime: string; // HH:mm:ss
   checkOutTime: string; // HH:mm:ss
+  timePeriods?: Array<{ start: string; end: string }>; // 调整后的多个时间段（保留休息时间）
   notes?: string;
   createdBy?: number;
   createdAt?: string;

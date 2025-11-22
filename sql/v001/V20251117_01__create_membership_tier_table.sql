@@ -1,4 +1,7 @@
 -- 创建会员等级表
+
+use merchant_business;
+
 CREATE TABLE IF NOT EXISTS membership_tier (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '等级ID',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',

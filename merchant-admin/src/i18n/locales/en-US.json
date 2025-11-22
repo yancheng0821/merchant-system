@@ -2674,7 +2674,16 @@
         "valid": "Valid",
         "expiringSoon": "Expiring Soon",
         "expired": "Expired"
-      }
+      },
+      "loadFailed": "Failed to load certificates",
+      "createSuccess": "Certificate created successfully",
+      "updateSuccess": "Certificate updated successfully",
+      "deleteSuccess": "Certificate deleted successfully",
+      "deleteFailed": "Failed to delete certificate",
+      "nameRequired": "Certificate name is required",
+      "numberRequired": "Certificate number is required",
+      "saveFailed": "Failed to save certificate",
+      "noSearchResults": "No certificates match your search"
     },
     "fixedCosts": {
       "title": "Fixed Cost Records",
@@ -2720,7 +2729,15 @@
         "debitCard": "Debit Card",
         "check": "Check",
         "other": "Other"
-      }
+      },
+      "loadFailed": "Failed to load fixed costs",
+      "nameRequired": "Cost name is required",
+      "createSuccess": "Fixed cost created successfully",
+      "updateSuccess": "Fixed cost updated successfully",
+      "deleteSuccess": "Fixed cost deleted successfully",
+      "deleteFailed": "Failed to delete fixed cost",
+      "saveFailed": "Failed to save fixed cost",
+      "noSearchResults": "No fixed costs match your search"
     },
     "materials": {
       "title": "Material Purchase Records",
@@ -2765,7 +2782,15 @@
         "set": "Set",
         "pair": "Pair",
         "other": "Other"
-      }
+      },
+      "loadFailed": "Failed to load materials",
+      "nameRequired": "Material name is required",
+      "createSuccess": "Material purchase created successfully",
+      "updateSuccess": "Material purchase updated successfully",
+      "deleteSuccess": "Material purchase deleted successfully",
+      "deleteFailed": "Failed to delete material purchase",
+      "saveFailed": "Failed to save material purchase",
+      "noSearchResults": "No materials match your search"
     }
   },
   "ai": {
@@ -2944,7 +2969,10 @@
     "summaryEmailSent": "Daily work summary email sent successfully!",
     "sendSummaryFailed": "Failed to send summary email",
     "confirmSendSummary": "Confirm Send Summary",
-    "confirmSendSummaryMessage": "Are you sure you want to send the daily work summary email to this staff member?"
+    "confirmSendSummaryMessage": "Are you sure you want to send the daily work summary email to this staff member?",
+    "multipleTimeSlots": "{{count}} time slots",
+    "multipleTimeSlotsWarning": "The original schedule has multiple time slots (with breaks). Modifying check-in/out times will merge them into one continuous period.",
+    "multipleTimeSlotsInfo": "The original schedule has multiple time slots (with breaks). Modifying check-in time only affects the start of the first slot, and modifying check-out time only affects the end of the last slot. Break times in between will be preserved."
   },
   "packages": {
     "title": "Packages",

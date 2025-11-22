@@ -1,6 +1,7 @@
 -- Add soft delete fields to membership_tier table
 -- is_deleted: flag to mark deleted records
 -- deleted_at: timestamp when the record was deleted
+use merchant_business;
 
 ALTER TABLE membership_tier
 ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE NOT NULL COMMENT '是否已删除',

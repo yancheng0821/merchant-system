@@ -20,7 +20,7 @@ IMAGES_DIR="/Users/aisenyc/merchant-system/deployment/images"
 SERVER_DIR="/Users/aisenyc/merchant-system/merchant-server"
 
 # All available services
-ALL_SERVICES=("eureka-server" "gateway-service" "auth-service" "merchant-service" "business-service" "notification-service")
+ALL_SERVICES=("eureka-server" "gateway-service" "auth-service" "merchant-service" "business-service" "notification-service" "analytics-service")
 
 # Services to deploy (will be set based on arguments)
 DEPLOY_SERVICES=()
@@ -52,6 +52,7 @@ show_usage() {
     echo "  merchant-service    - 商户服务"
     echo "  business-service    - 业务服务"
     echo "  notification-service - 通知服务"
+    echo "  analytics-service - 分析服务"
     echo ""
     echo "示例:"
     echo "  $0                                    # 部署所有服务"

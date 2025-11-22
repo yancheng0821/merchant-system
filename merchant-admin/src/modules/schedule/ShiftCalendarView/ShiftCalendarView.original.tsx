@@ -471,11 +471,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     staffName: string;
     scheduledStart: string;
     scheduledEnd: string;
+    scheduledTimeSlots?: string[]; // 原始排班的所有时间槽，如 ["09:00-12:00", "14:00-20:00"]
     actualStart?: string;
     actualEnd?: string;
   } | null>(null);
   // 存储员工签到签退时间（只影响当天）- key: resourceId_date, value: {startTime: checkIn, endTime: checkOut}
-  const [temporaryAvailabilities, setTemporaryAvailabilities] = useState<Record<string, { startTime: string; endTime: string }>>({});
+  const [temporaryAvailabilities, setTemporaryAvailabilities] = useState<Record<string, {
+    startTime: string;
+    endTime: string;
+    timePeriods?: Array<{ start: string; end: string }>;
+  }>>({});
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -689,12 +694,17 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         const records = await staffAttendanceApi.getByTenantAndDate(user.tenantId, dateStr);
 
         // 转换为temporaryAvailabilities格式
-        const attendanceMap: Record<string, { startTime: string; endTime: string }> = {};
+        const attendanceMap: Record<string, {
+          startTime: string;
+          endTime: string;
+          timePeriods?: Array<{ start: string; end: string }>;
+        }> = {};
         records.forEach((record) => {
           const key = `${record.resourceId}_${dateStr}`;
           attendanceMap[key] = {
             startTime: record.checkInTime.substring(0, 5), // HH:mm
             endTime: record.checkOutTime.substring(0, 5), // HH:mm
+            timePeriods: record.timePeriods, // 保留调整后的时间段
           };
         });
 
@@ -980,6 +990,21 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     const tempKey = `${resourceId}_${dateStr}`;
     if (temporaryAvailabilities[tempKey]) {
       const tempAvail = temporaryAvailabilities[tempKey];
+
+      // 如果有 timePeriods，检查时间槽是否在任一时间段内
+      if (tempAvail.timePeriods && tempAvail.timePeriods.length > 0) {
+        return tempAvail.timePeriods.some(period => {
+          const [startHours, startMinutes] = period.start.split(':').map(Number);
+          const [endHours, endMinutes] = period.end.split(':').map(Number);
+          const periodStartMinutes = startHours * 60 + startMinutes;
+          const periodEndMinutes = endHours * 60 + endMinutes;
+
+          // 时间槽与这个时间段有重叠即可用
+          return timeSlotEndMinutes > periodStartMinutes && timeSlotStartMinutes < periodEndMinutes;
+        });
+      }
+
+      // 否则使用简单的 startTime-endTime 判断
       let [startHours, startMinutes] = tempAvail.startTime.split(':').map(Number);
       let [endHours, endMinutes] = tempAvail.endTime.split(':').map(Number);
       // 处理午夜情况
@@ -1045,8 +1070,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
     // 如果有签到签退记录，使用签到签退时间
     if (temporaryAvailabilities[tempKey]) {
-      const start = temporaryAvailabilities[tempKey].startTime.substring(0, 5);
-      const end = temporaryAvailabilities[tempKey].endTime.substring(0, 5);
+      const attendance = temporaryAvailabilities[tempKey];
+
+      // 优先使用 timePeriods（保留休息时间的多时间段）
+      if (attendance.timePeriods && attendance.timePeriods.length > 0) {
+        return attendance.timePeriods.map(period => `${period.start}-${period.end}`).join(', ');
+      }
+
+      // 否则使用简单的 startTime-endTime
+      const start = attendance.startTime.substring(0, 5);
+      const end = attendance.endTime.substring(0, 5);
       return `${start}-${end}`;
     }
 
@@ -1110,7 +1143,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     const tempKey = `${staffId}_${dateStr}`;
     const tempAvailability = temporaryAvailabilities[tempKey];
 
-    // 获取原始排班时间（不含临时调整）
+    // 始终从 resource_availability 表读取原始排班时间（不是调整后的时间）
     const dayOfWeek = currentDate.getDay();
     const isoWeekDay = dayOfWeek === 0 ? 7 : dayOfWeek;
     const availabilities = (resourceAvailabilities[staffId] || []).filter(
@@ -1119,11 +1152,23 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
     let scheduledStart = '09:00';
     let scheduledEnd = '18:00';
+    let scheduledTimeSlots: string[] = [];
 
     if (availabilities.length > 0) {
+      // 对时间槽进行排序（按开始时间）
+      const sortedAvailabilities = [...availabilities].sort((a: any, b: any) => {
+        return a.startTime.localeCompare(b.startTime);
+      });
+
+      // 获取所有时间槽的文本表示（用于显示原始排班）
+      scheduledTimeSlots = sortedAvailabilities.map((av: any) => {
+        return `${av.startTime.substring(0, 5)}-${av.endTime.substring(0, 5)}`;
+      });
+
+      // 获取最早开始时间和最晚结束时间（用于默认签到签退时间）
       let earliestStart = '23:59';
       let latestEnd = '00:00';
-      availabilities.forEach((av: any) => {
+      sortedAvailabilities.forEach((av: any) => {
         if (av.startTime < earliestStart) earliestStart = av.startTime;
         if (av.endTime > latestEnd) latestEnd = av.endTime;
       });
@@ -1131,13 +1176,36 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       scheduledEnd = latestEnd.substring(0, 5);
     }
 
+    // 计算实际签到签退时间（如果有调整）
+    let actualStart: string | undefined;
+    let actualEnd: string | undefined;
+
+    if (tempAvailability) {
+      // 如果有 timePeriods，从中计算边界时间
+      if (tempAvailability.timePeriods && tempAvailability.timePeriods.length > 0) {
+        let earliestStart = '23:59';
+        let latestEnd = '00:00';
+        tempAvailability.timePeriods.forEach(period => {
+          if (period.start < earliestStart) earliestStart = period.start;
+          if (period.end > latestEnd) latestEnd = period.end;
+        });
+        actualStart = earliestStart;
+        actualEnd = latestEnd;
+      } else {
+        // 否则使用 checkInTime 和 checkOutTime
+        actualStart = tempAvailability.startTime;
+        actualEnd = tempAvailability.endTime;
+      }
+    }
+
     setAdjustAvailabilityData({
       staffId,
       staffName,
       scheduledStart,
       scheduledEnd,
-      actualStart: tempAvailability?.startTime,
-      actualEnd: tempAvailability?.endTime,
+      scheduledTimeSlots, // 始终是原始排班的时间槽
+      actualStart,
+      actualEnd,
     });
     setAdjustAvailabilityDialogOpen(true);
   };
@@ -1165,6 +1233,38 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           return newTemp;
         });
       } else {
+        // 计算调整后的时间段（保留休息时间）
+        let timePeriods: Array<{ start: string; end: string }> | undefined;
+
+        // 如果有时间槽信息，创建调整后的时间段
+        if (adjustAvailabilityData.scheduledTimeSlots && adjustAvailabilityData.scheduledTimeSlots.length > 0) {
+          timePeriods = adjustAvailabilityData.scheduledTimeSlots.map((slot, index) => {
+            const [slotStart, slotEnd] = slot.split('-');
+            const isFirst = index === 0;
+            const isLast = index === adjustAvailabilityData.scheduledTimeSlots!.length - 1;
+
+            // 单个时间槽：同时使用新的签到和签退时间
+            if (isFirst && isLast) {
+              return { start: startTime, end: endTime };
+            }
+            // 第一个时间槽（但不是最后一个）：使用新的签到时间
+            else if (isFirst) {
+              return { start: startTime, end: slotEnd };
+            }
+            // 最后一个时间槽（但不是第一个）：使用新的签退时间
+            else if (isLast) {
+              return { start: slotStart, end: endTime };
+            }
+            // 中间的时间槽：保持不变
+            else {
+              return { start: slotStart, end: slotEnd };
+            }
+          });
+        } else {
+          // 如果没有时间槽信息，创建单个时间段
+          timePeriods = [{ start: startTime, end: endTime }];
+        }
+
         // 保存签到签退时间到后端
         const attendance: StaffAttendance = {
           tenantId: user.tenantId,
@@ -1172,6 +1272,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           attendanceDate: dateStr,
           checkInTime: `${startTime}:00`,
           checkOutTime: `${endTime}:00`,
+          timePeriods, // 添加时间段数组
           createdBy: user.id,
         };
 
@@ -1180,7 +1281,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         // 更新本地状态
         setTemporaryAvailabilities(prev => ({
           ...prev,
-          [tempKey]: { startTime, endTime },
+          [tempKey]: { startTime, endTime, timePeriods },
         }));
       }
 
@@ -1301,13 +1402,31 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     if (temporaryAvailabilities[tempKey]) {
       // 有临时调整，使用签到签退时间
       const tempAvail = temporaryAvailabilities[tempKey];
-      let [startHours, startMin] = tempAvail.startTime.split(':').map(Number);
-      let [endHours, endMin] = tempAvail.endTime.split(':').map(Number);
-      // 处理午夜情况
-      if (startHours === 0) startHours = 24;
-      if (endHours === 0) endHours = 24;
-      staffStartMinutes = (startHours - 10) * 60 + startMin;
-      staffEndMinutes = (endHours - 10) * 60 + endMin;
+
+      // 如果有 timePeriods，计算所有时间段的整体边界
+      if (tempAvail.timePeriods && tempAvail.timePeriods.length > 0) {
+        const starts = tempAvail.timePeriods.map(period => {
+          let [h, m] = period.start.split(':').map(Number);
+          if (h === 0) h = 24;
+          return (h - 10) * 60 + m;
+        });
+        const ends = tempAvail.timePeriods.map(period => {
+          let [h, m] = period.end.split(':').map(Number);
+          if (h === 0) h = 24;
+          return (h - 10) * 60 + m;
+        });
+        staffStartMinutes = Math.min(...starts);
+        staffEndMinutes = Math.max(...ends);
+      } else {
+        // 否则使用简单的 startTime-endTime
+        let [startHours, startMin] = tempAvail.startTime.split(':').map(Number);
+        let [endHours, endMin] = tempAvail.endTime.split(':').map(Number);
+        // 处理午夜情况
+        if (startHours === 0) startHours = 24;
+        if (endHours === 0) endHours = 24;
+        staffStartMinutes = (startHours - 10) * 60 + startMin;
+        staffEndMinutes = (endHours - 10) * 60 + endMin;
+      }
     } else {
       // 使用原始排班时间
       const dayOfWeek = date.getDay();
@@ -2634,7 +2753,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                             const tempAvailability = temporaryAvailabilities[tempKey];
 
                             if (tempAvailability) {
-                              // 使用临时调整的时间判断
+                              // 如果有 timePeriods，检查当前时间是否在任一时间段内
+                              if (tempAvailability.timePeriods && tempAvailability.timePeriods.length > 0) {
+                                return tempAvailability.timePeriods.some(period => {
+                                  return currentTime >= period.start && currentTime < period.end;
+                                });
+                              }
+
+                              // 否则使用简单的 startTime-endTime 判断
                               return currentTime >= tempAvailability.startTime && currentTime < tempAvailability.endTime;
                             }
 
@@ -3653,6 +3779,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           date={currentDate}
           scheduledStart={adjustAvailabilityData.scheduledStart}
           scheduledEnd={adjustAvailabilityData.scheduledEnd}
+          scheduledTimeSlots={adjustAvailabilityData.scheduledTimeSlots}
           actualStart={adjustAvailabilityData.actualStart}
           actualEnd={adjustAvailabilityData.actualEnd}
           onSave={handleSaveAvailabilityAdjustment}

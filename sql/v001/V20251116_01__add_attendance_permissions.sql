@@ -47,7 +47,3 @@ INSERT INTO `permissions` (
   'ACTIVE'
 );
 
--- 查询新增的权限ID（用于后续分配给角色）
-SELECT id, permission_code, display_name
-FROM permissions
-WHERE permission_code IN ('schedule:adjust_attendance', 'schedule:send_summary');

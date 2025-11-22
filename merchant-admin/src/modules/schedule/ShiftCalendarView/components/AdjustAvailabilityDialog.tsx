@@ -32,6 +32,7 @@ interface AdjustAvailabilityDialogProps {
   date: Date;
   scheduledStart: string; // 原始排班开始时间，如 "11:00"
   scheduledEnd: string; // 原始排班结束时间，如 "19:00"
+  scheduledTimeSlots?: string[]; // 原始排班的所有时间槽，如 ["09:00-12:00", "14:00-20:00"]
   actualStart?: string; // 实际开始时间（如果有临时调整）
   actualEnd?: string; // 实际结束时间（如果有临时调整）
   onSave: (startTime: string, endTime: string) => Promise<void>;
@@ -48,6 +49,7 @@ const AdjustAvailabilityDialog: React.FC<AdjustAvailabilityDialogProps> = ({
   date,
   scheduledStart,
   scheduledEnd,
+  scheduledTimeSlots,
   actualStart,
   actualEnd,
   onSave,
@@ -242,10 +244,29 @@ const AdjustAvailabilityDialog: React.FC<AdjustAvailabilityDialogProps> = ({
               {t('schedule.scheduledTime')}
             </Typography>
           </Box>
-          <Typography variant="body1" fontWeight={600} color="#111827">
-            {scheduledStart} - {scheduledEnd}
-          </Typography>
+          {/* 如果有多个时间槽，显示所有时间槽 */}
+          {scheduledTimeSlots && scheduledTimeSlots.length > 1 ? (
+            <Box>
+              <Typography variant="body1" fontWeight={600} color="#111827" sx={{ mb: 0.5 }}>
+                {scheduledTimeSlots.join(', ')}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ({t('schedule.multipleTimeSlots', '共{{count}}个时间段', { count: scheduledTimeSlots.length })})
+              </Typography>
+            </Box>
+          ) : (
+            <Typography variant="body1" fontWeight={600} color="#111827">
+              {scheduledStart} - {scheduledEnd}
+            </Typography>
+          )}
         </Box>
+
+        {/* 多时间槽提示 */}
+        {scheduledTimeSlots && scheduledTimeSlots.length > 1 && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {t('schedule.multipleTimeSlotsInfo', '原排班有多个时间段（含休息时间）。修改签到时间仅影响第一个时段的开始，修改签退时间仅影响最后一个时段的结束，中间的休息时间将保留。')}
+          </Alert>
+        )}
 
         {/* 实际签到签退时间 */}
         <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 1.5 }}>

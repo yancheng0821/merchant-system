@@ -1,6 +1,7 @@
 -- 拆分 card_amount 为 credit_card_amount 和 debit_card_amount
 -- 这样统计时可以直接 SUM 对应字段，无需复杂判断
 
+use merchant_business;
 -- 1. 添加新字段
 ALTER TABLE merchant_business.orders
 ADD COLUMN credit_card_amount DECIMAL(10, 2) DEFAULT 0.00 COMMENT '信用卡支付金额' AFTER cash_amount,

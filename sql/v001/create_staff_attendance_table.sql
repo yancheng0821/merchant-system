@@ -2,6 +2,7 @@
 -- 员工签到签退表 (Staff Attendance)
 -- 用于记录员工每日实际的签到签退时间
 -- ===================================================================
+use merchant_business;
 
 CREATE TABLE IF NOT EXISTS `staff_attendance` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',

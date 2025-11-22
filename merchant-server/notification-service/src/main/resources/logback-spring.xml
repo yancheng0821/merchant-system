@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+
+    <!-- 日志目录配置 - 使用环境变量，默认为当前目录的logs -->
+    <springProperty scope="context" name="LOG_HOME" source="logging.file.path" defaultValue="../logs"/>
+
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -9,10 +13,10 @@
 
     <!-- 文件输出 - 自动日志轮换 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>../logs/notification-service.log</file>
+        <file>${LOG_HOME}/notification-service.log</file>
         <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>../logs/notification-service.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_HOME}/notification-service.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
         </rollingPolicy>
@@ -21,12 +25,12 @@
         </encoder>
     </appender>
 
-    <!-- 应用程序日志 - 只输出到文件，避免Maven重定向导致的重复日志 -->
+    <!-- 应用程序日志 -->
     <logger name="com.merchant.server.notificationservice" level="INFO" additivity="false">
         <appender-ref ref="FILE"/>
     </logger>
 
-    <!-- 减少MyBatis和Spring框架的日志输出 -->
+    <!-- 减少MyBatis、Spring等框架的日志输出 -->
     <logger name="com.merchant.server.notificationservice.mapper" level="WARN"/>
     <logger name="org.apache.ibatis" level="WARN"/>
     <logger name="java.sql" level="WARN"/>
@@ -38,8 +42,18 @@
     <logger name="com.netflix" level="WARN"/>
     <logger name="software.amazon.awssdk" level="WARN"/>
 
-    <!-- 根日志级别 - 只输出到文件 -->
-    <root level="INFO">
-        <appender-ref ref="FILE"/>
-    </root>
+    <!-- 根日志级别 - 根据profile区分 -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!prod">
+        <root level="INFO">
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
 </configuration>

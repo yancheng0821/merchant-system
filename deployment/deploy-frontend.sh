@@ -8,6 +8,9 @@
 # 前提条件：已运行过 setup-nginx.sh
 # ============================================
 
+# 设置 Node.js 路径（使用 Homebrew 安装的版本）
+export PATH="/usr/local/Cellar/node/25.2.1/bin:$PATH"
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'

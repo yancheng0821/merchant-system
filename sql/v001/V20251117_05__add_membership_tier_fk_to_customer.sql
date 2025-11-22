@@ -2,6 +2,8 @@
 -- This replaces the old membership_level string field with a reference to membership_tier table
 
 -- Step 1: Add the new membership_tier_id column (nullable initially for data migration)
+use merchant_business;
+
 ALTER TABLE customers
     ADD COLUMN membership_tier_id BIGINT DEFAULT NULL COMMENT '会员等级ID（外键）';
 

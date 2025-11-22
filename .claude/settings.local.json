@@ -145,7 +145,14 @@
       "Bash(java -version:*)",
       "Bash(../../mvnw clean compile:*)",
       "Bash(../mvnw clean compile:*)",
-      "Bash(../scripts/start-services.sh:*)"
+      "Bash(../scripts/start-services.sh:*)",
+      "Bash(/Users/aisenyc/.nvm/versions/node/v20.12.2/bin/npm --version)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm use:*)",
+      "Bash(nvm reinstall-packages:*)",
+      "Bash(nvm install:*)",
+      "Bash(./deployment/deploy.sh:*)",
+      "Bash(export PATH=\"/usr/local/Cellar/node/25.2.1/bin:$PATH\")"
     ],
     "deny": []
   }

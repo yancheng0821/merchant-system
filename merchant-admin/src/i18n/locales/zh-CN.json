@@ -2715,7 +2715,16 @@
         "valid": "有效",
         "expiringSoon": "即将到期",
         "expired": "已过期"
-      }
+      },
+      "loadFailed": "加载证书失败",
+      "createSuccess": "证书创建成功",
+      "updateSuccess": "证书更新成功",
+      "deleteSuccess": "证书删除成功",
+      "deleteFailed": "删除证书失败",
+      "nameRequired": "证书名称不能为空",
+      "numberRequired": "证书编号不能为空",
+      "saveFailed": "保存证书失败",
+      "noSearchResults": "没有匹配的证书"
     },
     "fixedCosts": {
       "title": "固定成本记录",
@@ -2761,7 +2770,15 @@
         "debitCard": "借记卡",
         "check": "支票",
         "other": "其他"
-      }
+      },
+      "loadFailed": "加载固定成本失败",
+      "nameRequired": "成本名称不能为空",
+      "createSuccess": "固定成本创建成功",
+      "updateSuccess": "固定成本更新成功",
+      "deleteSuccess": "固定成本删除成功",
+      "deleteFailed": "删除固定成本失败",
+      "saveFailed": "保存固定成本失败",
+      "noSearchResults": "没有匹配的固定成本"
     },
     "materials": {
       "title": "物料采购记录",
@@ -2806,7 +2823,15 @@
         "set": "套",
         "pair": "双",
         "other": "其他"
-      }
+      },
+      "loadFailed": "加载物料失败",
+      "nameRequired": "物料名称不能为空",
+      "createSuccess": "物料采购创建成功",
+      "updateSuccess": "物料采购更新成功",
+      "deleteSuccess": "物料采购删除成功",
+      "deleteFailed": "删除物料采购失败",
+      "saveFailed": "保存物料采购失败",
+      "noSearchResults": "没有匹配的物料"
     }
   },
   "ai": {
@@ -3031,7 +3056,10 @@
     "summaryEmailSent": "今日工作汇总邮件已成功发送！",
     "sendSummaryFailed": "发送汇总邮件失败",
     "confirmSendSummary": "确认发送汇总",
-    "confirmSendSummaryMessage": "确定要向该员工发送今日工作汇总邮件吗？"
+    "confirmSendSummaryMessage": "确定要向该员工发送今日工作汇总邮件吗？",
+    "multipleTimeSlots": "共{{count}}个时间段",
+    "multipleTimeSlotsWarning": "原排班有多个时间段（含休息时间）。修改签到签退时间后，将合并为一个连续时段。",
+    "multipleTimeSlotsInfo": "原排班有多个时间段（含休息时间）。修改签到时间仅影响第一个时段的开始，修改签退时间仅影响最后一个时段的结束，中间的休息时间将保留。"
   },
   "packages": {
     "title": "套餐",

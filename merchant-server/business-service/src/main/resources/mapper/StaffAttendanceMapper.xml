@@ -10,6 +10,9 @@
         <result column="attendance_date" property="attendanceDate"/>
         <result column="check_in_time" property="checkInTime"/>
         <result column="check_out_time" property="checkOutTime"/>
+        <result column="time_periods" property="timePeriods"
+                typeHandler="com.merchant.server.businessservice.handler.JsonTypeHandler"
+                javaType="java.util.List"/>
         <result column="notes" property="notes"/>
         <result column="created_by" property="createdBy"/>
         <result column="created_at" property="createdAt"/>
@@ -53,6 +56,7 @@
             attendance_date,
             check_in_time,
             check_out_time,
+            time_periods,
             notes,
             created_by
         ) VALUES (
@@ -61,6 +65,7 @@
             #{attendanceDate},
             #{checkInTime},
             #{checkOutTime},
+            #{timePeriods, typeHandler=com.merchant.server.businessservice.handler.JsonTypeHandler},
             #{notes},
             #{createdBy}
         )
@@ -71,6 +76,7 @@
         UPDATE staff_attendance
         SET check_in_time = #{checkInTime},
             check_out_time = #{checkOutTime},
+            time_periods = #{timePeriods, typeHandler=com.merchant.server.businessservice.handler.JsonTypeHandler},
             notes = #{notes}
         WHERE id = #{id}
     </update>

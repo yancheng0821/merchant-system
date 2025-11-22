@@ -19,6 +19,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - EUREKA_HOSTNAME=eureka-server
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/eureka-server:/app/logs
@@ -62,6 +63,7 @@ services:
       - SPRING_REDIS_PORT=${REDIS_PORT:-6379}
       - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
       - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dspring.data.redis.host=${REDIS_HOST} -Dspring.data.redis.port=${REDIS_PORT:-6379}
     volumes:
@@ -119,6 +121,7 @@ services:
       - FILE_UPLOAD_MODE=${FILE_UPLOAD_MODE:-s3}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - AWS_S3_REGION=${AWS_S3_REGION:-ca-central-1}
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/auth-service:/app/logs
@@ -167,6 +170,7 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/merchant-service:/app/logs
@@ -219,6 +223,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
       - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/business-service:/app/logs
@@ -264,6 +269,7 @@ services:
       - DB_PORT=${DB_PORT:-3306}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/analytics-service:/app/logs
@@ -320,6 +326,7 @@ services:
       - AWS_SNS_SENDER_ID=${AWS_SNS_SENDER_ID:-VAMerchant}
       - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID}
       - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET}
+      - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/notification-service:/app/logs

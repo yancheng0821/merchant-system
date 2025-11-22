@@ -2,6 +2,8 @@
 -- This field records the payment method used for each service in multi-service orders
 -- For example, in a mixed payment scenario, one service might use PACKAGE while another uses CREDIT_CARD
 
+use merchant_business;
+
 ALTER TABLE `order_services`
 ADD COLUMN `payment_method` ENUM('cash', 'credit_card', 'debit_card', 'mobile_pay', 'gift_card', 'package', 'mixed')
 DEFAULT NULL

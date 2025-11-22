@@ -1,6 +1,8 @@
 -- 成本管理模块数据表
 -- 包含：证书管理、固定成本记录、物料采购记录
 
+use merchant_business;
+
 -- 1. 证书管理表
 CREATE TABLE IF NOT EXISTS certificates (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '证书ID',

@@ -1,5 +1,7 @@
 -- 成本管理模块权限配置
 
+USE merchant_auth;
+
 -- 证书管理权限
 INSERT INTO merchant_auth.permissions (
     permission_name, permission_code, display_name, resource, action,
@@ -77,24 +79,3 @@ INSERT INTO merchant_auth.permissions (
  'costs', 'delete_material', 'all', 'material', 'costs',
  '/api/business/costs/materials/*', 'DELETE',
  '删除物料采购记录', 'ACTIVE');
-
--- 将成本管理权限分配给管理员角色
-INSERT INTO merchant_auth.role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM merchant_auth.roles r
-CROSS JOIN merchant_auth.permissions p
-WHERE r.role_code = 'SUPER_ADMIN'
-AND p.permission_code IN (
-    'costs:view_certificates',
-    'costs:create_certificate',
-    'costs:update_certificate',
-    'costs:delete_certificate',
-    'costs:view_fixed_costs',
-    'costs:create_fixed_cost',
-    'costs:update_fixed_cost',
-    'costs:delete_fixed_cost',
-    'costs:view_materials',
-    'costs:create_material',
-    'costs:update_material',
-    'costs:delete_material'
-);

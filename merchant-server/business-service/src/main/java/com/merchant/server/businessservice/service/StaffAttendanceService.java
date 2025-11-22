@@ -36,6 +36,7 @@ public class StaffAttendanceService {
             // 更新现有记录
             existing.setCheckInTime(staffAttendance.getCheckInTime());
             existing.setCheckOutTime(staffAttendance.getCheckOutTime());
+            existing.setTimePeriods(staffAttendance.getTimePeriods());
             existing.setNotes(staffAttendance.getNotes());
             staffAttendanceMapper.update(existing);
             log.debug("Updated staff attendance record: resourceId={}, date={}",

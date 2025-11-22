@@ -113,22 +113,13 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     anyPermission: ['notifications:view_logs', 'notifications:manage_template'] as PermissionCode[]
   });
 
-  // 9. 数据分析 - 业务洞察
+  // 9. 数据分析 - 业务洞察（目前只有订单统计）
   baseMenuItems.push({
     textKey: 'nav.analytics',
     icon: React.createElement(AnalyticsIcon),
     id: 'analytics',
     color: '#0891B2',
-    anyPermission: [
-      'analytics:view',
-      'analytics:view_revenue',
-      'analytics:view_service',
-      'analytics:view_performance',
-      'analytics:view_own_performance',
-      'analytics:view_heatmap',
-      'analytics:view_insights',
-      'analytics:view_order_stats'
-    ] as PermissionCode[]
+    permission: 'analytics:view_order_stats' as PermissionCode
   });
 
   // 10. 成本管理 - 财务成本

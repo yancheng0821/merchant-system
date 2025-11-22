@@ -5,6 +5,7 @@
 
 -- 注意：此脚本使用 UTF-8 编码，执行时需要确保客户端字符集正确
 -- 执行方式：mysql --default-character-set=utf8mb4 -u your_user -p merchant_auth < thisfile.sql
+USE merchant_auth;
 
 -- 1. 插入会员等级权限
 INSERT INTO permissions (
@@ -147,26 +148,3 @@ WHERE NOT EXISTS (
     SELECT 1 FROM permissions WHERE permission_code = 'membership_tiers:delete'
 );
 
--- 2. 为MANAGER角色（店长）分配会员等级权限
-INSERT INTO role_permissions (role_id, permission_id, created_at, updated_at)
-SELECT r.id, p.id, NOW(), NOW()
-FROM roles r
-CROSS JOIN permissions p
-WHERE r.role_code = 'MANAGER'
-  AND p.permission_code IN ('membership_tiers:view', 'membership_tiers:create', 'membership_tiers:update', 'membership_tiers:delete')
-  AND NOT EXISTS (
-    SELECT 1 FROM role_permissions rp
-    WHERE rp.role_id = r.id AND rp.permission_id = p.id
-  );
-
--- 3. 为SUPER_ADMIN角色（超级管理员）分配会员等级权限
-INSERT INTO role_permissions (role_id, permission_id, created_at, updated_at)
-SELECT r.id, p.id, NOW(), NOW()
-FROM roles r
-CROSS JOIN permissions p
-WHERE r.role_code = 'SUPER_ADMIN'
-  AND p.permission_code IN ('membership_tiers:view', 'membership_tiers:create', 'membership_tiers:update', 'membership_tiers:delete')
-  AND NOT EXISTS (
-    SELECT 1 FROM role_permissions rp
-    WHERE rp.role_id = r.id AND rp.permission_id = p.id
-  );

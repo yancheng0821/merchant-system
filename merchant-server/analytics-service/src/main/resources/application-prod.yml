@@ -43,7 +43,16 @@ feign:
 
 eureka:
   client:
-    enabled: false  # 生产环境禁用Eureka
+    enabled: true
+    service-url:
+      defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
 
 analytics:
   cache:
