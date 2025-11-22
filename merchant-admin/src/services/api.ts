@@ -598,10 +598,10 @@ export const authApi = {
   },
 
   // 密码重置相关
-  forgotPassword: async (email: string, tenantName: string): Promise<ApiResponse<any>> => {
+  forgotPassword: async (email: string, tenantCode: string): Promise<ApiResponse<any>> => {
     return createRequest('/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email, tenantName }),
+      body: JSON.stringify({ email, tenantCode }),
     });
   },
 
