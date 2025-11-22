@@ -143,6 +143,8 @@ public class TemplateServiceImpl implements TemplateService {
         // - APPOINTMENT_COMPLETION
         // - PACKAGE_PURCHASE_SUCCESS
         // - APPOINTMENT_REMINDER
+        // - APPOINTMENT_CHECKOUT_STAFF (员工预约结账通知)
+        // - STAFF_DAILY_SUMMARY (员工每日预约汇总)
 
         List<String> tenantScopedTemplateCodes = List.of(
             "PACKAGE_VERIFICATION",
@@ -150,7 +152,9 @@ public class TemplateServiceImpl implements TemplateService {
             "APPOINTMENT_CANCELLATION",
             "APPOINTMENT_COMPLETION",
             "PACKAGE_PURCHASE_SUCCESS",
-            "APPOINTMENT_REMINDER"
+            "APPOINTMENT_REMINDER",
+            "APPOINTMENT_CHECKOUT_STAFF",
+            "STAFF_DAILY_SUMMARY"
         );
 
         int copiedCount = 0;

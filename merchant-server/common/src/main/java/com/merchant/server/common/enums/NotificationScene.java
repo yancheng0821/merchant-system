@@ -21,12 +21,12 @@ public enum NotificationScene {
     /**
      * 预约结账成功 - 发送通知邮件给员工
      */
-    APPOINTMENT_CHECKOUT_STAFF("appointment.checkout.staff", "APPOINTMENT_CHECKOUT_STAFF", NotificationType.EMAIL, TemplateScope.SYSTEM),
+    APPOINTMENT_CHECKOUT_STAFF("appointment.checkout.staff", "APPOINTMENT_CHECKOUT_STAFF", NotificationType.EMAIL, TemplateScope.TENANT),
 
     /**
      * 员工每日预约汇总 - 发送汇总邮件
      */
-    STAFF_DAILY_SUMMARY("staff.daily.summary", "STAFF_DAILY_SUMMARY", NotificationType.EMAIL, TemplateScope.SYSTEM),
+    STAFF_DAILY_SUMMARY("staff.daily.summary", "STAFF_DAILY_SUMMARY", NotificationType.EMAIL, TemplateScope.TENANT),
 
     /**
      * 忘记密码 - 发送密码重置邮件

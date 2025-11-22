@@ -191,7 +191,7 @@ public class StaffNotificationService {
 
             if (useMQ) {
                 // 使用MQ发送
-                sendEmailViaMQ(staff, appointment.getTenantId(), variables);
+                sendEmailViaMQ(staff, appointment.getTenantId(), appointment.getId(), variables);
             } else {
                 // 降级到HTTP调用
                 sendEmailViaHTTP(staff, appointment.getTenantId(), variables);
@@ -208,7 +208,7 @@ public class StaffNotificationService {
     /**
      * 通过MQ发送邮件
      */
-    private void sendEmailViaMQ(Resource staff, Long tenantId, Map<String, Object> variables) {
+    private void sendEmailViaMQ(Resource staff, Long tenantId, Long appointmentId, Map<String, Object> variables) {
         // 构建接收者信息
         NotificationRequest.RecipientInfo recipient = NotificationRequest.RecipientInfo.builder()
             .email(staff.getEmail())
@@ -222,6 +222,7 @@ public class StaffNotificationService {
             .recipient(recipient)
             .channel("EMAIL")
             .variables(variables)
+            .businessId(String.valueOf(appointmentId))
             .build();
 
         // 转换为payload
@@ -234,6 +235,7 @@ public class StaffNotificationService {
         ));
         payload.put("channel", request.getChannel());
         payload.put("variables", variables);
+        payload.put("businessId", String.valueOf(appointmentId));
 
         // 构建NotificationMessage
         NotificationMessage message = NotificationMessage.builder()
