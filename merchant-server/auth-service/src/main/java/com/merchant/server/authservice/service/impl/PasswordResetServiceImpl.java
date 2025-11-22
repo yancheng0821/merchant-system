@@ -47,26 +47,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         log.info("Processing forgot password request for email: {}, tenantCode: {}",
                 request.getEmail(), request.getTenantCode());
 
-        // 如果提供了租户代码，先验证租户是否存在
-        Long tenantId = null;
-        if (request.getTenantCode() != null && !request.getTenantCode().trim().isEmpty()) {
-            var tenant = tenantMapper.selectByTenantCode(request.getTenantCode());
-            if (tenant == null) {
-                log.warn("Tenant not found with code: {}", request.getTenantCode());
-                // Don't reveal whether the tenant exists for security reasons
-                return;
-            }
-            tenantId = tenant.getId();
+        // 验证租户是否存在
+        var tenant = tenantMapper.selectByTenantCode(request.getTenantCode());
+        if (tenant == null) {
+            log.warn("Tenant not found with code: {}", request.getTenantCode());
+            // Don't reveal whether the tenant exists for security reasons
+            return;
         }
+        Long tenantId = tenant.getId();
 
         // Find user by email and tenantId
-        User user;
-        if (tenantId != null) {
-            user = userMapper.selectByEmailAndTenantId(request.getEmail(), tenantId);
-        } else {
-            // 如果没有提供租户代码，使用旧的查找方式（向后兼容）
-            user = userMapper.selectByEmail(request.getEmail());
-        }
+        User user = userMapper.selectByEmailAndTenantId(request.getEmail(), tenantId);
 
         if (user == null) {
             log.warn("User not found with email: {} and tenantId: {}", request.getEmail(), tenantId);
