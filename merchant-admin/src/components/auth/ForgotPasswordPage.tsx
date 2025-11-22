@@ -78,12 +78,35 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 50%, #dbeafe 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
         position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-20%',
+          right: '-10%',
+          width: '700px',
+          height: '700px',
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
+          borderRadius: '50%',
+          zIndex: 0,
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: '-20%',
+          left: '-10%',
+          width: '600px',
+          height: '600px',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%)',
+          borderRadius: '50%',
+          zIndex: 0,
+        },
       }}
     >
       <Box
@@ -97,7 +120,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
         <LanguageSwitcher variant="login" size="medium" />
       </Box>
 
-      <Container maxWidth="md">
+      <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
         <Box
           sx={{
             display: 'grid',
@@ -111,43 +134,63 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
             <Box
               sx={{
                 textAlign: 'center',
-                color: 'white',
                 display: { xs: 'none', md: 'block' },
+                position: 'relative',
               }}
             >
+              {/* 装饰性几何元素 */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '-40px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '250px',
+                  height: '250px',
+                  background: 'radial-gradient(circle, rgba(59, 130, 246, 0.12), transparent 70%)',
+                  borderRadius: '50%',
+                  filter: 'blur(40px)',
+                  zIndex: -1,
+                }}
+              />
+
               {/* VA Logo */}
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{ mb: 4 }}>
                 <Typography
                   sx={{
-                    fontSize: '6rem',
+                    fontSize: '5rem',
                     fontWeight: 800,
                     fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     letterSpacing: '-0.04em',
                     lineHeight: 1,
-                    color: '#ffffff',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                    background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    mb: 2,
                   }}
                 >
                   VA
                 </Typography>
                 <Box
                   sx={{
-                    width: '120px',
+                    width: '80px',
                     height: '4px',
-                    background: '#ffffff',
+                    background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
                     borderRadius: '2px',
                     margin: '0 auto',
-                    mt: 1,
+                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
                   }}
                 />
               </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
+
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}>
                 {t('auth.brandTitle')}
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.8, mb: 3 }}>
+              <Typography variant="h6" sx={{ color: '#475569', mb: 3 }}>
                 {t('auth.brandSubtitle')}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.7 }}>
+              <Typography variant="body1" sx={{ color: '#64748b', maxWidth: '400px', mx: 'auto' }}>
                 {t('auth.brandDescription')}
               </Typography>
             </Box>
@@ -156,13 +199,18 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
           {/* 右侧表单区域 */}
           <Slide direction="left" in timeout={800}>
             <Paper
-              elevation={24}
+              elevation={0}
               sx={{
-                borderRadius: 4,
+                borderRadius: 3,
                 p: 4,
                 background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
+                boxShadow: '0 20px 60px rgba(99, 102, 241, 0.08), 0 8px 16px rgba(0, 0, 0, 0.04)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  boxShadow: '0 24px 70px rgba(99, 102, 241, 0.12), 0 10px 20px rgba(0, 0, 0, 0.06)',
+                },
               }}
             >
           <Box textAlign="center" mb={4}>
@@ -256,10 +304,20 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
                   mt: 3,
                   mb: 2,
                   py: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                  transition: 'all 0.3s ease',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                    background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.4)',
+                    transform: 'translateY(-2px)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0)',
                   },
                 }}
               >

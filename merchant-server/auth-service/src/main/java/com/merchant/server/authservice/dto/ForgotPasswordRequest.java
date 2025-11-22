@@ -11,5 +11,6 @@ public class ForgotPasswordRequest {
     @Email(message = "Invalid email format")
     private String email;
 
+    @NotBlank(message = "Tenant code cannot be empty")
     private String tenantCode;
 }
