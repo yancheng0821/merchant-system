@@ -50,7 +50,8 @@
     "confirmDelete": "确认删除",
     "am": "上午",
     "pm": "下午",
-    "noPermission": "您没有权限执行此操作"
+    "noPermission": "您没有权限执行此操作",
+    "viewDetails": "查看详情"
   },
   "auth": {
     "and": "和",
@@ -85,7 +86,12 @@
         "contactPhone": "联系电话",
         "contactEmail": "联系邮箱",
         "address": "地址",
+        "addressPlaceholder": "开始输入您的地址...",
+        "addressHelper": "开始输入以查看地址建议，或手动填写",
+        "country": "国家",
         "province": "省份",
+        "provinceFreeFill": "请输入省份/州",
+        "selectCountryFirst": "请先选择国家",
         "city": "城市",
         "postCode": "邮政编码",
         "timezone": "时区"
@@ -118,7 +124,12 @@
         "contactEmailInvalid": "联系邮箱格式不正确",
         "resourceTypesRequired": "请至少选择一种资源类型",
         "registrationFailed": "注册失败，请重试",
-        "termsRequired": "您必须同意服务条款才能继续"
+        "termsRequired": "您必须同意服务条款才能继续",
+        "addressRequired": "请填写详细地址",
+        "countryRequired": "请选择国家",
+        "provinceRequired": "请选择省份",
+        "cityRequired": "请填写城市",
+        "postCodeRequired": "请填写邮政编码"
       },
       "success": {
         "title": "注册成功！",
@@ -147,6 +158,14 @@
         "staff": "员工资源",
         "room": "房间资源"
       },
+      "countries": {
+        "Canada": "加拿大",
+        "United States": "美国",
+        "China": "中国",
+        "United Kingdom": "英国",
+        "Australia": "澳大利亚",
+        "Other": "其他"
+      },
       "provinces": {
         "Alberta": "阿尔伯塔省",
         "British Columbia": "不列颠哥伦比亚省",
@@ -161,6 +180,60 @@
         "Northwest Territories": "西北地区",
         "Nunavut": "努纳武特地区",
         "Yukon": "育空地区"
+      },
+      "usStates": {
+        "Alabama": "阿拉巴马州", "Alaska": "阿拉斯加州", "Arizona": "亚利桑那州", "Arkansas": "阿肯色州",
+        "California": "加利福尼亚州", "Colorado": "科罗拉多州", "Connecticut": "康涅狄格州", "Delaware": "特拉华州",
+        "Florida": "佛罗里达州", "Georgia": "佐治亚州", "Hawaii": "夏威夷州", "Idaho": "爱达荷州",
+        "Illinois": "伊利诺伊州", "Indiana": "印第安纳州", "Iowa": "爱荷华州", "Kansas": "堪萨斯州",
+        "Kentucky": "肯塔基州", "Louisiana": "路易斯安那州", "Maine": "缅因州", "Maryland": "马里兰州",
+        "Massachusetts": "马萨诸塞州", "Michigan": "密歇根州", "Minnesota": "明尼苏达州", "Mississippi": "密西西比州",
+        "Missouri": "密苏里州", "Montana": "蒙大拿州", "Nebraska": "内布拉斯加州", "Nevada": "内华达州",
+        "New Hampshire": "新罕布什尔州", "New Jersey": "新泽西州", "New Mexico": "新墨西哥州", "New York": "纽约州",
+        "North Carolina": "北卡罗来纳州", "North Dakota": "北达科他州", "Ohio": "俄亥俄州", "Oklahoma": "俄克拉荷马州",
+        "Oregon": "俄勒冈州", "Pennsylvania": "宾夕法尼亚州", "Rhode Island": "罗德岛州", "South Carolina": "南卡罗来纳州",
+        "South Dakota": "南达科他州", "Tennessee": "田纳西州", "Texas": "德克萨斯州", "Utah": "犹他州",
+        "Vermont": "佛蒙特州", "Virginia": "弗吉尼亚州", "Washington": "华盛顿州", "West Virginia": "西弗吉尼亚州",
+        "Wisconsin": "威斯康星州", "Wyoming": "怀俄明州"
+      },
+      "chinaProvinces": {
+        "Beijing": "北京市", "Shanghai": "上海市", "Guangdong": "广东省", "Zhejiang": "浙江省",
+        "Jiangsu": "江苏省", "Shandong": "山东省", "Sichuan": "四川省", "Hubei": "湖北省", "Other": "其他"
+      },
+      "ukRegions": {
+        "England": "英格兰", "Scotland": "苏格兰", "Wales": "威尔士", "Northern Ireland": "北爱尔兰"
+      },
+      "australiaStates": {
+        "New South Wales": "新南威尔士州", "Victoria": "维多利亚州", "Queensland": "昆士兰州",
+        "Western Australia": "西澳大利亚州", "South Australia": "南澳大利亚州", "Tasmania": "塔斯马尼亚州",
+        "Australian Capital Territory": "澳大利亚首都领地", "Northern Territory": "北领地"
+      },
+      "usStates": {
+        "Alabama": "阿拉巴马州", "Alaska": "阿拉斯加州", "Arizona": "亚利桑那州", "Arkansas": "阿肯色州",
+        "California": "加利福尼亚州", "Colorado": "科罗拉多州", "Connecticut": "康涅狄格州", "Delaware": "特拉华州",
+        "Florida": "佛罗里达州", "Georgia": "佐治亚州", "Hawaii": "夏威夷州", "Idaho": "爱达荷州",
+        "Illinois": "伊利诺伊州", "Indiana": "印第安纳州", "Iowa": "爱荷华州", "Kansas": "堪萨斯州",
+        "Kentucky": "肯塔基州", "Louisiana": "路易斯安那州", "Maine": "缅因州", "Maryland": "马里兰州",
+        "Massachusetts": "马萨诸塞州", "Michigan": "密歇根州", "Minnesota": "明尼苏达州", "Mississippi": "密西西比州",
+        "Missouri": "密苏里州", "Montana": "蒙大拿州", "Nebraska": "内布拉斯加州", "Nevada": "内华达州",
+        "New Hampshire": "新罕布什尔州", "New Jersey": "新泽西州", "New Mexico": "新墨西哥州", "New York": "纽约州",
+        "North Carolina": "北卡罗来纳州", "North Dakota": "北达科他州", "Ohio": "俄亥俄州", "Oklahoma": "俄克拉荷马州",
+        "Oregon": "俄勒冈州", "Pennsylvania": "宾夕法尼亚州", "Rhode Island": "罗德岛州", "South Carolina": "南卡罗来纳州",
+        "South Dakota": "南达科他州", "Tennessee": "田纳西州", "Texas": "德克萨斯州", "Utah": "犹他州",
+        "Vermont": "佛蒙特州", "Virginia": "弗吉尼亚州", "Washington": "华盛顿州", "West Virginia": "西弗吉尼亚州",
+        "Wisconsin": "威斯康星州", "Wyoming": "怀俄明州"
+      },
+      "chinaProvinces": {
+        "Beijing": "北京市", "Shanghai": "上海市", "Guangdong": "广东省", "Zhejiang": "浙江省",
+        "Jiangsu": "江苏省", "Shandong": "山东省", "Sichuan": "四川省", "Hubei": "湖北省", "Other": "其他"
+      },
+      "ukRegions": {
+        "England": "英格兰", "Scotland": "苏格兰", "Wales": "威尔士", "Northern Ireland": "北爱尔兰"
+      },
+      "australiaStates": {
+        "New South Wales": "新南威尔士州", "Victoria": "维多利亚州", "Queensland": "昆士兰州",
+        "Western Australia": "西澳大利亚州", "South Australia": "南澳大利亚州", "Tasmania": "塔斯马尼亚州",
+        "Australian Capital Territory": "澳大利亚首都领地", "Northern Territory": "北领地"
       },
       "timezones": {
         "america_st_johns": "纽芬兰时间 (圣约翰斯, UTC-3:30)",
@@ -586,11 +659,53 @@
     },
     "batchImport": "批量导入",
     "importHistory": "导入历史",
+    "downloadTemplate": "下载导入样例",
+    "templateDialog": {
+      "title": "客户导入模板说明",
+      "description": "请参考以下字段说明准备您的导入文件",
+      "requiredFields": "必填字段",
+      "recommendedFields": "建议填写字段",
+      "optionalFields": "可选字段",
+      "fieldDescriptions": {
+        "firstName": "名字 - 客户的名字",
+        "lastName": "姓氏 - 客户的姓氏",
+        "phone": "电话号码 - 10位数字，不含国家码和分隔符",
+        "countryCode": "国家码 - 数字格式，例如: 1（加拿大/美国）",
+        "email": "邮箱地址 - 有效的电子邮件地址",
+        "address": "地址 - 完整的邮寄地址",
+        "dateOfBirth": "生日 - 格式: YYYY-MM-DD (例如: 1990-05-15)",
+        "gender": "性别 - MALE（男）或 FEMALE（女）",
+        "membershipLevel": "会员等级 - 会员等级代码",
+        "points": "积分 - 数字",
+        "totalSpent": "总消费 - 数字，可带小数点",
+        "communicationPreference": "沟通偏好 - SMS, EMAIL 或 BOTH",
+        "notes": "备注 - 任意文本",
+        "allergies": "过敏信息 - 任意文本"
+      },
+      "fieldPurposes": {
+        "firstName": "用于识别客户身份和个性化服务",
+        "lastName": "用于识别客户身份和个性化服务",
+        "phone": "用于联系客户、发送预约提醒和营销信息",
+        "countryCode": "用于正确格式化电话号码，确保能够正常拨打和发送短信",
+        "email": "用于发送电子邮件通知、账单和营销信息",
+        "address": "用于邮寄账单、产品配送和地址验证",
+        "dateOfBirth": "用于发送生日祝福、个性化营销和年龄统计",
+        "gender": "用于个性化服务推荐和客户群体分析",
+        "membershipLevel": "用于确定客户享受的折扣和特权",
+        "points": "用于积分管理和兑换奖励",
+        "totalSpent": "用于客户价值分析和VIP客户识别",
+        "communicationPreference": "用于选择客户偏好的通知方式（短信/邮件）",
+        "notes": "用于记录客户特殊需求和偏好",
+        "allergies": "用于确保服务安全，避免过敏源"
+      },
+      "downloadButton": "下载模板文件"
+    },
     "import": {
       "title": "客户数据导入",
       "historyTitle": "导入历史记录",
       "historySubtitle": "查看所有客户数据导入的历史记录",
       "noRecordsDescription": "还没有进行过客户数据导入",
+      "downloadTemplate": "下载导入样例",
       "steps": {
         "uploadFile": "上传文件",
         "fieldMapping": "字段映射",
@@ -1957,7 +2072,8 @@
       "tax": "税务设置",
       "notifications": "通知设置",
       "system": "系统设置",
-      "payment": "支付设置"
+      "payment": "支付设置",
+      "billing": "账单管理"
     },
     "merchantInfo": "商户信息",
     "businessOperations": "业务运营",
@@ -2005,8 +2121,11 @@
     "usageStatistics": "发送使用统计",
     "contactPerson": "联系人",
     "contactEmail": "联系邮箱",
+    "country": "国家",
     "province": "省份",
     "city": "城市",
+    "postCode": "邮政编码",
+    "selectCountryFirst": "请先选择国家",
     "provinces": {
       "Alberta": "阿尔伯塔省",
       "British Columbia": "不列颠哥伦比亚省",
@@ -2070,7 +2189,10 @@
       "sessionTimeoutRange": "会话超时时间必须在5-480分钟之间",
       "validationFailed": "请修正输入错误后再保存",
       "loadFailed": "加载设置信息失败，请刷新页面重试",
-      "sessionTimeoutRequired": "会话超时时间不能为空"
+      "sessionTimeoutRequired": "会话超时时间不能为空",
+      "merchantNameRequired": "商户名称不能为空",
+      "countryRequired": "国家不能为空",
+      "provinceRequired": "省份/州不能为空"
     },
     "success": "成功",
     "error": "错误",
@@ -2281,6 +2403,67 @@
     "noServices": "暂无服务项目",
     "tryDifferentSearch": "尝试调整搜索条件或筛选器",
     "addFirstService": "创建您的第一个服务项目"
+  },
+  "billing": {
+    "title": "账单管理",
+    "invoiceNumber": "账单号",
+    "billingPeriod": "账单周期",
+    "amount": "金额",
+    "subtotal": "税前金额",
+    "tax": "税额",
+    "status": {
+      "pending": "待支付",
+      "paid": "已支付",
+      "cancelled": "已取消",
+      "refunded": "已退款"
+    },
+    "statusLabel": "状态",
+    "paymentDate": "支付日期",
+    "paymentMethod": "支付方式",
+    "description": "描述",
+    "pay": "支付",
+    "invoiceDetails": "账单详情",
+    "noInvoices": "暂无账单记录",
+    "subscriptionPlan": "订阅计划",
+    "currentPlan": "当前计划",
+    "trialPeriod": "试用期",
+    "currentPeriod": "当前周期",
+    "endsOn": "结束于",
+    "maxUsers": "最大用户数",
+    "maxStaff": "最大员工数",
+    "maxAppointments": "每月预约数",
+    "billingCycle": "计费周期",
+    "monthly": "月付",
+    "yearly": "年付",
+    "unlimited": "不限",
+    "month": "月",
+    "switchTo": "切换至",
+    "confirmChangeCycle": "确认切换计费周期",
+    "confirmChangeToYearly": "确定要切换到年付吗？如果您有未支付的账单，账单金额将更新为年付金额。",
+    "confirmChangeToMonthly": "确定要切换到月付吗？如果您有未支付的账单，账单金额将更新为月付金额。",
+    "totalAmount": "总金额",
+    "unpaidInvoiceAlert": "账单待支付提醒",
+    "pleasePaySoon": "请尽快完成支付",
+    "unpaidInvoiceCount": "待支付账单",
+    "invoices": "笔",
+    "viewAndPay": "查看并支付",
+    "alertWillShowOnNextLogin": "此提醒将在下次登录时再次显示",
+    "paymentWarning": "为避免影响使用，请在7天内完成支付"
+  },
+  "subscription": {
+    "trial": "试用版",
+    "trialEndsOn": "试用期结束:",
+    "planName": {
+      "zh": "订阅计划",
+      "en": "Plan"
+    },
+    "status": {
+      "trial": "试用中",
+      "active": "已激活",
+      "past_due": "逾期",
+      "cancelled": "已取消",
+      "expired": "已过期"
+    }
   },
   "dashboard": {
     "subtitle": "实时数据概览与分析",
@@ -3023,7 +3206,18 @@
     "amountModifiedWarning": "金额已从",
     "noteRequired": "必须填写备注。",
     "actualAmount": "实际应付",
-    "originalPrice": "原价"
+    "originalPrice": "原价",
+    "paymentTitle": "支付账单",
+    "invoiceDetails": "账单信息",
+    "payNow": "立即支付 {{amount}}",
+    "createPaymentFailed": "创建支付失败",
+    "testCardInfo": "测试环境 - 使用以下测试卡号：",
+    "testCardNumber": "卡号",
+    "testCardExpiry": "有效期",
+    "testCardCVC": "CVC",
+    "anyFutureDate": "任意未来日期",
+    "any3Digits": "任意3位数字",
+    "paymentSuccessful": "支付成功"
   },
   "verification": {
     "noPhoneNumber": "客户没有手机号码",
@@ -3398,7 +3592,8 @@
       "View Materials": "查看物料采购",
       "Create Material": "创建物料采购",
       "Update Material": "更新物料采购",
-      "Delete Material": "删除物料采购"
+      "Delete Material": "删除物料采购",
+      "View Billing": "查看账单"
     },
     "permissionDescriptions": {
       "View Dashboard": "查看仪表盘数据和统计图表",
@@ -3533,7 +3728,8 @@
       "View Materials": "查看物料采购记录列表",
       "Create Material": "创建新的物料采购记录",
       "Update Material": "修改物料采购信息",
-      "Delete Material": "删除物料采购记录"
+      "Delete Material": "删除物料采购记录",
+      "View Billing": "查看商户账单信息和历史记录"
     },
     "permissionModules": {
       "dashboard": "仪表盘",
@@ -3576,7 +3772,8 @@
       "settings.tax_settings": "税务设置",
       "settings.system_settings": "系统设置",
       "settings.payment_settings": "支付设置",
-      "settings.terminal_settings": "终端设置"
+      "settings.terminal_settings": "终端设置",
+      "settings.billing": "账单管理"
     },
     "auditLogs": "审计日志",
     "cannotModifySelf": "您不能修改自己的角色或状态",
@@ -3699,7 +3896,27 @@
       "oldest": "最早",
       "showing": "显示",
       "merchants": "个商户",
-      "noTenantsWithFilter": "没有符合筛选条件的商户"
+      "noTenantsWithFilter": "没有符合筛选条件的商户",
+      "viewDetails": "查看详情",
+      "tenantDetails": "商户详情",
+      "basicInfo": "基本信息",
+      "subscriptionPlan": "订阅计划",
+      "planName": "计划名称",
+      "planStatus": "计划状态",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "price": "价格",
+      "billingCycle": "计费周期",
+      "noActiveSubscription": "暂无活跃订阅计划",
+      "invoiceHistory": "账单历史",
+      "invoiceNumber": "账单编号",
+      "amount": "金额",
+      "billingPeriod": "账单周期",
+      "invoiceStatus": "账单状态",
+      "paymentDate": "支付日期",
+      "invoicePaid": "已支付",
+      "invoicePending": "待支付",
+      "noInvoices": "暂无账单记录"
     }
   },
   "modules": {

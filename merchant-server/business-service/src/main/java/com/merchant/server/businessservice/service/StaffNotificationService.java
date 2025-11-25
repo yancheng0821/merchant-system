@@ -265,8 +265,8 @@ public class StaffNotificationService {
 
     /**
      * 每日汇总通知（定时任务）
-     * 每小时执行一次，检查哪些商户处于其本地时区的0:00-1:00之间
-     * 为这些商户发送昨天的工作汇总
+     * 每小时执行一次，检查哪些商户处于其本地时区的4:00-5:00之间
+     * 为这些商户发送前一天的工作汇总
      */
     @Scheduled(cron = "0 0 * * * ?")  // 每小时整点执行
     public void sendDailySummaryEmails() {
@@ -295,8 +295,8 @@ public class StaffNotificationService {
                     log.debug("Tenant {}: timezone={}, local time={}, hour={}",
                         tenantId, merchantTimezone, merchantNow, hour);
 
-                    // 如果商户本地时间在0:00-1:00之间，发送昨天的汇总
-                    if (hour == 0) {
+                    // 如果商户本地时间在4:00-5:00之间，发送前一天的汇总
+                    if (hour == 4) {
                         LocalDate yesterday = merchantNow.toLocalDate().minusDays(1);
                         String cacheKey = tenantId + ":" + yesterday.toString();
 

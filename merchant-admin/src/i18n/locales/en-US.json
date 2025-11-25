@@ -51,7 +51,8 @@
     "confirmDelete": "Confirm Delete",
     "am": "AM",
     "pm": "PM",
-    "noPermission": "You don't have permission to perform this action"
+    "noPermission": "You don't have permission to perform this action",
+    "viewDetails": "View Details"
   },
   "auth": {
     "and": "and",
@@ -86,7 +87,12 @@
         "contactPhone": "Contact Phone",
         "contactEmail": "Contact Email",
         "address": "Address",
-        "province": "Province",
+        "addressPlaceholder": "Start typing your address...",
+        "addressHelper": "Start typing to see address suggestions, or fill manually",
+        "country": "Country",
+        "province": "Province/State",
+        "provinceFreeFill": "Enter province/state",
+        "selectCountryFirst": "Please select country first",
         "city": "City",
         "postCode": "Postal Code",
         "timezone": "Timezone"
@@ -119,7 +125,12 @@
         "contactEmailInvalid": "Invalid contact email format",
         "resourceTypesRequired": "Please select at least one resource type",
         "registrationFailed": "Registration failed, please try again",
-        "termsRequired": "You must accept the terms of service to continue"
+        "termsRequired": "You must accept the terms of service to continue",
+        "addressRequired": "Address is required",
+        "countryRequired": "Country is required",
+        "provinceRequired": "Province is required",
+        "cityRequired": "City is required",
+        "postCodeRequired": "Postal code is required"
       },
       "success": {
         "title": "Registration Successful!",
@@ -148,6 +159,14 @@
         "staff": "Staff Resources",
         "room": "Room Resources"
       },
+      "countries": {
+        "Canada": "Canada",
+        "United States": "United States",
+        "China": "China",
+        "United Kingdom": "United Kingdom",
+        "Australia": "Australia",
+        "Other": "Other"
+      },
       "provinces": {
         "Alberta": "Alberta",
         "British Columbia": "British Columbia",
@@ -162,6 +181,33 @@
         "Northwest Territories": "Northwest Territories",
         "Nunavut": "Nunavut",
         "Yukon": "Yukon"
+      },
+      "usStates": {
+        "Alabama": "Alabama", "Alaska": "Alaska", "Arizona": "Arizona", "Arkansas": "Arkansas",
+        "California": "California", "Colorado": "Colorado", "Connecticut": "Connecticut", "Delaware": "Delaware",
+        "Florida": "Florida", "Georgia": "Georgia", "Hawaii": "Hawaii", "Idaho": "Idaho",
+        "Illinois": "Illinois", "Indiana": "Indiana", "Iowa": "Iowa", "Kansas": "Kansas",
+        "Kentucky": "Kentucky", "Louisiana": "Louisiana", "Maine": "Maine", "Maryland": "Maryland",
+        "Massachusetts": "Massachusetts", "Michigan": "Michigan", "Minnesota": "Minnesota", "Mississippi": "Mississippi",
+        "Missouri": "Missouri", "Montana": "Montana", "Nebraska": "Nebraska", "Nevada": "Nevada",
+        "New Hampshire": "New Hampshire", "New Jersey": "New Jersey", "New Mexico": "New Mexico", "New York": "New York",
+        "North Carolina": "North Carolina", "North Dakota": "North Dakota", "Ohio": "Ohio", "Oklahoma": "Oklahoma",
+        "Oregon": "Oregon", "Pennsylvania": "Pennsylvania", "Rhode Island": "Rhode Island", "South Carolina": "South Carolina",
+        "South Dakota": "South Dakota", "Tennessee": "Tennessee", "Texas": "Texas", "Utah": "Utah",
+        "Vermont": "Vermont", "Virginia": "Virginia", "Washington": "Washington", "West Virginia": "West Virginia",
+        "Wisconsin": "Wisconsin", "Wyoming": "Wyoming"
+      },
+      "chinaProvinces": {
+        "Beijing": "Beijing", "Shanghai": "Shanghai", "Guangdong": "Guangdong", "Zhejiang": "Zhejiang",
+        "Jiangsu": "Jiangsu", "Shandong": "Shandong", "Sichuan": "Sichuan", "Hubei": "Hubei", "Other": "Other"
+      },
+      "ukRegions": {
+        "England": "England", "Scotland": "Scotland", "Wales": "Wales", "Northern Ireland": "Northern Ireland"
+      },
+      "australiaStates": {
+        "New South Wales": "New South Wales", "Victoria": "Victoria", "Queensland": "Queensland",
+        "Western Australia": "Western Australia", "South Australia": "South Australia", "Tasmania": "Tasmania",
+        "Australian Capital Territory": "Australian Capital Territory", "Northern Territory": "Northern Territory"
       },
       "timezones": {
         "america_st_johns": "Newfoundland Time (St. John's, UTC-3:30)",
@@ -591,11 +637,53 @@
     },
     "batchImport": "Batch Import",
     "importHistory": "Import History",
+    "downloadTemplate": "Download Import Template",
+    "templateDialog": {
+      "title": "Customer Import Template Guide",
+      "description": "Please refer to the following field descriptions to prepare your import file",
+      "requiredFields": "Required Fields",
+      "recommendedFields": "Recommended Fields",
+      "optionalFields": "Optional Fields",
+      "fieldDescriptions": {
+        "firstName": "First Name - Customer's first name",
+        "lastName": "Last Name - Customer's last name",
+        "phone": "Phone Number - 10 digits without country code or separators",
+        "countryCode": "Country Code - Numeric format, e.g.: 1 (Canada/USA)",
+        "email": "Email Address - Valid email address",
+        "address": "Address - Full mailing address",
+        "dateOfBirth": "Date of Birth - Format: YYYY-MM-DD (e.g.: 1990-05-15)",
+        "gender": "Gender - MALE or FEMALE",
+        "membershipLevel": "Membership Level - Membership tier code",
+        "points": "Points - Numeric value",
+        "totalSpent": "Total Spent - Numeric value with optional decimals",
+        "communicationPreference": "Communication Preference - SMS, EMAIL or BOTH",
+        "notes": "Notes - Any text",
+        "allergies": "Allergies - Any text"
+      },
+      "fieldPurposes": {
+        "firstName": "For customer identification and personalized service",
+        "lastName": "For customer identification and personalized service",
+        "phone": "For contacting customers, sending appointment reminders and marketing messages",
+        "countryCode": "For correct phone number formatting to ensure calls and SMS work properly",
+        "email": "For sending email notifications, invoices and marketing messages",
+        "address": "For mailing invoices, product delivery and address verification",
+        "dateOfBirth": "For sending birthday wishes, personalized marketing and age analytics",
+        "gender": "For personalized service recommendations and customer demographics analysis",
+        "membershipLevel": "For determining customer discounts and privileges",
+        "points": "For points management and reward redemption",
+        "totalSpent": "For customer value analysis and VIP customer identification",
+        "communicationPreference": "For selecting customer's preferred notification method (SMS/Email)",
+        "notes": "For recording customer special requirements and preferences",
+        "allergies": "For ensuring service safety and avoiding allergens"
+      },
+      "downloadButton": "Download Template File"
+    },
     "import": {
       "title": "Customer Data Import",
       "historyTitle": "Import History Records",
       "historySubtitle": "View all customer data import history",
       "noRecordsDescription": "No customer data imports have been performed yet",
+      "downloadTemplate": "Download Import Template",
       "steps": {
         "uploadFile": "Upload File",
         "fieldMapping": "Field Mapping",
@@ -1738,7 +1826,8 @@
       "tax": "Tax Settings",
       "notifications": "Notification Settings",
       "system": "System Settings",
-      "payment": "Payment Settings"
+      "payment": "Payment Settings",
+      "billing": "Billing Management"
     },
     "systemNotifications": "Send System Notifications",
     "dataAnalytics": "Allow Data Analytics",
@@ -1769,8 +1858,11 @@
     "usageStatistics": "Send Usage Statistics",
     "contactPerson": "Contact Person",
     "contactEmail": "Contact Email",
+    "country": "Country",
     "province": "Province",
     "city": "City",
+    "postCode": "Postal Code",
+    "selectCountryFirst": "Please select country first",
     "provinces": {
       "Alberta": "Alberta",
       "British Columbia": "British Columbia",
@@ -1834,7 +1926,10 @@
       "sessionTimeoutRange": "Session timeout must be between 5-480 minutes",
       "validationFailed": "Please fix input errors before saving",
       "loadFailed": "Failed to load settings, please refresh and try again",
-      "sessionTimeoutRequired": "Session timeout cannot be empty"
+      "sessionTimeoutRequired": "Session timeout cannot be empty",
+      "merchantNameRequired": "Merchant name is required",
+      "countryRequired": "Country is required",
+      "provinceRequired": "Province/State is required"
     },
     "success": "Success",
     "error": "Error",
@@ -1993,6 +2088,67 @@
   "individual": {
     "verification": {
       "proof_of_liveness": "Identity Verification"
+    }
+  },
+  "billing": {
+    "title": "Billing Management",
+    "invoiceNumber": "Invoice Number",
+    "billingPeriod": "Billing Period",
+    "amount": "Amount",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "status": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "statusLabel": "Status",
+    "paymentDate": "Payment Date",
+    "paymentMethod": "Payment Method",
+    "description": "Description",
+    "pay": "Pay Now",
+    "invoiceDetails": "Invoice Details",
+    "noInvoices": "No invoices yet",
+    "subscriptionPlan": "Subscription Plan",
+    "currentPlan": "Current Plan",
+    "trialPeriod": "Trial Period",
+    "currentPeriod": "Current Period",
+    "endsOn": "Ends on",
+    "maxUsers": "Max Users",
+    "maxStaff": "Max Staff",
+    "maxAppointments": "Monthly Appointments",
+    "billingCycle": "Billing Cycle",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "unlimited": "Unlimited",
+    "month": "month",
+    "switchTo": "Switch to",
+    "confirmChangeCycle": "Confirm Billing Cycle Change",
+    "confirmChangeToYearly": "Are you sure you want to switch to yearly billing? If you have any unpaid invoices, the amount will be updated to the yearly rate.",
+    "confirmChangeToMonthly": "Are you sure you want to switch to monthly billing? If you have any unpaid invoices, the amount will be updated to the monthly rate.",
+    "totalAmount": "Total Amount",
+    "unpaidInvoiceAlert": "Unpaid Invoice Alert",
+    "pleasePaySoon": "Please complete payment soon",
+    "unpaidInvoiceCount": "Unpaid Invoices",
+    "invoices": "invoice(s)",
+    "viewAndPay": "View & Pay",
+    "alertWillShowOnNextLogin": "This alert will show again on your next login",
+    "paymentWarning": "Please complete payment within 7 days to avoid service interruption"
+  },
+  "subscription": {
+    "trial": "Trial",
+    "trialEndsOn": "Trial ends on:",
+    "planName": {
+      "zh": "Plan",
+      "en": "Plan"
+    },
+    "status": {
+      "trial": "Trial",
+      "active": "Active",
+      "past_due": "Past Due",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
     }
   },
   "dashboard": {
@@ -2936,7 +3092,18 @@
     "amountModifiedWarning": "Amount has been modified from",
     "noteRequired": "Notes are required.",
     "actualAmount": "Actual Amount",
-    "originalPrice": "Original Price"
+    "originalPrice": "Original Price",
+    "paymentTitle": "Pay Invoice",
+    "invoiceDetails": "Invoice Details",
+    "payNow": "Pay {{amount}} Now",
+    "createPaymentFailed": "Failed to Create Payment",
+    "testCardInfo": "Test Environment - Use the following test card:",
+    "testCardNumber": "Card Number",
+    "testCardExpiry": "Expiry",
+    "testCardCVC": "CVC",
+    "anyFutureDate": "Any future date",
+    "any3Digits": "Any 3 digits",
+    "paymentSuccessful": "Payment Successful!"
   },
   "verification": {
     "noPhoneNumber": "Customer has no phone number",
@@ -3313,7 +3480,8 @@
       "View Materials": "View Materials",
       "Create Material": "Create Material",
       "Update Material": "Update Material",
-      "Delete Material": "Delete Material"
+      "Delete Material": "Delete Material",
+      "View Billing": "View Billing"
     },
     "permissionDescriptions": {
       "View Dashboard": "View dashboard data and statistics",
@@ -3448,7 +3616,8 @@
       "View Materials": "View material purchase records list",
       "Create Material": "Create new material purchase record",
       "Update Material": "Update material purchase information",
-      "Delete Material": "Delete material purchase record"
+      "Delete Material": "Delete material purchase record",
+      "View Billing": "View merchant billing information and history"
     },
     "permissionModules": {
       "dashboard": "Dashboard",
@@ -3491,7 +3660,8 @@
       "settings.tax_settings": "Tax Settings",
       "settings.system_settings": "System Settings",
       "settings.payment_settings": "Payment Settings",
-      "settings.terminal_settings": "Terminal Settings"
+      "settings.terminal_settings": "Terminal Settings",
+      "settings.billing": "Billing"
     },
     "auditLogs": "Audit Logs",
     "cannotModifySelf": "You cannot modify your own role or status",
@@ -3614,7 +3784,27 @@
       "oldest": "Oldest",
       "showing": "Showing",
       "merchants": "merchants",
-      "noTenantsWithFilter": "No merchants match the filter criteria"
+      "noTenantsWithFilter": "No merchants match the filter criteria",
+      "viewDetails": "View Details",
+      "tenantDetails": "Merchant Details",
+      "basicInfo": "Basic Information",
+      "subscriptionPlan": "Subscription Plan",
+      "planName": "Plan Name",
+      "planStatus": "Plan Status",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "price": "Price",
+      "billingCycle": "Billing Cycle",
+      "noActiveSubscription": "No active subscription plan",
+      "invoiceHistory": "Invoice History",
+      "invoiceNumber": "Invoice Number",
+      "amount": "Amount",
+      "billingPeriod": "Billing Period",
+      "invoiceStatus": "Invoice Status",
+      "paymentDate": "Payment Date",
+      "invoicePaid": "Paid",
+      "invoicePending": "Pending",
+      "noInvoices": "No invoice records"
     }
   },
   "modules": {

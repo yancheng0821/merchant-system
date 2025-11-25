@@ -33,12 +33,15 @@ import {
   Email as EmailIcon,
   Person as PersonIcon,
   Public as ProvinceIcon,
+  Public,
   LocationCity as CityIcon,
   Payment as PaymentIcon,
   Group as GroupIcon,
   MeetingRoom as RoomIcon,
   CheckBox as CheckBoxIcon,
   CheckBoxOutlineBlank as CheckBoxBlankIcon,
+  Receipt as ReceiptIcon,
+  LocalPostOffice as PostCodeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,6 +50,8 @@ import { useSession } from '../../contexts/SessionContext';
 import { usePermission } from '../../hooks/usePermission';
 import { merchantConfigApi } from '../../services/api';
 import StripeConnectTab from './StripeConnectTab';
+import BillingTab from './BillingTab';
+import { COUNTRIES, getProvincesByCountry } from '../../data/countries';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -74,8 +79,10 @@ interface MerchantInfo {
   contactPhone: string;
   contactEmail: string;
   address: string;
+  country: string;
   province: string;
   city: string;
+  postCode: string;
   timezone: string;
 }
 
@@ -93,14 +100,12 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
   const { hasPermission } = usePermission();
   const location = useLocation();
-  
-  const [selectedTab, setSelectedTab] = useState(0);
 
   // 权限过滤后的tabs配置
   const allTabsConfig = [
@@ -125,6 +130,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       color: '#8B5CF6',
       permission: 'settings:update_system' as const,
     },
+    {
+      key: 'billing',
+      label: t('settings.tabs.billing'),
+      icon: <ReceiptIcon />,
+      color: '#10B981',
+      permission: 'billing:view' as const,
+    },
     // {
     //   key: 'payment',
     //   label: t('settings.tabs.payment'),
@@ -135,6 +147,39 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   ];
 
   const tabsConfig = allTabsConfig.filter(tab => hasPermission(tab.permission));
+
+  // 初始化selectedTab - 在useState初始化时就读取localStorage，避免闪烁
+  const [selectedTab, setSelectedTab] = useState(() => {
+    // 如果从prop传入了tab（如Stripe回调）
+    if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
+      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const paymentTabIndex = filteredTabs.findIndex(tab => tab.key === 'payment');
+      return paymentTabIndex >= 0 ? paymentTabIndex : 0;
+    }
+
+    // 检查localStorage中保存的tab
+    const savedTabKey = localStorage.getItem('settingsSelectedTab');
+    if (savedTabKey) {
+      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const savedTabIndex = filteredTabs.findIndex(tab => tab.key === savedTabKey);
+      if (savedTabIndex >= 0) {
+        return savedTabIndex;
+      }
+    }
+
+    // 兼容旧的settingsTab key (payment专用)
+    const settingsTab = localStorage.getItem('settingsTab');
+    if (settingsTab === 'payment' || settingsTab === 'stripe') {
+      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const paymentTabIndex = filteredTabs.findIndex(tab => tab.key === 'payment');
+      if (paymentTabIndex >= 0) {
+        localStorage.removeItem('settingsTab');
+        return paymentTabIndex;
+      }
+    }
+
+    return 0;
+  });
 
   // 主题色
   const primaryColor = '#6366F1';
@@ -153,27 +198,6 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       color: primaryColor,
     },
   };
-
-  // 处理初始tab选择
-  useEffect(() => {
-    // 如果从prop传入了tab（如Stripe回调）
-    if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
-      const paymentTabIndex = tabsConfig.findIndex(tab => tab.key === 'payment');
-      if (paymentTabIndex >= 0) {
-        setSelectedTab(paymentTabIndex);
-      }
-    } else {
-      // 检查localStorage
-      const settingsTab = localStorage.getItem('settingsTab');
-      if (settingsTab === 'payment' || settingsTab === 'stripe') {
-        const paymentTabIndex = tabsConfig.findIndex(tab => tab.key === 'payment');
-        if (paymentTabIndex >= 0) {
-          setSelectedTab(paymentTabIndex);
-        }
-        localStorage.removeItem('settingsTab');
-      }
-    }
-  }, [propInitialTab, tabsConfig]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [merchantInfo, setMerchantInfo] = useState<MerchantInfo>({
@@ -182,8 +206,10 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
     contactPhone: '',
     contactEmail: '',
     address: '',
+    country: '',
     province: '',
     city: '',
+    postCode: '',
     timezone: 'Asia/Shanghai'
   });
 
@@ -225,6 +251,11 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
+    // 保存选中的tab到localStorage
+    const tabKey = tabsConfig[newValue]?.key;
+    if (tabKey) {
+      localStorage.setItem('settingsSelectedTab', tabKey);
+    }
   };
 
   // 获取商户配置信息
@@ -245,8 +276,10 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
             contactPhone: merchantResponse.contactPhone || '',
             contactEmail: merchantResponse.contactEmail || '',
             address: merchantResponse.address || '',
+            country: merchantResponse.country || '',
             province: merchantResponse.province || '',
             city: merchantResponse.city || '',
+            postCode: merchantResponse.postCode || '',
             timezone: merchantResponse.timezone || 'Asia/Shanghai'
           });
         }
@@ -397,6 +430,35 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
   const handleSaveSettings = async () => {
     if (!user?.tenantId) return;
+
+    // 检查商户名称是否必填
+    if (!merchantInfo.merchantName || !merchantInfo.merchantName.trim()) {
+      setNotification({
+        open: true,
+        message: t('settings.errors.merchantNameRequired'),
+        severity: 'error'
+      });
+      return;
+    }
+
+    // 检查国家和省份是否必填
+    if (!merchantInfo.country || !merchantInfo.country.trim()) {
+      setNotification({
+        open: true,
+        message: t('settings.errors.countryRequired'),
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (!merchantInfo.province || !merchantInfo.province.trim()) {
+      setNotification({
+        open: true,
+        message: t('settings.errors.provinceRequired'),
+        severity: 'error'
+      });
+      return;
+    }
 
     // 检查是否有验证错误
     if (Object.values(taxErrors).some(error => error) || sessionError) {
@@ -612,6 +674,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           variant="outlined"
                           value={merchantInfo.merchantName}
                           onChange={(e) => handleMerchantInfoChange('merchantName', e.target.value)}
+                          required
                           sx={{
                             ...inputFieldStyles,
                             '& .MuiOutlinedInput-root': {
@@ -655,15 +718,23 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth sx={inputFieldStyles}>
-                          <InputLabel>{t('settings.province')}</InputLabel>
+                        <FormControl fullWidth sx={inputFieldStyles} required>
+                          <InputLabel required>{t('settings.country')}</InputLabel>
                           <Select
-                            value={merchantInfo.province}
-                            onChange={(e) => handleMerchantInfoChange('province', e.target.value)}
-                            label={t('settings.province')}
+                            value={merchantInfo.country}
+                            onChange={(e) => {
+                              const newCountry = e.target.value;
+                              handleMerchantInfoChange('country', newCountry);
+                              // 清空省份，因为国家变了
+                              if (newCountry !== merchantInfo.country) {
+                                handleMerchantInfoChange('province', '');
+                              }
+                            }}
+                            label={t('settings.country')}
+                            required
                             startAdornment={
                               <InputAdornment position="start">
-                                <ProvinceIcon sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
+                                <Public sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
                               </InputAdornment>
                             }
                             sx={{
@@ -676,21 +747,82 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                               },
                             }}
                           >
-                            <MenuItem value="Alberta">{t('settings.provinces.Alberta')}</MenuItem>
-                            <MenuItem value="British Columbia">{t('settings.provinces.British Columbia')}</MenuItem>
-                            <MenuItem value="Manitoba">{t('settings.provinces.Manitoba')}</MenuItem>
-                            <MenuItem value="New Brunswick">{t('settings.provinces.New Brunswick')}</MenuItem>
-                            <MenuItem value="Newfoundland and Labrador">{t('settings.provinces.Newfoundland and Labrador')}</MenuItem>
-                            <MenuItem value="Northwest Territories">{t('settings.provinces.Northwest Territories')}</MenuItem>
-                            <MenuItem value="Nova Scotia">{t('settings.provinces.Nova Scotia')}</MenuItem>
-                            <MenuItem value="Nunavut">{t('settings.provinces.Nunavut')}</MenuItem>
-                            <MenuItem value="Ontario">{t('settings.provinces.Ontario')}</MenuItem>
-                            <MenuItem value="Prince Edward Island">{t('settings.provinces.Prince Edward Island')}</MenuItem>
-                            <MenuItem value="Quebec">{t('settings.provinces.Quebec')}</MenuItem>
-                            <MenuItem value="Saskatchewan">{t('settings.provinces.Saskatchewan')}</MenuItem>
-                            <MenuItem value="Yukon">{t('settings.provinces.Yukon')}</MenuItem>
+                            {COUNTRIES.map((country) => (
+                              <MenuItem key={country.value} value={country.value}>
+                                {i18n.language.startsWith('zh') ? country.labelZh : country.labelEn}
+                              </MenuItem>
+                            ))}
                           </Select>
                         </FormControl>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        {merchantInfo.country && getProvincesByCountry(merchantInfo.country).length === 0 ? (
+                          // 如果选择的国家没有预定义的省份列表（如"Other"），显示自由输入框
+                          <TextField
+                            fullWidth
+                            label={t('settings.province')}
+                            variant="outlined"
+                            value={merchantInfo.province}
+                            onChange={(e) => handleMerchantInfoChange('province', e.target.value)}
+                            placeholder={t('auth.merchantRegisterPage.merchantInfo.provinceFreeFill')}
+                            required
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <ProvinceIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              ...inputFieldStyles,
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: primaryColor,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: primaryColor,
+                                },
+                              },
+                            }}
+                          />
+                        ) : (
+                          // 如果有预定义的省份列表，显示下拉框
+                          <FormControl fullWidth sx={inputFieldStyles} required>
+                            <InputLabel required>{t('settings.province')}</InputLabel>
+                            <Select
+                              value={merchantInfo.province}
+                              onChange={(e) => handleMerchantInfoChange('province', e.target.value)}
+                              label={t('settings.province')}
+                              disabled={!merchantInfo.country}
+                              required
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <ProvinceIcon sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
+                                </InputAdornment>
+                              }
+                              sx={{
+                                borderRadius: 2,
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: primaryColor,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: primaryColor,
+                                },
+                              }}
+                            >
+                              {!merchantInfo.country ? (
+                                <MenuItem value="">{t('settings.selectCountryFirst')}</MenuItem>
+                              ) : (
+                                getProvincesByCountry(merchantInfo.country).map((province) => (
+                                  <MenuItem key={province.value} value={province.value}>
+                                    {i18n.language.startsWith('zh') ? province.labelZh : province.labelEn}
+                                  </MenuItem>
+                                ))
+                              )}
+                            </Select>
+                          </FormControl>
+                        )}
                       </Grid>
                       <Grid item xs={12} sm={6}>
                         <TextField
@@ -703,6 +835,34 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             startAdornment: (
                               <InputAdornment position="start">
                                 <CityIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            ...inputFieldStyles,
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                            },
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          label={t('settings.postCode')}
+                          variant="outlined"
+                          value={merchantInfo.postCode}
+                          onChange={(e) => handleMerchantInfoChange('postCode', e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <PostCodeIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -1212,6 +1372,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         </Fade>
         )}
 
+        {/* Billing Tab */}
+        {currentTabKey === 'billing' && (
+        <Fade in={currentTabKey === 'billing'} timeout={300}>
+          <Box sx={{ p: 3 }}>
+            <BillingTab />
+          </Box>
+        </Fade>
+        )}
+
         {/* Payment Settings - Stripe Connect */}
         {/* {currentTabKey === 'payment' && (
         <Fade in={currentTabKey === 'payment'} timeout={300}>
@@ -1222,8 +1391,8 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         )} */}
       </Card>
 
-      {/* 保存按钮 - 仅在非支付设置页显示 */}
-      {currentTabKey !== 'payment' && (
+      {/* 保存按钮 - 仅在非支付设置页和非账单页显示 */}
+      {currentTabKey !== 'payment' && currentTabKey !== 'billing' && (
       <Box mt={4} display="flex" justifyContent="flex-end">
         <Button
           variant="contained"
@@ -1256,7 +1425,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         open={notification.open}
         autoHideDuration={4000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
           onClose={handleCloseNotification}

@@ -29,6 +29,9 @@ import {
   MenuItem,
   Stack,
   Snackbar,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -36,12 +39,14 @@ import {
   Info as InfoIcon,
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
+  Visibility as VisibilityIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { tenantApi, TenantInfo } from '../../services/api';
+import { tenantApi, TenantInfo, subscriptionApi, invoiceApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
 
 const TenantActivation: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTenant, setSelectedTenant] = useState<TenantInfo | null>(null);
@@ -54,8 +59,29 @@ const TenantActivation: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Details dialog states
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
+
+  // Menu states
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuTenant, setMenuTenant] = useState<TenantInfo | null>(null);
+  const menuOpen = Boolean(anchorEl);
+
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
     setSnackbar({ open: true, message, severity });
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, tenant: TenantInfo) => {
+    setAnchorEl(event.currentTarget);
+    setMenuTenant(tenant);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuTenant(null);
   };
 
   const loadTenants = async () => {
@@ -80,6 +106,7 @@ const TenantActivation: React.FC = () => {
   }, []);
 
   const handleOpenDialog = (tenant: TenantInfo, type: 'activate' | 'deactivate') => {
+    handleMenuClose();
     setSelectedTenant(tenant);
     setActionType(type);
     setDialogOpen(true);
@@ -91,6 +118,47 @@ const TenantActivation: React.FC = () => {
 
   const handleDialogExited = () => {
     setSelectedTenant(null);
+  };
+
+  const handleOpenDetailsDialog = async (tenant: TenantInfo) => {
+    handleMenuClose();
+    setSelectedTenant(tenant);
+    setDetailsDialogOpen(true);
+    setDetailsLoading(true);
+
+    try {
+      // Load subscription data
+      const subResponse = await subscriptionApi.getActiveSubscription(tenant.id);
+      if (subResponse.success && subResponse.data) {
+        setSubscription(subResponse.data);
+      } else {
+        setSubscription(null);
+      }
+
+      // Load invoices data
+      const invoiceResponse = await invoiceApi.getInvoicesByTenantId(tenant.id);
+      if (invoiceResponse.success && invoiceResponse.data) {
+        setInvoices(invoiceResponse.data);
+      } else {
+        setInvoices([]);
+      }
+    } catch (error) {
+      console.error('Failed to load tenant details:', error);
+      setSubscription(null);
+      setInvoices([]);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false);
+  };
+
+  const handleDetailsDialogExited = () => {
+    setSelectedTenant(null);
+    setSubscription(null);
+    setInvoices([]);
   };
 
   const handleConfirmAction = async () => {
@@ -329,43 +397,20 @@ const TenantActivation: React.FC = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" gap={1}>
-                          {tenant.status === 'INACTIVE' ? (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<CheckCircleIcon />}
-                              onClick={() => handleOpenDialog(tenant, 'activate')}
-                              sx={{
-                                backgroundColor: '#10B981',
-                                '&:hover': {
-                                  backgroundColor: '#059669',
-                                },
-                                textTransform: 'none',
-                                borderRadius: 1.5,
-                              }}
-                            >
-                              {t('admin.tenantActivation.activate')}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<CancelIcon />}
-                              onClick={() => handleOpenDialog(tenant, 'deactivate')}
-                              sx={{
-                                backgroundColor: '#EF4444',
-                                '&:hover': {
-                                  backgroundColor: '#DC2626',
-                                },
-                                textTransform: 'none',
-                                borderRadius: 1.5,
-                              }}
-                            >
-                              {t('admin.tenantActivation.deactivate')}
-                            </Button>
-                          )}
-                        </Box>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, tenant)}
+                          sx={{
+                            color: '#6B7280',
+                            padding: '4px',
+                            '&:hover': {
+                              backgroundColor: alpha('#14B8A6', 0.08),
+                              color: '#14B8A6',
+                            },
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -375,6 +420,96 @@ const TenantActivation: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={menuOpen}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            minWidth: 160,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }
+        }}
+      >
+        <MenuItem
+          onClick={() => menuTenant && handleOpenDetailsDialog(menuTenant)}
+          sx={{
+            py: 0.75,
+            px: 1.5,
+            fontSize: '0.875rem',
+            '&:hover': {
+              backgroundColor: alpha('#14B8A6', 0.08),
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <VisibilityIcon sx={{ fontSize: 18, color: '#14B8A6' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary={t('admin.tenantActivation.viewDetails')}
+            primaryTypographyProps={{
+              fontSize: '0.875rem',
+            }}
+          />
+        </MenuItem>
+
+        {menuTenant && menuTenant.status === 'INACTIVE' ? (
+          <MenuItem
+            onClick={() => menuTenant && handleOpenDialog(menuTenant, 'activate')}
+            sx={{
+              py: 0.75,
+              px: 1.5,
+              fontSize: '0.875rem',
+              '&:hover': {
+                backgroundColor: alpha('#10B981', 0.08),
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('admin.tenantActivation.activate')}
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+              }}
+            />
+          </MenuItem>
+        ) : (
+          <MenuItem
+            onClick={() => menuTenant && handleOpenDialog(menuTenant, 'deactivate')}
+            sx={{
+              py: 0.75,
+              px: 1.5,
+              fontSize: '0.875rem',
+              '&:hover': {
+                backgroundColor: alpha('#EF4444', 0.08),
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <CancelIcon sx={{ fontSize: 18, color: '#EF4444' }} />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('admin.tenantActivation.deactivate')}
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+              }}
+            />
+          </MenuItem>
+        )}
+      </Menu>
 
       {/* Confirmation Dialog */}
       <Dialog
@@ -446,6 +581,219 @@ const TenantActivation: React.FC = () => {
             ) : (
               t('common.confirm')
             )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Tenant Details Dialog */}
+      <Dialog
+        open={detailsDialogOpen}
+        onClose={handleCloseDetailsDialog}
+        maxWidth="md"
+        fullWidth
+        TransitionProps={{
+          onExited: handleDetailsDialogExited,
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+          }
+        }}
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {t('admin.tenantActivation.tenantDetails')}
+            </Typography>
+            <IconButton onClick={handleCloseDetailsDialog}>
+              <CancelIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {/* Tenant Basic Info */}
+          {selectedTenant && (
+            <Box sx={{ mb: 3, p: 2, backgroundColor: alpha('#14B8A6', 0.05), borderRadius: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                {t('admin.tenantActivation.basicInfo')}
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>{t('admin.tenantActivation.tenantCode')}:</strong> {selectedTenant.tenantCode}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>{t('admin.tenantActivation.tenantName')}:</strong> {selectedTenant.tenantName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>{t('admin.tenantActivation.contactPerson')}:</strong> {selectedTenant.contactPerson}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>{t('admin.tenantActivation.contactPhone')}:</strong> {selectedTenant.contactPhone}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ gridColumn: '1 / -1' }}>
+                  <strong>{t('admin.tenantActivation.contactEmail')}:</strong> {selectedTenant.contactEmail}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {/* Subscription Plan */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              {t('admin.tenantActivation.subscriptionPlan')}
+            </Typography>
+            {detailsLoading ? (
+              <Box display="flex" justifyContent="center" py={3}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : subscription ? (
+                  <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: alpha('#14B8A6', 0.2) }}>
+                    <CardContent>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {t('admin.tenantActivation.planName')}
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                            {i18n.language === 'zh-CN'
+                              ? (subscription.plan?.planNameZh || subscription.plan?.planNameEn || 'N/A')
+                              : (subscription.plan?.planNameEn || subscription.plan?.planNameZh || 'N/A')}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {t('admin.tenantActivation.planStatus')}
+                          </Typography>
+                          <Box sx={{ mt: 0.5 }}>
+                            {subscription.status === 'ACTIVE' ? (
+                              <Chip label={t('admin.tenantActivation.statusActive')} color="success" size="small" />
+                            ) : subscription.status === 'TRIAL' ? (
+                              <Chip label="Trial" color="info" size="small" />
+                            ) : subscription.status === 'PAST_DUE' ? (
+                              <Chip label="Past Due" color="warning" size="small" />
+                            ) : (
+                              <Chip label={subscription.status} size="small" />
+                            )}
+                          </Box>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {t('admin.tenantActivation.startDate')}
+                          </Typography>
+                          <Typography variant="body1">
+                            {subscription.trialStartDate || subscription.currentPeriodStart || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {t('admin.tenantActivation.endDate')}
+                          </Typography>
+                          <Typography variant="body1">
+                            {subscription.trialEndDate || subscription.currentPeriodEnd || 'N/A'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {t('admin.tenantActivation.price')}
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#10B981' }}>
+                            ${subscription.billingCycle === 'MONTHLY'
+                              ? (subscription.plan?.monthlyPrice || 0).toFixed(2)
+                              : (subscription.plan?.yearlyPrice || 0).toFixed(2)}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {t('admin.tenantActivation.billingCycle')}
+                          </Typography>
+                          <Typography variant="body1">
+                            {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : subscription.billingCycle === 'YEARLY' ? t('billing.yearly') : 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Alert severity="info">
+                    {t('admin.tenantActivation.noActiveSubscription')}
+                  </Alert>
+                )}
+              </Box>
+
+          {/* Invoice History */}
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              {t('admin.tenantActivation.invoiceHistory')}
+            </Typography>
+            {detailsLoading ? (
+              <Box display="flex" justifyContent="center" py={3}>
+                <CircularProgress size={30} />
+              </Box>
+            ) : invoices.length > 0 ? (
+                  <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: alpha('#14B8A6', 0.2), borderRadius: 2 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ backgroundColor: alpha('#14B8A6', 0.05) }}>
+                          <TableCell sx={{ fontWeight: 600 }}>{t('admin.tenantActivation.invoiceNumber')}</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{t('admin.tenantActivation.amount')}</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{t('admin.tenantActivation.billingPeriod')}</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{t('admin.tenantActivation.invoiceStatus')}</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{t('admin.tenantActivation.paymentDate')}</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {invoices.map((invoice) => (
+                          <TableRow key={invoice.id} hover>
+                            <TableCell>{invoice.invoiceNumber}</TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                ${invoice.amount.toFixed(2)} {invoice.currency}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {invoice.status === 'PAID' ? (
+                                <Chip label={t('admin.tenantActivation.invoicePaid')} color="success" size="small" />
+                              ) : invoice.status === 'PENDING' ? (
+                                <Chip label={t('admin.tenantActivation.invoicePending')} color="warning" size="small" />
+                              ) : (
+                                <Chip label={invoice.status} size="small" />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {invoice.paymentDate || '-'}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Alert severity="info">
+                    {t('admin.tenantActivation.noInvoices')}
+                  </Alert>
+                )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={handleCloseDetailsDialog}
+            variant="contained"
+            sx={{
+              backgroundColor: '#14B8A6',
+              '&:hover': {
+                backgroundColor: '#0D9488',
+              },
+              textTransform: 'none',
+            }}
+          >
+            {t('common.close')}
           </Button>
         </DialogActions>
       </Dialog>

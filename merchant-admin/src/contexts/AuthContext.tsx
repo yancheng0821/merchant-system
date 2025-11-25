@@ -297,6 +297,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('user');
       // 清除登录页面状态，避免退出后回到2FA验证页面
       sessionStorage.removeItem('authPageMode');
+      // 清除未支付账单提醒的关闭状态，确保下次登录时重新显示
+      if (user?.id) {
+        sessionStorage.removeItem(`unpaid-invoice-alert-closed-${user.id}`);
+      }
       setUser(null);
       setError(null);
     }

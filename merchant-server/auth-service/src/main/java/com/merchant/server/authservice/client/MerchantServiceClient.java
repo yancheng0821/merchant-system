@@ -37,4 +37,10 @@ public interface MerchantServiceClient {
      */
     @GetMapping("/api/merchant/tenant/{tenantId}")
     ApiResponse<Map<String, Object>> getMerchantByTenantId(@PathVariable("tenantId") Long tenantId);
+
+    /**
+     * 为新注册的租户创建免费试用订阅
+     */
+    @PostMapping("/api/merchant/subscription/tenant/{tenantId}/free-trial")
+    ApiResponse<Map<String, Object>> createFreeTrialSubscription(@PathVariable("tenantId") Long tenantId);
 }

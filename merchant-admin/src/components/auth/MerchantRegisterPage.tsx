@@ -27,6 +27,7 @@ import {
   Fade,
   Slide,
   LinearProgress,
+  CircularProgress,
   alpha,
 } from '@mui/material';
 import {
@@ -49,6 +50,7 @@ import { useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import CountryCodeSelector from '../common/CountryCodeSelector';
 import TermsOfServiceCheckbox from './TermsOfServiceCheckbox';
+import AddressAutocomplete, { ParsedAddress } from '../common/AddressAutocomplete';
 
 interface MerchantRegisterData {
   // 管理员信息
@@ -69,6 +71,7 @@ interface MerchantRegisterData {
   contactPhoneCountryCode: string;
   contactEmail: string;
   address: string;
+  country: string;
   province: string;
   city: string;
   postCode: string;
@@ -264,6 +267,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     contactPhoneCountryCode: '+1-CA',
     contactEmail: '',
     address: '',
+    country: '',
     province: '',
     city: '',
     postCode: '',
@@ -341,21 +345,148 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     { value: 'Pacific/Auckland', label: t('auth.merchantRegisterPage.timezones.pacific_auckland') }
   ];
 
-  const canadianProvinces = [
-    { value: 'Alberta', label: t('auth.merchantRegisterPage.provinces.Alberta') },
-    { value: 'British Columbia', label: t('auth.merchantRegisterPage.provinces.British Columbia') },
-    { value: 'Manitoba', label: t('auth.merchantRegisterPage.provinces.Manitoba') },
-    { value: 'New Brunswick', label: t('auth.merchantRegisterPage.provinces.New Brunswick') },
-    { value: 'Newfoundland and Labrador', label: t('auth.merchantRegisterPage.provinces.Newfoundland and Labrador') },
-    { value: 'Nova Scotia', label: t('auth.merchantRegisterPage.provinces.Nova Scotia') },
-    { value: 'Ontario', label: t('auth.merchantRegisterPage.provinces.Ontario') },
-    { value: 'Prince Edward Island', label: t('auth.merchantRegisterPage.provinces.Prince Edward Island') },
-    { value: 'Quebec', label: t('auth.merchantRegisterPage.provinces.Quebec') },
-    { value: 'Saskatchewan', label: t('auth.merchantRegisterPage.provinces.Saskatchewan') },
-    { value: 'Northwest Territories', label: t('auth.merchantRegisterPage.provinces.Northwest Territories') },
-    { value: 'Nunavut', label: t('auth.merchantRegisterPage.provinces.Nunavut') },
-    { value: 'Yukon', label: t('auth.merchantRegisterPage.provinces.Yukon') }
+  const countries = [
+    { value: 'Canada', label: t('auth.merchantRegisterPage.countries.Canada') },
+    { value: 'United States', label: t('auth.merchantRegisterPage.countries.United States') },
+    { value: 'China', label: t('auth.merchantRegisterPage.countries.China') },
+    { value: 'United Kingdom', label: t('auth.merchantRegisterPage.countries.United Kingdom') },
+    { value: 'Australia', label: t('auth.merchantRegisterPage.countries.Australia') },
+    { value: 'Other', label: t('auth.merchantRegisterPage.countries.Other') },
   ];
+
+  // 各国省份/州数据
+  const provincesByCountry: { [key: string]: Array<{ value: string; label: string }> } = {
+    'Canada': [
+      { value: 'Alberta', label: t('auth.merchantRegisterPage.provinces.Alberta') },
+      { value: 'British Columbia', label: t('auth.merchantRegisterPage.provinces.British Columbia') },
+      { value: 'Manitoba', label: t('auth.merchantRegisterPage.provinces.Manitoba') },
+      { value: 'New Brunswick', label: t('auth.merchantRegisterPage.provinces.New Brunswick') },
+      { value: 'Newfoundland and Labrador', label: t('auth.merchantRegisterPage.provinces.Newfoundland and Labrador') },
+      { value: 'Nova Scotia', label: t('auth.merchantRegisterPage.provinces.Nova Scotia') },
+      { value: 'Ontario', label: t('auth.merchantRegisterPage.provinces.Ontario') },
+      { value: 'Prince Edward Island', label: t('auth.merchantRegisterPage.provinces.Prince Edward Island') },
+      { value: 'Quebec', label: t('auth.merchantRegisterPage.provinces.Quebec') },
+      { value: 'Saskatchewan', label: t('auth.merchantRegisterPage.provinces.Saskatchewan') },
+      { value: 'Northwest Territories', label: t('auth.merchantRegisterPage.provinces.Northwest Territories') },
+      { value: 'Nunavut', label: t('auth.merchantRegisterPage.provinces.Nunavut') },
+      { value: 'Yukon', label: t('auth.merchantRegisterPage.provinces.Yukon') }
+    ],
+    'United States': [
+      { value: 'Alabama', label: t('auth.merchantRegisterPage.usStates.Alabama') },
+      { value: 'Alaska', label: t('auth.merchantRegisterPage.usStates.Alaska') },
+      { value: 'Arizona', label: t('auth.merchantRegisterPage.usStates.Arizona') },
+      { value: 'Arkansas', label: t('auth.merchantRegisterPage.usStates.Arkansas') },
+      { value: 'California', label: t('auth.merchantRegisterPage.usStates.California') },
+      { value: 'Colorado', label: t('auth.merchantRegisterPage.usStates.Colorado') },
+      { value: 'Connecticut', label: t('auth.merchantRegisterPage.usStates.Connecticut') },
+      { value: 'Delaware', label: t('auth.merchantRegisterPage.usStates.Delaware') },
+      { value: 'Florida', label: t('auth.merchantRegisterPage.usStates.Florida') },
+      { value: 'Georgia', label: t('auth.merchantRegisterPage.usStates.Georgia') },
+      { value: 'Hawaii', label: t('auth.merchantRegisterPage.usStates.Hawaii') },
+      { value: 'Idaho', label: t('auth.merchantRegisterPage.usStates.Idaho') },
+      { value: 'Illinois', label: t('auth.merchantRegisterPage.usStates.Illinois') },
+      { value: 'Indiana', label: t('auth.merchantRegisterPage.usStates.Indiana') },
+      { value: 'Iowa', label: t('auth.merchantRegisterPage.usStates.Iowa') },
+      { value: 'Kansas', label: t('auth.merchantRegisterPage.usStates.Kansas') },
+      { value: 'Kentucky', label: t('auth.merchantRegisterPage.usStates.Kentucky') },
+      { value: 'Louisiana', label: t('auth.merchantRegisterPage.usStates.Louisiana') },
+      { value: 'Maine', label: t('auth.merchantRegisterPage.usStates.Maine') },
+      { value: 'Maryland', label: t('auth.merchantRegisterPage.usStates.Maryland') },
+      { value: 'Massachusetts', label: t('auth.merchantRegisterPage.usStates.Massachusetts') },
+      { value: 'Michigan', label: t('auth.merchantRegisterPage.usStates.Michigan') },
+      { value: 'Minnesota', label: t('auth.merchantRegisterPage.usStates.Minnesota') },
+      { value: 'Mississippi', label: t('auth.merchantRegisterPage.usStates.Mississippi') },
+      { value: 'Missouri', label: t('auth.merchantRegisterPage.usStates.Missouri') },
+      { value: 'Montana', label: t('auth.merchantRegisterPage.usStates.Montana') },
+      { value: 'Nebraska', label: t('auth.merchantRegisterPage.usStates.Nebraska') },
+      { value: 'Nevada', label: t('auth.merchantRegisterPage.usStates.Nevada') },
+      { value: 'New Hampshire', label: t('auth.merchantRegisterPage.usStates.New Hampshire') },
+      { value: 'New Jersey', label: t('auth.merchantRegisterPage.usStates.New Jersey') },
+      { value: 'New Mexico', label: t('auth.merchantRegisterPage.usStates.New Mexico') },
+      { value: 'New York', label: t('auth.merchantRegisterPage.usStates.New York') },
+      { value: 'North Carolina', label: t('auth.merchantRegisterPage.usStates.North Carolina') },
+      { value: 'North Dakota', label: t('auth.merchantRegisterPage.usStates.North Dakota') },
+      { value: 'Ohio', label: t('auth.merchantRegisterPage.usStates.Ohio') },
+      { value: 'Oklahoma', label: t('auth.merchantRegisterPage.usStates.Oklahoma') },
+      { value: 'Oregon', label: t('auth.merchantRegisterPage.usStates.Oregon') },
+      { value: 'Pennsylvania', label: t('auth.merchantRegisterPage.usStates.Pennsylvania') },
+      { value: 'Rhode Island', label: t('auth.merchantRegisterPage.usStates.Rhode Island') },
+      { value: 'South Carolina', label: t('auth.merchantRegisterPage.usStates.South Carolina') },
+      { value: 'South Dakota', label: t('auth.merchantRegisterPage.usStates.South Dakota') },
+      { value: 'Tennessee', label: t('auth.merchantRegisterPage.usStates.Tennessee') },
+      { value: 'Texas', label: t('auth.merchantRegisterPage.usStates.Texas') },
+      { value: 'Utah', label: t('auth.merchantRegisterPage.usStates.Utah') },
+      { value: 'Vermont', label: t('auth.merchantRegisterPage.usStates.Vermont') },
+      { value: 'Virginia', label: t('auth.merchantRegisterPage.usStates.Virginia') },
+      { value: 'Washington', label: t('auth.merchantRegisterPage.usStates.Washington') },
+      { value: 'West Virginia', label: t('auth.merchantRegisterPage.usStates.West Virginia') },
+      { value: 'Wisconsin', label: t('auth.merchantRegisterPage.usStates.Wisconsin') },
+      { value: 'Wyoming', label: t('auth.merchantRegisterPage.usStates.Wyoming') }
+    ],
+    'China': [
+      { value: 'Beijing', label: t('auth.merchantRegisterPage.chinaProvinces.Beijing') },
+      { value: 'Shanghai', label: t('auth.merchantRegisterPage.chinaProvinces.Shanghai') },
+      { value: 'Guangdong', label: t('auth.merchantRegisterPage.chinaProvinces.Guangdong') },
+      { value: 'Zhejiang', label: t('auth.merchantRegisterPage.chinaProvinces.Zhejiang') },
+      { value: 'Jiangsu', label: t('auth.merchantRegisterPage.chinaProvinces.Jiangsu') },
+      { value: 'Shandong', label: t('auth.merchantRegisterPage.chinaProvinces.Shandong') },
+      { value: 'Sichuan', label: t('auth.merchantRegisterPage.chinaProvinces.Sichuan') },
+      { value: 'Hubei', label: t('auth.merchantRegisterPage.chinaProvinces.Hubei') },
+      { value: 'Other', label: t('auth.merchantRegisterPage.chinaProvinces.Other') }
+    ],
+    'United Kingdom': [
+      { value: 'England', label: t('auth.merchantRegisterPage.ukRegions.England') },
+      { value: 'Scotland', label: t('auth.merchantRegisterPage.ukRegions.Scotland') },
+      { value: 'Wales', label: t('auth.merchantRegisterPage.ukRegions.Wales') },
+      { value: 'Northern Ireland', label: t('auth.merchantRegisterPage.ukRegions.Northern Ireland') }
+    ],
+    'Australia': [
+      { value: 'New South Wales', label: t('auth.merchantRegisterPage.australiaStates.New South Wales') },
+      { value: 'Victoria', label: t('auth.merchantRegisterPage.australiaStates.Victoria') },
+      { value: 'Queensland', label: t('auth.merchantRegisterPage.australiaStates.Queensland') },
+      { value: 'Western Australia', label: t('auth.merchantRegisterPage.australiaStates.Western Australia') },
+      { value: 'South Australia', label: t('auth.merchantRegisterPage.australiaStates.South Australia') },
+      { value: 'Tasmania', label: t('auth.merchantRegisterPage.australiaStates.Tasmania') },
+      { value: 'Australian Capital Territory', label: t('auth.merchantRegisterPage.australiaStates.Australian Capital Territory') },
+      { value: 'Northern Territory', label: t('auth.merchantRegisterPage.australiaStates.Northern Territory') }
+    ]
+  };
+
+  // 获取当前选择国家的省份列表
+  const getCurrentProvinces = () => {
+    return provincesByCountry[formData.country] || [];
+  };
+
+  // 处理地址自动补全选择
+  const handleAddressSelect = (parsedAddress: ParsedAddress) => {
+    console.log('Address selected:', parsedAddress);
+
+    // 自动填充所有地址相关字段
+    setFormData(prev => ({
+      ...prev,
+      address: parsedAddress.streetAddress,
+      city: parsedAddress.city || prev.city,
+      province: parsedAddress.province || prev.province,
+      country: parsedAddress.country || prev.country,
+      postCode: parsedAddress.postalCode || prev.postCode
+    }));
+
+    // 清除可能存在的错误
+    setError(null);
+  };
+
+  // 将国家名称转换为ISO国家代码
+  const getCountryCode = (countryName: string): string => {
+    const countryMap: { [key: string]: string } = {
+      'Canada': 'ca',
+      'United States': 'us',
+      'United Kingdom': 'gb',
+      'China': 'cn',
+      'Australia': 'au',
+      // 可以根据需要添加更多国家
+    };
+    return countryMap[countryName] || '';
+  };
 
   // 验证邮箱格式
   const validateEmail = (email: string, showError: boolean = true): string => {
@@ -421,7 +552,13 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
   ) => {
     const value = event.target.value;
 
-    const updatedFormData = { ...formData, [field]: value };
+    let updatedFormData = { ...formData, [field]: value };
+
+    // 当国家改变时，清空省份字段
+    if (field === 'country') {
+      updatedFormData = { ...updatedFormData, province: '' };
+    }
+
     setFormData(updatedFormData);
     setError(null);
 
@@ -568,6 +705,27 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             setError(contactEmailError);
             return false;
           }
+        }
+        // 验证地址信息（必填）
+        if (!formData.address.trim()) {
+          setError(t('auth.merchantRegisterPage.validation.addressRequired'));
+          return false;
+        }
+        if (!formData.country) {
+          setError(t('auth.merchantRegisterPage.validation.countryRequired'));
+          return false;
+        }
+        if (!formData.province) {
+          setError(t('auth.merchantRegisterPage.validation.provinceRequired'));
+          return false;
+        }
+        if (!formData.city.trim()) {
+          setError(t('auth.merchantRegisterPage.validation.cityRequired'));
+          return false;
+        }
+        if (!formData.postCode.trim()) {
+          setError(t('auth.merchantRegisterPage.validation.postCodeRequired'));
+          return false;
         }
         break;
 
@@ -1097,38 +1255,65 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               </Box>
             </Grid>
             <Grid item xs={12}>
-              <TextField
+              <AddressAutocomplete
                 fullWidth
+                required
                 label={t('auth.merchantRegisterPage.merchantInfo.address')}
                 value={formData.address}
                 onChange={handleInputChange('address')}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LocationIcon sx={{ color: '#667eea' }} />
-                    </InputAdornment>
-                  ),
-                }}
+                onAddressSelect={handleAddressSelect}
+                defaultCountry={formData.country ? getCountryCode(formData.country) : undefined}
+                placeholder={t('auth.merchantRegisterPage.merchantInfo.addressPlaceholder') || 'Start typing your address...'}
+                helperText={t('auth.merchantRegisterPage.merchantInfo.addressHelper') || 'Start typing to see address suggestions'}
                 sx={textFieldSx}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth sx={selectSx}>
-                <InputLabel>{t('auth.merchantRegisterPage.merchantInfo.province')}</InputLabel>
+                <InputLabel>{t('auth.merchantRegisterPage.merchantInfo.country')}</InputLabel>
                 <Select
-                  value={formData.province}
-                  onChange={handleInputChange('province')}
-                  label={t('auth.merchantRegisterPage.merchantInfo.province')}
+                  value={formData.country}
+                  onChange={handleInputChange('country')}
+                  label={t('auth.merchantRegisterPage.merchantInfo.country')}
                 >
-                  {canadianProvinces.map((province) => (
-                    <MenuItem key={province.value} value={province.value}>
-                      {province.label}
+                  {countries.map((country) => (
+                    <MenuItem key={country.value} value={country.value}>
+                      {country.label}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
+              {getCurrentProvinces().length > 0 ? (
+                <FormControl fullWidth sx={selectSx}>
+                  <InputLabel>{t('auth.merchantRegisterPage.merchantInfo.province')}</InputLabel>
+                  <Select
+                    value={formData.province}
+                    onChange={handleInputChange('province')}
+                    label={t('auth.merchantRegisterPage.merchantInfo.province')}
+                    disabled={!formData.country}
+                  >
+                    {getCurrentProvinces().map((province) => (
+                      <MenuItem key={province.value} value={province.value}>
+                        {province.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <TextField
+                  fullWidth
+                  label={t('auth.merchantRegisterPage.merchantInfo.province')}
+                  value={formData.province}
+                  onChange={handleInputChange('province')}
+                  disabled={!formData.country}
+                  placeholder={formData.country ? t('auth.merchantRegisterPage.merchantInfo.provinceFreeFill') : t('auth.merchantRegisterPage.merchantInfo.selectCountryFirst')}
+                  sx={textFieldSx}
+                />
+              )}
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label={t('auth.merchantRegisterPage.merchantInfo.city')}
@@ -1137,7 +1322,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 sx={textFieldSx}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label={t('auth.merchantRegisterPage.merchantInfo.postCode')}
@@ -1736,21 +1921,6 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             }}
           >
             {t('auth.merchantRegisterPage.success.message')}
-          </Alert>
-
-          {/* 审核提示 */}
-          <Alert
-            severity="warning"
-            sx={{
-              mb: 3,
-              borderRadius: 2,
-              textAlign: 'left',
-              '& .MuiAlert-icon': {
-                fontSize: '1.5rem',
-              }
-            }}
-          >
-            {t('auth.merchantRegisterPage.success.approvalNotice')}
           </Alert>
 
           {/* 租户代码 */}

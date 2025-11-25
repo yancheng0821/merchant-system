@@ -152,7 +152,12 @@
       "Bash(nvm reinstall-packages:*)",
       "Bash(nvm install:*)",
       "Bash(./deployment/deploy.sh:*)",
-      "Bash(export PATH=\"/usr/local/Cellar/node/25.2.1/bin:$PATH\")"
+      "Bash(export PATH=\"/usr/local/Cellar/node/25.2.1/bin:$PATH\")",
+      "Bash(../../scripts/start-services.sh:*)",
+      "Bash(../mvnw clean package:*)",
+      "Bash(java:*)",
+      "Bash(/tmp/zh-CN-fixed2.json)",
+      "Bash(../../mvnw clean package:*)"
     ],
     "deny": []
   }

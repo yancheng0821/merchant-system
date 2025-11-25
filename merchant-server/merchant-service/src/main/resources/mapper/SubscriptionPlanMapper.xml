@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.merchantservice.mapper.SubscriptionPlanMapper">
+
+    <!-- Result Map -->
+    <resultMap id="SubscriptionPlanResultMap" type="com.merchant.server.merchantservice.entity.SubscriptionPlan">
+        <id property="id" column="id"/>
+        <result property="planCode" column="plan_code"/>
+        <result property="planNameEn" column="plan_name_en"/>
+        <result property="planNameZh" column="plan_name_zh"/>
+        <result property="monthlyPrice" column="monthly_price"/>
+        <result property="yearlyPrice" column="yearly_price"/>
+        <result property="maxUsers" column="max_users"/>
+        <result property="maxStaff" column="max_staff"/>
+        <result property="maxAppointmentsPerMonth" column="max_appointments_per_month"/>
+        <result property="trialDays" column="trial_days"/>
+        <result property="isActive" column="is_active"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- Base Column List -->
+    <sql id="Base_Column_List">
+        id, plan_code, plan_name_en, plan_name_zh, monthly_price, yearly_price,
+        max_users, max_staff, max_appointments_per_month, trial_days, is_active,
+        created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询订阅计划 -->
+    <select id="findById" resultMap="SubscriptionPlanResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM subscription_plans
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据计划代码查询订阅计划 -->
+    <select id="findByPlanCode" resultMap="SubscriptionPlanResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM subscription_plans
+        WHERE plan_code = #{planCode}
+    </select>
+
+    <!-- 查询所有激活的订阅计划 -->
+    <select id="findAllActive" resultMap="SubscriptionPlanResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM subscription_plans
+        WHERE is_active = TRUE
+        ORDER BY monthly_price ASC
+    </select>
+
+    <!-- 查询所有订阅计划 -->
+    <select id="findAll" resultMap="SubscriptionPlanResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM subscription_plans
+        ORDER BY monthly_price ASC
+    </select>
+
+</mapper>

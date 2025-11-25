@@ -1,0 +1,7 @@
+firstName,lastName,phone,countryCode,email,address,dateOfBirth,gender,membershipLevel,points,totalSpent,communicationPreference,notes,allergies
+John,Doe,6047771234,1,john.doe@example.com,123 Main St Vancouver BC,5/15/1990,MALE,TEST,500,1250.5,SMS,VIP customer,Peanuts
+Jane,Smith,6047775678,,jane.smith@example.com,456 Oak Ave Richmond BC,8/22/1985,FEMALE,BEST,300,850,EMAIL,Regular customer,
+Michael,Johnson,7781234567,1,michael.j@example.com,,12/3/1992,MALE,,,,,Prefers text messages,Shellfish
+Sarah,Williams,6049998877,1,sarah.w@example.com,789 Pine Rd Burnaby BC,,,PLATINUM,1000,3500.75,BOTH,Frequent visitor,None
+David,Brown,6041112233,,,321 Elm St Surrey BC,3/10/1988,MALE,REGULAR,0,0,SMS,,Dairy
+Emily,Davis,7789876543,1,emily.d@example.com,,,,,,,,New customer,

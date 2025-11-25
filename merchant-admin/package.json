@@ -21,6 +21,8 @@
     "@mui/material": "^5.18.0",
     "@mui/x-data-grid": "^6.18.0",
     "@mui/x-date-pickers": "^7.29.4",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.5.3",
     "@types/node": "^16.18.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

@@ -55,4 +55,13 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port} 
+    instance-id: ${spring.application.name}:${server.port}
+
+# Stripe支付配置
+stripe:
+  api:
+    key: ${STRIPE_SECRET_KEY:sk_test_51Rv9deEAhb22egJiTyFYVLCVzE1R4C3wgKofU02KMjLAqytSwakllGagXlwPvJadfLcv2Eeacro9j6QzJk22R5jx00oLiUVfTs}
+  publishable:
+    key: ${STRIPE_PUBLISHABLE_KEY:pk_test_51Rv9deEAhb22egJiT9RLmPXWGkoV5WMsq43p9oQCQNF6J5NLKW9judYdFqkeSKXceY1DJP0G9IFSCZMX4DMrmuyr00cDWeaGTX}
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET:whsec_8a70339a9576e52e02c09fb954872aa7e45d8647e65d208522aa3ed6ba6b6eaa} 

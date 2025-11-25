@@ -204,6 +204,10 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
         name: 'terminal_settings',
         resourceTypes: ['terminal_settings'],
       },
+      {
+        name: 'billing',
+        resourceTypes: ['billing'],
+      },
     ],
   },
 ];

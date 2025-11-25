@@ -11,6 +11,8 @@ import {
   ListItemText,
   Container,
   IconButton,
+  Chip,
+  Tooltip,
   Button,
   Avatar,
   Collapse,
@@ -53,9 +55,10 @@ import { RBACManagement } from './modules/rbac';
 import { TenantActivation } from './modules/admin';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
-import { getFullImageUrl } from './services/api';
+import { getFullImageUrl, subscriptionApi, TenantSubscription } from './services/api';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
 import NotificationBar from './components/common/NotificationBar';
+import UnpaidInvoiceAlert from './components/common/UnpaidInvoiceAlert';
 import { filterMenus } from './utils/menuFilter';
 import { usePermission } from './hooks/usePermission';
 import { canAccessRoute, ROUTE_PERMISSIONS } from './utils/routePermissions';
@@ -96,6 +99,7 @@ const MainAppContent: React.FC = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ customers: true });
   // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+  const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
 
   // 标记权限已初始化
   // 只要用户登录了，权限就应该已经加载（即使是空权限）
@@ -260,6 +264,24 @@ const MainAppContent: React.FC = () => {
     }
   }, [user, userPermissions]);
 
+  // 获取订阅信息
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (user && user.tenantId) {
+        try {
+          const response = await subscriptionApi.getActiveSubscription(user.tenantId);
+          if (response.success && response.data) {
+            setSubscription(response.data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch subscription:', error);
+        }
+      }
+    };
+
+    fetchSubscription();
+  }, [user]);
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -309,7 +331,6 @@ const MainAppContent: React.FC = () => {
           {/* Modern Minimalist Logo */}
           <Box
             sx={{
-              position: 'relative',
               width: 'auto',
               height: 'auto',
             }}
@@ -344,7 +365,7 @@ const MainAppContent: React.FC = () => {
           </Box>
 
           {/* System Name */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
             <Typography
               variant="h6"
               component="div"
@@ -375,6 +396,50 @@ const MainAppContent: React.FC = () => {
             >
               Merchant System
             </Typography>
+
+            {/* Subscription Plan Badge */}
+            {subscription && subscription.plan && (
+              <Tooltip
+                title={
+                  subscription.status === 'TRIAL'
+                    ? `${t('subscription.trialEndsOn')} ${subscription.trialEndDate}`
+                    : t(`subscription.status.${subscription.status.toLowerCase()}`)
+                }
+                arrow
+                placement="right"
+              >
+                <Chip
+                  label={
+                    i18n.language === 'zh-CN'
+                      ? subscription.plan.planNameZh
+                      : subscription.plan.planCode
+                  }
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    top: 18,
+                    right: -15,
+                    height: 18,
+                    fontSize: '0.625rem',
+                    fontWeight: 600,
+                    background: subscription.status === 'TRIAL'
+                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                      : subscription.status === 'ACTIVE'
+                      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+                      : subscription.status === 'PAST_DUE'
+                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                      : 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)',
+                    color: 'white',
+                    border: '1.5px solid white',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                    '& .MuiChip-label': {
+                      px: 0.75,
+                      py: 0,
+                    },
+                  }}
+                />
+              </Tooltip>
+            )}
           </Box>
         </Box>
       </Box>
@@ -777,6 +842,9 @@ const MainAppContent: React.FC = () => {
               {selectedItem === 'tenant-activation' && <TenantActivation />}
               {selectedItem === 'profile' && <UserProfile />}
             </Container>
+
+            {/* 未支付账单提醒 - 浮动在右上角 */}
+            <UnpaidInvoiceAlert />
           </Box>
         </Box>
           </SessionProvider>

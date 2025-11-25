@@ -54,6 +54,7 @@ public class MerchantRegisterRequest {
     private String contactEmail;
     
     private String address;
+    private String country;
     private String province;
     private String city;
     private String postCode;

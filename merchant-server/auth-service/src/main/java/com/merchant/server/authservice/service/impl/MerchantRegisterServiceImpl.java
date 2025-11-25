@@ -119,6 +119,16 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
                 throw new BusinessException("初始化系统通知副本失败：" + e.getMessage());
             }
 
+            // 6.3 创建免费试用订阅（远程调用，需要补偿）
+            try {
+                createFreeTrialSubscription(tenant.getId());
+            } catch (Exception e) {
+                log.error("创建免费试用订阅失败，开始补偿回滚 - 租户ID: {}, 商户ID: {}", tenant.getId(), merchantId, e);
+                // 补偿：删除已创建的商户和设置
+                compensateDeleteMerchant(merchantId, tenant.getId());
+                throw new BusinessException("创建免费试用订阅失败：" + e.getMessage());
+            }
+
             // 7. 创建管理员用户（本地事务）
             User adminUser;
             try {
@@ -238,14 +248,14 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
         tenant.setTenantCode(merchantCode); // 使用商户代码作为租户代码
         tenant.setTenantName(request.getMerchantName());
         tenant.setTenantType(Tenant.TenantType.INDEPENDENT);
-        tenant.setStatus(Tenant.TenantStatus.INACTIVE); // 租户注册后需要系统管理员审核激活
+        tenant.setStatus(Tenant.TenantStatus.ACTIVE); // 租户注册后自动激活，开始14天免费试用
         tenant.setContactPerson(request.getContactPerson());
         tenant.setContactPhone(request.getContactPhone());
         tenant.setContactEmail(request.getContactEmail());
         tenant.setAddress(request.getAddress());
 
         tenant = tenantService.save(tenant);
-        log.info("租户创建成功 - ID: {}, 代码: {}", tenant.getId(), tenant.getTenantCode());
+        log.info("租户创建成功 - ID: {}, 代码: {}, 状态: ACTIVE", tenant.getId(), tenant.getTenantCode());
 
         return tenant;
     }
@@ -264,6 +274,7 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
         merchantData.put("contactPhone", request.getContactPhone());
         merchantData.put("contactEmail", request.getContactEmail());
         merchantData.put("address", request.getAddress());
+        merchantData.put("country", request.getCountry());
         merchantData.put("province", request.getProvince());
         merchantData.put("city", request.getCity());
         merchantData.put("postCode", request.getPostCode());
@@ -619,6 +630,28 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
         } catch (Exception e) {
             log.error("初始化系统通知副本失败 - 租户ID: {}", tenantId, e);
             throw new BusinessException("初始化系统通知副本失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 为新租户创建免费试用订阅
+     */
+    private void createFreeTrialSubscription(Long tenantId) {
+        log.debug("为新租户创建免费试用订阅 - 租户ID: {}", tenantId);
+
+        try {
+            ApiResponse<Map<String, Object>> response = merchantServiceClient.createFreeTrialSubscription(tenantId);
+
+            if (response != null && response.isSuccess()) {
+                log.info("免费试用订阅创建成功 - 租户ID: {}", tenantId);
+            } else {
+                String errorMsg = response != null ? response.getMessage() : "未知错误";
+                log.error("免费试用订阅创建失败 - 租户ID: {}, 错误: {}", tenantId, errorMsg);
+                throw new BusinessException("创建免费试用订阅失败：" + errorMsg);
+            }
+        } catch (Exception e) {
+            log.error("创建免费试用订阅失败 - 租户ID: {}", tenantId, e);
+            throw new BusinessException("创建免费试用订阅失败：" + e.getMessage());
         }
     }
 

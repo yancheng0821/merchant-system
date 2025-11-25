@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.merchantservice.mapper.TenantSubscriptionMapper">
+
+    <!-- Result Map -->
+    <resultMap id="TenantSubscriptionResultMap" type="com.merchant.server.merchantservice.entity.TenantSubscription">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="billingCycle" column="billing_cycle"/>
+        <result property="status" column="status"/>
+        <result property="trialStartDate" column="trial_start_date"/>
+        <result property="trialEndDate" column="trial_end_date"/>
+        <result property="currentPeriodStart" column="current_period_start"/>
+        <result property="currentPeriodEnd" column="current_period_end"/>
+        <result property="stripeSubscriptionId" column="stripe_subscription_id"/>
+        <result property="stripeCustomerId" column="stripe_customer_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- Result Map with Plan -->
+    <resultMap id="TenantSubscriptionWithPlanResultMap" type="com.merchant.server.merchantservice.entity.TenantSubscription">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="billingCycle" column="billing_cycle"/>
+        <result property="status" column="status"/>
+        <result property="trialStartDate" column="trial_start_date"/>
+        <result property="trialEndDate" column="trial_end_date"/>
+        <result property="currentPeriodStart" column="current_period_start"/>
+        <result property="currentPeriodEnd" column="current_period_end"/>
+        <result property="stripeSubscriptionId" column="stripe_subscription_id"/>
+        <result property="stripeCustomerId" column="stripe_customer_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <association property="plan" javaType="com.merchant.server.merchantservice.entity.SubscriptionPlan">
+            <id property="id" column="plan_id"/>
+            <result property="planCode" column="plan_code"/>
+            <result property="planNameEn" column="plan_name_en"/>
+            <result property="planNameZh" column="plan_name_zh"/>
+            <result property="monthlyPrice" column="monthly_price"/>
+            <result property="yearlyPrice" column="yearly_price"/>
+            <result property="maxUsers" column="max_users"/>
+            <result property="maxStaff" column="max_staff"/>
+            <result property="maxAppointmentsPerMonth" column="max_appointments_per_month"/>
+            <result property="trialDays" column="trial_days"/>
+            <result property="isActive" column="is_active"/>
+            <result property="createdAt" column="plan_created_at"/>
+            <result property="updatedAt" column="plan_updated_at"/>
+        </association>
+    </resultMap>
+
+    <!-- Base Column List -->
+    <sql id="Base_Column_List">
+        id, tenant_id, plan_id, billing_cycle, status,
+        trial_start_date, trial_end_date, current_period_start, current_period_end,
+        stripe_subscription_id, stripe_customer_id, created_at, updated_at
+    </sql>
+
+    <!-- 根据ID查询订阅 -->
+    <select id="findById" resultMap="TenantSubscriptionWithPlanResultMap">
+        SELECT
+            ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
+            ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
+            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
+            sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
+            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+        FROM tenant_subscriptions ts
+        LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
+        WHERE ts.id = #{id}
+    </select>
+
+    <!-- 根据租户ID查询活跃订阅 -->
+    <select id="findActiveByTenantId" resultMap="TenantSubscriptionWithPlanResultMap">
+        SELECT
+            ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
+            ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
+            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
+            sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
+            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+        FROM tenant_subscriptions ts
+        LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
+        WHERE ts.tenant_id = #{tenantId}
+        AND ts.status IN ('TRIAL', 'ACTIVE')
+        ORDER BY ts.created_at DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据租户ID查询所有订阅 -->
+    <select id="findByTenantId" resultMap="TenantSubscriptionResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM tenant_subscriptions
+        WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 创建订阅 -->
+    <insert id="insert" parameterType="com.merchant.server.merchantservice.entity.TenantSubscription" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tenant_subscriptions (
+            tenant_id, plan_id, billing_cycle, status,
+            trial_start_date, trial_end_date, current_period_start, current_period_end,
+            stripe_subscription_id, stripe_customer_id
+        ) VALUES (
+            #{tenantId}, #{planId}, #{billingCycle}, #{status},
+            #{trialStartDate}, #{trialEndDate}, #{currentPeriodStart}, #{currentPeriodEnd},
+            #{stripeSubscriptionId}, #{stripeCustomerId}
+        )
+    </insert>
+
+    <!-- 更新订阅 -->
+    <update id="update" parameterType="com.merchant.server.merchantservice.entity.TenantSubscription">
+        UPDATE tenant_subscriptions
+        <set>
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="billingCycle != null">billing_cycle = #{billingCycle},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="trialStartDate != null">trial_start_date = #{trialStartDate},</if>
+            <if test="trialEndDate != null">trial_end_date = #{trialEndDate},</if>
+            <if test="currentPeriodStart != null">current_period_start = #{currentPeriodStart},</if>
+            <if test="currentPeriodEnd != null">current_period_end = #{currentPeriodEnd},</if>
+            <if test="stripeSubscriptionId != null">stripe_subscription_id = #{stripeSubscriptionId},</if>
+            <if test="stripeCustomerId != null">stripe_customer_id = #{stripeCustomerId},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除订阅 -->
+    <delete id="delete">
+        DELETE FROM tenant_subscriptions
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 查询所有试用期订阅 -->
+    <select id="findAllTrialSubscriptions" resultMap="TenantSubscriptionWithPlanResultMap">
+        SELECT
+            ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
+            ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
+            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
+            sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
+            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+        FROM tenant_subscriptions ts
+        LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
+        WHERE ts.status = 'TRIAL'
+        ORDER BY ts.trial_end_date ASC
+    </select>
+
+    <!-- 查询所有活跃订阅 -->
+    <select id="findAllActiveSubscriptions" resultMap="TenantSubscriptionWithPlanResultMap">
+        SELECT
+            ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
+            ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
+            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
+            sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
+            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+        FROM tenant_subscriptions ts
+        LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
+        WHERE ts.status = 'ACTIVE'
+        ORDER BY ts.current_period_end ASC
+    </select>
+
+</mapper>

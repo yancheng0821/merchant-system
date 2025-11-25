@@ -50,6 +50,10 @@ import {
   Upload as UploadIcon,
   History as HistoryIcon,
   CardGiftcard as PackageIcon,
+  Download as DownloadIcon,
+  Close,
+  InfoOutlined,
+  Warning as WarningIcon,
   // 会员等级图标
   StarHalf as StarHalfIcon,
   StarRate as StarRateIcon,
@@ -104,6 +108,7 @@ const CustomerManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerImportOpen, setCustomerImportOpen] = useState(false);
   const [importHistoryOpen, setImportHistoryOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   // 通知状态
@@ -210,6 +215,118 @@ const CustomerManagement: React.FC = () => {
   useEffect(() => {
     loadMembershipTiers();
   }, [loadMembershipTiers]);
+
+  // 下载导入样例
+  const handleDownloadTemplate = () => {
+    // 定义CSV表头（使用英文字段名）
+    const headers = [
+      'firstName',
+      'lastName',
+      'phone',
+      'countryCode',
+      'email',
+      'address',
+      'dateOfBirth',
+      'gender',
+      'membershipLevel',
+      'points',
+      'totalSpent',
+      'communicationPreference',
+      'notes',
+      'allergies'
+    ];
+
+    // 定义示例数据（参考customer_import_template.csv）
+    const sampleData = [
+      [
+        'John', // firstName
+        'Doe', // lastName
+        '6047771234', // phone
+        '1', // countryCode (数字格式)
+        'john.doe@example.com', // email
+        '123 Main St Vancouver BC', // address
+        '5/15/1990', // dateOfBirth
+        'MALE', // gender
+        'TEST', // membershipLevel
+        '500', // points
+        '1250.5', // totalSpent
+        'SMS', // communicationPreference
+        'VIP customer', // notes
+        'Peanuts' // allergies
+      ],
+      [
+        'Jane', // firstName
+        'Smith', // lastName
+        '6047775678', // phone
+        '', // countryCode (可选)
+        'jane.smith@example.com', // email
+        '456 Oak Ave Richmond BC', // address
+        '8/22/1985', // dateOfBirth
+        'FEMALE', // gender
+        'BEST', // membershipLevel
+        '300', // points
+        '850', // totalSpent
+        'EMAIL', // communicationPreference
+        'Regular customer', // notes
+        '' // allergies (可选)
+      ],
+      [
+        'Michael', // firstName
+        'Johnson', // lastName
+        '7781234567', // phone
+        '1', // countryCode
+        'michael.j@example.com', // email
+        '', // address (可选)
+        '12/3/1992', // dateOfBirth
+        'MALE', // gender
+        '', // membershipLevel (可选)
+        '', // points (可选)
+        '', // totalSpent (可选)
+        '', // communicationPreference (可选)
+        'Prefers text messages', // notes
+        'Shellfish' // allergies
+      ],
+      [
+        'Sarah', // firstName
+        'Williams', // lastName
+        '6049998877', // phone
+        '1', // countryCode
+        'sarah.w@example.com', // email
+        '789 Pine Rd Burnaby BC', // address
+        '', // dateOfBirth (可选)
+        '', // gender (可选)
+        'PLATINUM', // membershipLevel
+        '1000', // points
+        '3500.75', // totalSpent
+        'BOTH', // communicationPreference
+        'Frequent visitor', // notes
+        'None' // allergies
+      ]
+    ];
+
+    // 生成CSV内容
+    const csvContent = [
+      headers.join(','),
+      ...sampleData.map(row => row.map(cell => {
+        // 如果单元格包含逗号、引号或换行符，需要用引号包裹并转义引号
+        if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+          return `"${cell.replace(/"/g, '""')}"`;
+        }
+        return cell;
+      }).join(','))
+    ].join('\n');
+
+    // 创建Blob并下载
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'customer_import_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // 删除客户
   const handleDeleteCustomer = async () => {
@@ -646,7 +763,7 @@ const CustomerManagement: React.FC = () => {
       >
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
                 placeholder={t('customers.searchPlaceholder')}
@@ -679,7 +796,7 @@ const CustomerManagement: React.FC = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth>
                 <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.membershipFilter')}</InputLabel>
                 <Select
@@ -714,7 +831,7 @@ const CustomerManagement: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth>
                 <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.statusFilter')}</InputLabel>
                 <Select
@@ -776,8 +893,8 @@ const CustomerManagement: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Box display="flex" gap={2} flexWrap="wrap">
+            <Grid item xs={12}>
+              <Box display="flex" gap={2} flexWrap="wrap" justifyContent="flex-start">
                 {hasPermission('customers:create') && (
                   <Button
                     variant="contained"
@@ -798,10 +915,34 @@ const CustomerManagement: React.FC = () => {
                         boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
                       },
                       transition: 'all 0.3s ease',
-                      minWidth: 140,
                     }}
                   >
                     {t('customers.addCustomer')}
+                  </Button>
+                )}
+
+                {hasPermission('customers:import') && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => setTemplateDialogOpen(true)}
+                    sx={{
+                      borderRadius: 2,
+                      py: 1.5,
+                      px: 3,
+                      borderColor: '#10B981',
+                      color: '#10B981',
+                      borderWidth: 2,
+                      '&:hover': {
+                        borderColor: '#059669',
+                        backgroundColor: alpha('#10B981', 0.04),
+                        transform: 'translateY(-1px)',
+                        borderWidth: 2,
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {t('customers.downloadTemplate')}
                   </Button>
                 )}
 
@@ -824,7 +965,6 @@ const CustomerManagement: React.FC = () => {
                         borderWidth: 2,
                       },
                       transition: 'all 0.3s ease',
-                      minWidth: 140,
                     }}
                   >
                     {t('customers.batchImport')}
@@ -841,20 +981,19 @@ const CustomerManagement: React.FC = () => {
                       py: 1.5,
                       px: 3,
                       borderColor: '#EC4899',
-                    color: '#EC4899',
-                    borderWidth: 2,
-                    '&:hover': {
-                      borderColor: '#DB2777',
-                      backgroundColor: alpha('#EC4899', 0.04),
-                      transform: 'translateY(-1px)',
+                      color: '#EC4899',
                       borderWidth: 2,
-                    },
-                    transition: 'all 0.3s ease',
-                    minWidth: 140,
-                  }}
-                >
-                  {t('customers.importHistory')}
-                </Button>
+                      '&:hover': {
+                        borderColor: '#DB2777',
+                        backgroundColor: alpha('#EC4899', 0.04),
+                        transform: 'translateY(-1px)',
+                        borderWidth: 2,
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {t('customers.importHistory')}
+                  </Button>
                 )}
               </Box>
             </Grid>
@@ -1268,6 +1407,124 @@ const CustomerManagement: React.FC = () => {
         open={importHistoryOpen}
         onClose={() => setImportHistoryOpen(false)}
       />
+
+      {/* 模板说明对话框 */}
+      <Dialog
+        open={templateDialogOpen}
+        onClose={() => setTemplateDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          }
+        }}
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+              {t('customers.templateDialog.title')}
+            </Typography>
+            <IconButton onClick={() => setTemplateDialogOpen(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {t('customers.templateDialog.description')}
+          </Typography>
+
+          {/* 必填字段 */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#EC4899', mb: 2 }}>
+              {t('customers.templateDialog.requiredFields')}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {['firstName', 'lastName', 'phone'].map((field) => (
+                <Box key={field} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <CheckCircleIcon sx={{ fontSize: 20, color: '#EC4899', mt: 0.2 }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{field}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t(`customers.templateDialog.fieldDescriptions.${field}`)}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* 建议填写字段 */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#F59E0B', mb: 2 }}>
+              {t('customers.templateDialog.recommendedFields')}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {['email', 'countryCode', 'address', 'membershipLevel', 'communicationPreference'].map((field) => (
+                <Box key={field} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <WarningIcon sx={{ fontSize: 20, color: '#F59E0B', mt: 0.2 }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{field}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t(`customers.templateDialog.fieldDescriptions.${field}`)} - {t(`customers.templateDialog.fieldPurposes.${field}`)}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          {/* 可选字段 */}
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#10B981', mb: 2 }}>
+              {t('customers.templateDialog.optionalFields')}
+            </Typography>
+            <Grid container spacing={2}>
+              {['gender', 'dateOfBirth', 'points', 'totalSpent', 'notes', 'allergies'].map((field) => (
+                <Grid item xs={12} key={field}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                    <InfoOutlined sx={{ fontSize: 20, color: '#10B981', mt: 0.2 }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{field}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t(`customers.templateDialog.fieldDescriptions.${field}`)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => setTemplateDialogOpen(false)}
+            sx={{ borderRadius: 2, px: 3 }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={() => {
+              handleDownloadTemplate();
+              setTemplateDialogOpen(false);
+            }}
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              background: 'linear-gradient(135deg, #10B981, #059669)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #059669, #047857)',
+              },
+            }}
+          >
+            {t('customers.templateDialog.downloadButton')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 删除确认对话框 */}
       <Dialog

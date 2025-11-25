@@ -32,7 +32,10 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  const loadContent = async (type: 'terms' | 'privacy') => {
+  const handleOpenModal = async (e: React.MouseEvent, type: 'terms' | 'privacy') => {
+    e.preventDefault();
+    setModalType(type);
+    // 先加载内容，加载完成后再打开弹框
     setLoading(true);
     try {
       const lang = i18n.language === 'zh-CN' ? 'zh' : 'en';
@@ -40,23 +43,23 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
       const response = await fetch(`/legal/${fileName}-${lang}.md`);
       const text = await response.text();
       setContent(text);
+      // 内容加载完成后才打开弹框
+      setShowModal(true);
     } catch (error) {
       console.error(`Failed to load ${type}:`, error);
       setContent(t('auth.termsLoadError') || `Failed to load ${type}`);
+      setShowModal(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenModal = async (e: React.MouseEvent, type: 'terms' | 'privacy') => {
-    e.preventDefault();
-    setModalType(type);
-    setShowModal(true);
-    await loadContent(type);
-  };
-
   const handleCloseModal = () => {
     setShowModal(false);
+    // 延迟清空content，避免关闭动画时显示空内容
+    setTimeout(() => {
+      setContent('');
+    }, 200);
   };
 
 

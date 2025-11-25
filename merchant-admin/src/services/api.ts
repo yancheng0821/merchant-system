@@ -3260,3 +3260,173 @@ export const tenantApi = {
     });
   },
 };
+
+// 账单管理API
+export interface Invoice {
+  id: number;
+  invoiceNumber: string;
+  tenantId: number;
+  tenantName: string;
+  amount: number;
+  currency: string;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
+  paymentMethod?: string;
+  paymentDate?: string;
+  stripeInvoiceId?: string;
+  stripePaymentIntentId?: string;
+  description?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const invoiceApi = {
+  // 根据租户ID获取账单列表
+  getInvoicesByTenantId: async (tenantId: number): Promise<ApiResponse<Invoice[]>> => {
+    return createRequest(`/api/merchant/invoice/tenant/${tenantId}`, {
+      method: 'GET',
+    });
+  },
+
+  // 根据ID获取账单详情
+  getInvoiceById: async (id: number): Promise<ApiResponse<Invoice>> => {
+    return createRequest(`/api/merchant/invoice/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  // 创建账单
+  createInvoice: async (invoice: Partial<Invoice>): Promise<ApiResponse<Invoice>> => {
+    return createRequest('/api/merchant/invoice', {
+      method: 'POST',
+      body: JSON.stringify(invoice),
+    });
+  },
+
+  // 更新账单
+  updateInvoice: async (id: number, invoice: Partial<Invoice>): Promise<ApiResponse<Invoice>> => {
+    return createRequest(`/api/merchant/invoice/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(invoice),
+    });
+  },
+
+  // 删除账单
+  deleteInvoice: async (id: number): Promise<ApiResponse<boolean>> => {
+    return createRequest(`/api/merchant/invoice/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ============================================================================
+// 订阅管理 API
+// ============================================================================
+
+export interface SubscriptionPlan {
+  id: number;
+  planCode: string;
+  planNameEn: string;
+  planNameZh: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  maxUsers: number;
+  maxStaff: number;
+  maxAppointmentsPerMonth: number;
+  trialDays: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantSubscription {
+  id: number;
+  tenantId: number;
+  planId: number;
+  billingCycle: 'MONTHLY' | 'YEARLY';
+  status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+  trialStartDate?: string;
+  trialEndDate?: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  stripeSubscriptionId?: string;
+  stripeCustomerId?: string;
+  createdAt: string;
+  updatedAt: string;
+  plan?: SubscriptionPlan;
+}
+
+export const subscriptionApi = {
+  // 获取租户的活跃订阅
+  getActiveSubscription: async (tenantId: number): Promise<ApiResponse<TenantSubscription>> => {
+    return createRequest(`/api/merchant/subscription/tenant/${tenantId}/active`, {
+      method: 'GET',
+    });
+  },
+
+  // 获取租户的所有订阅
+  getSubscriptions: async (tenantId: number): Promise<ApiResponse<TenantSubscription[]>> => {
+    return createRequest(`/api/merchant/subscription/tenant/${tenantId}`, {
+      method: 'GET',
+    });
+  },
+
+  // 获取所有订阅计划
+  getAllPlans: async (): Promise<ApiResponse<SubscriptionPlan[]>> => {
+    return createRequest('/api/merchant/subscription-plan', {
+      method: 'GET',
+    });
+  },
+
+  // 修改订阅计费周期
+  changeBillingCycle: async (subscriptionId: number, billingCycle: 'MONTHLY' | 'YEARLY'): Promise<ApiResponse<TenantSubscription>> => {
+    return createRequest(`/api/merchant/subscription/${subscriptionId}/billing-cycle?billingCycle=${billingCycle}`, {
+      method: 'PUT',
+    });
+  },
+};
+
+// ============================================================================
+// 支付管理 API
+// ============================================================================
+
+export interface PaymentConfig {
+  publishableKey: string;
+}
+
+export interface PaymentIntent {
+  clientSecret: string;
+  invoiceId: string;
+}
+
+export const paymentApi = {
+  // 获取Stripe支付配置
+  getPaymentConfig: async (): Promise<ApiResponse<PaymentConfig>> => {
+    return createRequest('/api/merchant/subscription-payment/config', {
+      method: 'GET',
+    });
+  },
+
+  // 创建Payment Intent
+  createPaymentIntent: async (invoiceId: number): Promise<ApiResponse<PaymentIntent>> => {
+    return createRequest(`/api/merchant/subscription-payment/create-payment-intent/${invoiceId}`, {
+      method: 'POST',
+    });
+  },
+
+  // 取消Payment Intent
+  cancelPaymentIntent: async (invoiceId: number): Promise<ApiResponse<void>> => {
+    return createRequest(`/api/merchant/subscription-payment/cancel-payment-intent/${invoiceId}`, {
+      method: 'POST',
+    });
+  },
+
+  // 查询账单详情（带支付信息）
+  getInvoice: async (invoiceId: number): Promise<ApiResponse<Invoice>> => {
+    return createRequest(`/api/merchant/subscription-payment/invoice/${invoiceId}`, {
+      method: 'GET',
+    });
+  },
+};

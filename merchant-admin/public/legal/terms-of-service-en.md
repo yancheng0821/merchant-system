@@ -91,6 +91,10 @@ The Privacy Policy is part of these Terms. By using the Service, you also agree 
 - You must pay on time to keep using the Service
 - You're responsible for all applicable taxes
 
+**Tax Disclaimer:**
+
+Tax determination is based on the billing address provided by the customer. The customer is responsible for providing accurate tax information. VAMerchant is not liable for taxes arising from false or incorrect address information supplied by the customer.
+
 **Refunds:** Subscription fees are generally non-refundable, except:
 - As required by law
 - Within 30 days of annual subscription purchase (at our discretion)

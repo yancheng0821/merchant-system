@@ -57,6 +57,7 @@ public class MerchantController {
             merchant.setContactPhone(merchantData.get("contactPhone").toString());
             merchant.setContactEmail((String) merchantData.get("contactEmail"));
             merchant.setAddress((String) merchantData.get("address"));
+            merchant.setCountry((String) merchantData.get("country")); // 设置国家
             merchant.setProvince((String) merchantData.get("province"));
             merchant.setCity((String) merchantData.get("city"));
             merchant.setPostCode((String) merchantData.get("postCode")); // 设置邮政编码

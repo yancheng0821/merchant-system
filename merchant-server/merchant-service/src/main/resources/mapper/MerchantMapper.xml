@@ -16,6 +16,7 @@
         <result column="contact_phone" property="contactPhone"/>
         <result column="contact_email" property="contactEmail"/>
         <result column="address" property="address"/>
+        <result column="country" property="country"/>
         <result column="province" property="province"/>
         <result column="city" property="city"/>
         <result column="post_code" property="postCode"/>
@@ -28,36 +29,37 @@
     </resultMap>
 
     <select id="selectByTenantId" resultMap="MerchantResultMap">
-        SELECT 
+        SELECT
             id, tenant_id, merchant_code, merchant_name, merchant_type,
             parent_merchant_id, business_category, business_license, legal_person,
-            contact_person, contact_phone, contact_email, address, province,
+            contact_person, contact_phone, contact_email, address, country, province,
             city, post_code, longitude, latitude, status, timezone,
             created_at, updated_at
-        FROM merchants 
+        FROM merchants
         WHERE tenant_id = #{tenantId} AND status = 'ACTIVE'
         LIMIT 1
     </select>
 
     <select id="selectById" resultMap="MerchantResultMap">
-        SELECT 
+        SELECT
             id, tenant_id, merchant_code, merchant_name, merchant_type,
             parent_merchant_id, business_category, business_license, legal_person,
-            contact_person, contact_phone, contact_email, address, province,
+            contact_person, contact_phone, contact_email, address, country, province,
             city, post_code, longitude, latitude, status, timezone,
             created_at, updated_at
-        FROM merchants 
+        FROM merchants
         WHERE id = #{id}
     </select>
 
     <update id="updateMerchantInfo">
-        UPDATE merchants 
-        SET 
+        UPDATE merchants
+        SET
             merchant_name = #{merchantName},
             contact_person = #{contactPerson},
             contact_phone = #{contactPhone},
             contact_email = #{contactEmail},
             address = #{address},
+            country = #{country},
             province = #{province},
             city = #{city},
             timezone = #{timezone},
@@ -69,11 +71,11 @@
         INSERT INTO merchants (
             tenant_id, merchant_code, merchant_name, merchant_type,
             business_category, contact_person, contact_phone, contact_email,
-            address, province, city, post_code, timezone, status
+            address, country, province, city, post_code, timezone, status
         ) VALUES (
             #{tenantId}, #{merchantCode}, #{merchantName}, #{merchantType},
             #{businessCategory}, #{contactPerson}, #{contactPhone}, #{contactEmail},
-            #{address}, #{province}, #{city}, #{postCode}, #{timezone}, 'ACTIVE'
+            #{address}, #{country}, #{province}, #{city}, #{postCode}, #{timezone}, 'ACTIVE'
         )
     </insert>
 
