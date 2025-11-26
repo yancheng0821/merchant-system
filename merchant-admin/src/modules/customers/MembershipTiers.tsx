@@ -379,22 +379,23 @@ const MembershipTiers: React.FC = () => {
               <Box display="flex" gap={2} justifyContent="flex-end">
                 {hasPermission('membership_tiers:create') && (
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                     onClick={() => handleOpenDialog()}
                     sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                      boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
+                      borderRadius: 1.5,
+                      py: 0.75,
+                      px: 2,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      bgcolor: '#EC4899',
+                      boxShadow: 'none',
+                      textTransform: 'none',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
+                        bgcolor: '#DB2777',
+                        boxShadow: 'none',
                       },
-                      transition: 'all 0.3s ease',
-                      minWidth: 140,
                     }}
                   >
                     {t('membershipTiers.addTier', 'Add Tier')}

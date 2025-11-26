@@ -386,21 +386,33 @@ const StripeConnectTab: React.FC = () => {
         <Grid item xs={12}>
           <Card
             sx={{
-              borderRadius: 3,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow: 'none',
               overflow: 'hidden',
-              position: 'relative',
             }}
           >
-            <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
+            <CardContent sx={{ p: 4 }}>
               <Box display="flex" alignItems="center" mb={3}>
-                <PaymentIcon sx={{ fontSize: 48, mr: 2 }} />
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <PaymentIcon sx={{ fontSize: 24, color: '#666' }} />
+                </Box>
                 <Box>
-                  <Typography variant="h5" fontWeight={700}>
+                  <Typography variant="h6" fontWeight={500} color="#1a1a1a">
                     {t('settings.stripe.welcomeTitle', 'Stripe Connect 支付系统')}
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: '#888', mt: 0.5 }}>
                     {t('settings.stripe.welcomeSubtitle')}
                   </Typography>
                 </Box>
@@ -409,24 +421,24 @@ const StripeConnectTab: React.FC = () => {
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} md={4}>
                   <Box display="flex" alignItems="center">
-                    <CheckCircleIcon sx={{ mr: 1 }} />
-                    <Typography variant="body2">
+                    <CheckCircleIcon sx={{ mr: 1, color: '#999', fontSize: 18 }} />
+                    <Typography variant="body2" color="#666">
                       {t('settings.stripe.feature1')}
                     </Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Box display="flex" alignItems="center">
-                    <CheckCircleIcon sx={{ mr: 1 }} />
-                    <Typography variant="body2">
+                    <CheckCircleIcon sx={{ mr: 1, color: '#999', fontSize: 18 }} />
+                    <Typography variant="body2" color="#666">
                       {t('settings.stripe.feature2')}
                     </Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Box display="flex" alignItems="center">
-                    <CheckCircleIcon sx={{ mr: 1 }} />
-                    <Typography variant="body2">
+                    <CheckCircleIcon sx={{ mr: 1, color: '#999', fontSize: 18 }} />
+                    <Typography variant="body2" color="#666">
                       {t('settings.stripe.feature3', 'PCI合规，安全有保障')}
                     </Typography>
                   </Box>
@@ -436,22 +448,29 @@ const StripeConnectTab: React.FC = () => {
               <Button
                 variant="contained"
                 size="large"
-                startIcon={creatingAccount ? <CircularProgress size={20} /> : <LaunchIcon />}
+                startIcon={creatingAccount ? <CircularProgress size={18} color="inherit" /> : <LaunchIcon />}
                 onClick={createStripeAccount}
                 disabled={creatingAccount}
                 sx={{
-                  backgroundColor: 'white',
-                  color: '#667eea',
-                  fontWeight: 600,
-                  px: 4,
+                  bgcolor: '#1a1a1a',
+                  color: 'white',
+                  fontWeight: 500,
+                  px: 3,
                   py: 1.5,
+                  boxShadow: 'none',
+                  textTransform: 'none',
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    bgcolor: '#333',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    bgcolor: '#e5e5e5',
+                    color: '#999',
                   },
                 }}
               >
-                {creatingAccount 
-                  ? t('settings.stripe.creating') 
+                {creatingAccount
+                  ? t('settings.stripe.creating')
                   : t('settings.stripe.startOnboarding')}
               </Button>
             </CardContent>
@@ -468,40 +487,22 @@ const StripeConnectTab: React.FC = () => {
     <Grid container spacing={4}>
       {/* 账户状态概览 */}
       <Grid item xs={12}>
-        <Card 
-          sx={{ 
-            borderRadius: 2, 
+        <Card
+          sx={{
+            borderRadius: 2,
             overflow: 'hidden',
-            boxShadow: 1,
+            border: '1px solid rgba(0,0,0,0.06)',
+            boxShadow: 'none',
           }}
         >
-              {/* 顶部状态栏 - 调整尺寸 */}
+              {/* 顶部状态栏 */}
               <Box
                 sx={{
-                  background: accountInfo.onboardingCompleted
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : progress > 50
-                    ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                    : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-                  color: 'white',
+                  bgcolor: '#fafafa',
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
                   p: 2.5,
-                  position: 'relative',
-                  overflow: 'hidden',
                 }}
               >
-                {/* 简化背景装饰 */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: '-30%',
-                    right: '-5%',
-                    width: '150px',
-                    height: '150px',
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                  }}
-                />
-                
                 <Grid container alignItems="center" spacing={2}>
                   <Grid item xs={12} md={8}>
                     <Box display="flex" alignItems="center" gap={1.5}>
@@ -510,23 +511,23 @@ const StripeConnectTab: React.FC = () => {
                           width: 40,
                           height: 40,
                           borderRadius: 1.5,
-                          background: 'rgba(255, 255, 255, 0.15)',
+                          bgcolor: '#f0f0f0',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <PaymentIcon sx={{ fontSize: 22, color: 'white' }} />
+                        <PaymentIcon sx={{ fontSize: 22, color: '#666' }} />
                       </Box>
                       <Box>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" fontWeight={500} color="#1a1a1a">
                           {accountInfo.businessName || t('settings.stripe.myBusiness')}
                         </Typography>
                         <Box display="flex" alignItems="center" gap={1}>
-                          <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                          <Typography variant="caption" sx={{ color: '#888' }}>
                             {t('settings.stripe.accountId')}:
                           </Typography>
-                          <Typography variant="caption" sx={{ fontFamily: 'monospace', opacity: 0.9 }}>
+                          <Typography variant="caption" sx={{ fontFamily: 'monospace', color: '#666' }}>
                             {accountInfo.stripeAccountId}
                           </Typography>
                         </Box>
@@ -540,14 +541,11 @@ const StripeConnectTab: React.FC = () => {
                         label={t('settings.stripe.active')}
                         size="small"
                         sx={{
-                          backgroundColor: 'white',
-                          color: '#059669',
-                          fontWeight: 600,
+                          backgroundColor: '#e8f5e9',
+                          color: '#2e7d32',
+                          fontWeight: 500,
                           fontSize: '0.8rem',
-                          py: 0.5,
-                          '& .MuiChip-icon': {
-                            color: '#059669',
-                          },
+                          '& .MuiChip-icon': { color: '#2e7d32' },
                         }}
                       />
                     ) : accountInfo.chargesEnabled && !accountInfo.payoutsEnabled ? (
@@ -556,14 +554,11 @@ const StripeConnectTab: React.FC = () => {
                         label={t('settings.stripe.partialActive')}
                         size="small"
                         sx={{
-                          backgroundColor: 'white',
-                          color: '#f59e0b',
-                          fontWeight: 600,
+                          backgroundColor: '#fff8e1',
+                          color: '#f57c00',
+                          fontWeight: 500,
                           fontSize: '0.8rem',
-                          py: 0.5,
-                          '& .MuiChip-icon': {
-                            color: '#f59e0b',
-                          },
+                          '& .MuiChip-icon': { color: '#f57c00' },
                         }}
                       />
                     ) : (
@@ -572,14 +567,11 @@ const StripeConnectTab: React.FC = () => {
                         label={t('settings.stripe.pending')}
                         size="small"
                         sx={{
-                          backgroundColor: 'white',
-                          color: '#6366F1',
-                          fontWeight: 600,
+                          backgroundColor: '#f5f5f5',
+                          color: '#666',
+                          fontWeight: 500,
                           fontSize: '0.8rem',
-                          py: 0.5,
-                          '& .MuiChip-icon': {
-                            color: '#6366F1',
-                          },
+                          '& .MuiChip-icon': { color: '#666' },
                         }}
                       />
                     )}
@@ -602,16 +594,12 @@ const StripeConnectTab: React.FC = () => {
                     variant="determinate"
                     value={progress}
                     sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: alpha('#e2e8f0', 0.5),
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: '#e5e5e5',
                       '& .MuiLinearProgress-bar': {
-                        borderRadius: 3,
-                        background: progress === 100
-                          ? '#10b981'
-                          : progress > 50
-                          ? '#f59e0b'
-                          : '#6366F1',
+                        borderRadius: 2,
+                        backgroundColor: '#1a1a1a',
                       },
                     }}
                   />
@@ -1150,10 +1138,23 @@ const StripeConnectTab: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} color="primary">
+          <Button
+            onClick={handleCloseDeleteDialog}
+            sx={{ textTransform: 'none', color: '#666' }}
+          >
             {t('common.cancel')}
           </Button>
-          <Button onClick={disconnectAccount} color="error" variant="contained" autoFocus>
+          <Button
+            onClick={disconnectAccount}
+            variant="contained"
+            autoFocus
+            sx={{
+              textTransform: 'none',
+              bgcolor: '#ef4444',
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#dc2626', boxShadow: 'none' },
+            }}
+          >
             {t('common.confirm')}
           </Button>
         </DialogActions>

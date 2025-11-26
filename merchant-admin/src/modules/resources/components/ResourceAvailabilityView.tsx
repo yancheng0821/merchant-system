@@ -384,98 +384,39 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                         <Grid item xs={12} md={6} lg={4} key={resource.id}>
                             <Card
                                 sx={{
-                                    borderRadius: 4,
-                                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                                    border: '1px solid rgba(0,0,0,0.04)',
+                                    borderRadius: 2.5,
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                                    border: '1px solid rgba(0,0,0,0.06)',
                                     height: '100%',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    transition: 'all 0.3s ease',
+                                    bgcolor: '#fff',
                                     '&:hover': {
-                                        transform: 'translateY(-4px)',
-                                        boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                                     },
                                 }}
                             >
-                                {/* 顶部装饰条 */}
-                                <Box
-                                    sx={{
-                                        height: 4,
-                                        background: `linear-gradient(90deg, ${themeColor}, ${alpha(themeColor, 0.7)})`,
-                                    }}
-                                />
-                                
-                                <CardContent sx={{ p: 3 }}>
+                                <CardContent sx={{ p: 2.5 }}>
                                     {/* 资源头部信息 */}
-                                    <Box display="flex" alignItems="center" gap={2} mb={3}>
-                                        <Box
-                                            sx={{
-                                                position: 'relative',
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    top: -2,
-                                                    left: -2,
-                                                    right: -2,
-                                                    bottom: -2,
-                                                    borderRadius: '50%',
-                                                    background: `linear-gradient(45deg, ${themeColor}, ${alpha(themeColor, 0.6)})`,
-                                                    zIndex: -1,
-                                                    opacity: 0.1,
-                                                },
-                                            }}
-                                        >
-                                            {getResourceIcon(resource)}
-                                        </Box>
+                                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                                        {getResourceIcon(resource)}
                                         <Box flex={1}>
-                                            <Box display="flex" alignItems="center" gap={2} mb={1}>
-                                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a1a' }}>
+                                            <Box display="flex" alignItems="center" gap={1.5}>
+                                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                                                     {resource.name}
                                                 </Typography>
-                                                {/* 实时状态指示器 - 基于check-in/check-out时间 */}
+                                                {/* 实时状态指示器 */}
                                                 {(() => {
                                                     const currentlyAvailable = isResourceCurrentlyAvailable(resource.id);
                                                     return (
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 0.5,
-                                                                px: 1.5,
-                                                                py: 0.5,
-                                                                borderRadius: 2,
-                                                                backgroundColor: currentlyAvailable
-                                                                    ? alpha('#10B981', 0.1)
-                                                                    : alpha('#EF4444', 0.1),
-                                                                border: `1px solid ${currentlyAvailable
-                                                                    ? alpha('#10B981', 0.2)
-                                                                    : alpha('#EF4444', 0.2)}`,
-                                                            }}
-                                                        >
+                                                        <Box display="flex" alignItems="center" gap={0.5}>
                                                             <Box
                                                                 sx={{
                                                                     width: 6,
                                                                     height: 6,
                                                                     borderRadius: '50%',
-                                                                    backgroundColor: currentlyAvailable
-                                                                        ? '#10B981' : '#EF4444',
-                                                                    animation: currentlyAvailable
-                                                                        ? 'pulse 2s infinite' : 'none',
-                                                                    '@keyframes pulse': {
-                                                                        '0%': { opacity: 1 },
-                                                                        '50%': { opacity: 0.5 },
-                                                                        '100%': { opacity: 1 },
-                                                                    },
+                                                                    bgcolor: currentlyAvailable ? '#10B981' : '#EF4444',
                                                                 }}
                                                             />
-                                                            <Typography
-                                                                variant="caption"
-                                                                sx={{
-                                                                    fontWeight: 600,
-                                                                    color: currentlyAvailable
-                                                                        ? '#10B981' : '#EF4444',
-                                                                }}
-                                                            >
+                                                            <Typography variant="caption" sx={{ color: currentlyAvailable ? '#10B981' : '#EF4444' }}>
                                                                 {currentlyAvailable ?
                                                                     t('resources.availability.available') :
                                                                     t('resources.availability.unavailable')}
@@ -484,71 +425,52 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                     );
                                                 })()}
                                             </Box>
-                                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                                            <Typography variant="caption" sx={{ color: '#999' }}>
                                                 {resource.type === 'STAFF' ? t('resources.type.staff') : t('resources.type.room')}
-                                                {resource.capacity && ` • ${resource.capacity}人`}
+                                                {resource.type === 'ROOM' && resource.capacity && ` • ${resource.capacity}人`}
                                                 {resource.location && ` • ${resource.location}`}
                                             </Typography>
                                         </Box>
                                     </Box>
 
                                     {/* 可用性统计 */}
-                                    <Box mb={3}>
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
+                                    <Box mb={2}>
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                            <Typography variant="caption" sx={{ color: '#666' }}>
                                                 {t('resources.availability.todaySchedule')}
                                             </Typography>
-                                            <Box
-                                                sx={{
-                                                    px: 2,
-                                                    py: 0.5,
-                                                    borderRadius: 2,
-                                                    background: `linear-gradient(135deg, ${alpha('#10B981', 0.1)}, ${alpha('#10B981', 0.05)})`,
-                                                    border: `1px solid ${alpha('#10B981', 0.2)}`,
-                                                }}
-                                            >
-                                                <Typography
-                                                    variant="caption"
-                                                    sx={{
-                                                        fontWeight: 700,
-                                                        color: '#10B981',
-                                                    }}
-                                                >
-                                                    {availabilityPercentage}% 可用
-                                                </Typography>
-                                            </Box>
+                                            <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600 }}>
+                                                {availabilityPercentage}%
+                                            </Typography>
                                         </Box>
-                                        
+
                                         {/* 进度条 */}
                                         <Box
                                             sx={{
-                                                height: 6,
-                                                borderRadius: 3,
-                                                backgroundColor: alpha('#EF4444', 0.1),
+                                                height: 4,
+                                                borderRadius: 2,
+                                                bgcolor: 'rgba(0,0,0,0.04)',
                                                 overflow: 'hidden',
-                                                mb: 2,
                                             }}
                                         >
                                             <Box
                                                 sx={{
                                                     height: '100%',
                                                     width: `${availabilityPercentage}%`,
-                                                    background: 'linear-gradient(90deg, #10B981, #059669)',
-                                                    borderRadius: 3,
-                                                    transition: 'width 0.5s ease',
+                                                    bgcolor: '#10B981',
+                                                    borderRadius: 2,
                                                 }}
                                             />
                                         </Box>
                                     </Box>
 
                                     {/* 时间段网格 */}
-                                    <Box mb={3}>
+                                    <Box mb={2}>
                                         <Box
                                             sx={{
                                                 display: 'grid',
                                                 gridTemplateColumns: 'repeat(6, 1fr)',
                                                 gap: 0.5,
-                                                mb: 2,
                                             }}
                                         >
                                             {timeSlots.slice(0, 24).map((time) => {
@@ -557,44 +479,23 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                     <Box
                                                         key={time}
                                                         sx={{
-                                                            px: 0.5,
                                                             py: 0.5,
-                                                            borderRadius: 1.5,
+                                                            borderRadius: 1,
                                                             textAlign: 'center',
-                                                            backgroundColor: 
-                                                                status === 'available' ? alpha('#10B981', 0.1) :
-                                                                status === 'booked' ? alpha('#F59E0B', 0.1) :
-                                                                alpha('#EF4444', 0.1),
-                                                            border: `1px solid ${
-                                                                status === 'available' ? alpha('#10B981', 0.2) :
-                                                                status === 'booked' ? alpha('#F59E0B', 0.2) :
-                                                                alpha('#EF4444', 0.2)
-                                                            }`,
-                                                            transition: 'all 0.2s ease',
-                                                            minHeight: 24,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            '&:hover': {
-                                                                transform: 'scale(1.05)',
-                                                                boxShadow: `0 1px 4px ${
-                                                                    status === 'available' ? alpha('#10B981', 0.3) :
-                                                                    status === 'booked' ? alpha('#F59E0B', 0.3) :
-                                                                    alpha('#EF4444', 0.3)
-                                                                }`,
-                                                            },
+                                                            bgcolor:
+                                                                status === 'available' ? 'rgba(16,185,129,0.08)' :
+                                                                status === 'booked' ? 'rgba(245,158,11,0.08)' :
+                                                                'rgba(0,0,0,0.04)',
                                                         }}
                                                     >
                                                         <Typography
                                                             variant="caption"
                                                             sx={{
-                                                                fontWeight: 600,
-                                                                color: 
+                                                                color:
                                                                     status === 'available' ? '#10B981' :
                                                                     status === 'booked' ? '#F59E0B' :
-                                                                    '#EF4444',
-                                                                fontSize: '0.65rem',
-                                                                lineHeight: 1,
+                                                                    '#999',
+                                                                fontSize: '0.6rem',
                                                             }}
                                                         >
                                                             {time}
@@ -603,37 +504,32 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                 );
                                             })}
                                         </Box>
-                                        
+
                                         {timeSlots.length > 24 && (
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                                sx={{ textAlign: 'center', display: 'block' }}
-                                            >
+                                            <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', display: 'block', mt: 1 }}>
                                                 +{timeSlots.length - 24} {t('resources.moreTimeSlots')}
                                             </Typography>
                                         )}
                                     </Box>
-                                    
+
                                     {/* 查看详细按钮 */}
                                     <Button
                                         fullWidth
-                                        variant="contained"
+                                        variant="outlined"
                                         onClick={() => {
                                             setSelectedResourceForDetail(resource);
                                         }}
                                         sx={{
-                                            borderRadius: 3,
-                                            py: 1.5,
-                                            background: `linear-gradient(135deg, ${themeColor}, ${alpha(themeColor, 0.8)})`,
-                                            boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
-                                            fontWeight: 600,
+                                            borderRadius: 1.5,
+                                            py: 1,
+                                            borderColor: 'rgba(0,0,0,0.15)',
+                                            color: '#666',
+                                            fontWeight: 500,
                                             '&:hover': {
-                                                background: `linear-gradient(135deg, ${alpha(themeColor, 0.9)}, ${themeColor})`,
-                                                transform: 'translateY(-1px)',
-                                                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                                                borderColor: themeColor,
+                                                color: themeColor,
+                                                bgcolor: 'rgba(59,130,246,0.04)',
                                             },
-                                            transition: 'all 0.3s ease',
                                         }}
                                     >
                                         {t('resources.availability.viewDetailed')}
@@ -913,215 +809,139 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     return (
         <Box>
             {/* 头部控制栏 */}
-            <Card
+            <Box
                 sx={{
-                    borderRadius: 4,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.04)',
-                    mb: 4,
-                    overflow: 'hidden',
+                    mb: 3,
+                    pb: 2,
+                    borderBottom: '1px solid rgba(0,0,0,0.06)',
                 }}
             >
-                <Box
-                    sx={{
-                        background: `linear-gradient(135deg, ${alpha(themeColor, 0.05)}, ${alpha(themeColor, 0.02)})`,
-                        p: 3,
-                    }}
-                >
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Box display="flex" alignItems="center" gap={3}>
-                            <Box
-                                sx={{
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: 3,
-                                    background: `linear-gradient(135deg, ${themeColor}, ${alpha(themeColor, 0.8)})`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
-                                }}
-                            >
-                                {resourceType === 'STAFF' ? (
-                                    <PersonIcon sx={{ color: 'white', fontSize: 28 }} />
-                                ) : (
-                                    <RoomIcon sx={{ color: 'white', fontSize: 28 }} />
-                                )}
-                            </Box>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a', mb: 0.5 }}>
-                                    {resourceType === 'STAFF'
-                                        ? t('resources.availability.staffAvailability')
-                                        : t('resources.availability.roomAvailability')
-                                    }
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                                    {t('resources.availability.subtitle')}
-                                </Typography>
-                            </Box>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                        <Box
+                            sx={{
+                                width: 4,
+                                height: 24,
+                                bgcolor: themeColor,
+                                borderRadius: 0.5,
+                            }}
+                        />
+                        <Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                {resourceType === 'STAFF'
+                                    ? t('resources.availability.staffAvailability')
+                                    : t('resources.availability.roomAvailability')
+                                }
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#999' }}>
+                                {t('resources.availability.subtitle')}
+                            </Typography>
                         </Box>
+                    </Box>
 
-                        {!selectedResourceForDetail && (
-                            <Box display="flex" alignItems="center" gap={3}>
-                                <Tooltip title={t('common.refresh')}>
-                                    <IconButton 
-                                        onClick={fetchResources} 
-                                        sx={{ 
-                                            color: themeColor,
-                                            backgroundColor: alpha(themeColor, 0.1),
-                                            '&:hover': {
-                                                backgroundColor: alpha(themeColor, 0.2),
-                                                transform: 'scale(1.1)',
-                                            },
-                                            transition: 'all 0.2s ease',
-                                        }}
-                                    >
-                                        <RefreshIcon />
-                                    </IconButton>
-                                </Tooltip>
-
-                                <Box
+                    {!selectedResourceForDetail && (
+                        <Box display="flex" alignItems="center" gap={2}>
+                            <Tooltip title={t('common.refresh')}>
+                                <IconButton
+                                    size="small"
+                                    onClick={fetchResources}
                                     sx={{
-                                        backgroundColor: 'white',
-                                        borderRadius: 3,
-                                        p: 0.5,
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                        color: themeColor,
+                                        bgcolor: alpha(themeColor, 0.08),
+                                        '&:hover': { bgcolor: alpha(themeColor, 0.15) },
                                     }}
                                 >
-                                    <Tabs
-                                        value={viewMode}
-                                        onChange={(_, newValue) => setViewMode(newValue)}
-                                        sx={{
+                                    <RefreshIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </Tooltip>
+
+                            <Box
+                                sx={{
+                                    bgcolor: alpha(themeColor, 0.08),
+                                    borderRadius: 1.5,
+                                    p: 0.5,
+                                }}
+                            >
+                                <Tabs
+                                    value={viewMode}
+                                    onChange={(_, newValue) => setViewMode(newValue)}
+                                    sx={{
+                                        minHeight: 'auto',
+                                        '& .MuiTab-root': {
                                             minHeight: 'auto',
-                                            '& .MuiTab-root': {
-                                                minHeight: 'auto',
-                                                py: 1.5,
-                                                px: 3,
-                                                fontSize: '0.875rem',
-                                                fontWeight: 600,
-                                                borderRadius: 2,
-                                                transition: 'all 0.2s ease',
-                                                '&.Mui-selected': {
-                                                    color: 'white',
-                                                    backgroundColor: themeColor,
-                                                    boxShadow: `0 2px 8px ${alpha(themeColor, 0.3)}`,
-                                                },
-                                                '&:not(.Mui-selected)': {
-                                                    color: '#6b7280',
-                                                    '&:hover': {
-                                                        backgroundColor: alpha(themeColor, 0.05),
-                                                        color: themeColor,
-                                                    },
-                                                },
+                                            py: 0.75,
+                                            px: 2,
+                                            fontSize: '0.8rem',
+                                            fontWeight: 500,
+                                            borderRadius: 1,
+                                            textTransform: 'none',
+                                            '&.Mui-selected': {
+                                                color: '#fff',
+                                                bgcolor: themeColor,
                                             },
-                                            '& .MuiTabs-indicator': {
-                                                display: 'none',
+                                            '&:not(.Mui-selected)': {
+                                                color: themeColor,
                                             },
-                                        }}
-                                    >
-                                        <Tab
-                                            value="today"
-                                            label={t('resources.availability.todayView')}
-                                            icon={<TodayIcon sx={{ fontSize: 18 }} />}
-                                            iconPosition="start"
-                                        />
-                                        <Tab
-                                            value="week"
-                                            label={t('resources.availability.weekView')}
-                                            icon={<WeekIcon sx={{ fontSize: 18 }} />}
-                                            iconPosition="start"
-                                        />
-                                    </Tabs>
-                                </Box>
+                                        },
+                                        '& .MuiTabs-indicator': {
+                                            display: 'none',
+                                        },
+                                    }}
+                                >
+                                    <Tab
+                                        value="today"
+                                        label={t('resources.availability.todayView')}
+                                        icon={<TodayIcon sx={{ fontSize: 16 }} />}
+                                        iconPosition="start"
+                                    />
+                                    <Tab
+                                        value="week"
+                                        label={t('resources.availability.weekView')}
+                                        icon={<WeekIcon sx={{ fontSize: 16 }} />}
+                                        iconPosition="start"
+                                    />
+                                </Tabs>
                             </Box>
-                        )}
-                    </Box>
+                        </Box>
+                    )}
                 </Box>
-            </Card>
+            </Box>
 
             {/* 搜索框 - 仅员工类型显示且不在详细视图中 */}
             {resourceType === 'STAFF' && !selectedResourceForDetail && (
-                <Card
-                    sx={{
-                        borderRadius: 4,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-                        border: '1px solid rgba(0,0,0,0.04)',
-                        mb: 4,
-                        p: 3,
-                    }}
-                >
-                    <Box display="flex" alignItems="center" gap={3}>
-                        <Box
-                            sx={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 2,
-                                background: `linear-gradient(135deg, ${alpha(themeColor, 0.1)}, ${alpha(themeColor, 0.05)})`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <SearchIcon sx={{ color: themeColor, fontSize: 24 }} />
-                        </Box>
-                        <Box flex={1}>
-                            <TextField
-                                fullWidth
-                                placeholder={t('resources.availability.searchStaffPlaceholder')}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: 3,
-                                        backgroundColor: alpha('#f8fafc', 0.5),
-                                        fontSize: '1rem',
-                                        '&:hover': {
-                                            backgroundColor: '#f1f5f9',
-                                        },
-                                        '&.Mui-focused': {
-                                            backgroundColor: 'white',
-                                            '& fieldset': {
-                                                borderColor: themeColor,
-                                                borderWidth: '2px',
-                                            },
-                                        },
-                                        '& fieldset': {
-                                            borderColor: 'rgba(0,0,0,0.1)',
-                                            transition: 'border-color 0.2s ease',
-                                        },
-                                    },
-                                    '& .MuiOutlinedInput-input': {
-                                        outline: 'none !important',
-                                        '&:-webkit-autofill': {
-                                            WebkitBoxShadow: '0 0 0 100px #f8fafc inset !important',
-                                            WebkitTextFillColor: 'inherit',
-                                            caretColor: 'inherit',
-                                        },
-                                        '&:focus': {
-                                            outline: 'none !important',
-                                        },
-                                        '&:focus-visible': {
-                                            outline: 'none !important',
-                                        },
-                                    },
-                                }}
-                            />
-                            {!searchTerm && (
-                                <Typography 
-                                    variant="caption" 
-                                    color="text.secondary" 
-                                    sx={{ 
-                                        mt: 1, 
-                                        display: 'block',
-                                        fontWeight: 500,
-                                    }}
-                                >
-                                    💡 {t('resources.availability.showingFirst9Staff')}
-                                </Typography>
-                            )}
-                        </Box>
-                    </Box>
-                </Card>
+                <Box sx={{ mb: 2.5 }}>
+                    <TextField
+                        fullWidth
+                        size="small"
+                        placeholder={t('resources.availability.searchStaffPlaceholder')}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: <SearchIcon sx={{ color: '#999', fontSize: 20, mr: 1 }} />,
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 1.5,
+                                bgcolor: '#fafafa',
+                                '& fieldset': {
+                                    borderColor: 'rgba(0,0,0,0.08)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(0,0,0,0.15)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: themeColor,
+                                    borderWidth: 1,
+                                },
+                            },
+                        }}
+                    />
+                    {!searchTerm && (
+                        <Typography variant="caption" sx={{ color: '#999', mt: 0.5, display: 'block' }}>
+                            {t('resources.availability.showingFirst9Staff')}
+                        </Typography>
+                    )}
+                </Box>
             )}
 
             {/* 内容区域 */}

@@ -297,8 +297,9 @@ const ResourceManagement: React.FC = () => {
                         <Card
                             sx={{
                                 mb: 3,
-                                borderRadius: 3,
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                                borderRadius: 2.5,
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                                border: '1px solid rgba(0,0,0,0.06)',
                                 overflow: 'hidden',
                             }}
                         >
@@ -438,19 +439,17 @@ const ResourceManagement: React.FC = () => {
                 <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Box>
                         <Typography
-                            variant="h4"
+                            variant="h5"
                             component="h1"
                             sx={{
-                                fontWeight: 700,
-                                background: 'linear-gradient(45deg, #2563EB, #3B82F6)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                mb: 1,
+                                fontWeight: 600,
+                                color: '#3B82F6',
+                                mb: 0.5,
                             }}
                         >
                             {getPageTitle()}
                         </Typography>
-                        <Typography variant="body1" color="text.secondary">
+                        <Typography variant="body2" sx={{ color: '#888' }}>
                             {getPageSubtitle()}
                         </Typography>
                     </Box>

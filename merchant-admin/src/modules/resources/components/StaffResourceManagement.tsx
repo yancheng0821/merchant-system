@@ -424,37 +424,40 @@ const StaffResourceManagement: React.FC = () => {
     return (
         <Box>
             {/* 统计卡片 */}
-            <Grid container spacing={3} mb={4}>
+            <Grid container spacing={2.5} mb={4}>
                 <Grid item xs={12} sm={6} md={3}>
                     <Card
                         sx={{
-                            borderRadius: 3,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                            borderRadius: 2.5,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                             border: '1px solid rgba(0,0,0,0.06)',
+                            bgcolor: '#fff',
                         }}
                     >
-                        <CardContent>
-                            <Box display="flex" alignItems="center" justifyContent="space-between">
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 700, color: themeColor }}>
-                                        {staff.length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('staff.totalStaff')}
-                                    </Typography>
-                                </Box>
+                        <CardContent sx={{ p: 2.5 }}>
+                            <Box display="flex" alignItems="center" gap={2.5}>
                                 <Box
                                     sx={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: 2,
-                                        background: `linear-gradient(135deg, ${themeColor}, ${themeColor}80)`,
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 1.5,
+                                        bgcolor: alpha(themeColor, 0.08),
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
+                                        color: themeColor,
+                                        flexShrink: 0,
                                     }}
                                 >
-                                    <PersonIcon sx={{ color: 'white', fontSize: 24 }} />
+                                    <PersonIcon sx={{ fontSize: 22 }} />
+                                </Box>
+                                <Box sx={{ minWidth: 0 }}>
+                                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                                        {t('staff.totalStaff')}
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                                        {staff.length}
+                                    </Typography>
                                 </Box>
                             </Box>
                         </CardContent>
@@ -463,33 +466,36 @@ const StaffResourceManagement: React.FC = () => {
                 <Grid item xs={12} sm={6} md={3}>
                     <Card
                         sx={{
-                            borderRadius: 3,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                            borderRadius: 2.5,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                             border: '1px solid rgba(0,0,0,0.06)',
+                            bgcolor: '#fff',
                         }}
                     >
-                        <CardContent>
-                            <Box display="flex" alignItems="center" justifyContent="space-between">
-                                <Box>
-                                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                                        {staff.filter(s => s.status === 'ACTIVE').length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('staff.activeStaff')}
-                                    </Typography>
-                                </Box>
+                        <CardContent sx={{ p: 2.5 }}>
+                            <Box display="flex" alignItems="center" gap={2.5}>
                                 <Box
                                     sx={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: 2,
-                                        background: 'linear-gradient(135deg, #10B981, #10B98180)',
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 1.5,
+                                        bgcolor: alpha('#10B981', 0.08),
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
+                                        color: '#10B981',
+                                        flexShrink: 0,
                                     }}
                                 >
-                                    <WorkIcon sx={{ color: 'white', fontSize: 24 }} />
+                                    <WorkIcon sx={{ fontSize: 22 }} />
+                                </Box>
+                                <Box sx={{ minWidth: 0 }}>
+                                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                                        {t('staff.activeStaff')}
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                                        {staff.filter(s => s.status === 'ACTIVE').length}
+                                    </Typography>
                                 </Box>
                             </Box>
                         </CardContent>
@@ -499,7 +505,7 @@ const StaffResourceManagement: React.FC = () => {
 
             {/* 搜索和筛选区域 */}
             <Grid container spacing={3} mb={3}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={5}>
                     <TextField
                         fullWidth
                         placeholder={t('staff.searchPlaceholder')}
@@ -526,7 +532,7 @@ const StaffResourceManagement: React.FC = () => {
                         }}
                     />
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid item xs={12} md={4}>
                     <FormControl fullWidth>
                         <InputLabel>{t('staff.status')}</InputLabel>
                         <Select
@@ -552,26 +558,28 @@ const StaffResourceManagement: React.FC = () => {
                     </FormControl>
                 </Grid>
                 {hasPermission('staff:create') && (
-                    <Grid item xs={12} md={3}>
+                    <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                         <Button
+                            size="small"
                             variant="contained"
-                            startIcon={<AddIcon />}
+                            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                             onClick={() => {
                                 setSelectedStaff(null);
                                 setStaffDialogOpen(true);
                             }}
                             sx={{
-                                borderRadius: 3,
-                                background: `linear-gradient(45deg, ${themeColor}, #3B82F6)`,
-                                boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
-                                height: '56px',
-                                width: '100%',
+                                borderRadius: 1.5,
+                                height: 40,
+                                px: 2,
+                                fontSize: '0.8125rem',
+                                fontWeight: 500,
+                                bgcolor: themeColor,
+                                boxShadow: 'none',
+                                textTransform: 'none',
                                 '&:hover': {
-                                    background: `linear-gradient(45deg, #1D4ED8, ${themeColor})`,
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                                    bgcolor: '#1D4ED8',
+                                    boxShadow: 'none',
                                 },
-                                transition: 'all 0.3s ease',
                             }}
                         >
                             {t('staff.addStaff')}

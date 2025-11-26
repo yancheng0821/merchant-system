@@ -57,18 +57,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   const getIconButtonStyles = () => {
     if (variant === 'login') {
       return {
-        color: 'white',
-        background: 'rgba(255, 255, 255, 0.1)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
+        color: '#888',
+        background: 'transparent',
+        border: 'none',
         '&:hover': {
-          background: 'rgba(255, 255, 255, 0.2)',
+          color: '#555',
+          background: 'transparent',
         },
       };
     }
     return {
-      color: '#6366F1',
+      color: '#666',
       '&:hover': {
-        backgroundColor: 'rgba(99, 102, 241, 0.08)',
+        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        color: '#1a1a1a',
       },
     };
   };
@@ -98,15 +100,17 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
               borderRadius: 2,
               minWidth: 160,
               mt: 1,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              border: '1px solid rgba(0,0,0,0.06)',
               '& .MuiMenuItem-root': {
                 py: 1,
                 '&:hover': {
-                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
                 },
                 '&.Mui-selected': {
-                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  backgroundColor: 'rgba(0, 0, 0, 0.06)',
                   '&:hover': {
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.08)',
                   },
                 },
               },
@@ -123,16 +127,16 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             <ListItemText
               primary={language.name}
               primaryTypographyProps={{
-                fontWeight: i18n.language === language.code ? 600 : 400,
+                fontWeight: i18n.language === language.code ? 500 : 400,
                 fontSize: '0.9rem',
-                color: i18n.language === language.code ? '#6366F1' : 'text.primary'
+                color: i18n.language === language.code ? '#1a1a1a' : '#666'
               }}
             />
             {i18n.language === language.code && (
               <ListItemIcon sx={{ minWidth: 'auto', ml: 2 }}>
                 <CheckIcon sx={{
                   fontSize: 18,
-                  color: '#6366F1'
+                  color: '#1a1a1a'
                 }} />
               </ListItemIcon>
             )}

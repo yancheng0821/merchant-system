@@ -71,9 +71,9 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
             checked={checked}
             onChange={(e) => onChange(e.target.checked)}
             sx={{
-              color: error ? 'error.main' : 'inherit',
+              color: error ? 'error.main' : '#bbb',
               '&.Mui-checked': {
-                color: error ? 'error.main' : 'primary.main',
+                color: error ? 'error.main' : '#1a1a1a',
               },
             }}
           />
@@ -85,9 +85,10 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
               component="button"
               onClick={(e) => handleOpenModal(e, 'terms')}
               sx={{
-                color: error ? 'error.main' : 'primary.main',
+                color: error ? 'error.main' : '#1a1a1a',
                 textDecoration: 'underline',
                 cursor: 'pointer',
+                fontWeight: 500,
               }}
             >
               {t('auth.termsOfService')}
@@ -97,9 +98,10 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
               component="button"
               onClick={(e) => handleOpenModal(e, 'privacy')}
               sx={{
-                color: error ? 'error.main' : 'primary.main',
+                color: error ? 'error.main' : '#1a1a1a',
                 textDecoration: 'underline',
                 cursor: 'pointer',
+                fontWeight: 500,
               }}
             >
               {t('auth.privacyPolicy')}
@@ -174,6 +176,13 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
                   borderRadius: 1,
                   fontSize: '0.85em',
                 },
+                '& a': {
+                  color: '#1a1a1a',
+                  textDecoration: 'underline',
+                  '&:hover': {
+                    color: '#666',
+                  },
+                },
               }}
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -183,7 +192,18 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal} variant="outlined">
+          <Button
+            onClick={handleCloseModal}
+            variant="outlined"
+            sx={{
+              color: '#666',
+              borderColor: '#d0d0d0',
+              '&:hover': {
+                borderColor: '#bbb',
+                bgcolor: 'rgba(0,0,0,0.02)',
+              },
+            }}
+          >
             {t('common.close')}
           </Button>
           <Button
@@ -192,6 +212,15 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
               handleCloseModal();
             }}
             variant="contained"
+            sx={{
+              bgcolor: '#1a1a1a',
+              color: '#fff',
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: '#333',
+                boxShadow: 'none',
+              },
+            }}
           >
             {t('auth.acceptTerms')}
           </Button>

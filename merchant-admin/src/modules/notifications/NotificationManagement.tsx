@@ -90,30 +90,29 @@ const NotificationManagement: React.FC = () => {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h4"
+              variant="h5"
               component="h1"
               sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #F97316, #FB923C)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+                fontWeight: 600,
+                color: '#F97316',
+                mb: 0.5,
               }}
             >
               {t('notifications.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('nav.notifications')}
             </Typography>
           </Box>
         </Box>
       </Box>
 
-      <Paper 
-        sx={{ 
+      <Paper
+        sx={{
           mb: 3,
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >

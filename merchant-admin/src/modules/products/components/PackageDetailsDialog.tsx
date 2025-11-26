@@ -76,68 +76,71 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          overflow: 'visible',
+          borderRadius: 2.5,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
         },
       }}
     >
-      <DialogTitle sx={{ p: 3, pb: 2 }}>
+      <DialogTitle sx={{ p: 2.5 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={1.5}>
             <Box
               sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: `linear-gradient(135deg, ${packageData.color || '#06B6D4'}, ${alpha(packageData.color || '#06B6D4', 0.7)})`,
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: alpha(packageData.color || '#06B6D4', 0.1),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
-                fontSize: 28,
+                color: packageData.color || '#06B6D4',
+                fontSize: 20,
               }}
             >
               {getPackageIconComponent(packageData.icon)}
             </Box>
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography variant="h6" fontWeight={600} sx={{ fontSize: '1.125rem' }}>
                 {packageData.name}
               </Typography>
               {packageData.description && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">
                   {packageData.description}
                 </Typography>
               )}
             </Box>
           </Box>
-          <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}>
-            <CloseIcon />
+          <IconButton size="small" onClick={onClose} sx={{ color: '#999' }}>
+            <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3, pt: 2 }}>
-        <Grid container spacing={3}>
+      <DialogContent sx={{ p: 2.5 }}>
+        <Grid container spacing={2.5}>
           {/* Status and Basic Info */}
           <Grid item xs={12}>
             <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
               <Chip
+                size="small"
                 label={packageData.status === 'ACTIVE' ? t('packages.active') : t('packages.inactive')}
                 sx={{
+                  height: 24,
                   bgcolor: packageData.status === 'ACTIVE' ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
                   color: packageData.status === 'ACTIVE' ? '#10B981' : '#EF4444',
-                  fontWeight: 600,
+                  fontWeight: 500,
+                  fontSize: '0.75rem',
                 }}
               />
               <Box display="flex" alignItems="center" gap={0.5}>
-                <CalendarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                <Typography variant="body2">
+                <CalendarIcon sx={{ fontSize: 16, color: '#999' }} />
+                <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
                   {t('packages.validFor')} {packageData.validity_days} {t('packages.days')}
                 </Typography>
               </Box>
               <Box display="flex" alignItems="center" gap={0.5}>
-                <PeopleIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                <Typography variant="body2">
+                <PeopleIcon sx={{ fontSize: 16, color: '#999' }} />
+                <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
                   {packageData.max_shared_users === 1
                     ? t('packages.individual')
                     : `${t('packages.sharedUpTo')} ${packageData.max_shared_users} ${t('packages.people')}`}
@@ -152,55 +155,50 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
 
           {/* Pricing Information */}
           <Grid item xs={12}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1.5, color: '#1a1a1a' }}>
               {t('packages.pricing')}
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('packages.originalPrice')}
+            <Box display="flex" gap={3}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem' }}>
+                  {t('packages.originalPrice')}
+                </Typography>
+                <Typography variant="body1" sx={{ textDecoration: 'line-through', color: '#999', mt: 0.5 }}>
+                  {CurrencyUtils.formatAmount(packageData.original_price)}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem' }}>
+                  {t('packages.packagePrice')}
+                </Typography>
+                <Typography variant="h6" fontWeight={600} sx={{ color: '#0891B2', mt: 0.5 }}>
+                  {CurrencyUtils.formatAmount(packageData.package_price)}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem' }}>
+                  {t('packages.savings')}
+                </Typography>
+                <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: '#10B981' }}>
+                    {CurrencyUtils.formatAmount(savingsAmount)}
                   </Typography>
-                  <Typography variant="h6" sx={{ textDecoration: 'line-through', color: 'text.secondary' }}>
-                    {CurrencyUtils.formatAmount(packageData.original_price)}
-                  </Typography>
+                  {packageData.discount_percentage && packageData.discount_percentage > 0 && (
+                    <Chip
+                      label={`-${packageData.discount_percentage.toFixed(0)}%`}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha('#10B981', 0.1),
+                        color: '#10B981',
+                        fontWeight: 500,
+                        height: 20,
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                  )}
                 </Box>
-              </Grid>
-              <Grid item xs={4}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('packages.packagePrice')}
-                  </Typography>
-                  <Typography variant="h6" fontWeight={700} sx={{ color: '#0891B2' }}>
-                    {CurrencyUtils.formatAmount(packageData.package_price)}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={4}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('packages.savings')}
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="h6" fontWeight={600} sx={{ color: '#10B981' }}>
-                      {CurrencyUtils.formatAmount(savingsAmount)}
-                    </Typography>
-                    {packageData.discount_percentage && packageData.discount_percentage > 0 && (
-                      <Chip
-                        label={`-${packageData.discount_percentage.toFixed(0)}%`}
-                        size="small"
-                        sx={{
-                          bgcolor: alpha('#10B981', 0.1),
-                          color: '#10B981',
-                          fontWeight: 600,
-                          height: 24,
-                        }}
-                      />
-                    )}
-                  </Box>
-                </Box>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Grid>
 
           <Grid item xs={12}>
@@ -209,10 +207,10 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
 
           {/* Included Services */}
           <Grid item xs={12}>
-            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1.5, color: '#1a1a1a' }}>
               {t('packages.includedServices')} ({totalServicesCount} {t('products.sessions')})
             </Typography>
-            <Box sx={{ mt: 2 }}>
+            <Box>
               {packageServices.map((ps, index) => {
                 const service = getServiceDetails(ps.service_id);
                 const totalValue = service.price * ps.count;
@@ -221,33 +219,40 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
                   <Box
                     key={index}
                     sx={{
-                      p: 2,
-                      mb: 1.5,
-                      borderRadius: 2,
-                      bgcolor: alpha('#06B6D4', 0.04),
-                      border: `1px solid ${alpha('#06B6D4', 0.1)}`,
+                      p: 1.5,
+                      mb: 1,
+                      borderRadius: 1.5,
+                      bgcolor: '#fafafa',
+                      border: '1px solid rgba(0,0,0,0.04)',
                     }}
                   >
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <Chip
-                          label={`${ps.count}x`}
-                          size="small"
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <Box
                           sx={{
-                            bgcolor: alpha('#06B6D4', 0.1),
-                            color: '#0891B2',
-                            fontWeight: 600,
+                            minWidth: 32,
+                            height: 24,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: alpha('#0891B2', 0.1),
+                            borderRadius: 1,
+                            px: 1,
                           }}
-                        />
-                        <Typography variant="body1" fontWeight={500}>
+                        >
+                          <Typography variant="caption" sx={{ color: '#0891B2', fontWeight: 600, fontSize: '0.75rem' }}>
+                            {ps.count}×
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" fontWeight={500}>
                           {service.name}
                         </Typography>
                       </Box>
                       <Box textAlign="right">
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="caption" sx={{ color: '#999' }}>
                           {CurrencyUtils.formatAmount(service.price)} × {ps.count}
                         </Typography>
-                        <Typography variant="body1" fontWeight={600}>
+                        <Typography variant="body2" fontWeight={600} sx={{ color: '#1a1a1a' }}>
                           {CurrencyUtils.formatAmount(totalValue)}
                         </Typography>
                       </Box>
@@ -265,10 +270,10 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
                 <Divider />
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 1, color: '#1a1a1a' }}>
                   {t('packages.termsAndConditions')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
+                <Typography variant="body2" sx={{ color: '#666', whiteSpace: 'pre-wrap', fontSize: '0.875rem', lineHeight: 1.6 }}>
                   {packageData.terms}
                 </Typography>
               </Grid>
@@ -279,23 +284,23 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
 
       <DialogActions
         sx={{
-          p: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          background: alpha('#06B6D4', 0.02),
+          p: 2,
+          borderTop: '1px solid rgba(0,0,0,0.06)',
         }}
       >
         <Button
+          size="small"
           onClick={onClose}
-          variant="outlined"
           sx={{
-            borderRadius: 2,
-            px: 3,
-            borderColor: alpha('#06B6D4', 0.5),
-            color: '#06B6D4',
+            borderRadius: 1.5,
+            px: 2.5,
+            py: 0.75,
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            color: '#666',
+            textTransform: 'none',
             '&:hover': {
-              borderColor: '#06B6D4',
-              backgroundColor: alpha('#06B6D4', 0.08),
+              bgcolor: 'rgba(0,0,0,0.04)',
             },
           }}
         >

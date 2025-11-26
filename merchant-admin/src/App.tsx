@@ -312,13 +312,12 @@ const MainAppContent: React.FC = () => {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* 现代化标题区域 */}
+      {/* 标题区域 */}
       <Box
         sx={{
-          p: 3,
-          background: '#ffffff',
-          borderBottom: '1px solid rgba(99, 102, 241, 0.1)',
-          position: 'relative',
+          py: 2.5,
+          px: 2.5,
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
         }}
       >
         <Box
@@ -328,36 +327,24 @@ const MainAppContent: React.FC = () => {
             gap: 1.5,
           }}
         >
-          {/* Modern Minimalist Logo */}
+          {/* Logo */}
           <Box
             sx={{
-              width: 'auto',
-              height: 'auto',
+              width: 32,
+              height: 32,
+              borderRadius: 1.5,
+              bgcolor: '#1a1a1a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             <Typography
               sx={{
-                fontSize: '1.8rem',
+                fontSize: '0.875rem',
                 fontWeight: 700,
-                fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                letterSpacing: '-0.04em',
-                lineHeight: 1,
-                background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  bottom: '-2px',
-                  left: '0',
-                  right: '0',
-                  height: '3px',
-                  background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-                  borderRadius: '2px',
-                  opacity: 0.6,
-                }
+                color: '#fff',
+                letterSpacing: '-0.02em',
               }}
             >
               VA
@@ -367,34 +354,16 @@ const MainAppContent: React.FC = () => {
           {/* System Name */}
           <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
             <Typography
-              variant="h6"
+              variant="body1"
               component="div"
               sx={{
-                fontWeight: 700,
-                fontSize: '1rem',
-                color: '#1e293b',
-                lineHeight: 1.2,
-                letterSpacing: '-0.02em',
-                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                color: '#1a1a1a',
+                lineHeight: 1.3,
               }}
             >
               {t('nav.title')}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#94a3b8',
-                fontSize: '0.7rem',
-                display: 'block',
-                letterSpacing: '0.03em',
-                fontWeight: 500,
-                textTransform: 'uppercase',
-              }}
-            >
-              Merchant System
             </Typography>
 
             {/* Subscription Plan Badge */}
@@ -459,19 +428,19 @@ const MainAppContent: React.FC = () => {
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   transform: 'translateX(4px)',
-                  boxShadow: `0 4px 15px ${alpha(item.color || '#6366F1', 0.3)}`,
+                  boxShadow: `0 4px 15px ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.3)}`,
                 },
                 '&.Mui-selected': {
-                  background: `linear-gradient(135deg, ${alpha(item.color || '#6366F1', 0.1)}, ${alpha(item.color || '#6366F1', 0.05)})`,
-                  borderLeft: `4px solid ${item.color || '#6366F1'}`,
+                  background: `linear-gradient(135deg, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.1)}, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.05)})`,
+                  borderLeft: `4px solid ${item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1')}`,
                   '&:hover': {
-                    background: `linear-gradient(135deg, ${alpha(item.color || '#6366F1', 0.15)}, ${alpha(item.color || '#6366F1', 0.08)})`,
+                    background: `linear-gradient(135deg, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.15)}, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.08)})`,
                   },
                   '& .MuiListItemIcon-root': {
-                    color: item.color || '#6366F1',
+                    color: item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'),
                   },
                   '& .MuiListItemText-primary': {
-                    color: item.color || '#6366F1',
+                    color: item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'),
                     fontWeight: 600,
                   },
                 },
@@ -483,7 +452,7 @@ const MainAppContent: React.FC = () => {
                   transform: 'translateY(-50%)',
                   width: 3,
                   height: '60%',
-                  background: item.color || '#6366F1',
+                  background: item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'),
                   borderRadius: '2px 0 0 2px',
                 } : {},
               }}
@@ -491,7 +460,7 @@ const MainAppContent: React.FC = () => {
               <ListItemIcon
                 sx={{
                   minWidth: 44,
-                  color: selectedItem === item.id ? (item.color || '#6366F1') : 'text.secondary',
+                  color: selectedItem === item.id ? (item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1')) : 'text.secondary',
                   transition: 'color 0.3s ease',
                 }}
               >
@@ -555,7 +524,7 @@ const MainAppContent: React.FC = () => {
             variant="caption"
             sx={{
               display: 'block',
-              color: 'text.disabled',
+              color: '#aaa',
               fontSize: '0.65rem',
               mb: 0.5,
             }}
@@ -567,10 +536,7 @@ const MainAppContent: React.FC = () => {
             sx={{
               fontWeight: 600,
               fontSize: '0.85rem',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: '#666',
               letterSpacing: '0.3px',
             }}
           >
@@ -580,7 +546,7 @@ const MainAppContent: React.FC = () => {
             variant="caption"
             sx={{
               display: 'block',
-              color: 'text.disabled',
+              color: '#aaa',
               fontSize: '0.6rem',
               mt: 0.5,
             }}

@@ -227,14 +227,14 @@ const UnpaidInvoiceAlert: React.FC = () => {
             endIcon={<span style={{ fontSize: '1.1em' }}>→</span>}
             sx={{
               width: '100%',
-              color: '#10B981',
+              color: '#1a1a1a',
               fontSize: '0.813rem',
               fontWeight: 600,
               textTransform: 'none',
               py: 0.75,
               justifyContent: 'center',
               '&:hover': {
-                backgroundColor: alpha('#10B981', 0.06),
+                backgroundColor: 'rgba(0,0,0,0.04)',
               },
             }}
           >

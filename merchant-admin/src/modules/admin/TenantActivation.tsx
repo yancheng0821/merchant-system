@@ -245,17 +245,14 @@ const TenantActivation: React.FC = () => {
           variant="h5"
           component="h1"
           sx={{
-            fontWeight: 700,
-            background: 'linear-gradient(45deg, #0D9488, #14B8A6)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 1,
-            fontSize: 26
+            fontWeight: 600,
+            color: '#0D9488',
+            mb: 0.5,
           }}
         >
           {t('admin.tenantActivation.title')}
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ fontSize: 15 }}>
+        <Typography variant="body2" sx={{ color: '#888' }}>
           {t('admin.tenantActivation.subtitle')}
         </Typography>
       </Box>

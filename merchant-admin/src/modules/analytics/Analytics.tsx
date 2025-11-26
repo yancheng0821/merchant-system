@@ -541,19 +541,17 @@ const Analytics: React.FC = () => {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h4"
+              variant="h5"
               component="h1"
               sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #0891B2, #0E7490)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+                fontWeight: 600,
+                color: '#0891B2',
+                mb: 0.5,
               }}
             >
               {t('analytics.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('analytics.subtitle')}
             </Typography>
           </Box>
@@ -585,130 +583,41 @@ const Analytics: React.FC = () => {
       </Box>
 
       {/* 现代化统计卡片 */}
-      <Grid container spacing={3} mb={4}>
+      <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(16, 185, 129, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#10B981',
+                    flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                  <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  {CurrencyUtils.formatAmountWithCommas(totalRevenue)}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('analytics.totalRevenue')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#8B5CF6', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(139, 92, 246, 0.15)',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                  }}
-                >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('analytics.totalRevenue')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(totalRevenue)}
+                  </Typography>
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
-                  {CurrencyUtils.formatAmountWithCommas(packagePurchaseTotal)}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('analytics.packagePurchaseTotal')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#6366F1', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                  }}
-                >
-                  <OrdersIcon sx={{ fontSize: 24 }} />
-                </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1' }}>
-                  {CurrencyUtils.formatAmountWithCommas(orderSalesTotal)}
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  {t('analytics.orderSalesTotal')}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6 }}>
-                  ({t('analytics.includesTipsAndTax')})
-                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -717,40 +626,121 @@ const Analytics: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#8B5CF6', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(139, 92, 246, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#8B5CF6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#8B5CF6',
+                    flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                  <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  {CurrencyUtils.formatAmountWithCommas(totalTips)}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('analytics.packagePurchaseTotal')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(packagePurchaseTotal)}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('analytics.totalTips')}
-              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card
+            sx={{
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
+            }}
+          >
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#6366F1', 0.08),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#6366F1',
+                    flexShrink: 0,
+                  }}
+                >
+                  <OrdersIcon sx={{ fontSize: 22 }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
+                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem' }}>
+                      {t('analytics.orderSalesTotal')}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem' }}>
+                      ({t('analytics.includesTipsAndTax')})
+                    </Typography>
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(orderSalesTotal)}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card
+            sx={{
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
+            }}
+          >
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#F59E0B', 0.08),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#F59E0B',
+                    flexShrink: 0,
+                  }}
+                >
+                  <MoneyIcon sx={{ fontSize: 22 }} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('analytics.totalTips')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(totalTips)}
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -759,14 +749,15 @@ const Analytics: React.FC = () => {
       {/* 现代化标签页 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
         }}
       >
         <Box sx={{
           borderBottom: 1,
           borderColor: 'divider',
-          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.02), rgba(220, 38, 38, 0.02))',
+          bgcolor: '#fafafa',
         }}>
           <Tabs
             value={selectedTab}
@@ -774,30 +765,28 @@ const Analytics: React.FC = () => {
             variant="scrollable"
             scrollButtons="auto"
             sx={{
+              minHeight: 40,
               '& .MuiTab-root': {
-                minWidth: 120,
+                minWidth: 'auto',
+                minHeight: 40,
                 fontWeight: 500,
                 textTransform: 'none',
-                fontSize: '0.9rem',
-                py: 2,
-                px: 3,
-                mx: 1,
-                borderRadius: 2,
-                transition: 'all 0.3s ease',
+                fontSize: '0.8125rem',
+                py: 1,
+                px: 2,
+                color: '#666',
                 '&:hover': {
-                  backgroundColor: alpha('#0891B2', 0.08),
-                  // 移除transform效果，避免左右跳动
+                  color: '#0891B2',
                 },
                 '&.Mui-selected': {
                   fontWeight: 600,
-                  backgroundColor: alpha('#0891B2', 0.1),
                   color: '#0891B2',
                 },
               },
               '& .MuiTabs-indicator': {
-                height: 3,
-                borderRadius: 2,
-                background: 'linear-gradient(90deg, #0891B2, #0E7490)',
+                height: 2,
+                borderRadius: 1,
+                bgcolor: '#0891B2',
               },
             }}
           >
@@ -1373,27 +1362,27 @@ const Analytics: React.FC = () => {
             <Grid container spacing={3}>
               {/* 按服务维度统计 */}
               <Grid item xs={12}>
-                <Box display="flex" alignItems="center" mb={3}>
+                <Box display="flex" alignItems="center" mb={2.5}>
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
-                      background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                      borderRadius: 1,
-                      mr: 2,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#6366F1',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                     {t('analytics.orderStats.byService')}
                   </Typography>
                 </Box>
 
-                <Grid container spacing={3}>
+                <Grid container spacing={2.5}>
                   {/* 饼图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
                           {t('analytics.orderStats.serviceRevenueDistribution')}
                         </Typography>
                         {orderStatsByServiceCategory.length > 0 ? (
@@ -1439,25 +1428,25 @@ const Analytics: React.FC = () => {
 
                   {/* 柱状图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
                           {t('analytics.orderStats.serviceOrderCount')}
                         </Typography>
                         {orderStatsByServiceCategory.length > 0 ? (
                           <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={orderStatsByServiceCategory}>
-                              <CartesianGrid strokeDasharray="3 3" stroke={alpha('#000', 0.1)} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                               <XAxis
                                 dataKey="serviceCategory"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: '#6B7280' }}
+                                tick={{ fontSize: 11, fill: '#999' }}
                               />
                               <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: '#6B7280' }}
+                                tick={{ fontSize: 11, fill: '#999' }}
                               />
                               <Tooltip />
                               <Bar dataKey="orderCount" radius={[4, 4, 0, 0]}>
@@ -1484,11 +1473,11 @@ const Analytics: React.FC = () => {
 
                   {/* 服务统计表格 */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
                         {/* Category筛选器 */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                             {t('analytics.orderStats.serviceDetails')}
                           </Typography>
                           <Box display="flex" gap={2} alignItems="center">
@@ -1749,22 +1738,20 @@ const Analytics: React.FC = () => {
                         </Box>
 
                         <TableContainer>
-                          <Table>
+                          <Table size="small">
                             <TableHead>
-                              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.serviceName')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.category')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.salesCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.originalPrice')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>
-                                  <Box>
-                                    {t('analytics.orderStats.totalAmount')}
-                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6, display: 'block' }}>
-                                      ({t('analytics.actualPaymentAmount')})
-                                    </Typography>
-                                  </Box>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.serviceName')}</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.category')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.salesCount')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.originalPrice')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                  {t('analytics.orderStats.totalAmount')}
+                                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
+                                    ({t('analytics.actualPaymentAmount')})
+                                  </Typography>
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tips')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
@@ -1772,27 +1759,21 @@ const Analytics: React.FC = () => {
                                 const category = row.serviceCategory || '未分类';
                                 const categoryColor = categoryColorMap.get(category) || COLORS[0];
                                 return (
-                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: alpha('#6366F1', 0.04) } }}>
-                                  <TableCell>{row.serviceName}</TableCell>
-                                  <TableCell>
-                                    <Chip
-                                      label={row.serviceCategory || '-'}
-                                      size="small"
-                                      sx={{
-                                        backgroundColor: alpha(categoryColor, 0.1),
-                                        color: categoryColor,
-                                        fontWeight: 600
-                                      }}
-                                    />
+                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}>
+                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.serviceName}</TableCell>
+                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5 }}>
+                                    <Typography variant="caption" sx={{ color: categoryColor, fontWeight: 500 }}>
+                                      {row.serviceCategory || '-'}
+                                    </Typography>
                                   </TableCell>
-                                  <TableCell align="right">{row.orderCount}</TableCell>
-                                  <TableCell align="right">
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.orderCount}</TableCell>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#666' }}>
                                     {row.originalPrice ? CurrencyUtils.formatAmountWithCommas(row.originalPrice) : '-'}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, fontWeight: 600, color: '#1a1a1a' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount || 0)}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ color: '#F59E0B' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#F59E0B' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
                                 </TableRow>
@@ -1800,21 +1781,21 @@ const Analytics: React.FC = () => {
                               })}
                             </TableBody>
                             <TableFooter>
-                              <TableRow sx={{ backgroundColor: alpha('#0891B2', 0.08) }}>
-                                <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {t('analytics.orderStats.total')}
                                 </TableCell>
-                                <TableCell></TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                <TableCell sx={{ borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}></TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {summaryData.serviceItemCount}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: 'text.secondary' }}>
+                                <TableCell align="right" sx={{ color: '#999', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   -
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#10B981' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {CurrencyUtils.formatAmountWithCommas(summaryData.totalAmount)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#F59E0B' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {CurrencyUtils.formatAmountWithCommas(summaryData.totalTips)}
                                 </TableCell>
                               </TableRow>
@@ -1829,27 +1810,27 @@ const Analytics: React.FC = () => {
 
               {/* 按支付方式统计 */}
               <Grid item xs={12}>
-                <Box display="flex" alignItems="center" mb={3} mt={4}>
+                <Box display="flex" alignItems="center" mb={2.5} mt={3}>
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
-                      background: 'linear-gradient(135deg, #10B981, #059669)',
-                      borderRadius: 1,
-                      mr: 2,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#10B981',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                     {t('analytics.orderStats.byPaymentMethod')}
                   </Typography>
                 </Box>
 
-                <Grid container spacing={3}>
+                <Grid container spacing={2.5}>
                   {/* 饼图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
                           {t('analytics.orderStats.paymentMethodDistribution')}
                         </Typography>
                         {orderStatsByPayment.length > 0 ? (
@@ -1891,25 +1872,25 @@ const Analytics: React.FC = () => {
 
                   {/* 柱状图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
                           {t('analytics.orderStats.paymentMethodOrderCount')}
                         </Typography>
                         {orderStatsByPayment.length > 0 ? (
                           <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={orderStatsByPayment}>
-                              <CartesianGrid strokeDasharray="3 3" stroke={alpha('#000', 0.1)} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                               <XAxis
                                 dataKey="paymentMethod"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: '#6B7280' }}
+                                tick={{ fontSize: 11, fill: '#999' }}
                               />
                               <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: '#6B7280' }}
+                                tick={{ fontSize: 11, fill: '#999' }}
                               />
                               <Tooltip />
                               <Bar dataKey="orderCount" fill="#10B981" radius={[4, 4, 0, 0]} />
@@ -1928,11 +1909,11 @@ const Analytics: React.FC = () => {
 
                   {/* 支付方式统计表格 */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
                         {/* Payment Method筛选器 */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                             {t('analytics.orderStats.paymentMethodDetails')}
                           </Typography>
                           <Box display="flex" gap={2} alignItems="center">
@@ -2070,62 +2051,53 @@ const Analytics: React.FC = () => {
                         </Box>
 
                         <TableContainer>
-                          <Table>
+                          <Table size="small">
                             <TableHead>
-                              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.paymentCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>
-                                  <Box>
-                                    {t('analytics.orderStats.totalAmount')}
-                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6, display: 'block' }}>
-                                      ({t('analytics.actualPaymentAmount')})
-                                    </Typography>
-                                  </Box>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.paymentCount')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                  {t('analytics.orderStats.totalAmount')}
+                                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
+                                    ({t('analytics.actualPaymentAmount')})
+                                  </Typography>
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tips')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {filteredOrderStatsByPayment.map((row: any, index: number) => (
-                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: alpha('#10B981', 0.04) } }}>
-                                  <TableCell>
-                                    <Chip
-                                      icon={getPaymentMethodIcon(row.paymentMethod)}
-                                      label={row.paymentMethod}
-                                      size="small"
-                                      sx={{
-                                        backgroundColor: alpha(COLORS[index % COLORS.length], 0.1),
-                                        color: COLORS[index % COLORS.length],
-                                        fontWeight: 600,
-                                        '& .MuiChip-icon': {
-                                          color: '#64748b',
-                                        }
-                                      }}
-                                    />
+                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}>
+                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5 }}>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                      {getPaymentMethodIcon(row.paymentMethod)}
+                                      <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 500 }}>
+                                        {row.paymentMethod}
+                                      </Typography>
+                                    </Box>
                                   </TableCell>
-                                  <TableCell align="right">{row.orderCount}</TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.orderCount}</TableCell>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, fontWeight: 600, color: '#1a1a1a' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount)}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ color: '#F59E0B' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#F59E0B' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                             <TableFooter>
-                              <TableRow sx={{ backgroundColor: alpha('#0891B2', 0.08) }}>
-                                <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {t('analytics.orderStats.total')}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {paymentSummaryData.orderCount}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#10B981' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalAmount)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#F59E0B' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalTips)}
                                 </TableCell>
                               </TableRow>
@@ -2140,27 +2112,27 @@ const Analytics: React.FC = () => {
 
               {/* 按支付方式统计Package购买 */}
               <Grid item xs={12}>
-                <Box display="flex" alignItems="center" mb={3} mt={4}>
+                <Box display="flex" alignItems="center" mb={2.5} mt={3}>
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
-                      background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
-                      borderRadius: 1,
-                      mr: 2,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#8B5CF6',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                     {t('analytics.orderStats.packagePurchaseStats')}
                   </Typography>
                 </Box>
 
-                <Grid container spacing={3}>
+                <Grid container spacing={2.5}>
                   {/* 饼图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
                           {t('analytics.orderStats.packagePurchaseDistribution')}
                         </Typography>
                         {packagePurchaseStats.length > 0 ? (
@@ -2202,25 +2174,25 @@ const Analytics: React.FC = () => {
 
                   {/* 柱状图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
                           {t('analytics.orderStats.packagePurchaseCount')}
                         </Typography>
                         {packagePurchaseStats.length > 0 ? (
                           <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={packagePurchaseStats}>
-                              <CartesianGrid strokeDasharray="3 3" stroke={alpha('#000', 0.1)} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                               <XAxis
                                 dataKey="paymentMethod"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: '#6B7280' }}
+                                tick={{ fontSize: 11, fill: '#999' }}
                               />
                               <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 12, fill: '#6B7280' }}
+                                tick={{ fontSize: 11, fill: '#999' }}
                               />
                               <Tooltip />
                               <Bar dataKey="orderCount" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
@@ -2239,11 +2211,11 @@ const Analytics: React.FC = () => {
 
                   {/* Package购买统计表格 */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      <CardContent>
+                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: 2.5 }}>
                         {/* Payment Method筛选器 */}
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                             {t('analytics.orderStats.packagePurchaseDetails')}
                           </Typography>
                           <Box display="flex" gap={2} alignItems="center">
@@ -2387,63 +2359,53 @@ const Analytics: React.FC = () => {
                         </Box>
 
                         <TableContainer>
-                          <Table>
+                          <Table size="small">
                             <TableHead>
-                              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                <TableCell sx={{ fontWeight: 600 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.orderCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>
-                                  <Box>
-                                    {t('analytics.orderStats.totalAmount')}
-                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.6, display: 'block' }}>
-                                      ({t('analytics.actualPaymentAmount')})
-                                    </Typography>
-                                  </Box>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.orderCount')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                  {t('analytics.orderStats.totalAmount')}
+                                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
+                                    ({t('analytics.actualPaymentAmount')})
+                                  </Typography>
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.orderStats.tips')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {filteredPackagePurchaseStats.map((row: any, index: number) => (
-                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: alpha('#8B5CF6', 0.04) } }}>
-                                  <TableCell>
-                                    <Chip
-                                      icon={getPaymentMethodIcon(row.paymentMethod)}
-                                      label={row.paymentMethod}
-                                      size="small"
-                                      sx={{
-                                        backgroundColor: alpha(COLORS[index % COLORS.length], 0.1),
-                                        color: COLORS[index % COLORS.length],
-                                        fontWeight: 500,
-                                        borderRadius: 1,
-                                        '& .MuiChip-icon': {
-                                          color: '#64748b',
-                                        }
-                                      }}
-                                    />
+                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}>
+                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5 }}>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                      {getPaymentMethodIcon(row.paymentMethod)}
+                                      <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 500 }}>
+                                        {row.paymentMethod}
+                                      </Typography>
+                                    </Box>
                                   </TableCell>
-                                  <TableCell align="right">{row.orderCount}</TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.orderCount}</TableCell>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, fontWeight: 600, color: '#1a1a1a' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount)}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ color: '#F59E0B' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#F59E0B' }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                             <TableFooter>
-                              <TableRow sx={{ backgroundColor: alpha('#0891B2', 0.08) }}>
-                                <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {t('analytics.orderStats.total')}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {packagePurchaseSummaryData.orderCount}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#10B981' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalAmount)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#F59E0B' }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
                                   {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalTips)}
                                 </TableCell>
                               </TableRow>

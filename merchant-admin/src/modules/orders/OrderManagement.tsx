@@ -314,69 +314,65 @@ const OrderManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化页面标题 */}
+      {/* 页面标题 */}
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              sx={{ 
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #059669, #10B981)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                fontWeight: 600,
+                color: '#10B981',
+                mb: 0.5,
               }}
             >
               {t('orders.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('orders.subtitle')}
             </Typography>
           </Box>
         </Box>
       </Box>
 
-      {/* 现代化统计卡片 */}
-      <Grid container spacing={3} mb={4}>
+      {/* 简约统计卡片 */}
+      <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(16, 185, 129, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#10B981',
+                    flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                  <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  {CurrencyUtils.formatAmountWithCommas(orders.reduce((sum, order) => sum + order.totalAmount, 0))}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('orders.todayRevenue')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(orders.reduce((sum, order) => sum + order.totalAmount, 0))}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('orders.todayRevenue')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -384,40 +380,38 @@ const OrderManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#6366F1', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#6366F1', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#6366F1',
+                    flexShrink: 0,
                   }}
                 >
-                  <OrdersIcon sx={{ fontSize: 24 }} />
+                  <OrdersIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1' }}>
-                  {orders.length}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('orders.todayOrders')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {orders.length}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('orders.todayOrders')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -425,40 +419,38 @@ const OrderManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(245, 158, 11, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#F59E0B',
+                    flexShrink: 0,
                   }}
                 >
-                  <PaymentIcon sx={{ fontSize: 24 }} />
+                  <PaymentIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  {orders.filter(order => order.paymentStatus === 'paid').length}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('orders.pendingPayments')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {orders.filter(order => order.paymentStatus === 'paid').length}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('orders.pendingPayments')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -466,49 +458,47 @@ const OrderManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(236, 72, 153, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#EC4899', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#EC4899',
+                    flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                  <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  {(() => {
-                    const paidOrders = orders.filter(order => 
-                      order.paymentStatus === 'paid' || order.orderStatus === 'completed'
-                    );
-                    return CurrencyUtils.formatAmountWithCommas(
-                      paidOrders.length > 0 
-                        ? Math.round(paidOrders.reduce((sum, order) => sum + order.totalAmount, 0) / paidOrders.length) 
-                        : 0
-                    );
-                  })()}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('analytics.avgOrderValue')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {(() => {
+                      const paidOrders = orders.filter(order =>
+                        order.paymentStatus === 'paid' || order.orderStatus === 'completed'
+                      );
+                      return CurrencyUtils.formatAmountWithCommas(
+                        paidOrders.length > 0
+                          ? Math.round(paidOrders.reduce((sum, order) => sum + order.totalAmount, 0) / paidOrders.length)
+                          : 0
+                      );
+                    })()}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('analytics.avgOrderValue')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -517,8 +507,10 @@ const OrderManagement: React.FC = () => {
       {/* 现代化搜索和过滤区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff',
           mb: 3,
         }}
       >
@@ -638,8 +630,9 @@ const OrderManagement: React.FC = () => {
       {/* 现代化表格 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >

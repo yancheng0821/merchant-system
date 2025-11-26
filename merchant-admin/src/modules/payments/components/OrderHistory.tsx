@@ -521,7 +521,7 @@ const OrderHistory: React.FC = () => {
     return (
         <Box>
             {/* Search and Filter Section */}
-            <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', mb: 3 }}>
+            <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff', mb: 3 }}>
                 <CardContent sx={{ p: 3 }}>
                     <Grid container spacing={3} alignItems="center">
                         <Grid item xs={12} md={3}>
@@ -734,7 +734,7 @@ const OrderHistory: React.FC = () => {
             </Card>
 
             {/* Orders Table */}
-            <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+            <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>

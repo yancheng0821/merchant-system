@@ -10,19 +10,14 @@ import {
   CircularProgress,
   InputAdornment,
   Snackbar,
-  Fade,
-  Slide,
-  Grid,
 } from '@mui/material';
 import {
-  Email as EmailIcon,
   ArrowBack as ArrowBackIcon,
-  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import HelpTooltip from '../common/HelpTooltip';
-import { authApi, handleApiError } from '../../services/api';
+import { authApi } from '../../services/api';
 
 interface ForgotPasswordPageProps {
   onBack: () => void;
@@ -74,11 +69,27 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
     }
   };
 
+  // 输入框通用样式
+  const textFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      bgcolor: '#fff',
+      '& fieldset': { borderColor: '#d0d0d0' },
+      '&:hover fieldset': { borderColor: '#bbb' },
+      '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+    },
+    '& .MuiInputLabel-root': {
+      color: '#999',
+      '&.Mui-focused': { color: '#1a1a1a' },
+    },
+    '& .MuiInputLabel-asterisk': { display: 'none' },
+  };
+
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#fafafa',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -86,221 +97,201 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
         position: 'relative',
       }}
     >
+      {/* 语言切换器 */}
       <Box
         sx={{
           position: 'absolute',
-          top: 24,
-          right: 24,
+          top: 32,
+          right: 32,
           zIndex: 1000,
         }}
       >
         <LanguageSwitcher variant="login" size="medium" />
       </Box>
 
-      <Container maxWidth="md">
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 4,
-            alignItems: 'center',
-          }}
-        >
-          {/* 左侧品牌区域 */}
-          <Fade in timeout={1000}>
-            <Box
+      <Container maxWidth="xs">
+        <Box>
+          {/* 顶部Logo区域 */}
+          <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <Typography
               sx={{
-                textAlign: 'center',
-                color: 'white',
-                display: { xs: 'none', md: 'block' },
+                fontSize: '1.75rem',
+                fontWeight: 500,
+                fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                letterSpacing: '-0.025em',
+                color: '#1a1a1a',
+                mb: 0.5,
               }}
             >
-              {/* VA Logo */}
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  sx={{
-                    fontSize: '6rem',
-                    fontWeight: 800,
-                    fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    letterSpacing: '-0.04em',
-                    lineHeight: 1,
-                    color: '#ffffff',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  VA
-                </Typography>
-                <Box
-                  sx={{
-                    width: '120px',
-                    height: '4px',
-                    background: '#ffffff',
-                    borderRadius: '2px',
-                    margin: '0 auto',
-                    mt: 1,
-                  }}
-                />
-              </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-                {t('auth.brandTitle')}
-              </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.8, mb: 3 }}>
-                {t('auth.brandSubtitle')}
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.7 }}>
-                {t('auth.brandDescription')}
-              </Typography>
-            </Box>
-          </Fade>
-
-          {/* 右侧表单区域 */}
-          <Slide direction="left" in timeout={800}>
-            <Paper
-              elevation={24}
-              sx={{
-                borderRadius: 4,
-                p: 4,
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-              }}
-            >
-          <Box textAlign="center" mb={4}>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-              {t('auth.forgotPassword')}
+              VA Merchant
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {t('auth.forgotPasswordSubtitle')}
+            <Typography sx={{ color: '#888', fontSize: '0.8rem', fontWeight: 400, letterSpacing: '0.02em' }}>
+              {t('auth.brandSubtitle')}
             </Typography>
           </Box>
 
-          {success ? (
-            <Box>
-              <Alert severity="success" sx={{ mb: 3 }}>
-                {t('auth.resetEmailSent')}
-              </Alert>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={onBack}
-                startIcon={<ArrowBackIcon />}
-                sx={{ borderRadius: 2 }}
-              >
-                {t('auth.backToLogin')}
-              </Button>
-            </Box>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                label={t('auth.tenantCode')}
-                value={tenantCode}
-                onChange={(e) => setTenantCode(e.target.value)}
-                margin="normal"
-                required
-                autoFocus
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <BusinessIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <HelpTooltip
-                        title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
-                        placement="top"
-                        size="small"
-                        color="primary"
-                        variant="info"
-                        showIcon={false}
-                        compact={true}
-                      />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-              <TextField
-                fullWidth
-                label={t('auth.email')}
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                margin="normal"
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <EmailIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={loading}
-                sx={{
-                  mt: 3,
-                  mb: 2,
-                  py: 1.5,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                  },
-                }}
-              >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  t('auth.sendResetLink')
-                )}
-              </Button>
-
-              <Button
-                fullWidth
-                variant="text"
-                onClick={onBack}
-                startIcon={<ArrowBackIcon />}
-                sx={{ borderRadius: 2 }}
-              >
-                {t('auth.backToLogin')}
-              </Button>
-            </form>
-          )}
-
-          {/* Snackbar for error messages */}
-          <Snackbar
-            open={!!error}
-            autoHideDuration={6000}
-            onClose={() => setError(null)}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          {/* 表单区域 */}
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 3,
+              p: { xs: 3, sm: 4 },
+              background: '#fff',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+            }}
           >
-            <Alert
-              onClose={() => setError(null)}
-              severity="error"
-              sx={{ width: '100%' }}
-            >
-              {error}
-            </Alert>
-          </Snackbar>
-            </Paper>
-          </Slide>
+            <Box textAlign="center" mb={4}>
+              <Typography
+                variant="h5"
+                component="h1"
+                sx={{
+                  fontWeight: 500,
+                  color: '#1a1a1a',
+                  mb: 0.75,
+                  fontSize: '1.35rem',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {t('auth.forgotPassword')}
+              </Typography>
+              <Typography sx={{ color: '#888', fontSize: '0.8rem' }}>
+                {t('auth.forgotPasswordSubtitle')}
+              </Typography>
+            </Box>
+
+            {success ? (
+              <Box>
+                <Alert severity="success" sx={{ mb: 3 }}>
+                  {t('auth.resetEmailSent')}
+                </Alert>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={onBack}
+                  startIcon={<ArrowBackIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    color: '#666',
+                    borderColor: '#d0d0d0',
+                    '&:hover': {
+                      borderColor: '#bbb',
+                      bgcolor: 'rgba(0,0,0,0.02)',
+                    },
+                  }}
+                >
+                  {t('auth.backToLogin')}
+                </Button>
+              </Box>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <TextField
+                  fullWidth
+                  label={t('auth.tenantCode')}
+                  value={tenantCode}
+                  onChange={(e) => setTenantCode(e.target.value)}
+                  margin="normal"
+                  required
+                  autoFocus
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <HelpTooltip
+                          title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
+                          placement="top"
+                          size="small"
+                          color="default"
+                          variant="info"
+                          showIcon={false}
+                          compact={true}
+                        />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  label={t('auth.email')}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  margin="normal"
+                  required
+                  sx={textFieldSx}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={loading}
+                  sx={{
+                    mt: 4,
+                    mb: 1.5,
+                    py: 1.5,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '0.9rem',
+                    borderRadius: 2,
+                    bgcolor: '#1a1a1a',
+                    color: '#fff',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: '#333',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  {loading ? <CircularProgress size={20} color="inherit" /> : t('auth.sendResetLink')}
+                </Button>
+
+                <Box textAlign="center">
+                  <Button
+                    variant="text"
+                    onClick={onBack}
+                    sx={{
+                      textTransform: 'none',
+                      color: '#999',
+                      fontSize: '0.8rem',
+                      fontWeight: 400,
+                      '&:hover': {
+                        backgroundColor: 'transparent',
+                        color: '#666',
+                      },
+                    }}
+                  >
+                    {t('auth.backToLogin')}
+                  </Button>
+                </Box>
+              </form>
+            )}
+          </Paper>
+
+          {/* 版权信息 */}
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
+            <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em' }}>
+              © {new Date().getFullYear()} SwiftmindSystems
+            </Typography>
+          </Box>
         </Box>
       </Container>
+
+      {/* Snackbar for error messages */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setError(null)}
+          severity="error"
+          sx={{ width: '100%' }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

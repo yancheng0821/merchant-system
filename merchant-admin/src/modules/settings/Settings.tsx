@@ -193,21 +193,21 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   });
 
   // 主题色
-  const primaryColor = '#6366F1';
+  const primaryColor = '#1a1a1a';
 
   // 统一的输入框样式
   const inputFieldStyles = {
     '& .MuiOutlinedInput-root': {
-      '&:hover .MuiOutlinedInput-notchedOutline': {
-        borderColor: primaryColor,
-      },
-      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-        borderColor: primaryColor,
-      },
+      bgcolor: '#fff',
+      '& fieldset': { borderColor: '#d0d0d0' },
+      '&:hover fieldset': { borderColor: '#bbb' },
+      '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
     },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: primaryColor,
+    '& .MuiInputLabel-root': {
+      color: '#999',
+      '&.Mui-focused': { color: '#1a1a1a' },
     },
+    '& .MuiInputLabel-asterisk': { display: 'none' },
   };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -548,44 +548,38 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
   return (
     <Box>
-      {/* 现代化页面标题 */}
+      {/* 页面标题 */}
       <Box mb={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #4F46E5, #6366F1)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
-              }}
-            >
-              {t('settings.title')}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {t('settings.subtitle')}
-            </Typography>
-          </Box>
-        </Box>
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{
+            fontWeight: 500,
+            color: '#1a1a1a',
+            mb: 0.5,
+          }}
+        >
+          {t('settings.title')}
+        </Typography>
+        <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
+          {t('settings.subtitle')}
+        </Typography>
       </Box>
 
-      {/* 现代化选项卡容器 */}
+      {/* 选项卡容器 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
-          minHeight: '600px', // 设置最小高度避免内容跳动
+          minHeight: '600px',
         }}
       >
-        {/* 美化的标签栏 */}
+        {/* 标签栏 */}
         <Box sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.02), rgba(139, 92, 246, 0.02))',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fafafa',
         }}>
           <Tabs
             value={selectedTab}
@@ -594,28 +588,24 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
             scrollButtons="auto"
             sx={{
               '& .MuiTab-root': {
-                minWidth: 120,
-                fontWeight: 500,
+                minWidth: 100,
+                fontWeight: 400,
                 textTransform: 'none',
-                fontSize: '0.9rem',
-                py: 2,
-                px: 3,
-                mx: 1,
-                borderRadius: 2,
-                transition: 'background-color 0.3s ease, color 0.3s ease',
+                fontSize: '0.85rem',
+                py: 1.5,
+                px: 2,
+                color: '#666',
                 '&:hover': {
-                  backgroundColor: alpha('#6366F1', 0.08),
+                  color: '#1a1a1a',
                 },
                 '&.Mui-selected': {
-                  fontWeight: 600,
-                  backgroundColor: alpha('#6366F1', 0.1),
-                  color: '#6366F1',
+                  fontWeight: 500,
+                  color: '#1a1a1a',
                 },
               },
               '& .MuiTabs-indicator': {
-                height: 3,
-                borderRadius: 2,
-                background: 'linear-gradient(90deg, #6366F1, #8B5CF6)',
+                height: 2,
+                backgroundColor: '#1a1a1a',
               },
             }}
           >
@@ -624,9 +614,8 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                 key={index}
                 icon={React.cloneElement(tab.icon, {
                   sx: {
-                    fontSize: 20,
-                    color: selectedTab === index ? tab.color : 'text.secondary',
-                    transition: 'color 0.3s ease',
+                    fontSize: 18,
+                    color: selectedTab === index ? '#1a1a1a' : '#999',
                   }
                 })}
                 iconPosition="start"
@@ -650,29 +639,27 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                 <Card
                   sx={{
                     borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: alpha('#6366F1', 0.1),
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: 'none',
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
                     <Box display="flex" alignItems="center" mb={3}>
                       <Box
                         sx={{
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           borderRadius: 2,
-                          background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                          bgcolor: '#f5f5f5',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'white',
                           mr: 2,
                         }}
                       >
-                        <BusinessIcon sx={{ fontSize: 20 }} />
+                        <BusinessIcon sx={{ fontSize: 18, color: '#666' }} />
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
                         {t('settings.merchantInfo')}
                       </Typography>
                     </Box>
@@ -984,29 +971,27 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                 <Card
                   sx={{
                     borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: alpha('#10B981', 0.1),
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: 'none',
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
                     <Box display="flex" alignItems="center" mb={3}>
                       <Box
                         sx={{
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           borderRadius: 2,
-                          background: 'linear-gradient(135deg, #10B981, #059669)',
+                          bgcolor: '#f5f5f5',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'white',
                           mr: 2,
                         }}
                       >
-                        <TuneIcon sx={{ fontSize: 20 }} />
+                        <TuneIcon sx={{ fontSize: 18, color: '#666' }} />
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
                         {t('settings.businessOperations')}
                       </Typography>
                     </Box>
@@ -1039,9 +1024,9 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                   icon={<CheckBoxBlankIcon />}
                                   checkedIcon={<CheckBoxIcon />}
                                   sx={{
-                                    color: '#10B981',
+                                    color: '#bbb',
                                     '&.Mui-checked': {
-                                      color: '#10B981',
+                                      color: '#1a1a1a',
                                     },
                                   }}
                                 />
@@ -1071,9 +1056,9 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                   icon={<CheckBoxBlankIcon />}
                                   checkedIcon={<CheckBoxIcon />}
                                   sx={{
-                                    color: '#10B981',
+                                    color: '#bbb',
                                     '&.Mui-checked': {
-                                      color: '#10B981',
+                                      color: '#1a1a1a',
                                     },
                                   }}
                                 />
@@ -1121,29 +1106,27 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
               <Card
                 sx={{
                   borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: alpha('#F59E0B', 0.1),
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: 'none',
                 }}
               >
                 <CardContent sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" mb={3}>
                     <Box
                       sx={{
-                        width: 40,
-                        height: 40,
+                        width: 36,
+                        height: 36,
                         borderRadius: 2,
-                        background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                        bgcolor: '#f5f5f5',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'white',
                         mr: 2,
                       }}
                     >
-                      <TaxIcon sx={{ fontSize: 20 }} />
+                      <TaxIcon sx={{ fontSize: 18, color: '#666' }} />
                     </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
                       {t('settings.taxSettings')}
                     </Typography>
                   </Box>
@@ -1243,29 +1226,27 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
               <Card
                 sx={{
                   borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: alpha('#8B5CF6', 0.1),
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: 'none',
                 }}
               >
                 <CardContent sx={{ p: 3 }}>
                   <Box display="flex" alignItems="center" mb={3}>
                     <Box
                       sx={{
-                        width: 40,
-                        height: 40,
+                        width: 36,
+                        height: 36,
                         borderRadius: 2,
-                        background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+                        bgcolor: '#f5f5f5',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'white',
                         mr: 2,
                       }}
                     >
-                      <TuneIcon sx={{ fontSize: 20 }} />
+                      <TuneIcon sx={{ fontSize: 18, color: '#666' }} />
                     </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
                       {t('settings.systemPrefs')}
                     </Typography>
                   </Box>
@@ -1407,7 +1388,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       <Box mt={4} display="flex" justifyContent="flex-end">
         <Button
           variant="contained"
-          startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+          startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
           onClick={handleSaveSettings}
           disabled={saving}
           sx={{
@@ -1415,14 +1396,17 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
             py: 1,
             textTransform: 'none',
             fontWeight: 500,
+            fontSize: '0.9rem',
             borderRadius: 2,
-            backgroundColor: '#6366f1',
+            bgcolor: '#1a1a1a',
+            boxShadow: 'none',
             '&:hover': {
-              backgroundColor: '#4f46e5',
+              bgcolor: '#333',
+              boxShadow: 'none',
             },
             '&:disabled': {
-              backgroundColor: '#e5e7eb',
-              color: '#9ca3af',
+              bgcolor: '#e5e5e5',
+              color: '#999',
             },
           }}
         >

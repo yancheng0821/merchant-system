@@ -1,35 +1,12 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <!-- VA 文字渐变 - 横向渐变更明显 -->
-    <linearGradient id="textGradient" x1="0%" y1="50%" x2="100%" y2="50%">
-      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
-    </linearGradient>
+  <!-- 黑色圆角方块背景 -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#1a1a1a"/>
 
-    <!-- 下划线渐变 -->
-    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-
-  <!-- VA 文字 - 800字重（介于700和900之间），横向渐变 -->
-  <text
-    x="32"
-    y="42"
-    font-family="SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
-    font-size="42"
-    font-weight="800"
-    text-anchor="middle"
-    letter-spacing="-0.04em"
-    fill="url(#textGradient)"
-    stroke="url(#textGradient)"
-    stroke-width="0.8"
-    paint-order="stroke fill"
-  >VA</text>
-
-  <!-- 底部装饰线 - 渐变 -->
-  <rect x="10" y="48" width="44" height="3" rx="1.5" fill="url(#lineGradient)"/>
+  <!-- VA 白色文字 (路径) -->
+  <g fill="#ffffff">
+    <!-- V -->
+    <polygon points="12,18 18,18 24,38 30,18 36,18 27,46 21,46"/>
+    <!-- A -->
+    <path d="M34,46 L42,18 L48,18 L56,46 L50,46 L48.5,40 L41.5,40 L40,46 Z M43,35 L47,35 L45,26 Z"/>
+  </g>
 </svg>

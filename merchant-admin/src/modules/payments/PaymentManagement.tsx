@@ -79,20 +79,18 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography 
-              variant="h4" 
-              component="h1" 
-              sx={{ 
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #059669, #10B981)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                fontWeight: 600,
+                color: '#10B981',
+                mb: 0.5,
               }}
             >
               {t('payments.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('payments.subtitle')}
             </Typography>
           </Box>
@@ -100,44 +98,42 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
       </Box>
 
       {/* 统计卡片 */}
-      <Grid container spacing={3} mb={4}>
+      <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(16, 185, 129, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#10B981',
+                    flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                  <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  {CurrencyUtils.formatAmountWithCommas(stats.todayRevenue)}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('payments.todayRevenue')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(stats.todayRevenue)}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('payments.todayRevenue')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -145,40 +141,38 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#6366F1', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#6366F1', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#6366F1',
+                    flexShrink: 0,
                   }}
                 >
-                  <OrdersIcon sx={{ fontSize: 24 }} />
+                  <OrdersIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1' }}>
-                  {stats.todayOrders}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('payments.todayOrders')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {stats.todayOrders}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('payments.todayOrders')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -186,40 +180,38 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(245, 158, 11, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#F59E0B',
+                    flexShrink: 0,
                   }}
                 >
-                  <CreditCardIcon sx={{ fontSize: 24 }} />
+                  <CreditCardIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  {stats.pendingPayments}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('payments.pendingPayments')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {stats.pendingPayments}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('payments.pendingPayments')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -227,57 +219,47 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(236, 72, 153, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#EC4899', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#EC4899',
+                    flexShrink: 0,
                   }}
                 >
-                  <TrendingUpIcon sx={{ fontSize: 24 }} />
+                  <TrendingUpIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  {CurrencyUtils.formatAmountWithCommas(Math.round(stats.avgOrderValue))}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('payments.avgOrderValue')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(Math.round(stats.avgOrderValue))}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('payments.avgOrderValue')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
       {/* 订单历史 - 支付功能已迁移到其他模块 */}
-      <Card
-        sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          overflow: 'hidden',
-        }}
-      >
-        <Box sx={{ p: 3 }}>
-          <OrderHistory />
-        </Box>
-      </Card>
+      <Box>
+        <OrderHistory />
+      </Box>
     </Box>
   );
 };

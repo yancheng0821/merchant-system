@@ -523,19 +523,17 @@ const ServiceManagement: React.FC = () => {
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h4"
+              variant="h5"
               component="h1"
               sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #0891B2, #67E8F9)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+                fontWeight: 600,
+                color: '#06B6D4',
+                mb: 0.5,
               }}
             >
               {t('products.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('products.subtitle')}
             </Typography>
           </Box>
@@ -696,32 +694,33 @@ const ServiceManagement: React.FC = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={2}>
-          <Box display="flex" gap={1} height="100%">
-            <PermissionButton
-              permission={PRODUCT_PERMISSIONS.CREATE}
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setSelectedService(null);
-                setServiceDialogOpen(true);
-              }}
-              sx={{
-                borderRadius: 3,
-                background: 'linear-gradient(45deg, #67E8F9, #0891B2)',
-                boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #0891B2, #0E7490)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 20px rgba(6, 182, 212, 0.4)',
-                },
-                transition: 'all 0.3s ease',
-                flex: 1,
-              }}
-            >
-              {t('products.addService')}
-            </PermissionButton>
-          </Box>
+        <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <PermissionButton
+            permission={PRODUCT_PERMISSIONS.CREATE}
+            size="small"
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            onClick={() => {
+              setSelectedService(null);
+              setServiceDialogOpen(true);
+            }}
+            sx={{
+              borderRadius: 1.5,
+              height: 40,
+              px: 2,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#06B6D4',
+              boxShadow: 'none',
+              textTransform: 'none',
+              '&:hover': {
+                bgcolor: '#0891B2',
+                boxShadow: 'none',
+              },
+            }}
+          >
+            {t('products.addService')}
+          </PermissionButton>
         </Grid>
       </Grid>
 
@@ -1241,31 +1240,32 @@ const ServiceManagement: React.FC = () => {
               </FormControl>
             </Grid>
             {hasPermission('packages:create') && (
-              <Grid item xs={12} md={2}>
-                <Box display="flex" gap={1} height="100%">
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => {
-                      setSelectedPackage(null);
-                      setPackageDialogOpen(true);
-                    }}
-                    sx={{
-                      borderRadius: 3,
-                      background: 'linear-gradient(45deg, #67E8F9, #0891B2)',
-                      boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
-                      '&:hover': {
-                        background: 'linear-gradient(45deg, #0891B2, #0E7490)',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 6px 20px rgba(6, 182, 212, 0.4)',
-                      },
-                      transition: 'all 0.3s ease',
-                      flex: 1,
-                    }}
-                  >
-                    {t('packages.createPackage')}
-                  </Button>
-                </Box>
+              <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => {
+                    setSelectedPackage(null);
+                    setPackageDialogOpen(true);
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    height: 40,
+                    px: 2,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    bgcolor: '#06B6D4',
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: '#0891B2',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  {t('packages.createPackage')}
+                </Button>
               </Grid>
             )}
           </Grid>

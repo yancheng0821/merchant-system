@@ -255,6 +255,14 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
       sx={{
         '& .MuiOutlinedInput-root': {
           borderRadius: 2,
+          bgcolor: '#fff',
+          '& fieldset': { borderColor: '#d0d0d0' },
+          '&:hover fieldset': { borderColor: '#bbb' },
+          '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+        },
+        '& .MuiInputLabel-root': {
+          color: '#999',
+          '&.Mui-focused': { color: '#1a1a1a' },
         },
       }}
     >

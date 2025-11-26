@@ -47,24 +47,22 @@ const CustomerManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化页面标题 */}
+      {/* 页面标题 */}
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h4"
+              variant="h5"
               component="h1"
               sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #DB2777, #EC4899)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+                fontWeight: 600,
+                color: '#EC4899',
+                mb: 0.5,
               }}
             >
               {t('customers.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('customers.subtitle')}
             </Typography>
           </Box>

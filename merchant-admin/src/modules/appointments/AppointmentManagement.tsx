@@ -287,69 +287,65 @@ const AppointmentManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化页面标题 */}
+      {/* 页面标题 */}
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h4"
+              variant="h5"
               component="h1"
               sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #7C3AED, #8B5CF6)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
+                fontWeight: 600,
+                color: '#8B5CF6',
+                mb: 0.5,
               }}
             >
               {t('appointments.title')}
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#888' }}>
               {t('appointments.subtitle')}
             </Typography>
           </Box>
         </Box>
       </Box>
 
-      {/* 现代化统计卡片 */}
-      <Grid container spacing={3} mb={4}>
+      {/* 简约统计卡片 */}
+      <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#8B5CF6', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(139, 92, 246, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#8B5CF6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#8B5CF6',
+                    flexShrink: 0,
                   }}
                 >
-                  <EventNoteIcon sx={{ fontSize: 24 }} />
+                  <EventNoteIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#8B5CF6' }}>
-                  {stats?.totalAppointments || 0}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('appointments.totalAppointments')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {stats?.totalAppointments || 0}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('appointments.totalAppointments')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -357,40 +353,38 @@ const AppointmentManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#3B82F6', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(59, 130, 246, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#3B82F6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#3B82F6',
+                    flexShrink: 0,
                   }}
                 >
-                  <CheckIcon sx={{ fontSize: 24 }} />
+                  <CheckIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#3B82F6' }}>
-                  {stats?.confirmedAppointments || 0}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('appointments.pendingService')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {stats?.confirmedAppointments || 0}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('appointments.pendingService')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -398,40 +392,38 @@ const AppointmentManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(16, 185, 129, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#10B981',
+                    flexShrink: 0,
                   }}
                 >
-                  <TrendingUpIcon sx={{ fontSize: 24 }} />
+                  <TrendingUpIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  {stats?.completedAppointments || 0}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('appointments.completedAppointments')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {stats?.completedAppointments || 0}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('appointments.completedAppointments')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -439,40 +431,38 @@ const AppointmentManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(245, 158, 11, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#F59E0B',
+                    flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 24 }} />
+                  <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  {formatCurrency(stats?.totalRevenue || 0)}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('appointments.totalRevenue')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {formatCurrency(stats?.totalRevenue || 0)}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('appointments.totalRevenue')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -481,8 +471,10 @@ const AppointmentManagement: React.FC = () => {
       {/* 现代化搜索和过滤区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff',
           mb: 3,
         }}
       >
@@ -597,8 +589,9 @@ const AppointmentManagement: React.FC = () => {
       {/* 现代化表格 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >

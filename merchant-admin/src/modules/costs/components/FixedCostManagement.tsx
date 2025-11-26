@@ -297,22 +297,23 @@ const FixedCostManagement: React.FC = () => {
               <Box display="flex" gap={2} justifyContent="flex-end">
                 {hasPermission('costs:create_fixed_cost') && (
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                     onClick={() => handleOpenDialog()}
                     sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)',
+                      borderRadius: 1.5,
+                      height: 40,
+                      px: 2,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      bgcolor: '#DC2626',
+                      boxShadow: 'none',
+                      textTransform: 'none',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #B91C1C, #991B1B)',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)',
+                        bgcolor: '#B91C1C',
+                        boxShadow: 'none',
                       },
-                      transition: 'all 0.3s ease',
-                      minWidth: 140,
                     }}
                   >
                     {t('costs.fixedCosts.addFixedCost')}

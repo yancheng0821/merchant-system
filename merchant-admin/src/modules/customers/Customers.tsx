@@ -586,45 +586,43 @@ const CustomerManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化统计卡片 */}
-      <Grid container spacing={3} mb={4}>
+      {/* 简约统计卡片 */}
+      <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#EC4899', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#EC4899',
+                    flexShrink: 0,
                   }}
                 >
-                  <GroupsIcon sx={{ fontSize: 24 }} />
+                  <GroupsIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                  {customerStats?.totalCustomers || 0}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('customers.totalCustomers')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {customerStats?.totalCustomers || 0}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('customers.totalCustomers')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -632,40 +630,38 @@ const CustomerManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(16, 185, 129, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#10B981',
+                    flexShrink: 0,
                   }}
                 >
-                  <TrendingUpIcon sx={{ fontSize: 24 }} />
+                  <TrendingUpIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
-                  {customerStats?.activeCustomers || 0}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('customers.activeCustomers')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {customerStats?.activeCustomers || 0}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('customers.activeCustomers')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -673,40 +669,38 @@ const CustomerManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#F59E0B', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(245, 158, 11, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#F59E0B',
+                    flexShrink: 0,
                   }}
                 >
-                  <StarIcon sx={{ fontSize: 24 }} />
+                  <StarIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                  {customerStats?.vipCustomers || 0}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('customers.vipCustomers')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {customerStats?.vipCustomers || 0}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('customers.vipCustomers')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -714,40 +708,38 @@ const CustomerManagement: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.1),
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 30px rgba(236, 72, 153, 0.15)',
-              },
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={2.5}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 1.5,
+                    bgcolor: alpha('#3B82F6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: '#3B82F6',
+                    flexShrink: 0,
                   }}
                 >
-                  <WalletIcon sx={{ fontSize: 24 }} />
+                  <WalletIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#3B82F6' }}>
-                  {CurrencyUtils.formatAmountWithCommas(Math.round(customerStats?.averageSpending || 0))}
-                </Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    {t('customers.avgSpending')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                    {CurrencyUtils.formatAmountWithCommas(Math.round(customerStats?.averageSpending || 0))}
+                  </Typography>
+                </Box>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('customers.avgSpending')}
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -756,8 +748,10 @@ const CustomerManagement: React.FC = () => {
       {/* 现代化搜索和过滤区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff',
           mb: 3,
         }}
       >
@@ -894,27 +888,29 @@ const CustomerManagement: React.FC = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Box display="flex" gap={2} flexWrap="wrap" justifyContent="flex-start">
+              <Box display="flex" gap={1.5} flexWrap="wrap" justifyContent="flex-start">
                 {hasPermission('customers:create') && (
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={<AddIcon />}
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                     onClick={() => {
                       setSelectedCustomer(null);
                       setCustomerDialogOpen(true);
                     }}
                     sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                      boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
+                      borderRadius: 1.5,
+                      py: 0.75,
+                      px: 2,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      bgcolor: '#EC4899',
+                      boxShadow: 'none',
+                      textTransform: 'none',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
+                        bgcolor: '#DB2777',
+                        boxShadow: 'none',
                       },
-                      transition: 'all 0.3s ease',
                     }}
                   >
                     {t('customers.addCustomer')}
@@ -923,23 +919,22 @@ const CustomerManagement: React.FC = () => {
 
                 {hasPermission('customers:import') && (
                   <Button
-                    variant="outlined"
-                    startIcon={<DownloadIcon />}
+                    size="small"
+                    variant="text"
+                    startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
                     onClick={() => setTemplateDialogOpen(true)}
                     sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      borderColor: '#10B981',
-                      color: '#10B981',
-                      borderWidth: 2,
+                      borderRadius: 1.5,
+                      py: 0.75,
+                      px: 1.5,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      color: '#666',
+                      textTransform: 'none',
                       '&:hover': {
-                        borderColor: '#059669',
-                        backgroundColor: alpha('#10B981', 0.04),
-                        transform: 'translateY(-1px)',
-                        borderWidth: 2,
+                        bgcolor: alpha('#000', 0.04),
+                        color: '#1a1a1a',
                       },
-                      transition: 'all 0.3s ease',
                     }}
                   >
                     {t('customers.downloadTemplate')}
@@ -948,23 +943,22 @@ const CustomerManagement: React.FC = () => {
 
                 {hasPermission('customers:import') && (
                   <Button
-                    variant="outlined"
-                    startIcon={<UploadIcon />}
+                    size="small"
+                    variant="text"
+                    startIcon={<UploadIcon sx={{ fontSize: 16 }} />}
                     onClick={() => setCustomerImportOpen(true)}
                     sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      borderColor: '#EC4899',
-                      color: '#EC4899',
-                      borderWidth: 2,
+                      borderRadius: 1.5,
+                      py: 0.75,
+                      px: 1.5,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      color: '#666',
+                      textTransform: 'none',
                       '&:hover': {
-                        borderColor: '#DB2777',
-                        backgroundColor: alpha('#EC4899', 0.04),
-                        transform: 'translateY(-1px)',
-                        borderWidth: 2,
+                        bgcolor: alpha('#000', 0.04),
+                        color: '#1a1a1a',
                       },
-                      transition: 'all 0.3s ease',
                     }}
                   >
                     {t('customers.batchImport')}
@@ -973,23 +967,22 @@ const CustomerManagement: React.FC = () => {
 
                 {hasPermission('customers:import') && (
                   <Button
-                    variant="outlined"
-                    startIcon={<HistoryIcon />}
+                    size="small"
+                    variant="text"
+                    startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}
                     onClick={() => setImportHistoryOpen(true)}
                     sx={{
-                      borderRadius: 2,
-                      py: 1.5,
-                      px: 3,
-                      borderColor: '#EC4899',
-                      color: '#EC4899',
-                      borderWidth: 2,
+                      borderRadius: 1.5,
+                      py: 0.75,
+                      px: 1.5,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      color: '#666',
+                      textTransform: 'none',
                       '&:hover': {
-                        borderColor: '#DB2777',
-                        backgroundColor: alpha('#EC4899', 0.04),
-                        transform: 'translateY(-1px)',
-                        borderWidth: 2,
+                        bgcolor: alpha('#000', 0.04),
+                        color: '#1a1a1a',
                       },
-                      transition: 'all 0.3s ease',
                     }}
                   >
                     {t('customers.importHistory')}
@@ -1004,8 +997,9 @@ const CustomerManagement: React.FC = () => {
       {/* 现代化表格 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >

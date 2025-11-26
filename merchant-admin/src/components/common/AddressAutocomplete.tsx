@@ -304,7 +304,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <LocationIcon sx={{ color: '#667eea' }} />
+            <LocationIcon sx={{ color: '#bbb' }} />
           </InputAdornment>
         ),
       }}

@@ -316,77 +316,22 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
 
     if (loading) {
         return (
-            <Paper
-                elevation={0}
-                sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.04)',
-                    p: 4,
-                    textAlign: 'center',
-                    background: `linear-gradient(135deg, ${alpha('#f8fafc', 0.5)}, white)`,
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 3,
-                        background: `linear-gradient(135deg, ${alpha('#3B82F6', 0.1)}, ${alpha('#3B82F6', 0.05)})`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mx: 'auto',
-                        mb: 2,
-                    }}
-                >
-                    <CircularProgress sx={{ color: '#3B82F6' }} size={24} />
-                </Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#374151', mb: 0.5 }}>
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+                <CircularProgress size={24} sx={{ color: '#666' }} />
+                <Typography variant="body2" sx={{ color: '#999', mt: 2 }}>
                     {t('appointments.loadingAvailability')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    正在获取详细可用性信息...
-                </Typography>
-            </Paper>
+            </Box>
         );
     }
 
     if (error) {
         return (
-            <Paper
-                elevation={0}
-                sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.04)',
-                    p: 4,
-                    textAlign: 'center',
-                    background: `linear-gradient(135deg, ${alpha('#EF4444', 0.02)}, white)`,
-                }}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 3,
-                        background: `linear-gradient(135deg, ${alpha('#EF4444', 0.1)}, ${alpha('#EF4444', 0.05)})`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mx: 'auto',
-                        mb: 2,
-                    }}
-                >
-                    <UnavailableIcon sx={{ color: '#EF4444', fontSize: 24 }} />
-                </Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#EF4444', mb: 0.5 }}>
-                    加载失败
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+                <Typography variant="body2" sx={{ color: '#EF4444' }}>
                     {error}
                 </Typography>
-            </Paper>
+            </Box>
         );
     }
 
@@ -395,184 +340,144 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     return (
         <Box>
             {/* 头部信息卡片 */}
-            <Paper
-                elevation={0}
+            <Box
                 sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.04)',
-                    mb: 3,
-                    overflow: 'hidden',
+                    mb: 2.5,
+                    pb: 2,
+                    borderBottom: '1px solid rgba(0,0,0,0.06)',
                 }}
             >
-                <Box
-                    sx={{
-                        background: `linear-gradient(135deg, ${alpha(themeColor, 0.05)}, ${alpha(themeColor, 0.02)})`,
-                        p: 3,
-                    }}
-                >
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Box display="flex" alignItems="center" gap={2}>
-                            {onBack && (
-                                <Button
-                                    variant="contained"
-                                    onClick={onBack}
-                                    sx={{
-                                        borderRadius: 2,
-                                        background: `linear-gradient(135deg, ${themeColor}, ${alpha(themeColor, 0.8)})`,
-                                        boxShadow: `0 2px 8px ${alpha(themeColor, 0.3)}`,
-                                        fontWeight: 600,
-                                        minWidth: 'auto',
-                                        px: 2,
-                                        '&:hover': {
-                                            background: `linear-gradient(135deg, ${alpha(themeColor, 0.9)}, ${themeColor})`,
-                                            transform: 'translateY(-1px)',
-                                            boxShadow: `0 4px 12px ${alpha(themeColor, 0.4)}`,
-                                        },
-                                        transition: 'all 0.2s ease',
-                                    }}
-                                >
-                                    ← {t('common.back')}
-                                </Button>
-                            )}
-                            <Box
-                                sx={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 2,
-                                    background: `linear-gradient(135deg, ${themeColor}, ${alpha(themeColor, 0.8)})`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: `0 2px 8px ${alpha(themeColor, 0.3)}`,
-                                }}
-                            >
-                                {resourceType === 'STAFF' ? (
-                                    <AvailableIcon sx={{ color: 'white', fontSize: 20 }} />
-                                ) : (
-                                    <BookedIcon sx={{ color: 'white', fontSize: 20 }} />
-                                )}
-                            </Box>
-                            <Box>
-                                <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 0.5 }}>
-                                    {resourceName}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {t('resources.availability.detailedView')}
-                                </Typography>
-                            </Box>
-                        </Box>
-
-                        <Tooltip title={t('common.refresh')}>
-                            <IconButton
+                <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                        {onBack && (
+                            <Button
+                                variant="outlined"
+                                onClick={onBack}
                                 size="small"
-                                onClick={fetchDetailedAvailability}
                                 sx={{
+                                    borderRadius: 1.5,
+                                    borderColor: alpha(themeColor, 0.3),
                                     color: themeColor,
-                                    backgroundColor: alpha(themeColor, 0.1),
+                                    fontWeight: 500,
+                                    minWidth: 'auto',
+                                    px: 1.5,
                                     '&:hover': {
-                                        backgroundColor: alpha(themeColor, 0.2),
-                                        transform: 'scale(1.05)',
+                                        borderColor: themeColor,
+                                        bgcolor: alpha(themeColor, 0.05),
                                     },
-                                    transition: 'all 0.2s ease',
                                 }}
                             >
-                                <RefreshIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
-                </Box>
-            </Paper>
-
-            {/* 日期选择卡片 - 美化版 */}
-            <Paper
-                elevation={0}
-                sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.04)',
-                    mb: 3,
-                    p: 3,
-                    background: `linear-gradient(135deg, white, ${alpha('#8B5CF6', 0.02)})`,
-                }}
-            >
-                <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                        <IconButton
-                            onClick={() => navigateDate('prev')}
-                            sx={{
-                                backgroundColor: alpha(themeColor, 0.1),
-                                '&:hover': {
-                                    backgroundColor: alpha(themeColor, 0.2),
-                                },
-                            }}
-                        >
-                            <PrevIcon />
-                        </IconButton>
+                                ← {t('common.back')}
+                            </Button>
+                        )}
                         <Box
-                            onClick={handleDatePickerOpen}
                             sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                bgcolor: alpha(themeColor, 0.1),
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 1,
-                                px: 2,
-                                py: 1,
-                                borderRadius: 2,
-                                border: `1px solid ${alpha(themeColor, 0.3)}`,
-                                cursor: 'pointer',
-                                minWidth: 180,
                                 justifyContent: 'center',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                    borderColor: themeColor,
-                                    backgroundColor: alpha(themeColor, 0.05),
-                                },
                             }}
                         >
-                            <CalendarIcon sx={{ color: themeColor, fontSize: 20 }} />
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {(() => {
-                                    // 解析日期字符串，避免时区问题
-                                    const [year, month, day] = selectedDate.split('-').map(Number);
-                                    const localDate = new Date(year, month - 1, day);
-                                    return localDate.toLocaleDateString(
-                                        i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US',
-                                        { year: 'numeric', month: 'long', day: 'numeric' }
-                                    );
-                                })()}
+                            {resourceType === 'STAFF' ? (
+                                <PersonIcon sx={{ color: themeColor, fontSize: 20 }} />
+                            ) : (
+                                <BookedIcon sx={{ color: themeColor, fontSize: 20 }} />
+                            )}
+                        </Box>
+                        <Box>
+                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                {resourceName}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#999' }}>
+                                {t('resources.availability.detailedView')}
                             </Typography>
                         </Box>
+                    </Box>
+
+                    <Tooltip title={t('common.refresh')}>
                         <IconButton
-                            onClick={() => navigateDate('next')}
+                            size="small"
+                            onClick={fetchDetailedAvailability}
                             sx={{
-                                backgroundColor: alpha(themeColor, 0.1),
-                                '&:hover': {
-                                    backgroundColor: alpha(themeColor, 0.2),
-                                },
+                                color: themeColor,
+                                bgcolor: alpha(themeColor, 0.08),
+                                '&:hover': { bgcolor: alpha(themeColor, 0.15) },
                             }}
                         >
-                            <NextIcon />
+                            <RefreshIcon sx={{ fontSize: 18 }} />
                         </IconButton>
-                    </Box>
+                    </Tooltip>
                 </Box>
-            </Paper>
+            </Box>
 
-            {/* 时间段网格卡片 */}
-            <Paper
-                elevation={0}
-                sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.04)',
-                    p: 3,
-                    mb: 3,
-                }}
-            >
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: '1rem' }}>
+            {/* 日期选择器 */}
+            <Box display="flex" alignItems="center" justifyContent="center" mb={2.5}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                    <IconButton
+                        onClick={() => navigateDate('prev')}
+                        size="small"
+                        sx={{
+                            color: themeColor,
+                            bgcolor: alpha(themeColor, 0.08),
+                            '&:hover': { bgcolor: alpha(themeColor, 0.15) },
+                        }}
+                    >
+                        <PrevIcon />
+                    </IconButton>
+                    <Box
+                        onClick={handleDatePickerOpen}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            px: 2.5,
+                            py: 1,
+                            borderRadius: 2,
+                            bgcolor: alpha(themeColor, 0.08),
+                            cursor: 'pointer',
+                            minWidth: 180,
+                            justifyContent: 'center',
+                            '&:hover': {
+                                bgcolor: alpha(themeColor, 0.12),
+                            },
+                        }}
+                    >
+                        <CalendarIcon sx={{ color: themeColor, fontSize: 18 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: themeColor }}>
+                            {(() => {
+                                const [year, month, day] = selectedDate.split('-').map(Number);
+                                const localDate = new Date(year, month - 1, day);
+                                return localDate.toLocaleDateString(
+                                    i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US',
+                                    { year: 'numeric', month: 'long', day: 'numeric' }
+                                );
+                            })()}
+                        </Typography>
+                    </Box>
+                    <IconButton
+                        onClick={() => navigateDate('next')}
+                        size="small"
+                        sx={{
+                            color: themeColor,
+                            bgcolor: alpha(themeColor, 0.08),
+                            '&:hover': { bgcolor: alpha(themeColor, 0.15) },
+                        }}
+                    >
+                        <NextIcon />
+                    </IconButton>
+                </Box>
+            </Box>
+
+            {/* 时间段网格 */}
+            <Box sx={{ mb: 2.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 1.5 }}>
                     {t('resources.timeSlotAvailability')}
                 </Typography>
 
-                <Grid container spacing={1}>
+                <Grid container spacing={0.5}>
                     {timeSlots.map((timeSlot) => {
                         const status = getTimeSlotStatus(timeSlot);
                         const statusDisplay = getStatusDisplay(status);
@@ -581,35 +486,19 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                             <Grid item xs={4} sm={3} md={2} lg={1.5} key={timeSlot}>
                                 <Box
                                     sx={{
-                                        p: 1,
-                                        borderRadius: 1.5,
-                                        background: `linear-gradient(135deg, ${statusDisplay.backgroundColor}, ${alpha(statusDisplay.color, 0.05)})`,
-                                        border: `1px solid ${alpha(statusDisplay.color, 0.15)}`,
+                                        py: 0.75,
+                                        borderRadius: 1,
+                                        bgcolor: status === 'available' ? 'rgba(16,185,129,0.08)' :
+                                                 status === 'booked' ? 'rgba(245,158,11,0.08)' :
+                                                 'rgba(0,0,0,0.04)',
                                         textAlign: 'center',
-                                        transition: 'all 0.2s ease',
-                                        cursor: 'pointer',
-                                        minHeight: 48,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        '&:hover': {
-                                            transform: 'translateY(-1px)',
-                                            boxShadow: `0 2px 8px ${alpha(statusDisplay.color, 0.2)}`,
-                                            borderColor: alpha(statusDisplay.color, 0.3),
-                                        },
                                     }}
                                 >
-                                    <Box sx={{ color: statusDisplay.color, mb: 0.25 }}>
-                                        {React.cloneElement(statusDisplay.icon, { sx: { fontSize: 14 } })}
-                                    </Box>
                                     <Typography
                                         variant="caption"
                                         sx={{
-                                            fontWeight: 600,
                                             color: statusDisplay.color,
-                                            fontSize: '0.7rem',
-                                            lineHeight: 1,
+                                            fontSize: '0.65rem',
                                         }}
                                     >
                                         {timeSlot}
@@ -619,104 +508,50 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
                         );
                     })}
                 </Grid>
-            </Paper>
+            </Box>
 
             {/* 图例和统计信息 */}
             <Box display="flex" gap={2} flexDirection={{ xs: 'column', md: 'row' }}>
-                {/* 图例卡片 */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        borderRadius: 3,
-                        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                        border: '1px solid rgba(0,0,0,0.04)',
-                        p: 2.5,
-                        flex: 1,
-                    }}
-                >
-                    <Box display="flex" flexDirection="column" gap={1.5}>
+                {/* 图例 */}
+                <Box sx={{ flex: 1 }}>
+                    <Box display="flex" gap={3}>
                         {['available', 'booked', 'unavailable'].map((status) => {
                             const statusDisplay = getStatusDisplay(status);
                             return (
-                                <Box key={status} display="flex" alignItems="center" gap={1.5}>
+                                <Box key={status} display="flex" alignItems="center" gap={1}>
                                     <Box
                                         sx={{
-                                            width: 18,
-                                            height: 18,
-                                            borderRadius: 1.5,
-                                            background: `linear-gradient(135deg, ${statusDisplay.color}, ${alpha(statusDisplay.color, 0.8)})`,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'white',
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            bgcolor: statusDisplay.color,
                                         }}
-                                    >
-                                        {React.cloneElement(statusDisplay.icon, { sx: { fontSize: 12 } })}
-                                    </Box>
-                                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151', fontSize: '0.875rem' }}>
+                                    />
+                                    <Typography variant="caption" sx={{ color: '#666' }}>
                                         {statusDisplay.label}
                                     </Typography>
                                 </Box>
                             );
                         })}
                     </Box>
-                </Paper>
+                </Box>
 
-                {/* 今日预约统计 - 美化版 */}
+                {/* 今日预约统计 */}
                 {availabilityData?.bookingSlots && availabilityData.bookingSlots.length > 0 && (
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            borderRadius: 3,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                            border: '1px solid rgba(0,0,0,0.04)',
-                            p: 3,
-                            flex: 1,
-                            backgroundColor: 'white',
-                        }}
-                    >
-                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                                <Box
-                                    sx={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 1.5,
-                                        background: `linear-gradient(135deg, ${alpha('#F59E0B', 0.2)}, ${alpha('#F59E0B', 0.1)})`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <BookedIcon sx={{ fontSize: 18, color: '#F59E0B' }} />
-                                </Box>
-                                <Box>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', lineHeight: 1 }}>
-                                        {t('resources.availability.todayBookings')}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {availabilityData.bookingSlots.length} {t('appointments.appointments')}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <Chip
-                                size="small"
-                                label={`${availabilityData.bookingSlots.length}`}
-                                sx={{
-                                    backgroundColor: alpha('#F59E0B', 0.1),
-                                    color: '#F59E0B',
-                                    fontWeight: 700,
-                                    minWidth: 32,
-                                }}
-                            />
+                    <Box sx={{ flex: 2, mt: 2 }}>
+                        <Box display="flex" alignItems="center" gap={1} mb={2}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                {t('resources.availability.todayBookings')}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#999' }}>
+                                ({availabilityData.bookingSlots.length})
+                            </Typography>
                         </Box>
                         
-                        <Grid container spacing={2}>
+                        <Grid container spacing={1.5}>
                             {availabilityData.bookingSlots.map((slot: any, index: number) => {
-                                // 优先使用 appointment 对象中的真实状态，如果没有则使用 slot.status
                                 const actualStatus = slot.appointment?.status || slot.status;
 
-                                // 获取状态颜色
                                 const getStatusColor = () => {
                                     switch(actualStatus) {
                                         case 'COMPLETED': return '#10B981';
@@ -731,236 +566,99 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
 
                                 return (
                                     <Grid item xs={12} sm={6} md={4} key={index}>
-                                        <Card
+                                        <Box
                                             sx={{
                                                 cursor: 'pointer',
-                                                borderRadius: 2.5,
-                                                border: `1px solid ${alpha(themeColor, 0.08)}`,
-                                                backgroundColor: 'white',
-                                                position: 'relative',
-                                                overflow: 'hidden',
-                                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                p: 2,
+                                                borderRadius: 2,
+                                                border: '1px solid rgba(0,0,0,0.06)',
+                                                bgcolor: '#fff',
                                                 '&:hover': {
-                                                    transform: 'translateY(-4px)',
-                                                    boxShadow: `0 12px 24px ${alpha(statusColor, 0.15)}`,
-                                                    borderColor: alpha(statusColor, 0.3),
-                                                    '& .status-indicator': {
-                                                        width: 5,
-                                                    },
-                                                },
-                                                '&::before': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
-                                                    bottom: 0,
-                                                    width: 4,
-                                                    backgroundColor: statusColor,
-                                                    transition: 'width 0.25s ease',
-                                                    className: 'status-indicator',
+                                                    bgcolor: 'rgba(0,0,0,0.02)',
                                                 },
                                             }}
                                             onClick={() => fetchBookingDetails(slot)}
                                         >
-                                            <CardContent sx={{ p: 2.5, pl: 3 }}>
-                                                {/* 时间 - 醒目显示 */}
-                                                <Box mb={2}>
-                                                    <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                                                        <TimeIcon sx={{ fontSize: 18, color: statusColor }} />
-                                                        <Typography
-                                                            variant="h6"
-                                                            sx={{
-                                                                fontWeight: 700,
-                                                                color: '#1a1a1a',
-                                                                fontSize: '1.1rem',
-                                                                letterSpacing: '-0.02em',
-                                                            }}
-                                                        >
-                                                            {slot.startTime.slice(0, 5)}
-                                                        </Typography>
-                                                        <Typography
-                                                            variant="body2"
-                                                            sx={{
-                                                                color: 'text.secondary',
-                                                                fontWeight: 500,
-                                                            }}
-                                                        >
-                                                            -
-                                                        </Typography>
-                                                        <Typography
-                                                            variant="h6"
-                                                            sx={{
-                                                                fontWeight: 700,
-                                                                color: '#1a1a1a',
-                                                                fontSize: '1.1rem',
-                                                                letterSpacing: '-0.02em',
-                                                            }}
-                                                        >
-                                                            {slot.endTime.slice(0, 5)}
-                                                        </Typography>
-                                                    </Box>
-                                                    {/* 状态标签 - 紧跟时间下方 */}
-                                                    <Box>
-                                                        <Chip
-                                                            size="small"
-                                                            label={(() => {
-                                                                const statusMap: { [key: string]: string } = {
-                                                                    'BOOKED': 'appointments.appointmentStatuses.confirmed',
-                                                                    'CONFIRMED': 'appointments.appointmentStatuses.confirmed',
-                                                                    'CHECKED_IN': 'appointments.appointmentStatuses.checked-in',
-                                                                    'COMPLETED': 'appointments.appointmentStatuses.completed',
-                                                                    'CANCELLED': 'appointments.appointmentStatuses.cancelled',
-                                                                    'NO_SHOW': 'appointments.appointmentStatuses.no-show'
-                                                                };
-                                                                const translationKey = statusMap[actualStatus];
-                                                                return translationKey ? t(translationKey) : actualStatus;
-                                                            })()}
-                                                            sx={{
-                                                                backgroundColor: alpha(statusColor, 0.1),
-                                                                color: statusColor,
-                                                                fontWeight: 600,
-                                                                fontSize: '0.688rem',
-                                                                height: 22,
-                                                                borderRadius: 1.5,
-                                                                border: `1px solid ${alpha(statusColor, 0.2)}`,
-                                                            }}
-                                                        />
-                                                    </Box>
+                                            {/* 时间和状态 */}
+                                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                                    {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                                                </Typography>
+                                                <Box display="flex" alignItems="center" gap={0.5}>
+                                                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusColor }} />
+                                                    <Typography variant="caption" sx={{ color: statusColor }}>
+                                                        {(() => {
+                                                            const statusMap: { [key: string]: string } = {
+                                                                'BOOKED': 'appointments.appointmentStatuses.confirmed',
+                                                                'CONFIRMED': 'appointments.appointmentStatuses.confirmed',
+                                                                'CHECKED_IN': 'appointments.appointmentStatuses.checked-in',
+                                                                'COMPLETED': 'appointments.appointmentStatuses.completed',
+                                                                'CANCELLED': 'appointments.appointmentStatuses.cancelled',
+                                                                'NO_SHOW': 'appointments.appointmentStatuses.no-show'
+                                                            };
+                                                            const translationKey = statusMap[actualStatus];
+                                                            return translationKey ? t(translationKey) : actualStatus;
+                                                        })()}
+                                                    </Typography>
                                                 </Box>
+                                            </Box>
 
-                                                {/* 客户信息 */}
-                                                {slot.customerName && (
-                                                    <Box
-                                                        display="flex"
-                                                        alignItems="center"
-                                                        gap={1.5}
-                                                        mb={1.5}
-                                                        p={1.5}
-                                                        sx={{
-                                                            backgroundColor: alpha(themeColor, 0.04),
-                                                            borderRadius: 1.5,
-                                                        }}
-                                                    >
-                                                        <Box
-                                                            sx={{
-                                                                width: 32,
-                                                                height: 32,
-                                                                borderRadius: '50%',
-                                                                backgroundColor: alpha(statusColor, 0.15),
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                flexShrink: 0,
-                                                            }}
-                                                        >
-                                                            <PersonIcon sx={{ fontSize: 18, color: statusColor }} />
-                                                        </Box>
-                                                        <Typography
-                                                            variant="body2"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                color: '#1a1a1a',
-                                                                flex: 1,
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                whiteSpace: 'nowrap',
-                                                            }}
-                                                        >
-                                                            {slot.customerName}
-                                                        </Typography>
-                                                    </Box>
-                                                )}
+                                            {/* 客户信息 */}
+                                            {slot.customerName && (
+                                                <Typography variant="body2" sx={{ color: '#1a1a1a', mb: 0.5 }}>
+                                                    {slot.customerName}
+                                                </Typography>
+                                            )}
 
-                                                {/* 服务信息 */}
-                                                <Box display="flex" flexDirection="column" gap={1}>
-                                                    {(slot.appointmentServices && slot.appointmentServices.length > 0) && (
-                                                        <Box display="flex" alignItems="flex-start" gap={1}>
-                                                            <Box
-                                                                sx={{
-                                                                    width: 6,
-                                                                    height: 6,
-                                                                    borderRadius: '50%',
-                                                                    backgroundColor: '#10B981',
-                                                                    mt: 0.7,
-                                                                    flexShrink: 0,
-                                                                }}
-                                                            />
-                                                            <Typography
-                                                                variant="caption"
-                                                                sx={{
-                                                                    color: 'text.secondary',
-                                                                    lineHeight: 1.6,
-                                                                    flex: 1,
-                                                                }}
-                                                            >
-                                                                {slot.appointmentServices.map((s: any) => s.serviceName).join(', ')}
-                                                            </Typography>
-                                                        </Box>
-                                                    )}
+                                            {/* 服务信息 */}
+                                            {(slot.appointmentServices && slot.appointmentServices.length > 0) && (
+                                                <Typography variant="caption" sx={{ color: '#999' }}>
+                                                    {slot.appointmentServices.map((s: any) => s.serviceName).join(', ')}
+                                                </Typography>
+                                            )}
 
-                                                    {/* 价格 */}
-                                                    {(slot.totalAmount !== undefined && slot.totalAmount !== null) && (
-                                                        <Box
-                                                            display="flex"
-                                                            alignItems="center"
-                                                            justifyContent="space-between"
-                                                            mt={0.5}
-                                                            pt={1.5}
-                                                            sx={{
-                                                                borderTop: `1px solid ${alpha(themeColor, 0.08)}`,
-                                                            }}
-                                                        >
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                Total
-                                                            </Typography>
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    fontWeight: 700,
-                                                                    color: '#F59E0B',
-                                                                    fontSize: '0.95rem',
-                                                                }}
-                                                            >
-                                                                ${slot.totalAmount}
-                                                            </Typography>
-                                                        </Box>
-                                                    )}
+                                            {/* 价格 */}
+                                            {(slot.totalAmount !== undefined && slot.totalAmount !== null) && (
+                                                <Box display="flex" justifyContent="flex-end" mt={1}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                                        ${slot.totalAmount}
+                                                    </Typography>
                                                 </Box>
-                                            </CardContent>
-                                        </Card>
+                                            )}
+                                        </Box>
                                     </Grid>
                                 );
                             })}
                         </Grid>
-                    </Paper>
+                    </Box>
                 )}
             </Box>
 
             {/* 预约详情对话框 */}
             <Dialog
-            open={bookingDetailsOpen}
-            onClose={() => setBookingDetailsOpen(false)}
-            maxWidth="md"
-            fullWidth
-            disableAutoFocus
-            disableEnforceFocus
-            PaperProps={{
-                sx: {
-                    borderRadius: 3,
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                }
-            }}
-        >
-            <DialogTitle sx={{ pb: 2 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6' }}>
-                        {t('appointments.appointmentDetails')}
-                    </Typography>
-                    <IconButton onClick={() => setBookingDetailsOpen(false)}>
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-            </DialogTitle>
+                open={bookingDetailsOpen}
+                onClose={() => setBookingDetailsOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                disableAutoFocus
+                disableEnforceFocus
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2.5,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    }
+                }}
+            >
+                <DialogTitle sx={{ py: 2, px: 3, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                            {t('appointments.appointmentDetails')}
+                        </Typography>
+                        <IconButton size="small" onClick={() => setBookingDetailsOpen(false)} sx={{ color: '#999' }}>
+                            <CloseIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
             <DialogContent>
                 {loadingBookingDetails ? (
                     <Box display="flex" justifyContent="center" alignItems="center" py={4}>

@@ -260,170 +260,75 @@ const AppointmentHistory: React.FC<{
             </Alert>
           ) : (
             <>
-              {/* 现代化统计信息卡片 */}
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card
-                    sx={{
-                      borderRadius: 3,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                      border: '1px solid',
-                      borderColor: alpha('#6366F1', 0.1),
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 8px 30px rgba(99, 102, 241, 0.15)',
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                        <Box
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                          }}
-                        >
-                          <GroupsIcon sx={{ fontSize: 24 }} />
-                        </Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366F1' }}>
+              {/* 简约统计信息卡片 */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={6} sm={3}>
+                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#6366F1', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <GroupsIcon sx={{ fontSize: 18, color: '#6366F1' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
                           {stats?.totalAppointments || 0}
                         </Typography>
+                        <Typography variant="caption" sx={{ color: '#888' }}>
+                          {t('customers.totalAppointments')}
+                        </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        {t('customers.totalAppointments')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    </Box>
+                  </Box>
                 </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card
-                    sx={{
-                      borderRadius: 3,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                      border: '1px solid',
-                      borderColor: alpha('#10B981', 0.1),
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 8px 30px rgba(16, 185, 129, 0.15)',
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                        <Box
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #10B981, #059669)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                          }}
-                        >
-                          <TrendingUpIcon sx={{ fontSize: 24 }} />
-                        </Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#10B981' }}>
+                <Grid item xs={6} sm={3}>
+                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#10B981', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUpIcon sx={{ fontSize: 18, color: '#10B981' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
                           {stats?.completedAppointments || 0}
                         </Typography>
+                        <Typography variant="caption" sx={{ color: '#888' }}>
+                          {t('customers.completedAppointments')}
+                        </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        {t('customers.completedAppointments')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    </Box>
+                  </Box>
                 </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card
-                    sx={{
-                      borderRadius: 3,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                      border: '1px solid',
-                      borderColor: alpha('#EC4899', 0.1),
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 8px 30px rgba(245, 158, 11, 0.15)',
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                        <Box
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                          }}
-                        >
-                          <WalletIcon sx={{ fontSize: 24 }} />
-                        </Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
+                <Grid item xs={6} sm={3}>
+                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#EC4899', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <WalletIcon sx={{ fontSize: 18, color: '#EC4899' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
                           {formatCurrency(stats?.totalSpent || 0)}
                         </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        {t('customers.totalSpent')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card
-                    sx={{
-                      borderRadius: 3,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                      border: '1px solid',
-                      borderColor: alpha('#EC4899', 0.1),
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 8px 30px rgba(236, 72, 153, 0.15)',
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                        <Box
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                          }}
-                        >
-                          <ReviewIcon sx={{ fontSize: 24 }} />
-                        </Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#EC4899' }}>
-                          {(stats?.avgRating || 0).toFixed(1)}
+                        <Typography variant="caption" sx={{ color: '#888' }}>
+                          {t('customers.totalSpent')}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        {t('customers.avgRating')}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#F59E0B', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ReviewIcon sx={{ fontSize: 18, color: '#F59E0B' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
+                          {(stats?.avgRating || 0).toFixed(1)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#888' }}>
+                          {t('customers.avgRating')}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
                 </Grid>
               </Grid>
             </>
@@ -630,22 +535,21 @@ const AppointmentHistory: React.FC<{
           </Card>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, backgroundColor: '#f8fafc' }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={onClose}
-            variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 4,
-              py: 1.5,
-              background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-              boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#666',
+              textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
+                bgcolor: 'rgba(0,0,0,0.04)',
               },
-              transition: 'all 0.3s ease',
             }}
           >
             {t('customers.close')}

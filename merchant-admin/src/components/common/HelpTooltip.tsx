@@ -58,11 +58,11 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
         };
       default:
         return {
-          iconColor: '#6b7280',
-          hoverColor: '#667eea',
-          hoverBg: alpha('#667eea', 0.08),
-          glowColor: alpha('#667eea', 0.2),
-          tooltipBg: 'rgba(17, 24, 39, 0.95)',
+          iconColor: '#bbb',
+          hoverColor: '#888',
+          hoverBg: alpha('#888', 0.08),
+          glowColor: alpha('#888', 0.15),
+          tooltipBg: 'rgba(30, 30, 30, 0.95)',
         };
     }
   };

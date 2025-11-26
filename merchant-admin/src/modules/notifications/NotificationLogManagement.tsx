@@ -304,24 +304,19 @@ const NotificationLogManagement: React.FC = () => {
               {t('notifications.notificationLogs')}
             </Typography>
             <Box>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
+              <IconButton
+                size="small"
                 onClick={fetchLogs}
                 sx={{
-                  borderRadius: 2,
-                  borderColor: themeColor,
-                  color: themeColor,
+                  color: '#666',
                   '&:hover': {
-                    borderColor: themeColor,
-                    backgroundColor: alpha(themeColor, 0.08),
-                    transform: 'translateY(-1px)',
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                    color: '#1a1a1a',
                   },
-                  transition: 'all 0.3s ease',
                 }}
               >
-                {t('notifications.refresh')}
-              </Button>
+                <RefreshIcon sx={{ fontSize: 20 }} />
+              </IconButton>
               {/* 批量重试功能已注释 - 使用单条重试按钮代替 */}
               {/* <Button
                 variant="contained"
@@ -483,28 +478,6 @@ const NotificationLogManagement: React.FC = () => {
                   },
                 }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<SearchIcon />}
-                onClick={handleSearch}
-                sx={{
-                  borderRadius: 2,
-                  py: 1.5,
-                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                  boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #F97316, #FB923C)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                {t('notifications.search')}
-              </Button>
             </Grid>
           </Grid>
         </CardContent>

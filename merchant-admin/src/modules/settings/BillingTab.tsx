@@ -279,9 +279,8 @@ const BillingTab: React.FC = () => {
           <Card
             sx={{
               borderRadius: 2,
-              border: '1px solid',
-              borderColor: alpha('#10B981', 0.1),
-              boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow: 'none',
             }}
           >
             <CardContent sx={{ p: 2 }}>
@@ -393,29 +392,27 @@ const BillingTab: React.FC = () => {
         <Card
           sx={{
             borderRadius: 2,
-            border: '1px solid',
-            borderColor: alpha('#10B981', 0.1),
-            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            boxShadow: 'none',
           }}
         >
           <CardContent sx={{ p: 3 }}>
             <Box display="flex" alignItems="center" mb={3}>
               <Box
                 sx={{
-                  width: 40,
-                  height: 40,
+                  width: 36,
+                  height: 36,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #10B981, #059669)',
+                  bgcolor: '#f5f5f5',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
                   mr: 2,
                 }}
               >
-                <ReceiptIcon sx={{ fontSize: 20 }} />
+                <ReceiptIcon sx={{ fontSize: 18, color: '#666' }} />
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
                 {t('billing.title')}
               </Typography>
             </Box>
@@ -484,6 +481,12 @@ const BillingTab: React.FC = () => {
                             size="small"
                             variant="outlined"
                             onClick={() => handleViewDetails(invoice)}
+                            sx={{
+                              textTransform: 'none',
+                              color: '#666',
+                              borderColor: '#d0d0d0',
+                              '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
+                            }}
                           >
                             {t('common.viewDetails')}
                           </Button>
@@ -491,9 +494,14 @@ const BillingTab: React.FC = () => {
                             <Button
                               size="small"
                               variant="contained"
-                              color="primary"
                               startIcon={<PaymentIcon />}
                               onClick={() => handlePay(invoice)}
+                              sx={{
+                                textTransform: 'none',
+                                bgcolor: '#1a1a1a',
+                                boxShadow: 'none',
+                                '&:hover': { bgcolor: '#333', boxShadow: 'none' },
+                              }}
                             >
                               {t('billing.pay')}
                             </Button>
@@ -517,7 +525,7 @@ const BillingTab: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a' }}>
           {t('billing.invoiceDetails')}
         </DialogTitle>
         <DialogContent dividers>
@@ -578,7 +586,7 @@ const BillingTab: React.FC = () => {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     {t('billing.totalAmount')}
                   </Typography>
-                  <Typography variant="h6" fontWeight={600} color="primary">
+                  <Typography variant="h6" fontWeight={600} sx={{ color: '#1a1a1a' }}>
                     ${selectedInvoice.amount.toFixed(2)} {selectedInvoice.currency}
                   </Typography>
                 </Box>
@@ -613,17 +621,28 @@ const BillingTab: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              textTransform: 'none',
+              color: '#666',
+            }}
+          >
             {t('common.close')}
           </Button>
           {selectedInvoice?.status === 'PENDING' && (
             <Button
               variant="contained"
-              color="primary"
               startIcon={<PaymentIcon />}
               onClick={() => {
                 handleCloseDialog();
                 handlePay(selectedInvoice);
+              }}
+              sx={{
+                textTransform: 'none',
+                bgcolor: '#1a1a1a',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#333', boxShadow: 'none' },
               }}
             >
               {t('billing.pay')}
@@ -639,7 +658,7 @@ const BillingTab: React.FC = () => {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a' }}>
           {t('billing.confirmChangeCycle')}
         </DialogTitle>
         <DialogContent>
@@ -650,13 +669,23 @@ const BillingTab: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>
+          <Button
+            onClick={() => setConfirmDialogOpen(false)}
+            sx={{ textTransform: 'none', color: '#666' }}
+          >
             {t('common.cancel')}
           </Button>
           <Button
             variant="contained"
             onClick={handleConfirmChangeBillingCycle}
             disabled={changingBillingCycle}
+            sx={{
+              textTransform: 'none',
+              bgcolor: '#1a1a1a',
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#333', boxShadow: 'none' },
+              '&:disabled': { bgcolor: '#e5e5e5', color: '#999' },
+            }}
           >
             {changingBillingCycle ? t('common.loading') : t('common.confirm')}
           </Button>

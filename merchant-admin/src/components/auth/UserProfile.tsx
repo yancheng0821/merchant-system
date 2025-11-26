@@ -480,8 +480,8 @@ const UserProfile: React.FC = () => {
         <Chip
           label={t('auth.merchantAdmin')}
           sx={{
-            backgroundColor: alpha('#6366F1', 0.1),
-            color: '#6366F1',
+            backgroundColor: '#f5f5f5',
+            color: '#666',
             fontWeight: 600,
             fontSize: '0.75rem',
           }}
@@ -491,19 +491,19 @@ const UserProfile: React.FC = () => {
 
     return displayRoles.map((role, index) => {
       const roleConfig: Record<string, { color: string; bg: string; label: string }> = {
-        'SUPER_ADMIN': { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('auth.superAdmin') },
-        'SYSTEM_ADMIN': { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('auth.systemAdmin') },
-        'MANAGER': { color: '#6366F1', bg: alpha('#6366F1', 0.1), label: t('auth.manager') },
-        'ACCOUNTANT': { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('auth.accountant') },
-        'RECEPTIONIST': { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('auth.receptionist') },
-        'STAFF': { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('auth.staff') },
+        'SUPER_ADMIN': { color: '#1a1a1a', bg: '#e8e8e8', label: t('auth.superAdmin') },
+        'SYSTEM_ADMIN': { color: '#1a1a1a', bg: '#e8e8e8', label: t('auth.systemAdmin') },
+        'MANAGER': { color: '#333', bg: '#f0f0f0', label: t('auth.manager') },
+        'ACCOUNTANT': { color: '#555', bg: '#f5f5f5', label: t('auth.accountant') },
+        'RECEPTIONIST': { color: '#555', bg: '#f5f5f5', label: t('auth.receptionist') },
+        'STAFF': { color: '#666', bg: '#f8f8f8', label: t('auth.staff') },
       };
 
       // 使用 displayName 如果有，否则使用配置的 label，最后使用 code
       const config = roleConfig[role.code];
       const label = role.name !== role.code ? role.name : (config?.label || role.code);
-      const color = config?.color || '#6366F1';
-      const bg = config?.bg || alpha('#6366F1', 0.1);
+      const color = config?.color || '#666';
+      const bg = config?.bg || '#f5f5f5';
 
       return (
         <Chip
@@ -532,25 +532,22 @@ const UserProfile: React.FC = () => {
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
-      {/* 现代化页面标题 */}
+      {/* 页面标题 */}
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
-            <Typography 
-              variant="h5" 
-              component="h1" 
-              sx={{ 
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #4F46E5, #6366F1)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
-                fontSize: 26
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                fontWeight: 500,
+                color: '#1a1a1a',
+                mb: 0.5,
               }}
             >
               {t('auth.userProfile')}
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: 15 }}>
+            <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
               {t('auth.userProfileSubtitle')}
             </Typography>
           </Box>
@@ -564,10 +561,13 @@ const UserProfile: React.FC = () => {
               py: 1,
               textTransform: 'none',
               fontWeight: 500,
+              fontSize: '0.9rem',
               borderRadius: 2,
-              backgroundColor: '#6366f1',
+              bgcolor: '#1a1a1a',
+              boxShadow: 'none',
               '&:hover': {
-                backgroundColor: '#4f46e5',
+                bgcolor: '#333',
+                boxShadow: 'none',
               },
             }}
             onClick={handleOpenPasswordDialog}
@@ -584,13 +584,13 @@ const UserProfile: React.FC = () => {
           sx={{
             mb: 3,
             borderRadius: 2,
-            backgroundColor: alpha('#6366F1', 0.08),
-            border: 'none',
+            backgroundColor: '#f5f5f5',
+            border: '1px solid rgba(0,0,0,0.06)',
             '& .MuiAlert-message': {
               width: '100%',
             },
             '& .MuiAlert-icon': {
-              color: '#F59E0B',
+              color: '#888',
             },
           }}
         >
@@ -607,9 +607,8 @@ const UserProfile: React.FC = () => {
       <Card
         sx={{
           borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          border: '1px solid',
-          borderColor: alpha('#6366F1', 0.1),
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          border: '1px solid rgba(0,0,0,0.06)',
         }}
       >
         <CardContent sx={{ p: 0 }}>
@@ -618,7 +617,7 @@ const UserProfile: React.FC = () => {
             elevation={0}
             sx={{
               p: 4,
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08))',
+              background: '#fafafa',
               borderTopLeftRadius: 12,
               borderTopRightRadius: 12,
             }}
@@ -631,7 +630,7 @@ const UserProfile: React.FC = () => {
                     width: 80,
                     height: 80,
                     border: '3px solid white',
-                    boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
                   }}
                 >
                   <PersonIcon sx={{ fontSize: 40 }} />
@@ -652,12 +651,12 @@ const UserProfile: React.FC = () => {
                     position: 'absolute',
                     bottom: -5,
                     right: -5,
-                    bgcolor: '#6366F1',
+                    bgcolor: '#1a1a1a',
                     color: 'white',
                     width: 32,
                     height: 32,
                     '&:hover': {
-                      bgcolor: '#4F46E5',
+                      bgcolor: '#333',
                     },
                     '&:disabled': {
                       bgcolor: '#9CA3AF',
@@ -713,12 +712,12 @@ const UserProfile: React.FC = () => {
                   size="small"
                   sx={{
                     textTransform: 'none',
-                    color: '#6366f1',
+                    color: '#666',
                     borderRadius: 1.5,
                     px: 2,
                     py: 0.75,
                     '&:hover': {
-                      backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                      backgroundColor: 'rgba(0,0,0,0.04)',
                     },
                   }}
                 >
@@ -727,21 +726,21 @@ const UserProfile: React.FC = () => {
               ) : (
                 <Box display="flex" gap={1}>
                   <Button
-                    startIcon={loading ? <CircularProgress size={16} sx={{ color: '#10b981' }} /> : <CheckCircleIcon />}
+                    startIcon={loading ? <CircularProgress size={16} sx={{ color: '#1a1a1a' }} /> : <CheckCircleIcon />}
                     onClick={handleSave}
                     disabled={loading}
                     variant="outlined"
                     size="small"
                     sx={{
                       textTransform: 'none',
-                      color: '#10b981',
-                      borderColor: '#10b981',
+                      color: '#1a1a1a',
+                      borderColor: '#1a1a1a',
                       borderRadius: 1.5,
                       px: 2,
                       py: 0.75,
                       '&:hover': {
-                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(0,0,0,0.04)',
+                        borderColor: '#1a1a1a',
                       },
                       '&:disabled': {
                         borderColor: '#e5e7eb',
@@ -757,12 +756,12 @@ const UserProfile: React.FC = () => {
                     size="small"
                     sx={{
                       textTransform: 'none',
-                      color: '#6b7280',
+                      color: '#888',
                       borderRadius: 1.5,
                       px: 2,
                       py: 0.75,
                       '&:hover': {
-                        backgroundColor: 'rgba(107, 114, 128, 0.08)',
+                        backgroundColor: 'rgba(0,0,0,0.04)',
                       },
                     }}
                   >
@@ -785,6 +784,15 @@ const UserProfile: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                    '&.Mui-disabled': { bgcolor: '#fafafa' },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
+                    '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
               />
@@ -802,6 +810,15 @@ const UserProfile: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                    '&.Mui-disabled': { bgcolor: '#fafafa' },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
+                    '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
               />
@@ -816,6 +833,15 @@ const UserProfile: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                    '&.Mui-disabled': { bgcolor: '#fafafa' },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
+                    '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
               />
@@ -830,6 +856,15 @@ const UserProfile: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                    '&.Mui-disabled': { bgcolor: '#fafafa' },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
+                    '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
               />
@@ -842,6 +877,11 @@ const UserProfile: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
+                    bgcolor: '#fafafa',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
                   },
                 }}
               />
@@ -864,10 +904,10 @@ const UserProfile: React.FC = () => {
       >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#6366F1' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
               {t('auth.changePassword')}
             </Typography>
-            <IconButton onClick={handleClosePasswordDialog}>
+            <IconButton onClick={handleClosePasswordDialog} sx={{ color: '#888' }}>
               <CancelIcon />
             </IconButton>
           </Box>
@@ -887,18 +927,20 @@ const UserProfile: React.FC = () => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#6366F1',
-                  },
+                  bgcolor: '#fff',
+                  '& fieldset': { borderColor: '#d0d0d0' },
+                  '&:hover fieldset': { borderColor: '#bbb' },
+                  '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                 },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#6366F1',
+                '& .MuiInputLabel-root': {
+                  color: '#999',
+                  '&.Mui-focused': { color: '#1a1a1a' },
                 },
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <VpnKeyIcon sx={{ color: '#6366F1' }} />
+                    <VpnKeyIcon sx={{ color: '#bbb' }} />
                   </InputAdornment>
                 ),
               }}
@@ -918,18 +960,20 @@ const UserProfile: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#6366F1',
-                    },
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#6366F1',
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
+                    '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockIcon sx={{ color: '#6366F1' }} />
+                      <LockIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -938,6 +982,7 @@ const UserProfile: React.FC = () => {
                         onClick={() => setShowNewPassword((v) => !v)}
                         edge="end"
                         tabIndex={-1}
+                        sx={{ color: '#888' }}
                       >
                         {showNewPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -1064,18 +1109,20 @@ const UserProfile: React.FC = () => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#6366F1',
-                  },
+                  bgcolor: '#fff',
+                  '& fieldset': { borderColor: '#d0d0d0' },
+                  '&:hover fieldset': { borderColor: '#bbb' },
+                  '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                 },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#6366F1',
+                '& .MuiInputLabel-root': {
+                  color: '#999',
+                  '&.Mui-focused': { color: '#1a1a1a' },
                 },
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockIcon sx={{ color: '#6366F1' }} />
+                    <LockIcon sx={{ color: '#bbb' }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -1084,6 +1131,7 @@ const UserProfile: React.FC = () => {
                       onClick={() => setShowConfirmPassword((v) => !v)}
                       edge="end"
                       tabIndex={-1}
+                      sx={{ color: '#888' }}
                     >
                       {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -1100,10 +1148,19 @@ const UserProfile: React.FC = () => {
           </Box>
         </DialogContent>
 
-        <DialogActions>
+        <DialogActions sx={{ p: 2.5 }}>
           <Button
             onClick={handleClosePasswordDialog}
             disabled={passwordLoading}
+            sx={{
+              color: '#666',
+              borderColor: '#d0d0d0',
+              borderRadius: 2,
+              textTransform: 'none',
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.04)',
+              },
+            }}
           >
             {t('common.cancel')}
           </Button>
@@ -1111,6 +1168,20 @@ const UserProfile: React.FC = () => {
             onClick={handleChangePassword}
             disabled={passwordLoading}
             variant="contained"
+            sx={{
+              bgcolor: '#1a1a1a',
+              color: '#fff',
+              borderRadius: 2,
+              textTransform: 'none',
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: '#333',
+                boxShadow: 'none',
+              },
+              '&:disabled': {
+                bgcolor: '#ccc',
+              },
+            }}
           >
             {passwordLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('common.confirm')}
           </Button>

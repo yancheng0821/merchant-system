@@ -96,32 +96,32 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
       borderRadius: 2,
-      '&:hover fieldset': {
-        borderColor: '#667eea',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: '#667eea',
-      },
+      bgcolor: '#fff',
+      '& fieldset': { borderColor: '#d0d0d0' },
+      '&:hover fieldset': { borderColor: '#bbb' },
+      '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
     },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: '#667eea',
+    '& .MuiInputLabel-root': {
+      color: '#999',
+      '&.Mui-focused': { color: '#1a1a1a' },
     },
+    '& .MuiInputLabel-asterisk': { display: 'none' },
   };
 
   // 通用的 Select 样式
   const selectSx = {
     '& .MuiOutlinedInput-root': {
       borderRadius: 2,
-      '&:hover fieldset': {
-        borderColor: '#667eea',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: '#667eea',
-      },
+      bgcolor: '#fff',
+      '& fieldset': { borderColor: '#d0d0d0' },
+      '&:hover fieldset': { borderColor: '#bbb' },
+      '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
     },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: '#667eea',
+    '& .MuiInputLabel-root': {
+      color: '#999',
+      '&.Mui-focused': { color: '#1a1a1a' },
     },
+    '& .MuiInputLabel-asterisk': { display: 'none' },
   };
   
   const [activeStep, setActiveStep] = useState(0);
@@ -876,7 +876,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonIcon sx={{ color: '#667eea' }} />
+                      <PersonIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -893,7 +893,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonIcon sx={{ color: '#667eea' }} />
+                      <PersonIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -913,7 +913,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EmailIcon sx={{ color: '#667eea' }} />
+                      <EmailIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -943,7 +943,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <PhoneIcon sx={{ color: '#667eea' }} />
+                          <PhoneIcon sx={{ color: '#bbb' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -967,7 +967,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockIcon sx={{ color: '#667eea' }} />
+                        <LockIcon sx={{ color: '#bbb' }} />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -975,7 +975,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                         <IconButton
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
-                          sx={{ color: '#667eea' }}
+                          sx={{ color: '#bbb' }}
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
@@ -1116,7 +1116,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockIcon sx={{ color: '#667eea' }} />
+                      <LockIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -1124,7 +1124,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                       <IconButton
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         edge="end"
-                        sx={{ color: '#667eea' }}
+                        sx={{ color: '#bbb' }}
                       >
                         {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -1150,7 +1150,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <BusinessIcon sx={{ color: '#667eea' }} />
+                      <BusinessIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -1192,7 +1192,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonIcon sx={{ color: '#667eea' }} />
+                      <PersonIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   ),
                 }}
@@ -1223,7 +1223,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <PhoneIcon sx={{ color: '#667eea' }} />
+                            <PhoneIcon sx={{ color: '#bbb' }} />
                           </InputAdornment>
                         ),
                       }}
@@ -1246,7 +1246,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailIcon sx={{ color: '#667eea' }} />
+                        <EmailIcon sx={{ color: '#bbb' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -1346,7 +1346,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   label={t('auth.merchantRegisterPage.merchantInfo.timezone')}
                   startAdornment={
                     <InputAdornment position="start">
-                      <ScheduleIcon sx={{ color: '#667eea' }} />
+                      <ScheduleIcon sx={{ color: '#bbb' }} />
                     </InputAdornment>
                   }
                 >
@@ -1362,11 +1362,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               <Box sx={{
                 p: 3,
                 borderRadius: 2,
-                border: '1px solid',
-                borderColor: alpha('#667eea', 0.2),
-                background: alpha('#667eea', 0.03)
+                border: '1px solid rgba(0,0,0,0.06)',
+                background: '#fff'
               }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1, color: '#1a1a1a', fontSize: '0.9rem' }}>
                   {t('auth.merchantRegisterPage.businessConfig.resourceTypes')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -1374,15 +1373,14 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                     label={t('auth.merchantRegisterPage.resourceTypes.staff')}
                     size="medium"
                     sx={{
-                      backgroundColor: alpha('#667eea', 0.15),
-                      color: '#667eea',
-                      fontWeight: 600,
-                      fontSize: '0.9rem',
-                      px: 1,
+                      backgroundColor: '#f0f0f0',
+                      color: '#1a1a1a',
+                      fontWeight: 500,
+                      fontSize: '0.85rem',
                     }}
                   />
                 </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                <Typography variant="body2" sx={{ color: '#999', fontSize: '0.8rem' }}>
                   {t('auth.merchantRegisterPage.businessConfig.resourceTypesInfo')}
                 </Typography>
               </Box>
@@ -1616,7 +1614,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#fafafa',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1628,74 +1626,64 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
       <Box
         sx={{
           position: 'absolute',
-          top: 24,
-          right: 24,
+          top: 32,
+          right: 32,
           zIndex: 1000,
         }}
       >
         <LanguageSwitcher variant="login" size="medium" />
       </Box>
 
-      <Container maxWidth="lg">
+      <Container maxWidth="md">
         <Fade in timeout={1000}>
           <Card
             sx={{
-              maxWidth: 900,
+              maxWidth: 800,
               width: '100%',
               mx: 'auto',
-              borderRadius: 4,
-              boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: 3,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              background: '#fff',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
             }}
           >
             <CardContent sx={{ p: 0 }}>
               {/* 头部区域 */}
               <Box
                 sx={{
-                  background: 'transparent', // 使用透明背景，继承卡片背景
+                  background: 'transparent',
                   color: 'text.primary',
                   p: 3,
                   textAlign: 'center',
-                  borderBottom: '1px solid rgba(0,0,0,0.08)',
+                  borderBottom: '1px solid rgba(0,0,0,0.05)',
                 }}
               >
                 {/* VA Logo */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography
-                    sx={{
-                      fontSize: '3rem',
-                      fontWeight: 800,
-                      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                      letterSpacing: '-0.04em',
-                      lineHeight: 1,
-                      background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      MozBackgroundClip: 'text',
-                      MozTextFillColor: 'transparent',
-                      display: 'inline-block',
-                    }}
-                  >
-                    VA
-                  </Typography>
-                  <Box
-                    sx={{
-                      width: '60px',
-                      height: '3px',
-                      background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-                      borderRadius: '1.5px',
-                      margin: '0 auto',
-                      mt: 0.5,
-                    }}
-                  />
-                </Box>
-                <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+                <Typography
+                  sx={{
+                    fontSize: '1.75rem',
+                    fontWeight: 500,
+                    fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    letterSpacing: '-0.025em',
+                    color: '#1a1a1a',
+                    mb: 1,
+                  }}
+                >
+                  VA Merchant
+                </Typography>
+                <Typography
+                  variant="h6"
+                  component="h1"
+                  sx={{
+                    fontWeight: 500,
+                    color: '#1a1a1a',
+                    fontSize: '1.1rem',
+                    mb: 0.5,
+                  }}
+                >
                   {t('auth.merchantRegisterPage.title')}
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                <Typography sx={{ color: '#888', fontSize: '0.8rem' }}>
                   {t('auth.merchantRegisterPage.subtitle')}
                 </Typography>
               </Box>
@@ -1715,12 +1703,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                     variant="determinate"
                     value={((activeStep + 1) / steps.length) * 100}
                     sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: alpha('#667eea', 0.1),
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: '#e5e5e5',
                       '& .MuiLinearProgress-bar': {
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        borderRadius: 4,
+                        backgroundColor: '#1a1a1a',
+                        borderRadius: 2,
                       }
                     }}
                   />
@@ -1732,10 +1720,10 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   sx={{
                     mb: 4,
                     '& .MuiStepLabel-root .Mui-completed': {
-                      color: '#667eea',
+                      color: '#1a1a1a',
                     },
                     '& .MuiStepLabel-root .Mui-active': {
-                      color: '#764ba2',
+                      color: '#1a1a1a',
                     },
                   }}
                 >
@@ -1745,35 +1733,27 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                         StepIconComponent={({ active, completed }) => (
                           <Box
                             sx={{
-                              width: 40,
-                              height: 40,
+                              width: 32,
+                              height: 32,
                               borderRadius: '50%',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              background: completed
-                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                                : active
-                                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                                  : alpha('#667eea', 0.1),
-                              color: completed || active ? 'white' : '#667eea',
-                              fontWeight: 'bold',
-                              fontSize: '0.875rem',
+                              backgroundColor: completed || active ? '#1a1a1a' : '#e5e5e5',
+                              color: completed || active ? 'white' : '#999',
+                              fontWeight: 500,
+                              fontSize: '0.8rem',
                             }}
                           >
                             {completed ? (
-                              <CheckCircleIcon sx={{ fontSize: 20 }} />
-                            ) : active ? (
-                              index === 0 ? <PersonIcon sx={{ fontSize: 20 }} /> :
-                                index === 1 ? <BusinessIcon sx={{ fontSize: 20 }} /> :
-                                  <SettingsIcon sx={{ fontSize: 20 }} />
+                              <CheckCircleIcon sx={{ fontSize: 18 }} />
                             ) : (
                               index + 1
                             )}
                           </Box>
                         )}
                       >
-                        <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
+                        <Typography variant="body2" sx={{ mt: 1, fontWeight: 400, color: '#666', fontSize: '0.8rem' }}>
                           {label}
                         </Typography>
                       </StepLabel>
@@ -1802,12 +1782,11 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 4,
-                    mb: 4,
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: alpha('#667eea', 0.1),
-                    background: alpha('#667eea', 0.02),
+                    p: 3,
+                    mb: 3,
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    background: '#fafafa',
                   }}
                 >
                   <Slide direction="left" in timeout={500} key={activeStep}>
@@ -1824,10 +1803,11 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                     onClick={handleBack}
                     sx={{
                       px: 3,
-                      py: 1.5,
+                      py: 1,
                       borderRadius: 2,
                       textTransform: 'none',
-                      fontWeight: 600,
+                      fontWeight: 400,
+                      color: '#666',
                     }}
                   >
                     {t('common.previous')}
@@ -1839,10 +1819,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                       onClick={onBack || (() => window.location.href = '/')}
                       sx={{
                         textTransform: 'none',
-                        fontWeight: 600,
-                        color: '#667eea',
+                        fontWeight: 400,
+                        fontSize: '0.85rem',
+                        color: '#999',
                         '&:hover': {
-                          backgroundColor: alpha('#667eea', 0.04),
+                          backgroundColor: 'transparent',
+                          color: '#666',
                         },
                       }}
                     >
@@ -1859,6 +1841,14 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                           py: 1,
                           textTransform: 'none',
                           fontWeight: 500,
+                          fontSize: '0.9rem',
+                          borderRadius: 2,
+                          bgcolor: '#1a1a1a',
+                          boxShadow: 'none',
+                          '&:hover': {
+                            bgcolor: '#333',
+                            boxShadow: 'none',
+                          },
                         }}
                       >
                         {loading ? t('auth.merchantRegisterPage.registering') : t('auth.merchantRegisterPage.finish')}
@@ -1872,6 +1862,14 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                           py: 1,
                           textTransform: 'none',
                           fontWeight: 500,
+                          fontSize: '0.9rem',
+                          borderRadius: 2,
+                          bgcolor: '#1a1a1a',
+                          boxShadow: 'none',
+                          '&:hover': {
+                            bgcolor: '#333',
+                            boxShadow: 'none',
+                          },
                         }}
                       >
                         {t('common.next')}
@@ -1926,12 +1924,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           {/* 租户代码 */}
           <Box sx={{
             p: 3,
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#fafafa',
             borderRadius: 2,
             mb: 2,
-            border: '1px solid #e2e8f0',
+            border: '1px solid #e5e5e5',
           }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#888' }}>
               {t('auth.merchantRegisterPage.success.tenantCodeLabel')}
             </Typography>
             <Typography
@@ -1939,7 +1937,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               sx={{
                 fontFamily: 'monospace',
                 fontWeight: 600,
-                color: 'text.primary',
+                color: '#1a1a1a',
                 mb: 2,
               }}
             >
@@ -1954,11 +1952,20 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               }}
               variant={copiedTenantCode ? "contained" : "outlined"}
               size="small"
-              color={copiedTenantCode ? 'success' : 'primary'}
               disabled={copiedTenantCode || !tenantCode}
               sx={{
                 textTransform: 'none',
                 fontWeight: 500,
+                borderRadius: 2,
+                ...(copiedTenantCode ? {
+                  bgcolor: 'success.main',
+                  color: '#fff',
+                  '&:disabled': { bgcolor: 'success.main', color: '#fff', opacity: 1 },
+                } : {
+                  color: '#1a1a1a',
+                  borderColor: '#d0d0d0',
+                  '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
+                }),
               }}
             >
               {copiedTenantCode ? t('common.copied') : t('auth.merchantRegisterPage.success.copyTenantCode')}
@@ -1968,12 +1975,12 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
           {/* 邀请码 */}
           <Box sx={{
             p: 3,
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#fafafa',
             borderRadius: 2,
             mb: 3,
-            border: '1px solid #e2e8f0',
+            border: '1px solid #e5e5e5',
           }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#888' }}>
               {t('auth.merchantRegisterPage.success.invitationCodeLabel')}
             </Typography>
             <Typography
@@ -1981,7 +1988,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               sx={{
                 fontFamily: 'monospace',
                 fontWeight: 600,
-                color: 'text.primary',
+                color: '#1a1a1a',
                 mb: 2,
               }}
             >
@@ -1996,18 +2003,27 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               }}
               variant={copiedInvitationCode ? "contained" : "outlined"}
               size="small"
-              color={copiedInvitationCode ? 'success' : 'primary'}
               disabled={copiedInvitationCode || !invitationCode}
               sx={{
                 textTransform: 'none',
                 fontWeight: 500,
+                borderRadius: 2,
+                ...(copiedInvitationCode ? {
+                  bgcolor: 'success.main',
+                  color: '#fff',
+                  '&:disabled': { bgcolor: 'success.main', color: '#fff', opacity: 1 },
+                } : {
+                  color: '#1a1a1a',
+                  borderColor: '#d0d0d0',
+                  '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
+                }),
               }}
             >
               {copiedInvitationCode ? t('common.copied') : t('auth.merchantRegisterPage.success.copyInvitationCode')}
             </Button>
           </Box>
 
-          <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          <Typography variant="body2" sx={{ color: '#888', fontSize: '0.85rem' }}>
             {t('auth.merchantRegisterPage.success.confirmCopiedMessage')}
           </Typography>
         </DialogContent>
@@ -2021,6 +2037,11 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
               py: 1,
               textTransform: 'none',
               fontWeight: 500,
+              borderRadius: 2,
+              bgcolor: '#1a1a1a',
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#333', boxShadow: 'none' },
+              '&:disabled': { bgcolor: '#e5e5e5', color: '#999' },
             }}
           >
             {t('auth.merchantRegisterPage.success.goToLogin')}

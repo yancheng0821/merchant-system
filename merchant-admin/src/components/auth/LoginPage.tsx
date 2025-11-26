@@ -9,23 +9,14 @@ import {
   Box,
   Alert,
   CircularProgress,
-  Divider,
   InputAdornment,
   IconButton,
-  alpha,
-  Fade,
-  Slide,
   Grid,
   Snackbar,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
-  Business as BusinessIcon,
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Lock as LockIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
@@ -36,7 +27,7 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import HelpTooltip from '../common/HelpTooltip';
 import CountryCodeSelector from '../common/CountryCodeSelector';
-import { authApi, handleApiError } from '../../services/api';
+import { authApi } from '../../services/api';
 import TermsOfServiceCheckbox from './TermsOfServiceCheckbox';
 
 
@@ -53,7 +44,7 @@ interface RegisterData {
 }
 
 const LoginPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { login, register, loading, error, clearError, setError } = useAuth();
 
   // 从 sessionStorage 恢复 pageMode，避免刷新后丢失状态
@@ -543,7 +534,7 @@ const LoginPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#fafafa',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -555,108 +546,70 @@ const LoginPage: React.FC = () => {
       <Box
         sx={{
           position: 'absolute',
-          top: 24,
-          right: 24,
+          top: 32,
+          right: 32,
           zIndex: 1000,
         }}
       >
         <LanguageSwitcher variant="login" size="medium" />
       </Box>
-      <Container maxWidth="md">
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 4,
-            alignItems: 'center',
-          }}
-        >
-          {/* 左侧品牌区域 */}
-          <Fade in timeout={1000}>
-            <Box
+      <Container maxWidth="xs">
+        <Box>
+          {/* 顶部Logo区域 */}
+          <Box
+            sx={{
+              textAlign: 'center',
+              mb: 5,
+            }}
+          >
+            {/* VA Logo */}
+            <Typography
               sx={{
-                textAlign: 'center',
-                color: 'white',
-                display: { xs: 'none', md: 'block' },
+                fontSize: '1.75rem',
+                fontWeight: 500,
+                fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                letterSpacing: '-0.025em',
+                color: '#1a1a1a',
+                mb: 0.5,
               }}
             >
-              {/* VA Logo */}
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  sx={{
-                    fontSize: '6rem',
-                    fontWeight: 800,
-                    fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    letterSpacing: '-0.04em',
-                    lineHeight: 1,
-                    color: '#ffffff',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  VA
-                </Typography>
-                <Box
-                  sx={{
-                    width: '120px',
-                    height: '4px',
-                    background: '#ffffff',
-                    borderRadius: '2px',
-                    margin: '0 auto',
-                    mt: 1,
-                  }}
-                />
-              </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-                {t('auth.brandTitle')}
-              </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.8, mb: 3 }}>
-                {t('auth.brandSubtitle')}
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.7, mb: 4 }}>
-                {t('auth.brandDescription')}
-              </Typography>
+              VA Merchant
+            </Typography>
+            <Typography sx={{ color: '#888', fontSize: '0.8rem', fontWeight: 400, letterSpacing: '0.02em' }}>
+              {t('auth.brandSubtitle')}
+            </Typography>
+          </Box>
 
-              {/* 公司标识 */}
-              <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                <Typography variant="body2" sx={{ opacity: 0.6, mb: 1, fontSize: '0.85rem' }}>
-                  Powered by
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    letterSpacing: '0.5px',
-                    fontSize: '1.1rem',
-                    opacity: 0.9,
-                  }}
-                >
-                  SwiftmindSystems
-                </Typography>
-              </Box>
-            </Box>
-          </Fade>
-
-          {/* 右侧表单区域 */}
-          <Slide direction="left" in timeout={800}>
-            <Paper
-              elevation={24}
-              sx={{
-                borderRadius: 4,
-                p: 4,
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-              }}
-            >
+          {/* 表单区域 */}
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 3,
+              p: { xs: 3, sm: 4 },
+              background: '#fff',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+            }}
+          >
               <Box textAlign="center" mb={4}>
-                <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+                <Typography
+                  variant="h5"
+                  component="h1"
+                  sx={{
+                    fontWeight: 500,
+                    color: '#1a1a1a',
+                    mb: 0.75,
+                    fontSize: '1.35rem',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
                   {pageMode === 'login'
                     ? t('auth.login')
                     : pageMode === '2fa'
                     ? t('auth.twoFactorAuth') || '二次验证'
                     : t('auth.register')}
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
+                <Typography sx={{ color: '#888', fontSize: '0.8rem' }}>
                   {pageMode === 'login'
                     ? t('auth.loginSubtitle')
                     : pageMode === '2fa'
@@ -678,18 +631,13 @@ const LoginPage: React.FC = () => {
                     required
                     autoFocus
                     InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <BusinessIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
                       endAdornment: (
                         <InputAdornment position="end">
                           <HelpTooltip
                             title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
                             placement="top"
                             size="small"
-                            color="primary"
+                            color="default"
                             variant="info"
                             showIcon={false}
                             compact={true}
@@ -700,7 +648,16 @@ const LoginPage: React.FC = () => {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
                   <TextField
@@ -711,17 +668,19 @@ const LoginPage: React.FC = () => {
                     onChange={handleLoginChange}
                     margin="normal"
                     required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
                   <TextField
@@ -734,16 +693,12 @@ const LoginPage: React.FC = () => {
                     margin="normal"
                     required
                     InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton
                             onClick={() => setShowPassword(!showPassword)}
                             edge="end"
+                            sx={{ color: '#bbb' }}
                           >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
@@ -753,7 +708,16 @@ const LoginPage: React.FC = () => {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
 
@@ -763,19 +727,23 @@ const LoginPage: React.FC = () => {
                     variant="contained"
                     disabled={loading}
                     sx={{
-                      mt: 3,
-                      mb: 2,
-                      py: 1.25,
+                      mt: 4,
+                      mb: 1.5,
+                      py: 1.5,
                       textTransform: 'none',
                       fontWeight: 500,
+                      fontSize: '0.9rem',
                       borderRadius: 2,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      bgcolor: '#1a1a1a',
+                      color: '#fff',
+                      boxShadow: 'none',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                        bgcolor: '#333',
+                        boxShadow: 'none',
                       },
                     }}
                   >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.loginButton')}
+                    {loading ? <CircularProgress size={20} color="inherit" /> : t('auth.loginButton')}
                   </Button>
 
                   {/* 忘记密码链接 */}
@@ -785,10 +753,12 @@ const LoginPage: React.FC = () => {
                       onClick={() => setPageMode('forgotPassword')}
                       sx={{
                         textTransform: 'none',
-                        color: '#667eea',
+                        color: '#999',
+                        fontSize: '0.8rem',
+                        fontWeight: 400,
                         '&:hover': {
                           backgroundColor: 'transparent',
-                          color: '#5a67d8',
+                          color: '#666',
                         },
                       }}
                     >
@@ -799,7 +769,7 @@ const LoginPage: React.FC = () => {
               ) : pageMode === '2fa' ? (
                 /* 2FA验证码输入界面 */
                 <Box>
-                  <Typography variant="body2" color="text.secondary" textAlign="center" mb={3}>
+                  <Typography sx={{ color: '#888', fontSize: '0.8rem', textAlign: 'center', mb: 3 }}>
                     {t('auth.verificationCodeSentTo', { phone: twoFactorData?.phone })}
                   </Typography>
                   <TextField
@@ -814,7 +784,16 @@ const LoginPage: React.FC = () => {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
 
@@ -824,19 +803,23 @@ const LoginPage: React.FC = () => {
                     onClick={verify2FACode}
                     disabled={loading || !verificationCode}
                     sx={{
-                      mt: 3,
-                      mb: 2,
-                      py: 1.25,
+                      mt: 4,
+                      mb: 1.5,
+                      py: 1.5,
                       textTransform: 'none',
                       fontWeight: 500,
+                      fontSize: '0.9rem',
                       borderRadius: 2,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      bgcolor: '#1a1a1a',
+                      color: '#fff',
+                      boxShadow: 'none',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                        bgcolor: '#333',
+                        boxShadow: 'none',
                       },
                     }}
                   >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.verify')}
+                    {loading ? <CircularProgress size={20} color="inherit" /> : t('auth.verify')}
                   </Button>
 
                   <Button
@@ -849,7 +832,16 @@ const LoginPage: React.FC = () => {
                       clearError();
                       setSuccess('');
                     }}
-                    sx={{ borderRadius: 2 }}
+                    sx={{
+                      borderRadius: 2,
+                      color: '#999',
+                      fontSize: '0.8rem',
+                      fontWeight: 400,
+                      '&:hover': {
+                        backgroundColor: 'transparent',
+                        color: '#666',
+                      },
+                    }}
                   >
                     {t('auth.backToLogin')}
                   </Button>
@@ -867,16 +859,22 @@ const LoginPage: React.FC = () => {
                     required
                     autoFocus
                     helperText={t('auth.usernameHelp')}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
+                      '& .MuiFormHelperText-root': {
+                        color: '#999',
+                        fontSize: '0.7rem',
                       },
                     }}
                   />
@@ -888,17 +886,19 @@ const LoginPage: React.FC = () => {
                     onChange={handleRegisterChange}
                     margin="normal"
                     required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
                   <TextField
@@ -912,17 +912,19 @@ const LoginPage: React.FC = () => {
                     required
                     error={touchedFields.email && !!validationErrors.email}
                     helperText={touchedFields.email ? validationErrors.email : ''}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <EmailIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
                   <Box sx={{ mt: 2, mb: 1 }}>
@@ -946,17 +948,19 @@ const LoginPage: React.FC = () => {
                           required
                           error={touchedFields.phone && !!validationErrors.phone}
                           helperText={touchedFields.phone ? validationErrors.phone : ''}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <PhoneIcon sx={{ color: 'text.secondary' }} />
-                              </InputAdornment>
-                            ),
-                          }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
+                              bgcolor: '#fff',
+                              '& fieldset': { borderColor: '#d0d0d0' },
+                              '&:hover fieldset': { borderColor: '#bbb' },
+                              '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                             },
+                            '& .MuiInputLabel-root': {
+                              color: '#999',
+                              '&.Mui-focused': { color: '#1a1a1a' },
+                            },
+                            '& .MuiInputLabel-asterisk': { display: 'none' },
                           }}
                         />
                       </Grid>
@@ -971,18 +975,13 @@ const LoginPage: React.FC = () => {
                     margin="normal"
                     required
                     InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
                       endAdornment: (
                         <InputAdornment position="end">
                           <HelpTooltip
                             title={t('auth.invitationCodeHelp')}
                             placement="top"
                             size="small"
-                            color="primary"
+                            color="default"
                             variant="info"
                             showIcon={false}
                             compact={true}
@@ -993,7 +992,16 @@ const LoginPage: React.FC = () => {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
                   <Box>
@@ -1008,16 +1016,12 @@ const LoginPage: React.FC = () => {
                       margin="normal"
                       required
                       InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <LockIcon sx={{ color: 'text.secondary' }} />
-                          </InputAdornment>
-                        ),
                         endAdornment: (
                           <InputAdornment position="end">
                             <IconButton
                               onClick={() => setShowPassword(!showPassword)}
                               edge="end"
+                              sx={{ color: '#bbb' }}
                             >
                               {showPassword ? <VisibilityOff /> : <Visibility />}
                             </IconButton>
@@ -1027,7 +1031,16 @@ const LoginPage: React.FC = () => {
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 2,
+                          bgcolor: '#fff',
+                          '& fieldset': { borderColor: '#d0d0d0' },
+                          '&:hover fieldset': { borderColor: '#bbb' },
+                          '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                         },
+                        '& .MuiInputLabel-root': {
+                          color: '#999',
+                          '&.Mui-focused': { color: '#1a1a1a' },
+                        },
+                        '& .MuiInputLabel-asterisk': { display: 'none' },
                       }}
                     />
                     {/* 只有在用户点击密码框且未全部满足时才显示密码要求 */}
@@ -1039,7 +1052,6 @@ const LoginPage: React.FC = () => {
                       /[0-9]/.test(registerData.password) &&
                       /[!@#$%^&*(),.?":{}|<>]/.test(registerData.password)
                     ) && (
-                      <Fade in={true}>
                         <Box sx={{ mt: 0.5, mb: 1, px: 1 }}>
                           <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500 }}>
                             {t('auth.passwordRequirements')}:
@@ -1132,7 +1144,6 @@ const LoginPage: React.FC = () => {
                             </Box>
                           </Box>
                         </Box>
-                      </Fade>
                     )}
                   </Box>
                   <TextField
@@ -1147,16 +1158,12 @@ const LoginPage: React.FC = () => {
                     error={touchedFields.confirmPassword && !!validationErrors.confirmPassword}
                     helperText={touchedFields.confirmPassword ? validationErrors.confirmPassword : ''}
                     InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockIcon sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             edge="end"
+                            sx={{ color: '#bbb' }}
                           >
                             {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
@@ -1166,7 +1173,16 @@ const LoginPage: React.FC = () => {
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
+                        bgcolor: '#fff',
+                        '& fieldset': { borderColor: '#d0d0d0' },
+                        '&:hover fieldset': { borderColor: '#bbb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: '#999',
+                        '&.Mui-focused': { color: '#1a1a1a' },
+                      },
+                      '& .MuiInputLabel-asterisk': { display: 'none' },
                     }}
                   />
 
@@ -1184,44 +1200,38 @@ const LoginPage: React.FC = () => {
                     variant="contained"
                     disabled={loading}
                     sx={{
-                      mt: 3,
-                      mb: 2,
-                      py: 1.25,
+                      mt: 4,
+                      mb: 1.5,
+                      py: 1.5,
                       textTransform: 'none',
                       fontWeight: 500,
+                      fontSize: '0.9rem',
                       borderRadius: 2,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      bgcolor: '#1a1a1a',
+                      color: '#fff',
+                      boxShadow: 'none',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                        bgcolor: '#333',
+                        boxShadow: 'none',
                       },
                     }}
                   >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.registerButton')}
+                    {loading ? <CircularProgress size={20} color="inherit" /> : t('auth.registerButton')}
                   </Button>
                 </form>
               )}
 
               {/* 切换登录/注册 */}
-              <Box textAlign="center" mt={3}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: 2,
+              <Box sx={{ pt: 3, borderTop: '1px solid rgba(0,0,0,0.05)', mt: 3 }}>
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
                   alignItems: 'center'
                 }}>
                   {/* 员工账户注册链接 */}
-                  <Box sx={{ 
-                    display: 'flex',
-                    alignItems: 'center', 
-                    gap: 1,
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    minWidth: '320px',
-                    justifyContent: 'center'
-                  }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {pageMode === 'login' ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
-                    </Typography>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#999' }}>
+                    {pageMode === 'login' ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}{' '}
                     <Button
                       variant="text"
                       onClick={() => {
@@ -1232,46 +1242,25 @@ const LoginPage: React.FC = () => {
                       sx={{
                         textTransform: 'none',
                         fontWeight: 500,
-                        color: '#667eea',
+                        color: '#1a1a1a',
                         p: 0,
                         minWidth: 'auto',
-                        fontSize: '0.875rem',
-                        lineHeight: 'inherit',
+                        fontSize: '0.8rem',
+                        verticalAlign: 'baseline',
                         '&:hover': {
                           backgroundColor: 'transparent',
-                          color: '#5a67d8',
+                          textDecoration: 'underline',
                         },
                       }}
                     >
                       {pageMode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')}
                     </Button>
-                    {pageMode !== 'register' && (
-                      <HelpTooltip
-                        title={pageMode === 'login' ? t('auth.employeeAccountHelp') : t('auth.employeeAccountRegisterHelp')}
-                        placement="top"
-                        size="small"
-                        color="primary"
-                        variant="info"
-                        showIcon={false}
-                        compact={true}
-                      />
-                    )}
-                  </Box>
+                  </Typography>
 
                   {/* 商户注册链接 */}
                   {pageMode === 'login' && (
-                    <Box sx={{ 
-                      display: 'flex',
-                      alignItems: 'center', 
-                      gap: 1,
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      minWidth: '320px',
-                      justifyContent: 'center'
-                    }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('auth.noMerchantAccount')}
-                      </Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#999', textAlign: 'center' }}>
+                      {t('auth.noMerchantAccount')}{' '}
                       <Button
                         variant="text"
                         onClick={() => {
@@ -1281,68 +1270,33 @@ const LoginPage: React.FC = () => {
                         sx={{
                           textTransform: 'none',
                           fontWeight: 500,
-                          color: '#764ba2',
+                          color: '#1a1a1a',
                           p: 0,
                           minWidth: 'auto',
-                          fontSize: '0.875rem',
-                          lineHeight: 'inherit',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'flex-start',
+                          fontSize: '0.8rem',
+                          verticalAlign: 'baseline',
+                          whiteSpace: 'nowrap',
                           '&:hover': {
                             backgroundColor: 'transparent',
-                            color: '#6b46c1',
+                            textDecoration: 'underline',
                           },
                         }}
                       >
-                        {i18n.language === 'zh-CN' ? (
-                          <>
-                            <span>商户注册</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Merchant</span>
-                            <span>Registration</span>
-                          </>
-                        )}
+                        {t('auth.merchantRegister')}
                       </Button>
-                      <HelpTooltip
-                        title={t('auth.merchantAccountHelp')}
-                        placement="top"
-                        size="small"
-                        color="secondary"
-                        variant="info"
-                        showIcon={false}
-                        compact={true}
-                      />
-                    </Box>
+                    </Typography>
                   )}
                 </Box>
               </Box>
 
 
             </Paper>
-          </Slide>
         </Box>
 
         {/* 页面底部版权信息 */}
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            left: 0,
-            right: 0,
-            textAlign: 'center',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '0.75rem',
-            }}
-          >
-            © {new Date().getFullYear()} SwiftmindSystems. All rights reserved.
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em' }}>
+            © {new Date().getFullYear()} SwiftmindSystems
           </Typography>
         </Box>
       </Container>

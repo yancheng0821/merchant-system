@@ -120,17 +120,32 @@ const CheckoutForm: React.FC<{
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-        <Button onClick={onCancel} disabled={processing}>
+        <Button
+          onClick={onCancel}
+          disabled={processing}
+          sx={{
+            textTransform: 'none',
+            color: '#666',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+          }}
+        >
           {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           variant="contained"
           disabled={!stripe || processing}
+          sx={{
+            textTransform: 'none',
+            bgcolor: '#1a1a1a',
+            boxShadow: 'none',
+            '&:hover': { bgcolor: '#333', boxShadow: 'none' },
+            '&:disabled': { bgcolor: '#e5e5e5', color: '#999' },
+          }}
         >
           {processing ? (
             <>
-              <CircularProgress size={20} sx={{ mr: 1 }} />
+              <CircularProgress size={20} sx={{ mr: 1, color: '#fff' }} />
               {t('payment.processing')}
             </>
           ) : (
@@ -229,7 +244,7 @@ const StripePaymentDialog: React.FC<StripePaymentDialogProps> = ({
         onExited: handleExited,
       }}
     >
-      <DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a' }}>
         {t('payment.paymentTitle')}
       </DialogTitle>
 
@@ -294,7 +309,7 @@ const StripePaymentDialog: React.FC<StripePaymentDialogProps> = ({
               <Typography variant="body1" fontWeight={600}>
                 {t('billing.totalAmount')}:
               </Typography>
-              <Typography variant="h6" fontWeight={600} color="primary">
+              <Typography variant="h6" fontWeight={600} sx={{ color: '#1a1a1a' }}>
                 ${invoice.amount.toFixed(2)} {invoice.currency}
               </Typography>
             </Box>

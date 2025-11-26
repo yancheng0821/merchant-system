@@ -758,30 +758,32 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     },
   ];
 
-  // 自定义现代化Tooltip
+  // 自定义简约Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Paper 
-          sx={{ 
-            p: 2, 
-            bgcolor: 'background.paper', 
-            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            backdropFilter: 'blur(10px)',
+        <Box
+          sx={{
+            py: 1,
+            px: 1.5,
+            bgcolor: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            borderRadius: 1.5,
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-            {`${t('dashboard.date')}: ${label}`}
+          <Typography variant="caption" sx={{ color: '#999', display: 'block', mb: 0.5 }}>
+            {label}
           </Typography>
           {payload.map((entry: any, index: number) => (
-            <Typography key={index} variant="body2" sx={{ color: entry.color, fontWeight: 500 }}>
-              {`${entry.name}: ${entry.value.toLocaleString()}`}
-            </Typography>
+            <Box key={index} display="flex" alignItems="center" gap={1}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: entry.color }} />
+              <Typography variant="caption" sx={{ color: '#1a1a1a', fontWeight: 500 }}>
+                {entry.name}: {entry.value.toLocaleString()}
+              </Typography>
+            </Box>
           ))}
-        </Paper>
+        </Box>
       );
     }
     return null;
@@ -791,20 +793,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography 
-            variant="h4" 
-            component="h1" 
-            sx={{ 
-              fontWeight: 700,
-              background: 'linear-gradient(45deg, #6366F1, #EC4899)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              mb: 1,
+          <Typography
+            variant="h5"
+            component="h1"
+            sx={{
+              fontWeight: 600,
+              color: '#6366F1',
+              mb: 0.5,
             }}
           >
             {t('nav.dashboard')}
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body2" sx={{ color: '#888' }}>
             {t('dashboard.subtitle')}
           </Typography>
         </Box>
@@ -830,88 +830,70 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </FormControl>
       </Box>
 
-      {/* 美化的关键指标卡片 */}
-      <Grid container spacing={3} mb={4}>
+      {/* 简约统计卡片 */}
+      <Grid container spacing={2.5} mb={4}>
         {metricsData.map((metric, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card
               sx={{
-                position: 'relative',
-                overflow: 'visible',
-                borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-                },
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 4,
-                  background: metric.gradient,
-                  borderTopLeftRadius: 12,
-                  borderTopRightRadius: 12,
-                },
+                borderRadius: 2.5,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                border: '1px solid rgba(0,0,0,0.06)',
+                bgcolor: '#fff',
               }}
             >
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box display="flex" alignItems="center" gap={2.5}>
                   <Box
                     sx={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 3,
-                      background: metric.gradient,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 1.5,
+                      bgcolor: alpha(metric.color, 0.08),
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'white',
-                      boxShadow: `0 4px 15px ${alpha(metric.color, 0.3)}`,
+                      color: metric.color,
+                      flexShrink: 0,
                     }}
                   >
-                    {metric.icon}
+                    {React.cloneElement(metric.icon, { sx: { fontSize: 22 } })}
                   </Box>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      px: 2,
-                      py: 1,
-                      borderRadius: 2,
-                      background: metric.change >= 0 ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
-                      color: metric.change >= 0 ? '#10B981' : '#EF4444',
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}
-                  >
-                    {metric.change >= 0 ? '↗' : '↘'} {Math.abs(metric.change)}%
-                  </Typography>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                        {metric.title}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: 1,
+                          bgcolor: metric.change >= 0 ? alpha('#10B981', 0.08) : alpha('#EF4444', 0.08),
+                          color: metric.change >= 0 ? '#059669' : '#DC2626',
+                          fontWeight: 500,
+                          fontSize: '0.65rem',
+                        }}
+                      >
+                        {metric.change >= 0 ? '+' : ''}{metric.change}%
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className="numeric"
+                      sx={{
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        fontSize: '1.25rem',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {metric.value}
+                    </Typography>
+                  </Box>
                 </Box>
-                <Typography 
-                  color="text.secondary" 
-                  variant="body2" 
-                  gutterBottom
-                  sx={{ fontWeight: 500 }}
-                >
-                  {metric.title}
-                </Typography>
-                <Typography 
-                  variant="h4" 
-                  component="h2" 
-                  className="numeric"
-                  sx={{ 
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {metric.value}
-                </Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -919,36 +901,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </Grid>
 
       {/* 实时通知提醒和快捷操作 */}
-      <Grid container spacing={3} mb={3}>
+      <Grid container spacing={2.5} mb={3}>
         {/* 实时通知提醒 */}
         <Grid item xs={12} md={8}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 2.5 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center">
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
-                      background: 'linear-gradient(135deg, #EF4444, #DC2626)',
-                      borderRadius: 1,
-                      mr: 2,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#EF4444',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
                       fontWeight: 600,
-                      color: 'text.primary',
-                      cursor: 'pointer',
+                      color: '#1a1a1a',
                     }}
-                    onClick={markNotificationsAsRead}
                   >
                     {t('dashboard.notifications')}
                   </Typography>
@@ -956,62 +937,44 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Box
                       sx={{
                         ml: 1,
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
+                        minWidth: 20,
+                        height: 20,
+                        px: 0.5,
+                        borderRadius: 1,
                         bgcolor: '#EF4444',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold',
-                        animation: 'pulse 2s infinite',
-                        '@keyframes pulse': {
-                          '0%': { transform: 'scale(1)' },
-                          '50%': { transform: 'scale(1.1)' },
-                          '100%': { transform: 'scale(1)' },
-                        },
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
                       }}
                     >
                       {unreadNotificationCount}
                     </Box>
                   )}
                 </Box>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Chip 
-                    icon={<NotificationsIcon sx={{ fontSize: 16 }} />}
-                    label={`${notifications.length} ${t('dashboard.total')}`}
-                    size="small"
-                    sx={{ 
-                      bgcolor: alpha('#6B7280', 0.1),
-                      color: '#6B7280',
-                      fontWeight: 600,
-                    }}
-                  />
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <Typography variant="caption" sx={{ color: '#999', mr: 1 }}>
+                    {notifications.length} {t('dashboard.total')}
+                  </Typography>
                   <IconButton
                     size="small"
                     onClick={fetchNewNotifications}
                     title={t('dashboard.refresh')}
-                    sx={{ 
-                      color: '#6B7280',
-                      '&:hover': {
-                        animation: 'spin 1s ease-in-out',
-                      },
-                      '@keyframes spin': {
-                        '0%': { transform: 'rotate(0deg)' },
-                        '100%': { transform: 'rotate(360deg)' },
-                      },
+                    sx={{
+                      color: '#999',
+                      '&:hover': { color: '#666' },
                     }}
                   >
-                    <RefreshIcon sx={{ fontSize: 20 }} />
+                    <RefreshIcon sx={{ fontSize: 18 }} />
                   </IconButton>
                   <IconButton
                     size="small"
                     onClick={markNotificationsAsRead}
-                    sx={{ color: '#6B7280' }}
+                    sx={{ color: '#999', '&:hover': { color: '#666' } }}
                   >
-                    {isNotificationExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    {isNotificationExpanded ? <ExpandLessIcon sx={{ fontSize: 18 }} /> : <ExpandMoreIcon sx={{ fontSize: 18 }} />}
                   </IconButton>
                 </Box>
               </Box>
@@ -1090,33 +1053,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   }
                   
                   return (
-                    <Box 
+                    <Box
                       key={index}
-                      sx={{ 
-                        p: 2, 
-                        mb: 1,
-                        borderRadius: 2,
-                        bgcolor: alpha(color, 0.05),
-                        border: `1px solid ${alpha(color, 0.2)}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
+                      sx={{
+                        py: 1.5,
+                        borderBottom: index < notifications.slice(0, isNotificationExpanded ? 50 : 3).length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
                         '&:hover': {
-                          bgcolor: alpha(color, 0.1),
-                          transform: 'translateX(4px)',
+                          bgcolor: 'rgba(0,0,0,0.02)',
                         }
                       }}
                     >
-                      <Box display="flex" alignItems="flex-start" gap={2}>
-                        <Box sx={{ mt: 0.5 }}>{icon}</Box>
-                        <Box flex={1}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            {title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      <Box display="flex" alignItems="flex-start" gap={1.5}>
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 1.5,
+                            bgcolor: alpha(color, 0.08),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {icon}
+                        </Box>
+                        <Box flex={1} sx={{ minWidth: 0 }}>
+                          <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                              {title}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#999', flexShrink: 0 }}>
+                              {timeAgo}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" sx={{ color: '#666', display: 'block', mt: 0.25 }}>
                             {localizedText.content || t('dashboard.notificationContent')}
-                          </Typography>
-                          <Typography variant="caption" color="text.disabled">
-                            {timeAgo}
                           </Typography>
                         </Box>
                       </Box>
@@ -1138,26 +1110,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} md={4}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 2.5 }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-                    borderRadius: 1,
-                    mr: 2,
+                    width: 4,
+                    height: 20,
+                    bgcolor: '#6366F1',
+                    borderRadius: 0.5,
+                    mr: 1.5,
                   }}
                 />
-                <Typography 
-                  variant="h6"
-                  sx={{ 
+                <Typography
+                  variant="subtitle1"
+                  sx={{
                     fontWeight: 600,
-                    color: 'text.primary',
+                    color: '#1a1a1a',
                   }}
                 >
                   {t('dashboard.quickActions')}
@@ -1165,57 +1139,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </Box>
 
               {/* 快捷操作按钮 */}
-              <Grid container spacing={2}>
+              <Grid container spacing={1.5}>
                 {[
                   {
                     icon: <CalendarTodayIcon />,
                     label: t('dashboard.viewSchedule'),
-                    color: '#3B82F6', // Blue - Schedule theme
+                    color: '#3B82F6',
                     onClick: () => onNavigate?.('schedule')
                   },
                   {
                     icon: <PersonPinIcon />,
                     label: t('dashboard.addCustomer'),
-                    color: '#EC4899', // Pink - Customers theme
+                    color: '#EC4899',
                     onClick: () => onNavigate?.('customers')
                   },
                   {
                     icon: <StoreIcon />,
                     label: t('dashboard.manageServices'),
-                    color: '#06B6D4', // Cyan - Products/Services theme
+                    color: '#06B6D4',
                     onClick: () => onNavigate?.('products')
                   },
                   {
                     icon: <BadgeIcon />,
                     label: t('dashboard.manageStaff'),
-                    color: '#3B82F6', // Blue - Resources theme
+                    color: '#3B82F6',
                     onClick: () => onNavigate?.('resources')
                   },
                 ].map((action, index) => (
                   <Grid item xs={6} key={index}>
                     <Button
                       fullWidth
-                      variant="outlined"
+                      variant="text"
                       onClick={action.onClick}
                       sx={{
-                        py: 2,
+                        py: 1.5,
                         borderRadius: 2,
                         flexDirection: 'column',
-                        borderColor: alpha(action.color, 0.3),
+                        bgcolor: alpha(action.color, 0.06),
                         color: action.color,
-                        bgcolor: alpha(action.color, 0.05),
                         '&:hover': {
-                          borderColor: action.color,
-                          bgcolor: alpha(action.color, 0.1),
-                          transform: 'translateY(-2px)',
+                          bgcolor: alpha(action.color, 0.12),
                         },
-                        transition: 'all 0.2s',
                       }}
                     >
                       {React.cloneElement(action.icon, {
-                        sx: { fontSize: 28, mb: 1, color: action.color }
+                        sx: { fontSize: 24, mb: 0.5, color: action.color }
                       })}
-                      <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 500, fontSize: '0.7rem' }}>
                         {action.label}
                       </Typography>
                     </Button>
@@ -1227,33 +1197,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </Grid>
       </Grid>
 
-      {/* 美化的图表区域 */}
-      <Grid container spacing={3}>
+      {/* 图表区域 */}
+      <Grid container spacing={2.5} mt={0.5}>
         {/* 销售趋势折线图 */}
         <Grid item xs={12} lg={8}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" mb={3}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" mb={2.5}>
                 <Box
                   sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-                    borderRadius: 1,
-                    mr: 2,
+                    width: 4,
+                    height: 20,
+                    bgcolor: '#6366F1',
+                    borderRadius: 0.5,
+                    mr: 1.5,
                   }}
                 />
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
+                <Typography
+                  variant="subtitle1"
+                  sx={{
                     fontWeight: 600,
-                    color: 'text.primary',
+                    color: '#1a1a1a',
                   }}
                 >
                   {t('dashboard.salesTrend')}
@@ -1263,39 +1234,38 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <LineChart data={salesTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.02}/>
                     </linearGradient>
                     <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.02}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                  <XAxis 
-                    dataKey="date" 
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                  <XAxis
+                    dataKey="date"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tick={{ fontSize: 11, fill: '#999' }}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tick={{ fontSize: 11, fill: '#999' }}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend 
+                  <Legend
                     wrapperStyle={{
-                      paddingTop: '20px',
-                      fontSize: '14px',
-                      fontWeight: 500,
+                      paddingTop: '12px',
+                      fontSize: '11px',
                     }}
                   />
                   <Area
                     type="monotone"
                     dataKey="sales"
                     stroke="#6366F1"
-                    strokeWidth={3}
+                    strokeWidth={2}
                     fill="url(#salesGradient)"
                     name={t('dashboard.sales')}
                   />
@@ -1303,10 +1273,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     type="monotone"
                     dataKey="orders"
                     stroke="#10B981"
-                    strokeWidth={3}
+                    strokeWidth={2}
                     name={t('dashboard.orders')}
-                    dot={{ r: 4, strokeWidth: 2, fill: '#10B981' }}
-                    activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                    dot={false}
+                    activeDot={{ r: 4, stroke: '#10B981', strokeWidth: 1.5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -1318,27 +1288,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} lg={4}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 3, height: '100%' }}>
-              <Box display="flex" alignItems="center" mb={3}>
+            <CardContent sx={{ p: 2.5, height: '100%' }}>
+              <Box display="flex" alignItems="center" mb={2.5}>
                 <Box
                   sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #EC4899, #F59E0B)',
-                    borderRadius: 1,
-                    mr: 2,
+                    width: 4,
+                    height: 20,
+                    bgcolor: '#EC4899',
+                    borderRadius: 0.5,
+                    mr: 1.5,
                   }}
                 />
-                <Typography 
-                  variant="h6"
-                  sx={{ 
+                <Typography
+                  variant="subtitle1"
+                  sx={{
                     fontWeight: 600,
-                    color: 'text.primary',
+                    color: '#1a1a1a',
                   }}
                 >
                   {t('dashboard.serviceCategories')}
@@ -1346,21 +1318,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </Box>
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
-                  <defs>
-                    {categoryData.map((entry, index) => (
-                      <linearGradient key={index} id={`gradient${index}`} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor={entry.color} stopOpacity={0.8}/>
-                        <stop offset="100%" stopColor={entry.color} stopOpacity={1}/>
-                      </linearGradient>
-                    ))}
-                  </defs>
                   <Pie
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={2}
+                    innerRadius={70}
+                    outerRadius={110}
+                    paddingAngle={3}
                     dataKey="value"
                     label={({ name, value }) => `${name} ${value.toFixed(1)}%`}
                     labelLine={false}
@@ -1368,8 +1332,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     {categoryData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={`url(#gradient${index})`}
-                        stroke="white"
+                        fill={entry.color}
+                        stroke="#fff"
                         strokeWidth={2}
                       />
                     ))}
@@ -1377,10 +1341,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <Tooltip
                     formatter={(value: number) => [`${value.toFixed(1)}%`, t('dashboard.percentage')]}
                     contentStyle={{
-                      backgroundColor: 'rgba(255,255,255,0.95)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      backgroundColor: '#fff',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      padding: '8px 12px',
                     }}
                   />
                 </PieChart>
@@ -1393,26 +1358,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} lg={8}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" mb={3}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" mb={2.5}>
                 <Box
                   sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #F59E0B, #EF4444)',
-                    borderRadius: 1,
-                    mr: 2,
+                    width: 4,
+                    height: 20,
+                    bgcolor: '#F59E0B',
+                    borderRadius: 0.5,
+                    mr: 1.5,
                   }}
                 />
-                <Typography 
-                  variant="h6"
-                  sx={{ 
+                <Typography
+                  variant="subtitle1"
+                  sx={{
                     fontWeight: 600,
-                    color: 'text.primary',
+                    color: '#1a1a1a',
                   }}
                 >
                   {t('dashboard.visitorTraffic')}
@@ -1422,28 +1389,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <AreaChart data={salesTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="visitorGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.02}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                  <XAxis 
-                    dataKey="date" 
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                  <XAxis
+                    dataKey="date"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tick={{ fontSize: 11, fill: '#999' }}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tick={{ fontSize: 11, fill: '#999' }}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Area
                     type="monotone"
                     dataKey="visitors"
                     stroke="#F59E0B"
-                    strokeWidth={3}
+                    strokeWidth={2}
                     fill="url(#visitorGradient)"
                     name={t('dashboard.visitors')}
                   />
@@ -1457,28 +1424,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} lg={4}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 3, height: '100%' }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+            <CardContent sx={{ p: 2.5, height: '100%' }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
                 <Box display="flex" alignItems="center">
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
-                      background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
-                      borderRadius: 1,
-                      mr: 2,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#8B5CF6',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
                       fontWeight: 600,
-                      color: 'text.primary',
+                      color: '#1a1a1a',
                     }}
                   >
                     {t('dashboard.topServices')}
@@ -1496,10 +1465,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </Box>
               
               {/* 改用列表展示，更清晰 */}
-              <Box sx={{ mt: 2, maxHeight: 350, overflowY: 'auto' }}>
+              <Box sx={{ mt: 1 }}>
                 {topServicesData.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: '#999' }}>
                       {t('dashboard.noData')}
                     </Typography>
                   </Box>
@@ -1507,117 +1476,81 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   topServicesData.map((service, index) => {
                     const maxSales = Math.max(...topServicesData.map(s => s.sales));
                     const percentage = maxSales > 0 ? (service.sales / maxSales) * 100 : 0;
-                    const rankColors = ['#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1'];
-                    
+
                     return (
-                      <Box key={index} sx={{ mb: 3 }}>
-                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
-                          <Box display="flex" alignItems="center" gap={2}>
-                            {/* 排名徽章 */}
-                            <Box
+                      <Box
+                        key={index}
+                        sx={{
+                          py: 1.5,
+                          borderBottom: index < topServicesData.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                          <Box display="flex" alignItems="center" gap={1.5}>
+                            <Typography
+                              variant="body2"
                               sx={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                bgcolor: alpha(rankColors[index % rankColors.length], 0.1),
-                                color: rankColors[index % rankColors.length],
-                                fontWeight: 700,
-                                fontSize: 14,
+                                fontWeight: 600,
+                                color: '#999',
+                                width: 20,
                               }}
                             >
-                              #{index + 1}
-                            </Box>
-                            {/* 服务名称 */}
-                            <Box flex={1}>
-                              <Typography 
-                                variant="body1" 
-                                sx={{ 
-                                  fontWeight: 600,
-                                  color: 'text.primary',
-                                  mb: 0.5,
+                              {index + 1}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                color: '#1a1a1a',
+                              }}
+                            >
+                              {service.name}
+                            </Typography>
+                          </Box>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                color: '#1a1a1a',
+                              }}
+                            >
+                              {CurrencyUtils.formatAmountWithCommas(service.sales)}
+                            </Typography>
+                            {service.growth !== 0 && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: service.growth > 0 ? '#10B981' : '#EF4444',
+                                  fontWeight: 500,
                                 }}
                               >
-                                {service.name}
+                                {service.growth > 0 ? '+' : ''}{service.growth}%
                               </Typography>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography 
-                                  variant="caption" 
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                  }}
-                                >
-                                  {t('dashboard.revenue')}:
-                                </Typography>
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    color: rankColors[index % rankColors.length],
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  {CurrencyUtils.formatAmountWithCommas(service.sales)}
-                                </Typography>
-                                {service.growth !== 0 && (
-                                  <Chip
-                                    label={`${service.growth > 0 ? '↑' : '↓'} ${Math.abs(service.growth)}%`}
-                                    size="small"
-                                    sx={{
-                                      height: 20,
-                                      fontSize: '0.75rem',
-                                      bgcolor: service.growth > 0 ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
-                                      color: service.growth > 0 ? '#10B981' : '#EF4444',
-                                      fontWeight: 600,
-                                      '& .MuiChip-label': {
-                                        px: 1,
-                                      },
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                            </Box>
+                            )}
                           </Box>
                         </Box>
-                        
+
                         {/* 进度条 */}
-                        <Box sx={{ ml: 7 }}>
+                        <Box sx={{ ml: 4 }}>
                           <Box
                             sx={{
                               width: '100%',
-                              height: 10,
-                              bgcolor: alpha(rankColors[index % rankColors.length], 0.08),
-                              borderRadius: 1.5,
+                              height: 4,
+                              bgcolor: 'rgba(0,0,0,0.04)',
+                              borderRadius: 2,
                               overflow: 'hidden',
-                              position: 'relative',
                             }}
                           >
                             <Box
                               sx={{
                                 width: `${percentage}%`,
                                 height: '100%',
-                                background: `linear-gradient(90deg, ${rankColors[index % rankColors.length]}, ${alpha(rankColors[index % rankColors.length], 0.6)})`,
-                                borderRadius: 1.5,
-                                transition: 'width 0.8s ease',
-                                boxShadow: `0 2px 8px ${alpha(rankColors[index % rankColors.length], 0.3)}`,
+                                bgcolor: '#8B5CF6',
+                                borderRadius: 2,
+                                transition: 'width 0.5s ease',
                               }}
                             />
-                            {/* 百分比标签 */}
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                position: 'absolute',
-                                right: 8,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                color: percentage > 70 ? 'white' : 'text.secondary',
-                              }}
-                            >
-                              {Math.round(percentage)}%
-                            </Typography>
                           </Box>
                         </Box>
                       </Box>
@@ -1633,64 +1566,52 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center">
                   <Box
                     sx={{
-                      width: 6,
-                      height: 24,
-                      background: 'linear-gradient(135deg, #14B8A6, #059669)',
-                      borderRadius: 1,
-                      mr: 2,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#14B8A6',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
                       fontWeight: 600,
-                      color: 'text.primary',
+                      color: '#1a1a1a',
                     }}
                   >
                     {t('dashboard.resourceStatus')}
                   </Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={2}>
+                <Box display="flex" alignItems="center" gap={1}>
                   {(merchantResourceType === 'STAFF' || merchantResourceType === 'BOTH') && staffStatusList.length > 0 && (
-                    <Chip 
-                      icon={<GroupsIcon sx={{ fontSize: 16 }} />}
-                      label={`${t('dashboard.totalStaff')}: ${staffStatusList.length}`}
-                      size="small"
-                      sx={{ 
-                        bgcolor: alpha('#6B7280', 0.1),
-                        color: '#6B7280',
-                        fontWeight: 600,
-                      }}
-                    />
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      {t('dashboard.totalStaff')}: {staffStatusList.length}
+                    </Typography>
                   )}
                   {(merchantResourceType === 'ROOM' || merchantResourceType === 'BOTH') && resourceStatusList.length > 0 && (
-                    <Chip 
-                      icon={<RoomIcon sx={{ fontSize: 16 }} />}
-                      label={`${t('dashboard.totalRooms')}: ${resourceStatusList.length}`}
-                      size="small"
-                      sx={{ 
-                        bgcolor: alpha('#6B7280', 0.1),
-                        color: '#6B7280',
-                        fontWeight: 600,
-                      }}
-                    />
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      {t('dashboard.totalRooms')}: {resourceStatusList.length}
+                    </Typography>
                   )}
                 </Box>
               </Box>
 
               {/* 资源状态网格 */}
-              <Grid container spacing={2}>
+              <Grid container spacing={1.5}>
                 {/* 合并员工和房间列表 */}
-                {([...staffStatusList, ...resourceStatusList].length > 0 ? 
+                {([...staffStatusList, ...resourceStatusList].length > 0 ?
                   [...staffStatusList, ...resourceStatusList] : [
                   { name: t('dashboard.noResourceData'), avatar: '', status: 'offline', currentService: null, endTime: null, type: 'staff' },
                 ]).map((resource, index) => {
@@ -1707,89 +1628,51 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Grid item xs={12} sm={6} md={3} key={index}>
                       <Box
                         sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          border: `1px solid ${alpha(statusConfig.color, 0.2)}`,
-                          bgcolor: alpha(statusConfig.color, 0.05),
-                          transition: 'all 0.2s',
-                          cursor: 'pointer',
+                          py: 1.5,
+                          px: 2,
+                          borderBottom: '1px solid rgba(0,0,0,0.06)',
                           '&:hover': {
-                            bgcolor: alpha(statusConfig.color, 0.1),
-                            transform: 'translateY(-2px)',
-                            boxShadow: `0 4px 12px ${alpha(statusConfig.color, 0.2)}`,
+                            bgcolor: 'rgba(0,0,0,0.02)',
                           },
                         }}
                       >
-                        <Box display="flex" alignItems="center" gap={2}>
+                        <Box display="flex" alignItems="center" gap={1.5}>
                           <Avatar
                             src={getFullImageUrl(resource.avatar)}
                             sx={{
-                              width: 40,
-                              height: 40,
-                              bgcolor: alpha(statusConfig.color, 0.2),
-                              color: statusConfig.color,
+                              width: 36,
+                              height: 36,
+                              bgcolor: '#f5f5f5',
+                              color: '#666',
+                              fontSize: '0.875rem',
                               fontWeight: 600,
                             }}
                           >
-                            {resource.type === 'room' ? <RoomIcon /> : (resource.name?.[0] || '?')}
+                            {resource.type === 'room' ? <RoomIcon sx={{ fontSize: 18 }} /> : (resource.name?.[0] || '?')}
                           </Avatar>
-                          <Box flex={1} display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0 }}>
-                            {/* 左侧：员工姓名和状态 */}
-                            <Box flex={resource.currentService ? '0 0 auto' : 1}>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                  {resource.name}
+                          <Box flex={1} sx={{ minWidth: 0 }}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                {resource.name}
+                              </Typography>
+                              {resource.type === 'room' && (
+                                <Typography variant="caption" sx={{ color: '#999' }}>
+                                  ({t('dashboard.room')})
                                 </Typography>
-                                {resource.type === 'room' && (
-                                  <Chip
-                                    label={t('dashboard.room')}
-                                    size="small"
-                                    sx={{
-                                      height: 18,
-                                      fontSize: '0.7rem',
-                                      bgcolor: alpha('#8B5CF6', 0.1),
-                                      color: '#8B5CF6',
-                                      fontWeight: 600,
-                                    }}
-                                  />
-                                )}
-                              </Box>
-                              <Box display="flex" alignItems="center" gap={0.5}>
-                                <Typography variant="caption">{statusConfig.icon}</Typography>
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    color: statusConfig.color,
-                                    fontWeight: 500,
-                                  }}
-                                >
-                                  {statusConfig.label}
-                                </Typography>
-                                {resource.type === 'room' && resource.capacity && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    • {t('dashboard.capacity')}: {resource.capacity}
-                                  </Typography>
-                                )}
-                              </Box>
+                              )}
                             </Box>
-
-                            {/* 竖杠分隔 + 右侧：服务信息 */}
-                            {resource.currentService && (
-                              <>
-                                <Box
-                                  sx={{
-                                    width: '1px',
-                                    height: '32px',
-                                    bgcolor: alpha(statusConfig.color, 0.3),
-                                    flexShrink: 0,
-                                  }}
-                                />
-                                <Box flex={1} sx={{ minWidth: 0 }}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusConfig.color }} />
+                              <Typography variant="caption" sx={{ color: '#666' }}>
+                                {statusConfig.label}
+                              </Typography>
+                              {resource.currentService && (
+                                <>
+                                  <Typography variant="caption" sx={{ color: '#999' }}>•</Typography>
                                   <Typography
                                     variant="caption"
-                                    color="text.secondary"
                                     sx={{
-                                      display: 'block',
+                                      color: '#666',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       whiteSpace: 'nowrap',
@@ -1797,28 +1680,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                   >
                                     {resource.currentService}
                                   </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{
-                                      display: 'block',
-                                      color: statusConfig.color,
-                                      fontWeight: 500,
-                                    }}
-                                  >
-                                    {t('dashboard.until')} {resource.endTime}
-                                  </Typography>
-                                </Box>
-                              </>
-                            )}
+                                </>
+                              )}
+                            </Box>
                           </Box>
-                        </Box>
-                        {resource.type === 'room' && resource.location && (
-                          <Box sx={{ mt: 0.5 }}>
-                            <Typography variant="caption" color="text.secondary">
-                              📍 {resource.location}
+                          {resource.endTime && (
+                            <Typography variant="caption" sx={{ color: '#999', flexShrink: 0 }}>
+                              {resource.endTime}
                             </Typography>
-                          </Box>
-                        )}
+                          )}
+                        </Box>
                       </Box>
                     </Grid>
                   );
@@ -1826,30 +1697,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </Grid>
 
               {/* 状态统计 */}
-              <Box display="flex" justifyContent="center" gap={3} mt={3} pt={3} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box display="flex" justifyContent="center" gap={4} mt={2} pt={2} sx={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10B981' }} />
-                  <Typography variant="caption">
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981' }} />
+                  <Typography variant="caption" sx={{ color: '#666' }}>
                     {t('dashboard.available')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'available').length}
                   </Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#F59E0B' }} />
-                  <Typography variant="caption">
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#F59E0B' }} />
+                  <Typography variant="caption" sx={{ color: '#666' }}>
                     {t('dashboard.busy')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'busy').length}
                   </Typography>
                 </Box>
                 {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'maintenance').length > 0 && (
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#F59E0B' }} />
-                    <Typography variant="caption">
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#F59E0B' }} />
+                    <Typography variant="caption" sx={{ color: '#666' }}>
                       {t('dashboard.maintenance')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'maintenance').length}
                     </Typography>
                   </Box>
                 )}
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#6B7280' }} />
-                  <Typography variant="caption">
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#6B7280' }} />
+                  <Typography variant="caption" sx={{ color: '#666' }}>
                     {t('dashboard.offline')}: {[...staffStatusList, ...resourceStatusList].filter(s => s.status === 'offline').length}
                   </Typography>
                 </Box>
@@ -1862,46 +1733,48 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" mb={3}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                    borderRadius: 1,
-                    mr: 2,
+                    width: 4,
+                    height: 20,
+                    bgcolor: '#8B5CF6',
+                    borderRadius: 0.5,
+                    mr: 1.5,
                   }}
                 />
-                <Typography 
-                  variant="h6"
-                  sx={{ 
+                <Typography
+                  variant="subtitle1"
+                  sx={{
                     fontWeight: 600,
-                    color: 'text.primary',
+                    color: '#1a1a1a',
                   }}
                 >
                   {t('dashboard.todayAppointments')}
                 </Typography>
               </Box>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#667eea' }}>
+              <Box display="flex" alignItems="baseline" gap={2} mb={1}>
+                <Typography variant="h4" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                   {dashboardStats?.totalAppointments || 0}
                 </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="caption"
+                  sx={{
                     color: dashboardStats?.appointmentGrowth >= 0 ? '#10B981' : '#EF4444',
-                    fontWeight: 600 
+                    fontWeight: 500
                   }}
                 >
-                  {dashboardStats?.appointmentGrowth >= 0 ? '↗' : '↘'} {Math.abs(dashboardStats?.appointmentGrowth || 0)}%
+                  {dashboardStats?.appointmentGrowth >= 0 ? '↑' : '↓'} {Math.abs(dashboardStats?.appointmentGrowth || 0)}%
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" sx={{ color: '#999' }}>
                 {t('dashboard.appointmentsTrend')}
               </Typography>
             </CardContent>
@@ -1912,65 +1785,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" mb={3}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   sx={{
-                    width: 6,
-                    height: 24,
-                    background: 'linear-gradient(135deg, #f093fb, #f5576c)',
-                    borderRadius: 1,
-                    mr: 2,
+                    width: 4,
+                    height: 20,
+                    bgcolor: '#EC4899',
+                    borderRadius: 0.5,
+                    mr: 1.5,
                   }}
                 />
-                <Typography 
-                  variant="h6"
-                  sx={{ 
+                <Typography
+                  variant="subtitle1"
+                  sx={{
                     fontWeight: 600,
-                    color: 'text.primary',
+                    color: '#1a1a1a',
                   }}
                 >
                   {t('dashboard.operationStatus')}
                 </Typography>
               </Box>
-              
+
               {/* 运营状态指标 */}
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    background: alpha('#10B981', 0.1),
-                    border: `1px solid ${alpha('#10B981', 0.2)}`
-                  }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('dashboard.completedToday')}
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#10B981', mt: 0.5 }}>
-                      {dashboardStats?.completedAppointments || 0}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    background: alpha('#3B82F6', 0.1),
-                    border: `1px solid ${alpha('#3B82F6', 0.2)}`
-                  }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('dashboard.pending')}
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#3B82F6', mt: 0.5 }}>
-                      {dashboardStats?.pendingAppointments || 0}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
+              <Box display="flex" alignItems="baseline" gap={4}>
+                <Box display="flex" alignItems="baseline" gap={1}>
+                  <Typography variant="h4" sx={{ fontWeight: 600, color: '#10B981' }}>
+                    {dashboardStats?.completedAppointments || 0}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#666' }}>
+                    {t('dashboard.completedToday')}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="baseline" gap={1}>
+                  <Typography variant="h4" sx={{ fontWeight: 600, color: '#3B82F6' }}>
+                    {dashboardStats?.pendingAppointments || 0}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#666' }}>
+                    {t('dashboard.pending')}
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -1978,166 +1839,129 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              mt: 3,
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.01), rgba(8, 145, 178, 0.01))',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              bgcolor: '#fff',
+              mt: 1,
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center">
                   <Box
                     sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      background: 'linear-gradient(135deg, #06B6D4, #0891B2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mr: 2,
-                      boxShadow: '0 4px 12px rgba(6, 182, 212, 0.3)',
-                    }}
-                  >
-                    <ScheduleIcon sx={{ color: 'white', fontSize: 24 }} />
-                  </Box>
-                  <Box>
-                    <Typography 
-                      variant="h6"
-                      sx={{ 
-                        fontWeight: 700,
-                        color: 'text.primary',
-                        mb: 0.5,
-                      }}
-                    >
-                      {t('dashboard.todayTimeline')}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box display="flex" gap={1}>
-                  <Chip
-                    icon={<CalendarTodayIcon sx={{ fontSize: 16 }} />}
-                    label={getMerchantNow().toLocaleDateString()}
-                    size="small"
-                    sx={{
-                      bgcolor: alpha('#06B6D4', 0.1),
-                      color: '#06B6D4',
-                      fontWeight: 600,
-                      px: 1,
+                      width: 4,
+                      height: 20,
+                      bgcolor: '#06B6D4',
+                      borderRadius: 0.5,
+                      mr: 1.5,
                     }}
                   />
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 600,
+                      color: '#1a1a1a',
+                    }}
+                  >
+                    {t('dashboard.todayTimeline')}
+                  </Typography>
                 </Box>
+                <Typography variant="caption" sx={{ color: '#999' }}>
+                  {getMerchantNow().toLocaleDateString()}
+                </Typography>
               </Box>
               
               {/* 时间轴 */}
-              <Box 
+              <Box
                 ref={timelineRef}
-                sx={{ 
-                  position: 'relative', 
-                  pl: 4, 
-                  maxHeight: 600, 
+                sx={{
+                  position: 'relative',
+                  pl: 3,
+                  maxHeight: 500,
                   overflowY: 'auto',
                   overflowX: 'hidden',
                   '&::-webkit-scrollbar': {
-                    width: 8,
+                    width: 4,
                   },
                   '&::-webkit-scrollbar-track': {
-                    backgroundColor: alpha('#06B6D4', 0.05),
-                    borderRadius: 4,
+                    backgroundColor: 'rgba(0,0,0,0.04)',
+                    borderRadius: 2,
                   },
                   '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: alpha('#06B6D4', 0.3),
-                    borderRadius: 4,
-                    '&:hover': {
-                      backgroundColor: alpha('#06B6D4', 0.5),
-                    },
+                    backgroundColor: 'rgba(0,0,0,0.15)',
+                    borderRadius: 2,
                   },
                 }}
               >
                 {/* 时间节点容器 - 包含垂直线和所有时间节点 */}
                 {todayAppointments.length > 0 ? (
-                  <Box sx={{ 
+                  <Box sx={{
                     position: 'relative',
-                    paddingLeft: '40px', // 给垂直线留出空间
+                    paddingLeft: '32px',
                   }}>
                     {/* 时间节点内容 */}
                     {(() => {
                       const now = getMerchantNow();
-                      const currentTimeStr = now.toTimeString().slice(0, 5); // HH:mm format
+                      const currentTimeStr = now.toTimeString().slice(0, 5);
 
                       // 排序预约列表
-                      const sortedAppointments = todayAppointments.sort((a, b) => 
+                      const sortedAppointments = todayAppointments.sort((a, b) =>
                         a.appointmentTime.localeCompare(b.appointmentTime)
                       );
-                      
+
                       // 创建包含预约和当前时间指示器的元素列表
                       const elements: React.ReactNode[] = [];
                       let currentTimeInserted = false;
-                      
+
                       sortedAppointments.forEach((appointment, index) => {
                         const appointmentTimeStr = appointment.appointmentTime.slice(0, 5);
-                        
+
                         // 在适当位置插入当前时间指示器
                         if (!currentTimeInserted && appointmentTimeStr > currentTimeStr) {
                           elements.push(
-                          <Box key="current-time" sx={{ position: 'relative', mb: 3 }}>
+                          <Box key="current-time" sx={{ position: 'relative', mb: 2 }}>
                             {/* 垂直线段 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -34,
-                              top: -24,
-                              bottom: -24,
+                              left: -28,
+                              top: -16,
+                              bottom: -16,
                               width: 2,
-                              backgroundColor: alpha('#06B6D4', 0.2),
+                              backgroundColor: 'rgba(0,0,0,0.08)',
                               borderRadius: 1,
                               zIndex: 0,
                             }} />
-                            {/* 当前时间的点 - 使用青色主题 */}
+                            {/* 当前时间的点 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -40,
-                              width: 14,
-                              height: 14,
+                              left: -32,
+                              width: 10,
+                              height: 10,
                               borderRadius: '50%',
                               bgcolor: '#06B6D4',
                               border: '2px solid white',
-                              boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)',
-                              animation: 'pulse 2s infinite',
+                              boxShadow: '0 0 0 2px rgba(6, 182, 212, 0.2)',
                               zIndex: 2,
-                              '@keyframes pulse': {
-                                '0%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
-                                '50%': { boxShadow: '0 0 0 6px rgba(6, 182, 212, 0.1)' },
-                                '100%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
-                              },
                             }} />
-                            
+
                             {/* 当前时间标记 */}
                             <Box sx={{
-                              ml: 2,
-                              p: 1.5,
-                              borderRadius: 2,
-                              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05))',
-                              border: `2px dashed ${alpha('#06B6D4', 0.4)}`,
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: 1,
-                              width: 'fit-content',
+                              py: 0.5,
+                              px: 1,
+                              borderRadius: 1,
+                              bgcolor: alpha('#06B6D4', 0.08),
                             }}>
                               <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
                                 {t('dashboard.currentTime')}
                               </Typography>
-                              <Box sx={{
-                                bgcolor: '#06B6D4',
-                                color: 'white',
-                                px: 1,
-                                py: 0.25,
-                                borderRadius: 1,
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                              }}>
+                              <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
                                 {currentTimeStr}
-                              </Box>
+                              </Typography>
                             </Box>
                           </Box>
                           );
@@ -2152,16 +1976,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         
                         elements.push(
                         <React.Fragment key={appointment.id}>
-                          <Box sx={{ position: 'relative', mb: 3 }}>
-                            {/* 垂直线段 - 连接相邻的时间节点 */}
+                          <Box sx={{ position: 'relative', mb: 2 }}>
+                            {/* 垂直线段 */}
                             {(index === 0 || index < sortedAppointments.length - 1) && (
                               <Box sx={{
                                 position: 'absolute',
-                                left: -34,
-                                top: index === 0 ? -24 : 7,
-                                bottom: -24,
+                                left: -28,
+                                top: index === 0 ? -16 : 5,
+                                bottom: -16,
                                 width: 2,
-                                backgroundColor: alpha('#06B6D4', 0.2),
+                                backgroundColor: 'rgba(0,0,0,0.08)',
                                 borderRadius: 1,
                                 zIndex: 0,
                               }} />
@@ -2169,78 +1993,63 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             {/* 时间点 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -40,
-                              width: 14,
-                              height: 14,
+                              left: -32,
+                              width: 10,
+                              height: 10,
                               borderRadius: '50%',
                               bgcolor: isCompleted ? '#10B981' :
                                       isCurrent ? '#F59E0B' :
                                       isCancelled ? '#EF4444' :
                                       '#3B82F6',
-                              border: isCurrent ? '3px solid rgba(245, 158, 11, 0.3)' : 'none',
                               zIndex: 1,
                             }} />
 
                             {/* 预约信息 */}
                             <Box sx={{
-                              ml: 2,
-                              p: 2.5,
-                              borderRadius: 2,
-                              background: isCompleted ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02))' :
-                                        isCurrent ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02))' :
-                                        isCancelled ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.02))' :
-                                        'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02))',
-                              border: `1px solid ${
-                                isCompleted ? alpha('#10B981', 0.2) :
-                                isCurrent ? alpha('#F59E0B', 0.3) :
-                                isCancelled ? alpha('#EF4444', 0.2) :
-                                alpha('#3B82F6', 0.2)
-                              }`,
-                              transition: 'all 0.3s ease',
+                              py: 1.5,
+                              borderBottom: '1px solid rgba(0,0,0,0.06)',
                               '&:hover': {
-                                transform: 'translateX(4px)',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                bgcolor: 'rgba(0,0,0,0.02)',
                               },
                             }}>
-                              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                              <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
                                 <Box display="flex" alignItems="center" gap={1}>
-                                  <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                                     {appointment.appointmentTime}
                                   </Typography>
                                 </Box>
-                                <Chip
-                                  label={
-                                    isCompleted ? t('dashboard.completed') :
-                                    isCurrent ? t('dashboard.inProgress') :
-                                    isCancelled ? (appointment.status === 'NO_SHOW' ? t('dashboard.noShow') : t('dashboard.cancelled')) :
-                                    t('dashboard.pending')
-                                  }
-                                  size="small"
+                                <Typography
+                                  variant="caption"
                                   sx={{
-                                    height: 22,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    bgcolor: isCompleted ? alpha('#10B981', 0.15) :
-                                            isCurrent ? alpha('#F59E0B', 0.15) :
-                                            isCancelled ? alpha('#EF4444', 0.15) :
-                                            alpha('#3B82F6', 0.15),
+                                    px: 1,
+                                    py: 0.25,
+                                    borderRadius: 1,
+                                    fontSize: '0.65rem',
+                                    fontWeight: 500,
+                                    bgcolor: isCompleted ? alpha('#10B981', 0.1) :
+                                            isCurrent ? alpha('#F59E0B', 0.1) :
+                                            isCancelled ? alpha('#EF4444', 0.1) :
+                                            alpha('#3B82F6', 0.1),
                                     color: isCompleted ? '#10B981' :
                                           isCurrent ? '#F59E0B' :
                                           isCancelled ? '#EF4444' :
                                           '#3B82F6',
-                                    border: 'none',
                                   }}
-                                />
+                                >
+                                  {isCompleted ? t('dashboard.completed') :
+                                   isCurrent ? t('dashboard.inProgress') :
+                                   isCancelled ? (appointment.status === 'NO_SHOW' ? t('dashboard.noShow') : t('dashboard.cancelled')) :
+                                   t('dashboard.pending')}
+                                </Typography>
                               </Box>
-                              <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                              {/* 尝试多种方式获取服务名称 */}
-                              {appointment.services?.map((s: any) => s.serviceName).join(', ') || 
-                               appointment.appointmentServices?.map((s: any) => s.serviceName).join(', ') ||
-                               appointment.serviceName ||
-                               '服务'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{ color: '#1a1a1a', display: 'block' }}>
+                                {/* 尝试多种方式获取服务名称 */}
+                                {appointment.services?.map((s: any) => s.serviceName).join(', ') ||
+                                 appointment.appointmentServices?.map((s: any) => s.serviceName).join(', ') ||
+                                 appointment.serviceName ||
+                                 '服务'}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#999' }}>
                               {/* 显示客户和资源（员工或房间） */}
                               {(() => {
                                 // 初始化变量
@@ -2305,64 +2114,48 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       // 如果当前时间在所有预约之后，在末尾添加当前时间指示器
                       if (!currentTimeInserted) {
                         elements.push(
-                        <Box key="current-time" sx={{ position: 'relative', mb: 3 }}>
-                          {/* 垂直线段 - 连接到前一个节点 */}
+                        <Box key="current-time" sx={{ position: 'relative', mb: 2 }}>
+                          {/* 垂直线段 */}
                           {sortedAppointments.length > 0 && (
                             <Box sx={{
                               position: 'absolute',
-                              left: -34,
-                              top: -24,
-                              height: 24,
+                              left: -28,
+                              top: -16,
+                              height: 16,
                               width: 2,
-                              backgroundColor: alpha('#06B6D4', 0.2),
+                              backgroundColor: 'rgba(0,0,0,0.08)',
                               borderRadius: 1,
                               zIndex: 0,
                             }} />
                           )}
-                          {/* 当前时间的点 - 使用青色主题 */}
+                          {/* 当前时间的点 */}
                           <Box sx={{
                             position: 'absolute',
-                            left: -40,
-                            width: 14,
-                            height: 14,
+                            left: -32,
+                            width: 10,
+                            height: 10,
                             borderRadius: '50%',
                             bgcolor: '#06B6D4',
                             border: '2px solid white',
-                            boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)',
-                            animation: 'pulse 2s infinite',
+                            boxShadow: '0 0 0 2px rgba(6, 182, 212, 0.2)',
                             zIndex: 2,
-                            '@keyframes pulse': {
-                              '0%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
-                              '50%': { boxShadow: '0 0 0 6px rgba(6, 182, 212, 0.1)' },
-                              '100%': { boxShadow: '0 0 0 3px rgba(6, 182, 212, 0.2)' },
-                            },
                           }} />
-                          
-                          {/* 当前时间卡片 */}
+
+                          {/* 当前时间标记 */}
                           <Box sx={{
-                            ml: 2,
-                            p: 2,
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05))',
-                            border: `2px dashed ${alpha('#06B6D4', 0.4)}`,
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 2,
-                            width: 'fit-content',
+                            gap: 1,
+                            py: 0.5,
+                            px: 1,
+                            borderRadius: 1,
+                            bgcolor: alpha('#06B6D4', 0.08),
                           }}>
-                            <Box sx={{
-                              bgcolor: '#06B6D4',
-                              color: 'white',
-                              px: 1.5,
-                              py: 0.5,
-                              borderRadius: 1,
-                              fontSize: '0.85rem',
-                              fontWeight: 700,
-                            }}>
-                              {currentTimeStr}
-                            </Box>
-                            <Typography variant="body2" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
                               {t('dashboard.currentTime')}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                              {currentTimeStr}
                             </Typography>
                           </Box>
                         </Box>
