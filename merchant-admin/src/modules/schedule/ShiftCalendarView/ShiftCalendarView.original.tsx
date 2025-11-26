@@ -2428,71 +2428,6 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               </Box>
 
               <Box display="flex" alignItems="center" gap={2}>
-                {/* Segmented Control for Day/Week */}
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    bgcolor: '#f1f5f9',
-                    borderRadius: isCompactMode ? 1.5 : 2,
-                    p: isCompactMode ? 0.3 : 0.5,
-                    gap: 0.5,
-                  }}
-                >
-                  {(['day', 'week'] as const).map((mode) => (
-                    <Button
-                      key={mode}
-                      onClick={() => {
-                        setViewMode(mode);
-                        localStorage.setItem('scheduleViewMode', mode);
-                      }}
-                      sx={{
-                        minWidth: isCompactMode ? 50 : 70,
-                        px: isCompactMode ? 1.5 : 2.5,
-                        py: isCompactMode ? 0.3 : 0.75,
-                        borderRadius: 1.5,
-                        fontSize: isCompactMode ? '0.75rem' : '0.875rem',
-                        fontWeight: 600,
-                        textTransform: 'capitalize',
-                        color: viewMode === mode ? 'white' : '#64748b',
-                        bgcolor: viewMode === mode ? '#3b82f6' : 'transparent',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          bgcolor: viewMode === mode ? '#2563eb' : alpha(themeColor, 0.1),
-                          color: viewMode === mode ? 'white' : themeColor,
-                        },
-                        boxShadow: 'none',
-                      }}
-                    >
-                      {t(`appointments.view${mode.charAt(0).toUpperCase() + mode.slice(1)}`)}
-                    </Button>
-                  ))}
-                </Box>
-
-                {/* Today Button */}
-                <Button
-                  size={isCompactMode ? "small" : "medium"}
-                  startIcon={<TodayIcon sx={{ fontSize: isCompactMode ? 16 : 20 }} />}
-                  onClick={handleToday}
-                  variant="contained"
-                  sx={{
-                    bgcolor: '#3b82f6',
-                    color: 'white',
-                    px: isCompactMode ? 1.5 : 3,
-                    py: isCompactMode ? 0.3 : 0.75,
-                    fontWeight: 600,
-                    fontSize: isCompactMode ? '0.75rem' : '0.875rem',
-                    textTransform: 'none',
-                    borderRadius: isCompactMode ? 1.5 : 2,
-                    boxShadow: 'none',
-                    '&:hover': {
-                      bgcolor: '#2563eb',
-                      boxShadow: 'none',
-                    },
-                  }}
-                >
-                  {t('common.today')}
-                </Button>
-
                 {/* Compact Fullscreen Mode Toggle - Always visible */}
                 <IconButton
                   onClick={() => {
@@ -3122,16 +3057,41 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           adapterLocale={locale}
           localeText={i18n.language === 'zh-CN' ? zhCN.components.MuiLocalizationProvider.defaultProps.localeText : undefined}
         >
-          <StaticDatePicker
-            displayStaticWrapperAs="desktop"
-            value={currentDate}
-            onChange={handleDateChange}
-            slotProps={{
-              actionBar: {
-                actions: []
-              }
-            }}
-          />
+          <Box>
+            <StaticDatePicker
+              displayStaticWrapperAs="desktop"
+              value={currentDate}
+              onChange={handleDateChange}
+              slotProps={{
+                actionBar: {
+                  actions: []
+                }
+              }}
+            />
+            {/* Today link */}
+            <Box sx={{ p: 2, pt: 0, display: 'flex', justifyContent: 'center' }}>
+              <Typography
+                onClick={() => {
+                  setCurrentDate(getMerchantNow());
+                  setDatePickerAnchor(null);
+                }}
+                sx={{
+                  cursor: 'pointer',
+                  color: themeColor,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 1,
+                  '&:hover': {
+                    bgcolor: alpha(themeColor, 0.1),
+                  },
+                }}
+              >
+                {t('common.today')}
+              </Typography>
+            </Box>
+          </Box>
         </LocalizationProvider>
       </Popover>
 
