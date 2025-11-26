@@ -150,6 +150,17 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
   // 初始化selectedTab - 在useState初始化时就读取localStorage，避免闪烁
   const [selectedTab, setSelectedTab] = useState(() => {
+    // 优先检查URL参数（例如从UnpaidInvoiceAlert跳转过来）
+    const searchParams = new URLSearchParams(location.search);
+    const urlTab = searchParams.get('tab');
+    if (urlTab) {
+      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const urlTabIndex = filteredTabs.findIndex(tab => tab.key === urlTab);
+      if (urlTabIndex >= 0) {
+        return urlTabIndex;
+      }
+    }
+
     // 如果从prop传入了tab（如Stripe回调）
     if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
       const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));

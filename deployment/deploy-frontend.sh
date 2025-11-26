@@ -63,6 +63,16 @@ build_frontend() {
     print_info "清理旧的构建文件..."
     rm -rf build/
 
+    # 加载生产环境配置
+    print_info "加载生产环境配置..."
+    if [ -f "/Users/aisenyc/merchant-system/deployment/.env" ]; then
+        # 导出前端相关的环境变量
+        export REACT_APP_GOOGLE_MAPS_API_KEY=$(grep REACT_APP_GOOGLE_MAPS_API_KEY /Users/aisenyc/merchant-system/deployment/.env | cut -d '=' -f2)
+        print_info "Google Maps API Key已设置"
+    else
+        print_warning "未找到生产环境配置文件"
+    fi
+
     print_info "开始构建生产版本..."
     npm run build
 

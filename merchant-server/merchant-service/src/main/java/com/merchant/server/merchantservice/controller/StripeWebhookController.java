@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/webhooks/stripe")
+@RequestMapping("/api/merchant/webhooks/stripe")
 @RequiredArgsConstructor
 public class StripeWebhookController {
 

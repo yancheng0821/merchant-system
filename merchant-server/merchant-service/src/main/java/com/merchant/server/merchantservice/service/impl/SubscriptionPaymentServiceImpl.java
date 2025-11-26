@@ -68,15 +68,28 @@ public class SubscriptionPaymentServiceImpl implements SubscriptionPaymentServic
             throw new BusinessException("账单状态不是待支付，无法创建支付");
         }
 
-        // 如果已经有Payment Intent，先取消
+        // 如果已经有Payment Intent，检查金额是否一致
         if (invoice.getStripePaymentIntentId() != null && !invoice.getStripePaymentIntentId().isEmpty()) {
             try {
                 PaymentIntent existingPI = PaymentIntent.retrieve(invoice.getStripePaymentIntentId());
                 if ("requires_payment_method".equals(existingPI.getStatus()) ||
                     "requires_confirmation".equals(existingPI.getStatus()) ||
                     "requires_action".equals(existingPI.getStatus())) {
-                    log.info("账单已存在Payment Intent: {}, 状态: {}", existingPI.getId(), existingPI.getStatus());
-                    return existingPI.getClientSecret();
+
+                    // 检查金额是否一致
+                    Long currentAmountInCents = invoice.getAmount().multiply(new java.math.BigDecimal("100")).longValue();
+                    if (existingPI.getAmount().equals(currentAmountInCents)) {
+                        log.info("账单已存在Payment Intent: {}, 状态: {}, 金额一致", existingPI.getId(), existingPI.getStatus());
+                        return existingPI.getClientSecret();
+                    } else {
+                        // 金额不一致，取消旧的Payment Intent
+                        log.warn("账单金额已变更 - 旧金额: {}, 新金额: {}, 取消旧的Payment Intent",
+                                existingPI.getAmount(), currentAmountInCents);
+                        PaymentIntentCancelParams cancelParams = PaymentIntentCancelParams.builder().build();
+                        existingPI.cancel(cancelParams);
+                        invoice.setStripePaymentIntentId(null);
+                        invoiceService.updateInvoice(invoice);
+                    }
                 }
             } catch (StripeException e) {
                 log.warn("查询现有Payment Intent失败: {}", e.getMessage());

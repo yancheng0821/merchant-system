@@ -28,9 +28,9 @@ public class SubscriptionScheduler {
 
     /**
      * 处理试用期结束
-     * 每分钟执行一次（测试用）
+     * 每天凌晨2点执行
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 2 * * ?")
     public void handleTrialExpiration() {
         log.info("=== 开始执行试用期结束处理任务 ===");
 
@@ -79,9 +79,9 @@ public class SubscriptionScheduler {
 
     /**
      * 自动生成续费账单
-     * 每分钟执行一次（测试用），在周期结束前7天生成下一期账单
+     * 每天凌晨3点执行，在周期结束前7天生成下一期账单
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 3 * * ?")
     public void generateRenewalInvoices() {
         log.info("=== 开始执行续费账单生成任务 ===");
 
@@ -140,10 +140,10 @@ public class SubscriptionScheduler {
 
     /**
      * 更新过期订阅状态
-     * 每分钟执行一次（测试用）
+     * 每天凌晨4点执行
      * 检查账单创建后7天未支付，则禁用商户访问
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 4 * * ?")
     public void updateExpiredSubscriptions() {
         log.info("=== 开始执行过期订阅状态更新任务 ===");
 

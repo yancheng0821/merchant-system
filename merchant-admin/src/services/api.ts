@@ -396,11 +396,15 @@ const createRequest = async (url: string, options: RequestInit = {}, isRetry: bo
 
     // 如果响应不成功，抛出错误
     if (!response.ok) {
-      console.error('API Error Response:', responseData);
-      console.error('Request URL:', `${API_BASE_URL}${url}`);
-      console.error('Request Config:', config);
-      console.error('Response Status:', response.status);
-      console.error('Response Headers:', Object.fromEntries(response.headers.entries()));
+      // 404通常表示资源不存在，这在某些场景下是正常的（如查询可能不存在的记录）
+      // 只为非404错误打印详细日志
+      if (response.status !== 404) {
+        console.error('API Error Response:', responseData);
+        console.error('Request URL:', `${API_BASE_URL}${url}`);
+        console.error('Request Config:', config);
+        console.error('Response Status:', response.status);
+        console.error('Response Headers:', Object.fromEntries(response.headers.entries()));
+      }
 
       // Try to get error message from different possible fields
       const errorMessage = responseData.error || responseData.message || `HTTP error! status: ${response.status}`;
@@ -412,8 +416,11 @@ const createRequest = async (url: string, options: RequestInit = {}, isRetry: bo
     }
 
     return responseData;
-  } catch (error) {
-    console.error('API request failed:', error);
+  } catch (error: any) {
+    // 404是正常场景（资源不存在），不打印错误日志
+    if (error.status !== 404) {
+      console.error('API request failed:', error);
+    }
     throw error;
   }
 };
@@ -1909,19 +1916,12 @@ export const staffAttendanceApi = {
 
   // 根据资源ID和日期查询签到记录
   getByResourceAndDate: async (resourceId: number, date: string): Promise<StaffAttendance | null> => {
-    try {
-      const queryParams = new URLSearchParams({ date });
-      const response = await createRequest(`/api/business/attendance/resource/${resourceId}?${queryParams.toString()}`, {
-        method: 'GET',
-      });
-      return response;
-    } catch (error: any) {
-      // 如果返回404，表示没有记录
-      if (error.status === 404) {
-        return null;
-      }
-      throw error;
-    }
+    const queryParams = new URLSearchParams({ date });
+    const response = await createRequest(`/api/business/attendance/resource/${resourceId}?${queryParams.toString()}`, {
+      method: 'GET',
+    });
+    // 后端现在返回200 + null（如果没有记录），直接返回即可
+    return response;
   },
 
   // 根据租户ID和日期查询所有员工的签到记录

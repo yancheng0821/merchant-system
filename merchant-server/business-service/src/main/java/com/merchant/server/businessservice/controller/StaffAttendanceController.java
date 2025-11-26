@@ -52,11 +52,8 @@ public class StaffAttendanceController {
         log.debug("Getting attendance for resourceId={}, date={}", resourceId, date);
 
         StaffAttendance attendance = staffAttendanceService.getByResourceIdAndDate(resourceId, date);
-        if (attendance != null) {
-            return ResponseEntity.ok(attendance);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        // 返回200，即使没有记录（避免前端出现大量404日志）
+        return ResponseEntity.ok(attendance);
     }
 
     /**

@@ -123,80 +123,100 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
 
-        if (place.address_components) {
-          const parsed: ParsedAddress = {
-            fullAddress: place.formatted_address || '',
-            streetAddress: '',
-            city: '',
-            province: '',
-            country: '',
-            postalCode: '',
-          };
-
-          // Parse address components
-          place.address_components.forEach((component: any) => {
-            const types = component.types;
-
-            if (types.includes('street_number')) {
-              parsed.streetAddress = component.long_name;
+        // If place doesn't have address_components, it means user might have just selected
+        // from dropdown but details haven't loaded yet. We need to fetch details.
+        if (!place.address_components && place.place_id) {
+          const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+          service.getDetails(
+            {
+              placeId: place.place_id,
+              fields: ['address_components', 'formatted_address', 'name']
+            },
+            (detailedPlace: any, status: any) => {
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && detailedPlace) {
+                processPlace(detailedPlace);
+              }
             }
+          );
+        } else if (place.address_components) {
+          processPlace(place);
+        }
+      });
 
-            if (types.includes('route')) {
-              parsed.streetAddress += (parsed.streetAddress ? ' ' : '') + component.long_name;
-            }
+      // Process place data and trigger callback
+      const processPlace = (place: any) => {
+        const parsed: ParsedAddress = {
+          fullAddress: place.formatted_address || '',
+          streetAddress: '',
+          city: '',
+          province: '',
+          country: '',
+          postalCode: '',
+        };
 
-            if (types.includes('locality')) {
-              parsed.city = component.long_name;
-            } else if (types.includes('sublocality_level_1') && !parsed.city) {
-              parsed.city = component.long_name;
-            } else if (types.includes('administrative_area_level_2') && !parsed.city) {
-              parsed.city = component.long_name;
-            }
+        // Parse address components
+        place.address_components.forEach((component: any) => {
+          const types = component.types;
 
-            if (types.includes('administrative_area_level_1')) {
-              parsed.province = component.long_name;
-            }
-
-            if (types.includes('country')) {
-              parsed.country = component.long_name;
-            }
-
-            if (types.includes('postal_code')) {
-              parsed.postalCode = component.long_name;
-            }
-          });
-
-          if (!parsed.streetAddress && place.name) {
-            parsed.streetAddress = place.name;
+          if (types.includes('street_number')) {
+            parsed.streetAddress = component.long_name;
           }
 
-          // Trigger the parent's address select callback
-          // This will update all fields including address, city, province, country, postCode
-          onAddressSelect(parsed);
+          if (types.includes('route')) {
+            parsed.streetAddress += (parsed.streetAddress ? ' ' : '') + component.long_name;
+          }
 
-          // Close the dropdown
-          // Use requestAnimationFrame to ensure this happens after Google's internal updates
-          requestAnimationFrame(() => {
-            if (inputRef.current) {
-              inputRef.current.blur();
-            }
+          if (types.includes('locality')) {
+            parsed.city = component.long_name;
+          } else if (types.includes('sublocality_level_1') && !parsed.city) {
+            parsed.city = component.long_name;
+          } else if (types.includes('administrative_area_level_2') && !parsed.city) {
+            parsed.city = component.long_name;
+          }
 
-            // Hide the Google autocomplete dropdown
+          if (types.includes('administrative_area_level_1')) {
+            parsed.province = component.long_name;
+          }
+
+          if (types.includes('country')) {
+            parsed.country = component.long_name;
+          }
+
+          if (types.includes('postal_code')) {
+            parsed.postalCode = component.long_name;
+          }
+        });
+
+        if (!parsed.streetAddress && place.name) {
+          parsed.streetAddress = place.name;
+        }
+
+        // Trigger the parent's address select callback
+        // This will update all fields including address, city, province, country, postCode
+        onAddressSelect(parsed);
+
+        // Close the dropdown
+        // Use requestAnimationFrame to ensure this happens after Google's internal updates
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.blur();
+          }
+
+          // Hide the Google autocomplete dropdown
+          const pacContainers = document.querySelectorAll('.pac-container');
+          pacContainers.forEach(container => {
+            (container as HTMLElement).style.display = 'none';
+          });
+
+          // Force hide again after a short delay to handle any re-renders
+          setTimeout(() => {
             const pacContainers = document.querySelectorAll('.pac-container');
             pacContainers.forEach(container => {
               (container as HTMLElement).style.display = 'none';
             });
-
-            // Force hide again after a short delay to handle any re-renders
-            setTimeout(() => {
-              const pacContainers = document.querySelectorAll('.pac-container');
-              pacContainers.forEach(container => {
-                (container as HTMLElement).style.display = 'none';
-              });
-            }, 100);
-          });
-        }
-      });
+          }, 100);
+        });
+      };
 
       autocompleteRef.current = autocomplete;
     } catch (error) {
