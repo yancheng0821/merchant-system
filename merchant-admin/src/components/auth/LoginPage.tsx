@@ -13,12 +13,19 @@ import {
   IconButton,
   Grid,
   Snackbar,
+  alpha,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  EventAvailable as EventIcon,
+  AllInclusive as InfiniteIcon,
+  Notifications as NotificationIcon,
+  Speed as SpeedIcon,
+  Security as SecurityIcon,
+  Analytics as AnalyticsIcon,
 } from '@mui/icons-material';
 import MerchantRegisterPage from './MerchantRegisterPage';
 import ForgotPasswordPage from './ForgotPasswordPage';
@@ -530,6 +537,40 @@ const LoginPage: React.FC = () => {
     return <ForgotPasswordPage onBack={() => setPageMode('login')} />;
   }
 
+  // 系统优势列表
+  const features = [
+    {
+      icon: <InfiniteIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.simplePricing'),
+      description: t('auth.features.simplePricingDesc'),
+    },
+    {
+      icon: <EventIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.unlimitedAppointments'),
+      description: t('auth.features.unlimitedAppointmentsDesc'),
+    },
+    {
+      icon: <NotificationIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.unlimitedNotifications'),
+      description: t('auth.features.unlimitedNotificationsDesc'),
+    },
+    {
+      icon: <AnalyticsIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.smartOperations'),
+      description: t('auth.features.smartOperationsDesc'),
+    },
+    {
+      icon: <SpeedIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.fastSetup'),
+      description: t('auth.features.fastSetupDesc'),
+    },
+    {
+      icon: <SecurityIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.secureReliable'),
+      description: t('auth.features.secureReliableDesc'),
+    },
+  ];
+
   return (
     <Box
       sx={{
@@ -553,44 +594,128 @@ const LoginPage: React.FC = () => {
       >
         <LanguageSwitcher variant="login" size="medium" />
       </Box>
-      <Container maxWidth="xs">
-        <Box>
-          {/* 顶部Logo区域 */}
-          <Box
-            sx={{
-              textAlign: 'center',
-              mb: 5,
-            }}
-          >
-            {/* VA Logo */}
-            <Typography
-              sx={{
-                fontSize: '1.75rem',
-                fontWeight: 500,
-                fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                letterSpacing: '-0.025em',
-                color: '#1a1a1a',
-                mb: 0.5,
-              }}
-            >
-              VA Merchant
-            </Typography>
-            <Typography sx={{ color: '#888', fontSize: '0.8rem', fontWeight: 400, letterSpacing: '0.02em' }}>
-              {t('auth.brandSubtitle')}
-            </Typography>
-          </Box>
 
-          {/* 表单区域 */}
-          <Paper
-            elevation={0}
-            sx={{
-              borderRadius: 3,
-              p: { xs: 3, sm: 4 },
-              background: '#fff',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-              border: '1px solid rgba(0, 0, 0, 0.06)',
-            }}
-          >
+      <Container maxWidth="lg">
+        <Grid container spacing={6} alignItems="center" justifyContent="center">
+          {/* 左侧 - 系统优势介绍 */}
+          <Grid item xs={12} md={5} sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Box sx={{ pr: 4 }}>
+              {/* Logo 和标语 */}
+              <Typography
+                sx={{
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                  fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  letterSpacing: '-0.03em',
+                  color: '#1a1a1a',
+                  mb: 1,
+                }}
+              >
+                VA Merchant
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '1.1rem',
+                  color: '#666',
+                  mb: 4,
+                  lineHeight: 1.6,
+                }}
+              >
+                {t('auth.heroSubtitle')}
+              </Typography>
+
+              {/* 优势列表 */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                {features.map((feature, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 2,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        bgcolor: alpha('#1a1a1a', 0.05),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#1a1a1a',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {feature.icon}
+                    </Box>
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.95rem',
+                          color: '#1a1a1a',
+                          mb: 0.25,
+                        }}
+                      >
+                        {feature.title}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: '0.85rem',
+                          color: '#888',
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {feature.description}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* 右侧 - 登录表单 */}
+          <Grid item xs={12} md={5}>
+            <Box>
+              {/* 移动端 Logo */}
+              <Box
+                sx={{
+                  textAlign: 'center',
+                  mb: 4,
+                  display: { xs: 'block', md: 'none' },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '1.75rem',
+                    fontWeight: 500,
+                    fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    letterSpacing: '-0.025em',
+                    color: '#1a1a1a',
+                    mb: 0.5,
+                  }}
+                >
+                  VA Merchant
+                </Typography>
+                <Typography sx={{ color: '#888', fontSize: '0.8rem', fontWeight: 400, letterSpacing: '0.02em' }}>
+                  {t('auth.brandSubtitle')}
+                </Typography>
+              </Box>
+
+              {/* 表单区域 */}
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  p: { xs: 3, sm: 4 },
+                  background: '#fff',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                  border: '1px solid rgba(0, 0, 0, 0.06)',
+                }}
+              >
               <Box textAlign="center" mb={4}>
                 <Typography
                   variant="h5"
@@ -1290,11 +1415,13 @@ const LoginPage: React.FC = () => {
               </Box>
 
 
-            </Paper>
-        </Box>
+              </Paper>
+            </Box>
+          </Grid>
+        </Grid>
 
         {/* 页面底部版权信息 */}
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
+        <Box sx={{ mt: 6, textAlign: 'center' }}>
           <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em' }}>
             © {new Date().getFullYear()} SwiftmindSystems
           </Typography>

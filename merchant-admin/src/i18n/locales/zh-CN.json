@@ -276,6 +276,23 @@
       "registering": "注册中...",
       "finish": "完成注册"
     },
+    "heroSubtitle": "专为服务行业打造的一站式预约排班与业务管理平台。",
+    "features": {
+      "unlimitedAppointments": "无限预约数量",
+      "unlimitedAppointmentsDesc": "不限制预约数量，无隐藏费用，随心管理您的业务。",
+      "simplePricing": "统一订阅计划",
+      "simplePricingDesc": "一个订阅计划享受全部功能，无需升级，无等级限制。",
+      "unlimitedNotifications": "无限通知数量",
+      "unlimitedNotificationsDesc": "发送无限量短信和邮件提醒，有效减少爽约。",
+      "unlimitedStaff": "无限员工入驻",
+      "unlimitedStaffDesc": "添加您的整个团队，无按席收费，无人数限制。",
+      "fastSetup": "快速上手",
+      "fastSetupDesc": "直观的设置流程，几分钟即可开始使用。",
+      "secureReliable": "安全可靠",
+      "secureReliableDesc": "企业级安全保障，99.9%正常运行时间保证。",
+      "smartOperations": "智能运营管理",
+      "smartOperationsDesc": "审计日志、预约完成后自动通知员工、每日工作汇总报告。"
+    },
     "login": "用户登录",
     "loginSubtitle": "欢迎！请登录或创建账户以开始使用",
     "register": "用户注册",
