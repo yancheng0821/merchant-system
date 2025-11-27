@@ -55,12 +55,22 @@ import { api, Customer as ApiCustomer, staffAttendanceApi } from '../../../../se
 import CustomTimePicker from './CustomTimePicker';
 import CountryCodeSelector from '../../../../components/common/CountryCodeSelector';
 import { getMerchantNow } from '../../../../utils/timezoneUtils';
+import { useTheme } from '../../../../contexts/ThemeContext';
 
-// 主题颜色 - 使用蓝色主题与界面一致
-const themeColor = '#3B82F6';
-const themeColorLight = 'rgba(59, 130, 246, 0.15)';
-const themeColorDark = '#2563EB';
-const themeColorDarker = '#1D4ED8';
+// 根据主题模式获取输入框样式
+const getInputStyles = (themeColor: string) => ({
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2,
+    bgcolor: '#fff',
+    '& fieldset': { borderColor: '#d0d0d0' },
+    '&:hover fieldset': { borderColor: '#bbb' },
+    '&.Mui-focused fieldset': { borderColor: themeColor, borderWidth: '1px' },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#999',
+    '&.Mui-focused': { color: themeColor },
+  },
+});
 
 interface AppointmentData {
   customerFirstName: string;
@@ -134,6 +144,13 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   container,
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const themeColor = isMonochrome ? '#1a1a1a' : '#3B82F6';
+  const themeColorDark = isMonochrome ? '#333' : '#2563EB';
+  const inputStyles = getInputStyles(themeColor);
 
   const [formData, setFormData] = useState<AppointmentData>({
     customerFirstName: '',
@@ -802,110 +819,43 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       maxWidth="md"
       fullWidth
       container={container || undefined}
-      sx={{
-        zIndex: 9999,
-      }}
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-        }
-      }}
-      TransitionProps={{
-        onExited: handleExited,
-      }}
+      sx={{ zIndex: 9999 }}
+      PaperProps={{ sx: { borderRadius: 2.5, boxShadow: '0 4px 20px rgba(0,0,0,0.1)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' } }}
+      TransitionProps={{ onExited: handleExited }}
     >
-      <DialogTitle
-        sx={{
-          background: `linear-gradient(135deg, ${alpha(themeColor, 0.05)}, ${alpha(themeColor, 0.08)})`,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          pb: 3,
-          pt: 3,
-          flexShrink: 0,
-        }}
-      >
+      {/* 简约标题 */}
+      <DialogTitle sx={{ p: 2.5, borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: themeColorLight,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: themeColor,
-              }}
-            >
-              <AppointmentIcon sx={{ fontSize: 24 }} />
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box sx={{
+              width: 36, height: 36, borderRadius: 1.5,
+              bgcolor: alpha(themeColor, 0.1),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: themeColor,
+            }}>
+              <AppointmentIcon sx={{ fontSize: 20 }} />
             </Box>
             <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: 'text.primary',
-                  mb: 0.5,
-                }}
-              >
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem', color: '#1a1a1a' }}>
                 {editMode ? t('appointments.editAppointment') : t('appointments.addAppointment')}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" sx={{ color: '#888' }}>
                 {resourceName && `${t('appointments.for')} ${resourceName}`}
               </Typography>
             </Box>
           </Box>
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            sx={{
-              '&:hover': {
-                backgroundColor: alpha(themeColor, 0.1),
-              },
-            }}
-          >
-            <CloseIcon />
+          <IconButton size="small" onClick={(e) => { e.stopPropagation(); onClose(); }} sx={{ color: '#999' }}>
+            <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, flex: 1, overflow: 'auto' }}>
-        <Box sx={{ p: 3 }}>
+      <DialogContent sx={{ p: 2.5, flex: 1, overflow: 'auto' }}>
           {/* 客户信息 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(themeColor, 0.2),
-              borderRadius: 2,
-              background: alpha(themeColor, 0.02),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: themeColorLight,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: themeColor,
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+          <Box sx={{ mb: 3 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <PersonIcon sx={{ fontSize: 18, color: themeColor }} />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                 {t('appointments.customerInfo')}
               </Typography>
             </Box>
@@ -1166,36 +1116,13 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 />
               </Grid>
             </Grid>
-          </Paper>
+          </Box>
 
           {/* 预约信息 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(themeColor, 0.2),
-              borderRadius: 2,
-              background: alpha(themeColor, 0.02),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: themeColorLight,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: themeColor,
-                }}
-              >
-                <EventIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+          <Box sx={{ mb: 3 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <EventIcon sx={{ fontSize: 18, color: themeColor }} />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
                 {t('appointments.appointmentInfo')}
               </Typography>
             </Box>
@@ -1402,45 +1329,21 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
                 />
               </Grid>
             </Grid>
-          </Paper>
-        </Box>
+          </Box>
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          p: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          background: alpha(themeColor, 0.02),
-          flexShrink: 0,
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            color: 'text.secondary',
-          }}
-        >
+      <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+        <Button size="small" onClick={onClose} sx={{
+          borderRadius: 1.5, px: 2.5, py: 0.75, fontSize: '0.8125rem', fontWeight: 500,
+          color: '#666', textTransform: 'none', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+        }}>
           {t('common.cancel')}
         </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            background: themeColorLight,
-            color: themeColor,
-            fontWeight: 600,
-            boxShadow: `0 2px 8px ${alpha(themeColor, 0.2)}`,
-            '&:hover': {
-              background: alpha(themeColor, 0.2),
-              boxShadow: `0 4px 12px ${alpha(themeColor, 0.3)}`,
-            },
-          }}
-        >
+        <Button size="small" variant="contained" onClick={handleSave} sx={{
+          borderRadius: 1.5, px: 2.5, py: 0.75, fontSize: '0.8125rem', fontWeight: 500,
+          bgcolor: themeColor, boxShadow: 'none', textTransform: 'none',
+          '&:hover': { bgcolor: themeColorDark, boxShadow: 'none' },
+        }}>
           {t('common.save')}
         </Button>
       </DialogActions>
@@ -1453,67 +1356,46 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       maxWidth="sm"
       fullWidth
       container={container}
-      sx={{
-        zIndex: 10000, // Higher than main dialog's 9999
-      }}
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        }
-      }}
+      sx={{ zIndex: 10000 }}
+      PaperProps={{ sx: { borderRadius: 2.5, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}
     >
-      <DialogTitle sx={{
-        bgcolor: alpha('#F59E0B', 0.1),
-        color: '#D97706',
-        borderBottom: '1px solid',
-        borderColor: alpha('#F59E0B', 0.2),
-        pb: 2,
-      }}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <EventIcon />
-          <Typography variant="h6" component="span">
+      <DialogTitle sx={{ p: 2.5, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <Box sx={{
+            width: 36, height: 36, borderRadius: 1.5,
+            bgcolor: alpha('#F59E0B', 0.1),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#D97706',
+          }}>
+            <EventIcon sx={{ fontSize: 20 }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem', color: '#1a1a1a' }}>
             {t('appointments.exceedsWorkingHours', 'Exceeds Working Hours')}
           </Typography>
         </Box>
       </DialogTitle>
-      <DialogContent sx={{ pt: 3, mt: 2 }}>
-        <Typography variant="body1" gutterBottom>
+      <DialogContent sx={{ p: 2.5 }}>
+        <Typography variant="body2" sx={{ color: '#333', mb: 1.5 }}>
           {t('appointments.exceedsWorkingHoursMessage',
             'This appointment extends beyond the staff member\'s scheduled working hours.')}
         </Typography>
-        <Typography variant="body2" color="text.secondary" mt={2}>
+        <Typography variant="body2" sx={{ color: '#666' }}>
           {t('appointments.confirmExceedHours',
             'Have you confirmed with the staff member that they can work beyond their scheduled hours?')}
         </Typography>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={handleCancelConfirm}
-          variant="outlined"
-          sx={{
-            borderColor: alpha('#6B7280', 0.3),
-            color: '#6B7280',
-            textTransform: 'none',
-            '&:hover': {
-              borderColor: '#6B7280',
-              bgcolor: alpha('#6B7280', 0.05),
-            }
-          }}
-        >
+      <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <Button size="small" onClick={handleCancelConfirm} sx={{
+          borderRadius: 1.5, px: 2.5, py: 0.75, fontSize: '0.8125rem', fontWeight: 500,
+          color: '#666', textTransform: 'none', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+        }}>
           {t('common.cancel')}
         </Button>
-        <Button
-          onClick={proceedWithSave}
-          variant="contained"
-          sx={{
-            bgcolor: '#F59E0B',
-            color: 'white',
-            textTransform: 'none',
-            '&:hover': {
-              bgcolor: '#D97706',
-            }
-          }}
-        >
+        <Button size="small" variant="contained" onClick={proceedWithSave} sx={{
+          borderRadius: 1.5, px: 2.5, py: 0.75, fontSize: '0.8125rem', fontWeight: 500,
+          bgcolor: '#F59E0B', boxShadow: 'none', textTransform: 'none',
+          '&:hover': { bgcolor: '#D97706', boxShadow: 'none' },
+        }}>
           {t('appointments.confirmAndSave', 'Confirm and Save')}
         </Button>
       </DialogActions>

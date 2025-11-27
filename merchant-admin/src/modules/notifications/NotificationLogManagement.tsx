@@ -51,6 +51,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 
 interface NotificationLog {
@@ -73,6 +74,7 @@ interface NotificationLog {
 const NotificationLogManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,8 +95,10 @@ const NotificationLogManagement: React.FC = () => {
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // 橙色主题色，确保文字清晰
-  const themeColor = '#F97316';
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const themeColor = isMonochrome ? '#1a1a1a' : '#F97316';
+  const themeColorDark = isMonochrome ? '#333' : '#EA580C';
 
   // 获取租户ID
   const tenantId = useMemo(() => {
@@ -293,12 +297,13 @@ const NotificationLogManagement: React.FC = () => {
       {/* 操作按钮区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {t('notifications.notificationLogs')}
@@ -323,12 +328,12 @@ const NotificationLogManagement: React.FC = () => {
                 onClick={handleRetryFailed}
                 sx={{
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                  boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)',
+                  background: isMonochrome ? themeColor : `linear-gradient(135deg, ${themeColor}, ${themeColorDark})`,
+                  boxShadow: isMonochrome ? 'none' : '0 4px 15px rgba(249, 115, 22, 0.3)',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #EA580C, #C2410C)',
+                    background: isMonochrome ? themeColorDark : `linear-gradient(135deg, ${themeColorDark}, ${themeColorDark})`,
                     transform: 'translateY(-1px)',
-                    boxShadow: '0 6px 20px rgba(249, 115, 22, 0.4)',
+                    boxShadow: isMonochrome ? 'none' : '0 6px 20px rgba(249, 115, 22, 0.4)',
                   },
                   transition: 'all 0.3s ease',
                 }}
@@ -358,12 +363,13 @@ const NotificationLogManagement: React.FC = () => {
       {/* 现代化搜索和过滤区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
           <Grid container spacing={2} alignItems="center">
             {/* 第一行 */}
             <Grid item xs={12} sm={6} md={2}>
@@ -374,7 +380,7 @@ const NotificationLogManagement: React.FC = () => {
                   onChange={(e) => handleFilterChange('type', e.target.value)}
                   label={t('notifications.notificationType')}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -397,7 +403,7 @@ const NotificationLogManagement: React.FC = () => {
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   label={t('notifications.status')}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -421,7 +427,7 @@ const NotificationLogManagement: React.FC = () => {
                   onChange={(e) => handleFilterChange('businessType', e.target.value)}
                   label={t('notifications.businessType', 'Business Type')}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -448,7 +454,7 @@ const NotificationLogManagement: React.FC = () => {
                 onChange={(e) => handleFilterChange('recipient', e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 1.5,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -468,7 +474,7 @@ const NotificationLogManagement: React.FC = () => {
                 onChange={(e) => handleFilterChange('businessId', e.target.value)}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 1.5,
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -486,37 +492,38 @@ const NotificationLogManagement: React.FC = () => {
       {/* 现代化表格 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >
         <TableContainer>
-          <Table>
+          <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('notifications.notificationType')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.recipient')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.status')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.businessType', 'Business Type')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.businessId')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.createdAt')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.sentAt')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                   {t('notifications.actions')}
                 </TableCell>
               </TableRow>
@@ -647,9 +654,10 @@ const NotificationLogManagement: React.FC = () => {
           onClose={handleMenuClose}
           PaperProps={{
             sx: {
-              borderRadius: 2,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-              minWidth: 160,
+              borderRadius: 1.5,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              minWidth: 150,
             }
           }}
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -685,9 +693,12 @@ const NotificationLogManagement: React.FC = () => {
             setPage(0);
           }}
           sx={{
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            backgroundColor: '#f8fafc',
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+            backgroundColor: '#fafafa',
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontSize: '0.8125rem',
+              color: '#666',
+            },
           }}
         />
       </Card>
@@ -700,43 +711,17 @@ const NotificationLogManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
         {/* 对话框标题 */}
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${alpha(themeColor, 0.05)}, ${alpha(themeColor, 0.02)})`,
-            borderBottom: `2px solid ${alpha(themeColor, 0.1)}`,
-            pb: 2,
-            pt: 2.5,
-          }}
-        >
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center" gap={1.5}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 4px 12px ${alpha(themeColor, 0.3)}`,
-                }}
-              >
-                <InfoIcon sx={{ color: 'white', fontSize: 20 }} />
-              </Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                }}
-              >
+              <InfoIcon sx={{ color: themeColor, fontSize: 20 }} />
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
                 {t('notifications.notificationDetails')}
               </Typography>
             </Box>
@@ -744,17 +729,17 @@ const NotificationLogManagement: React.FC = () => {
               onClick={handleCloseDialog}
               size="small"
               sx={{
-                color: 'text.secondary',
+                color: '#999',
                 '&:hover': {
-                  backgroundColor: alpha(themeColor, 0.1),
-                  color: themeColor,
+                  backgroundColor: 'rgba(0,0,0,0.04)',
+                  color: '#666',
                 },
               }}
             >
-              <CloseIcon fontSize="small" />
+              <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
+        </Box>
 
         <DialogContent sx={{ px: 3, pt: 3, pb: 3 }}>
           {selectedLog && (
@@ -764,24 +749,25 @@ const NotificationLogManagement: React.FC = () => {
                 elevation={0}
                 sx={{
                   p: 2.5,
-                  mb: 2.5,
+                  mb: 2,
                   borderRadius: 2,
-                  border: `1px solid ${alpha(themeColor, 0.1)}`,
-                  background: alpha(themeColor, 0.02),
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  background: '#fafafa',
                 }}
               >
                 <Typography
                   variant="subtitle2"
                   sx={{
                     fontWeight: 600,
-                    color: themeColor,
+                    color: '#1a1a1a',
                     mb: 2,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
+                    fontSize: '0.875rem',
                   }}
                 >
-                  <InfoIcon sx={{ fontSize: 18 }} />
+                  <InfoIcon sx={{ fontSize: 16, color: themeColor }} />
                   {t('notifications.basicInfo')}
                 </Typography>
 
@@ -929,18 +915,19 @@ const NotificationLogManagement: React.FC = () => {
                 elevation={0}
                 sx={{
                   p: 2.5,
-                  mb: 2.5,
+                  mb: 2,
                   borderRadius: 2,
-                  border: `1px solid ${alpha(themeColor, 0.1)}`,
-                  background: alpha(themeColor, 0.02),
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  background: '#fafafa',
                 }}
               >
                 <Typography
                   variant="subtitle2"
                   sx={{
                     fontWeight: 600,
-                    color: themeColor,
+                    color: '#1a1a1a',
                     mb: 2,
+                    fontSize: '0.875rem',
                   }}
                 >
                   {t('notifications.contentInfo')}
@@ -984,9 +971,8 @@ const NotificationLogManagement: React.FC = () => {
                       {/* HTML 渲染预览 */}
                       <Box
                         sx={{
-                          border: '1px solid',
-                          borderColor: alpha(themeColor, 0.2),
-                          borderRadius: 2,
+                          border: '1px solid rgba(0,0,0,0.08)',
+                          borderRadius: 1.5,
                           overflow: 'hidden',
                           mb: 2,
                         }}
@@ -995,16 +981,15 @@ const NotificationLogManagement: React.FC = () => {
                           sx={{
                             px: 2,
                             py: 1,
-                            backgroundColor: alpha(themeColor, 0.05),
-                            borderBottom: '1px solid',
-                            borderColor: alpha(themeColor, 0.2),
+                            backgroundColor: '#f5f5f5',
+                            borderBottom: '1px solid rgba(0,0,0,0.08)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 1,
                           }}
                         >
-                          <EmailIcon sx={{ fontSize: 16, color: themeColor }} />
-                          <Typography variant="caption" sx={{ fontWeight: 600, color: themeColor }}>
+                          <EmailIcon sx={{ fontSize: 14, color: '#666' }} />
+                          <Typography variant="caption" sx={{ fontWeight: 500, color: '#666' }}>
                             {t('notifications.htmlPreview')}
                           </Typography>
                         </Box>
@@ -1090,22 +1075,23 @@ const NotificationLogManagement: React.FC = () => {
                 sx={{
                   p: 2.5,
                   borderRadius: 2,
-                  border: `1px solid ${alpha(themeColor, 0.1)}`,
-                  background: alpha(themeColor, 0.02),
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  background: '#fafafa',
                 }}
               >
                 <Typography
                   variant="subtitle2"
                   sx={{
                     fontWeight: 600,
-                    color: themeColor,
+                    color: '#1a1a1a',
                     mb: 2,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
+                    fontSize: '0.875rem',
                   }}
                 >
-                  <ScheduleIcon sx={{ fontSize: 18 }} />
+                  <ScheduleIcon sx={{ fontSize: 16, color: themeColor }} />
                   {t('notifications.timeInfo')}
                 </Typography>
 
@@ -1218,28 +1204,26 @@ const NotificationLogManagement: React.FC = () => {
         <DialogActions
           sx={{
             px: 3,
-            py: 2.5,
-            borderTop: `2px solid ${alpha(themeColor, 0.1)}`,
-            background: alpha(themeColor, 0.02),
+            py: 2,
+            borderTop: '1px solid rgba(0,0,0,0.06)',
           }}
         >
           <Button
             onClick={handleCloseDialog}
             variant="contained"
+            size="small"
             sx={{
-              borderRadius: 2,
-              px: 4,
-              py: 1,
+              borderRadius: 1.5,
+              px: 2.5,
               textTransform: 'none',
-              fontWeight: 600,
-              background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-              boxShadow: `0 4px 12px ${alpha(themeColor, 0.3)}`,
+              fontWeight: 500,
+              fontSize: '0.8125rem',
+              bgcolor: themeColor,
+              boxShadow: 'none',
               '&:hover': {
-                background: `linear-gradient(135deg, #EA580C, #C2410C)`,
-                transform: 'translateY(-1px)',
-                boxShadow: `0 6px 16px ${alpha(themeColor, 0.4)}`,
+                bgcolor: themeColorDark,
+                boxShadow: 'none',
               },
-              transition: 'all 0.3s ease',
             }}
           >
             {t('notifications.close')}

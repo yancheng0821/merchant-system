@@ -116,6 +116,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import { CurrencyUtils } from '../../config/constants';
 import ServiceDialog from './components/ServiceDialog';
 import ServiceCategoryDialog from './components/ServiceCategoryDialog';
@@ -130,6 +131,12 @@ const ServiceManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const THEME_COLOR_HOVER = isMonochrome ? '#333' : '#0891B2';
 
   // Define tabs with permissions
   const allTabsConfig = [
@@ -527,7 +534,7 @@ const ServiceManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#06B6D4',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -542,26 +549,34 @@ const ServiceManagement: React.FC = () => {
 
       {/* Tab Navigation */}
       {tabsConfig.length > 0 && (
-        <Box mb={3}>
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+          }}
+        >
           <Tabs
             value={selectedTab}
             onChange={(e, v) => setSelectedTab(v)}
             sx={{
-              borderBottom: '2px solid',
-              borderColor: 'divider',
+              backgroundColor: '#fafafa',
               '& .MuiTab-root': {
-                fontWeight: 600,
-                fontSize: '1rem',
+                color: '#666',
+                fontWeight: 500,
+                fontSize: '0.875rem',
                 textTransform: 'none',
-                minHeight: 56,
+                py: 1.5,
                 '&.Mui-selected': {
-                  color: '#06B6D4',
+                  color: THEME_COLOR,
+                  fontWeight: 600,
                 },
               },
               '& .MuiTabs-indicator': {
                 height: 3,
-                borderRadius: '3px 3px 0 0',
-                backgroundColor: '#06B6D4',
+                backgroundColor: THEME_COLOR,
               },
             }}
           >
@@ -569,174 +584,131 @@ const ServiceManagement: React.FC = () => {
               <Tab key={tab.key} label={tab.label} />
             ))}
           </Tabs>
-        </Box>
+        </Card>
       )}
 
       {/* Services Tab Content */}
       {currentTabKey === 'services' && (
         <>
-          {/* 搜索和筛选区域 */}
-          <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            placeholder={t('products.searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#06B6D4' }} />
-                </InputAdornment>
-              ),
-            }}
+          {/* 搜索和筛选区域 - 简约设计 */}
+          <Box
             sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-                backgroundColor: '#f8fafc',
-                '& fieldset': {
-                  borderColor: 'rgba(0, 0, 0, 0.1)',
-                  borderWidth: 1,
-                },
-                '&:hover fieldset': {
-                  borderColor: alpha('#06B6D4', 0.5),
-                  borderWidth: 1,
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#06B6D4',
-                  borderWidth: 2,
-                },
-                '&:hover': {
-                  backgroundColor: '#f1f5f9',
-                },
-                '&.Mui-focused': {
-                  backgroundColor: 'white',
-                  boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
-                },
-              },
-            }}
-          />
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth>
-            <InputLabel>{t('products.category')}</InputLabel>
-            <Select
-              value={categoryFilter}
-              label={t('products.category')}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              sx={{
-                borderRadius: 3,
-                backgroundColor: '#f8fafc',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(0, 0, 0, 0.1)',
-                  borderWidth: 1,
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#06B6D4', 0.5),
-                  borderWidth: 1,
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#06B6D4',
-                  borderWidth: 2,
-                },
-                '&:hover': {
-                  backgroundColor: '#f1f5f9',
-                },
-                '&.Mui-focused': {
-                  backgroundColor: 'white',
-                  boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
-                },
-              }}
-            >
-              <MenuItem value="">{t('products.allCategories')}</MenuItem>
-              {categories.map((category) => (
-                <MenuItem key={category.id} value={category.id.toString()}>
-                  {category.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth>
-            <InputLabel>{t('products.status')}</InputLabel>
-            <Select
-              value={statusFilter}
-              label={t('products.status')}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{
-                borderRadius: 3,
-                backgroundColor: '#f8fafc',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(0, 0, 0, 0.1)',
-                  borderWidth: 1,
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#06B6D4', 0.5),
-                  borderWidth: 1,
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#06B6D4',
-                  borderWidth: 2,
-                },
-                '&:hover': {
-                  backgroundColor: '#f1f5f9',
-                },
-                '&.Mui-focused': {
-                  backgroundColor: 'white',
-                  boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
-                },
-              }}
-            >
-              <MenuItem value="">{t('products.allStatuses')}</MenuItem>
-              <MenuItem value="ACTIVE">{t('products.active')}</MenuItem>
-              <MenuItem value="INACTIVE">{t('products.inactive')}</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <PermissionButton
-            permission={PRODUCT_PERMISSIONS.CREATE}
-            size="small"
-            variant="contained"
-            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-            onClick={() => {
-              setSelectedService(null);
-              setServiceDialogOpen(true);
-            }}
-            sx={{
-              borderRadius: 1.5,
-              height: 40,
-              px: 2,
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              bgcolor: '#06B6D4',
-              boxShadow: 'none',
-              textTransform: 'none',
-              '&:hover': {
-                bgcolor: '#0891B2',
-                boxShadow: 'none',
-              },
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              mb: 2.5,
+              alignItems: 'center',
             }}
           >
-            {t('products.addService')}
-          </PermissionButton>
-        </Grid>
-      </Grid>
+            <TextField
+              placeholder={t('products.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              sx={{
+                minWidth: 280,
+                flex: 1,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
+                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>{t('products.category')}</InputLabel>
+              <Select
+                value={categoryFilter}
+                label={t('products.category')}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                }}
+              >
+                <MenuItem value="">{t('products.allCategories')}</MenuItem>
+                {categories.map((category) => (
+                  <MenuItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>{t('products.status')}</InputLabel>
+              <Select
+                value={statusFilter}
+                label={t('products.status')}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                }}
+              >
+                <MenuItem value="">{t('products.allStatuses')}</MenuItem>
+                <MenuItem value="ACTIVE">{t('products.active')}</MenuItem>
+                <MenuItem value="INACTIVE">{t('products.inactive')}</MenuItem>
+              </Select>
+            </FormControl>
+            <PermissionButton
+              permission={PRODUCT_PERMISSIONS.CREATE}
+              size="small"
+              variant="contained"
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+              onClick={() => {
+                setSelectedService(null);
+                setServiceDialogOpen(true);
+              }}
+              sx={{
+                borderRadius: 1.5,
+                height: 40,
+                px: 2,
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                bgcolor: THEME_COLOR,
+                boxShadow: 'none',
+                textTransform: 'none',
+                '&:hover': {
+                  bgcolor: THEME_COLOR_HOVER,
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              {t('products.addService')}
+            </PermissionButton>
+          </Box>
 
       {/* 管理分类按钮 */}
       {hasPermission('product_categories:manage') && (
-        <Box mb={3}>
+        <Box mb={2.5}>
           <Button
             variant="outlined"
+            size="small"
             onClick={() => setCategoryDialogOpen(true)}
             sx={{
-              borderRadius: 3,
-              borderColor: '#06B6D4',
-              color: '#06B6D4',
+              borderRadius: 1.5,
+              borderColor: alpha(THEME_COLOR, 0.3),
+              color: THEME_COLOR,
+              textTransform: 'none',
+              fontWeight: 500,
               '&:hover': {
-                borderColor: '#0891B2',
-                backgroundColor: alpha('#06B6D4', 0.05),
+                borderColor: THEME_COLOR,
+                backgroundColor: alpha(THEME_COLOR, 0.05),
               },
             }}
           >
@@ -746,12 +718,12 @@ const ServiceManagement: React.FC = () => {
       )}
 
       {/* 服务列表表格 */}
-      <Card
+      <Box
         sx={{
-          borderRadius: 4,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
           overflow: 'hidden',
+          bgcolor: '#fff',
         }}
       >
         {loading ? (
@@ -762,35 +734,33 @@ const ServiceManagement: React.FC = () => {
           <>
             <TableContainer>
               <Table>
-                <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                <TableHead sx={{ backgroundColor: '#fafafa' }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.category')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.price')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.duration')}</TableCell>
-
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.resourceType')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.status')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('products.actions')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.service')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.category')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.price')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.duration')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.resourceType')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.status')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {services.map((service) => (
                     <TableRow
                       key={service.id}
+                      hover
                       sx={{
-                        '&:hover': {
-                          backgroundColor: alpha('#06B6D4', 0.04),
-                        },
-                        transition: 'background-color 0.2s ease',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                        '& td': { py: 1.5, fontSize: '0.8125rem' },
                       }}
                     >
                       <TableCell>
                         <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                             {service.name}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                             ID: {service.id}
                           </Typography>
                         </Box>
@@ -799,30 +769,30 @@ const ServiceManagement: React.FC = () => {
                         <Box display="flex" alignItems="center" gap={1}>
                           <Box
                             sx={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 2,
-                              background: `linear-gradient(135deg, ${getCategoryColor(service.categoryId)}, ${getCategoryColor(service.categoryId)}80)`,
+                              width: 28,
+                              height: 28,
+                              borderRadius: 1.5,
+                              bgcolor: alpha(getCategoryColor(service.categoryId), 0.1),
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              color: 'white',
+                              color: getCategoryColor(service.categoryId),
                             }}
                           >
                             {getCategoryIcon(service.categoryId)}
                           </Box>
-                          <Typography variant="body2">
+                          <Typography sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
                             {service.categoryName || categories.find(c => c.id === service.categoryId)?.name}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                           {CurrencyUtils.formatAmount(service.price)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                           {service.duration} {t('products.minutes')}
                         </Typography>
                       </TableCell>
@@ -832,9 +802,11 @@ const ServiceManagement: React.FC = () => {
                           label={service.resourceType}
                           size="small"
                           sx={{
-                            backgroundColor: alpha('#6366F1', 0.1),
-                            color: '#6366F1',
-                            fontWeight: 600,
+                            backgroundColor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
+                            fontWeight: 500,
+                            fontSize: '0.75rem',
+                            height: 22,
                           }}
                         />
                       </TableCell>
@@ -849,12 +821,14 @@ const ServiceManagement: React.FC = () => {
                             setSelectedService(service);
                           }}
                           sx={{
+                            color: '#999',
                             '&:hover': {
-                              backgroundColor: alpha('#06B6D4', 0.1),
+                              backgroundColor: 'rgba(0,0,0,0.04)',
+                              color: '#666',
                             },
                           }}
                         >
-                          <MoreVertIcon />
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -873,15 +847,17 @@ const ServiceManagement: React.FC = () => {
                 setRowsPerPage(parseInt(e.target.value, 10));
                 setPage(0);
               }}
+              labelRowsPerPage={t('common.rowsPerPage')}
               sx={{
-                borderTop: '1px solid',
-                borderColor: 'divider',
-                backgroundColor: '#f8fafc',
+                borderTop: '1px solid rgba(0,0,0,0.06)',
+                '& .MuiTablePagination-select': {
+                  borderRadius: 1,
+                },
               }}
             />
           </>
         )}
-      </Card>
+      </Box>
 
       {/* 操作菜单 */}
       <Menu
@@ -891,10 +867,11 @@ const ServiceManagement: React.FC = () => {
         slotProps={{
           paper: {
             sx: {
-              borderRadius: 2,
-              boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-              border: '1px solid rgba(0,0,0,0.08)',
-              mt: 1,
+              borderRadius: 1.5,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              mt: 0.5,
+              minWidth: 160,
             }
           }
         }}
@@ -905,9 +882,13 @@ const ServiceManagement: React.FC = () => {
               setServiceDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ '&:hover': { backgroundColor: alpha('#06B6D4', 0.08) } }}
+            sx={{
+              fontSize: '0.8125rem',
+              py: 1,
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+            }}
           >
-            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#06B6D4' }} />
+            <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('products.editService')}
           </MenuItem>
         )}
@@ -916,9 +897,13 @@ const ServiceManagement: React.FC = () => {
             setViewDetailsDialogOpen(true);
             setMenuAnchorEl(null);
           }}
-          sx={{ '&:hover': { backgroundColor: alpha('#6366F1', 0.08) } }}
+          sx={{
+            fontSize: '0.8125rem',
+            py: 1,
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
+          }}
         >
-          <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
+          <VisibilityIcon sx={{ mr: 1.5, fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
           {t('products.viewDetails')}
         </MenuItem>
         {hasPermission('products:delete') && (
@@ -927,9 +912,13 @@ const ServiceManagement: React.FC = () => {
               setDeleteDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+            sx={{
+              fontSize: '0.8125rem',
+              py: 1,
+              '&:hover': { backgroundColor: alpha('#EF4444', 0.08) }
+            }}
           >
-            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            <DeleteIcon sx={{ mr: 1.5, fontSize: 16, color: '#EF4444' }} />
             {t('products.deleteService')}
           </MenuItem>
         )}
@@ -960,38 +949,53 @@ const ServiceManagement: React.FC = () => {
         onClose={() => setDeleteDialogOpen(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
-          {t('products.confirmDeleteService')}
+        <DialogTitle sx={{ py: 2, px: 3 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('products.confirmDeleteService')}
+          </Typography>
         </DialogTitle>
-        <DialogContent>
-          <Typography>
+        <DialogContent sx={{ px: 3, pb: 2 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
             {t('products.confirmDeleteServiceMessage', { serviceName: selectedService?.name })}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setDeleteDialogOpen(false)}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#666',
+              textTransform: 'none',
             }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleDeleteService}
             variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              backgroundColor: '#EF4444',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                backgroundColor: '#DC2626',
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >
@@ -1008,42 +1012,47 @@ const ServiceManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle component="div">
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#06B6D4' }}>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: THEME_COLOR }}>
               {t('products.serviceDetails')}
             </Typography>
-            <IconButton onClick={() => setViewDetailsDialogOpen(false)}>
-              <CloseIcon />
+            <IconButton
+              onClick={() => setViewDetailsDialogOpen(false)}
+              size="small"
+              sx={{ color: '#999', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)', color: '#666' } }}
+            >
+              <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
+        </Box>
 
-        <DialogContent dividers>
+        <DialogContent sx={{ p: 3 }}>
           {selectedService && (
             <Grid container spacing={3}>
               {/* Basic Information */}
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                <Typography variant="subtitle2" sx={{ color: THEME_COLOR, fontWeight: 600, mb: 1.5 }}>
                   {t('services.basicInfo')}
                 </Typography>
                 <Box mb={2}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary">
                     {t('products.serviceName')}
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                  <Typography variant="body2" fontWeight={600}>
                     {selectedService.name}
                   </Typography>
                 </Box>
                 <Box mb={2}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary">
                     {t('products.category')}
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                  <Typography variant="body2" fontWeight={600}>
                     {selectedService.categoryName || categories.find(c => c.id === selectedService.categoryId)?.name}
                   </Typography>
                 </Box>
@@ -1051,22 +1060,22 @@ const ServiceManagement: React.FC = () => {
 
               {/* Service Details */}
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                <Typography variant="subtitle2" sx={{ color: THEME_COLOR, fontWeight: 600, mb: 1.5 }}>
                   {t('services.serviceDetails')}
                 </Typography>
                 <Box mb={2}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary">
                     {t('products.price')}
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                  <Typography variant="body2" fontWeight={600}>
                     {CurrencyUtils.formatAmount(selectedService.price)}
                   </Typography>
                 </Box>
                 <Box mb={2}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary">
                     {t('products.duration')}
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                  <Typography variant="body2" fontWeight={600}>
                     {selectedService.duration} {t('products.minutes')}
                   </Typography>
                 </Box>
@@ -1074,22 +1083,24 @@ const ServiceManagement: React.FC = () => {
 
               {/* Resource Type and Status */}
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                <Typography variant="subtitle2" sx={{ color: THEME_COLOR, fontWeight: 600, mb: 1.5 }}>
                   {t('products.resourceType')}
                 </Typography>
                 <Chip
                   label={selectedService.resourceType}
                   sx={{
-                    backgroundColor: alpha('#06B6D4', 0.1),
-                    color: '#06B6D4',
+                    backgroundColor: alpha(THEME_COLOR, 0.1),
+                    color: THEME_COLOR,
                     fontWeight: 600,
+                    fontSize: '0.75rem',
+                    height: 24,
                   }}
-                  size="medium"
+                  size="small"
                 />
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                <Typography variant="subtitle2" sx={{ color: THEME_COLOR, fontWeight: 600, mb: 1.5 }}>
                   {t('products.status')}
                 </Typography>
                 {getStatusChip(selectedService.status)}
@@ -1102,10 +1113,10 @@ const ServiceManagement: React.FC = () => {
                     <Divider sx={{ my: 1 }} />
                   </Grid>
                   <Grid item xs={12}>
-                    <Typography variant="h6" gutterBottom sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ color: THEME_COLOR, fontWeight: 600, mb: 1.5 }}>
                       {t('products.description')}
                     </Typography>
-                    <Typography variant="body2" sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="body2" sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 1.5, border: '1px solid rgba(0,0,0,0.06)' }}>
                       {selectedService.description}
                     </Typography>
                   </Grid>
@@ -1122,153 +1133,107 @@ const ServiceManagement: React.FC = () => {
       {/* Packages Tab Content */}
       {currentTabKey === 'packages' && (
         <>
-          {/* Package Search and Filters - Matching Service Management Style */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                placeholder={t('packages.searchPlaceholder')}
-                value={packageSearchTerm}
-                onChange={(e) => setPackageSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#06B6D4' }} />
-                    </InputAdornment>
-                  ),
+          {/* Package Search and Filters - 简约设计 */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              mb: 2.5,
+              alignItems: 'center',
+            }}
+          >
+            <TextField
+              placeholder={t('packages.searchPlaceholder')}
+              value={packageSearchTerm}
+              onChange={(e) => setPackageSearchTerm(e.target.value)}
+              size="small"
+              sx={{
+                minWidth: 280,
+                flex: 1,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
+                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>{t('packages.statusFilter')}</InputLabel>
+              <Select
+                value={packageStatusFilter}
+                onChange={(e) => setPackageStatusFilter(e.target.value)}
+                label={t('packages.statusFilter')}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                }}
+              >
+                <MenuItem value="">{t('common.all')}</MenuItem>
+                <MenuItem value="ACTIVE">{t('packages.active')}</MenuItem>
+                <MenuItem value="INACTIVE">{t('packages.inactive')}</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>{t('packages.sortBy')}</InputLabel>
+              <Select
+                value={packageSortBy}
+                onChange={(e) => setPackageSortBy(e.target.value as any)}
+                label={t('packages.sortBy')}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#fafafa',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                }}
+              >
+                <MenuItem value="created">{t('packages.sortByCreated')}</MenuItem>
+                <MenuItem value="name">{t('packages.sortByName')}</MenuItem>
+                <MenuItem value="price">{t('packages.sortByPrice')}</MenuItem>
+                <MenuItem value="discount">{t('packages.sortByDiscount')}</MenuItem>
+              </Select>
+            </FormControl>
+            {hasPermission('packages:create') && (
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                onClick={() => {
+                  setSelectedPackage(null);
+                  setPackageDialogOpen(true);
                 }}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 3,
-                    backgroundColor: '#f8fafc',
-                    '& fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.1)',
-                      borderWidth: 1,
-                    },
-                    '&:hover fieldset': {
-                      borderColor: alpha('#06B6D4', 0.5),
-                      borderWidth: 1,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#06B6D4',
-                      borderWidth: 2,
-                    },
-                    '&:hover': {
-                      backgroundColor: '#f1f5f9',
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: 'white',
-                      boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
-                    },
+                  borderRadius: 1.5,
+                  height: 40,
+                  px: 2,
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  bgcolor: THEME_COLOR,
+                  boxShadow: 'none',
+                  textTransform: 'none',
+                  '&:hover': {
+                    bgcolor: THEME_COLOR_HOVER,
+                    boxShadow: 'none',
                   },
                 }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>{t('packages.statusFilter')}</InputLabel>
-                <Select
-                  value={packageStatusFilter}
-                  onChange={(e) => setPackageStatusFilter(e.target.value)}
-                  label={t('packages.statusFilter')}
-                  sx={{
-                    borderRadius: 3,
-                    backgroundColor: '#f8fafc',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0, 0, 0, 0.1)',
-                      borderWidth: 1,
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: alpha('#06B6D4', 0.5),
-                      borderWidth: 1,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#06B6D4',
-                      borderWidth: 2,
-                    },
-                    '&:hover': {
-                      backgroundColor: '#f1f5f9',
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: 'white',
-                      boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
-                    },
-                  }}
-                >
-                  <MenuItem value="">{t('common.all')}</MenuItem>
-                  <MenuItem value="ACTIVE">{t('packages.active')}</MenuItem>
-                  <MenuItem value="INACTIVE">{t('packages.inactive')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>{t('packages.sortBy')}</InputLabel>
-                <Select
-                  value={packageSortBy}
-                  onChange={(e) => setPackageSortBy(e.target.value as any)}
-                  label={t('packages.sortBy')}
-                  sx={{
-                    borderRadius: 3,
-                    backgroundColor: '#f8fafc',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0, 0, 0, 0.1)',
-                      borderWidth: 1,
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: alpha('#06B6D4', 0.5),
-                      borderWidth: 1,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#06B6D4',
-                      borderWidth: 2,
-                    },
-                    '&:hover': {
-                      backgroundColor: '#f1f5f9',
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: 'white',
-                      boxShadow: `0 0 0 2px ${alpha('#06B6D4', 0.1)}`,
-                    },
-                  }}
-                >
-                  <MenuItem value="created">{t('packages.sortByCreated')}</MenuItem>
-                  <MenuItem value="name">{t('packages.sortByName')}</MenuItem>
-                  <MenuItem value="price">{t('packages.sortByPrice')}</MenuItem>
-                  <MenuItem value="discount">{t('packages.sortByDiscount')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            {hasPermission('packages:create') && (
-              <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                <Button
-                  size="small"
-                  variant="contained"
-                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => {
-                    setSelectedPackage(null);
-                    setPackageDialogOpen(true);
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                    height: 40,
-                    px: 2,
-                    fontSize: '0.8125rem',
-                    fontWeight: 500,
-                    bgcolor: '#06B6D4',
-                    boxShadow: 'none',
-                    textTransform: 'none',
-                    '&:hover': {
-                      bgcolor: '#0891B2',
-                      boxShadow: 'none',
-                    },
-                  }}
-                >
-                  {t('packages.createPackage')}
-                </Button>
-              </Grid>
+              >
+                {t('packages.createPackage')}
+              </Button>
             )}
-          </Grid>
+          </Box>
 
           <PackageList
             packages={getFilteredAndSortedPackages()}
@@ -1312,45 +1277,58 @@ const ServiceManagement: React.FC = () => {
             }}
             PaperProps={{
               sx: {
-                borderRadius: 3,
-                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                borderRadius: 2.5,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
               }
             }}
           >
-            <DialogTitle component="div" sx={{ pb: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
+            <DialogTitle sx={{ py: 2, px: 3 }}>
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
                 {t('packages.confirmDeletePackage')}
               </Typography>
             </DialogTitle>
-            <DialogContent>
-              <Typography>
+            <DialogContent sx={{ px: 3, pb: 2 }}>
+              <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
                 {t('packages.confirmDeletePackageMessage', {
                   packageName: packageToDelete?.name || ''
                 })}
               </Typography>
             </DialogContent>
-            <DialogActions sx={{ p: 3, pt: 1 }}>
+            <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
               <Button
+                size="small"
                 onClick={() => {
                   setPackageDeleteDialogOpen(false);
                   setPackageToDelete(null);
                 }}
                 sx={{
-                  borderRadius: 2,
-                  px: 3,
+                  borderRadius: 1.5,
+                  px: 2.5,
+                  py: 0.75,
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  color: '#666',
+                  textTransform: 'none',
                 }}
               >
                 {t('common.cancel')}
               </Button>
               <Button
+                size="small"
                 onClick={confirmDeletePackage}
                 variant="contained"
                 sx={{
-                  borderRadius: 2,
-                  px: 3,
-                  backgroundColor: '#EF4444',
+                  borderRadius: 1.5,
+                  px: 2.5,
+                  py: 0.75,
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  bgcolor: '#EF4444',
+                  boxShadow: 'none',
+                  textTransform: 'none',
                   '&:hover': {
-                    backgroundColor: '#DC2626',
+                    bgcolor: '#DC2626',
+                    boxShadow: 'none',
                   },
                 }}
               >

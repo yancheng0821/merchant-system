@@ -33,6 +33,7 @@ import { getFullImageUrl, ResourceStatus, Resource, ResourceAvailability, staffA
 import DetailedAvailabilityView from '../../../components/common/DetailedAvailabilityView';
 import { format } from 'date-fns';
 import { getMerchantNow } from '../../../utils/timezoneUtils';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ResourceAvailabilityViewProps {
     resourceType: 'STAFF' | 'ROOM';
@@ -40,6 +41,7 @@ interface ResourceAvailabilityViewProps {
 
 const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ resourceType }) => {
     const { t } = useTranslation();
+    const { themeMode } = useTheme();
     const [resources, setResources] = useState<Resource[]>([]);
     const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
     const [availabilities, setAvailabilities] = useState<Record<number, ResourceAvailability[]>>({});
@@ -52,8 +54,9 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     const [selectedResourceForDetail, setSelectedResourceForDetail] = useState<Resource | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // 主题色
-    const themeColor = '#3B82F6';
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const themeColor = isMonochrome ? '#1a1a1a' : '#3B82F6';
 
     // 获取租户ID
     const tenantId = useMemo(() => {

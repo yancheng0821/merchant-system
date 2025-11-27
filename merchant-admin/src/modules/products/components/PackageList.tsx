@@ -30,6 +30,7 @@ import { Package, PackageService } from '../../../services/api';
 import { CurrencyUtils } from '../../../config/constants';
 import { getPackageIconComponent } from '../utils/packageIcons';
 import { usePermission } from '../../../hooks/usePermission';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface Service {
   id: number;
@@ -58,8 +59,14 @@ const PackageList: React.FC<PackageListProps> = ({
 }) => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#0891B2';
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, pkg: Package) => {
     setMenuAnchorEl(event.currentTarget);
@@ -103,7 +110,7 @@ const PackageList: React.FC<PackageListProps> = ({
   if (packages.length === 0) {
     return (
       <Box textAlign="center" py={8}>
-        <PackageIcon sx={{ fontSize: 80, color: alpha('#06B6D4', 0.3), mb: 2 }} />
+        <PackageIcon sx={{ fontSize: 80, color: alpha(THEME_COLOR, 0.3), mb: 2 }} />
         <Typography variant="h6" color="text.secondary" mb={3}>
           {t('packages.noPackages')}
         </Typography>
@@ -113,9 +120,13 @@ const PackageList: React.FC<PackageListProps> = ({
             startIcon={<AddIcon />}
             onClick={onCreate}
             sx={{
-              background: 'linear-gradient(45deg, #67E8F9, #0891B2)',
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
+              textTransform: 'none',
+              fontWeight: 500,
               '&:hover': {
-                background: 'linear-gradient(45deg, #0891B2, #0E7490)',
+                bgcolor: THEME_COLOR_DARK,
+                boxShadow: 'none',
               },
             }}
           >
@@ -128,39 +139,40 @@ const PackageList: React.FC<PackageListProps> = ({
 
   return (
     <>
-      <Card
+      <Box
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
           overflow: 'hidden',
+          bgcolor: '#fff',
         }}
       >
         <TableContainer>
           <Table>
-            <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+            <TableHead sx={{ backgroundColor: '#fafafa' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('packages.packageName')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('packages.includedServices')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', textAlign: 'right' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'right' }}>
                   {t('packages.originalPrice')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', textAlign: 'right' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'right' }}>
                   {t('packages.packagePrice')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', textAlign: 'center' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
                   {t('packages.discount')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', textAlign: 'center' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
                   {t('packages.validity')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', textAlign: 'center' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
                   {t('packages.statusLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', textAlign: 'center' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
                   {t('packages.actions')}
                 </TableCell>
               </TableRow>
@@ -173,11 +185,10 @@ const PackageList: React.FC<PackageListProps> = ({
                 return (
                   <TableRow
                     key={pkg.id}
+                    hover
                     sx={{
-                      '&:hover': {
-                        backgroundColor: alpha('#06B6D4', 0.04),
-                      },
-                      transition: 'background-color 0.2s ease',
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                      '& td': { py: 1.5, fontSize: '0.8125rem' },
                     }}
                   >
                     {/* Package Name with Icon */}
@@ -185,31 +196,26 @@ const PackageList: React.FC<PackageListProps> = ({
                       <Box display="flex" alignItems="center" gap={1.5}>
                         <Box
                           sx={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 2,
-                            background: `linear-gradient(135deg, ${pkg.color || '#06B6D4'}, ${alpha(pkg.color || '#06B6D4', 0.7)})`,
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1.5,
+                            bgcolor: alpha(pkg.color || '#06B6D4', 0.1),
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white',
+                            color: pkg.color || '#06B6D4',
                             flexShrink: 0,
                           }}
                         >
                           {getPackageIconComponent(pkg.icon)}
                         </Box>
                         <Box>
-                          <Typography variant="body2" fontWeight={600}>
+                          <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                             {pkg.name}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                             ID: {pkg.id}
                           </Typography>
-                          {pkg.description && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                              {pkg.description}
-                            </Typography>
-                          )}
                         </Box>
                       </Box>
                     </TableCell>
@@ -218,23 +224,24 @@ const PackageList: React.FC<PackageListProps> = ({
                     <TableCell>
                       <Box>
                         <Chip
-                          label={`${totalServices} ${t('products.services')}`}
+                          label={`${totalServices} ${t('products.sessions')}`}
                           size="small"
                           sx={{
-                            bgcolor: alpha('#06B6D4', 0.1),
-                            color: '#0891B2',
-                            fontWeight: 600,
-                            height: 24,
+                            bgcolor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
+                            fontWeight: 500,
+                            height: 22,
+                            fontSize: '0.75rem',
                           }}
                         />
                         <Box mt={0.5}>
                           {packageServices.slice(0, 2).map((ps, idx) => (
-                            <Typography key={idx} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            <Typography key={idx} sx={{ display: 'block', fontSize: '0.75rem', color: '#888' }}>
                               • {ps.count}x {getServiceName(ps.service_id)}
                             </Typography>
                           ))}
                           {packageServices.length > 2 && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                               +{packageServices.length - 2} {t('packages.moreServices')}
                             </Typography>
                           )}
@@ -245,10 +252,10 @@ const PackageList: React.FC<PackageListProps> = ({
                     {/* Original Price */}
                     <TableCell sx={{ textAlign: 'right' }}>
                       <Typography
-                        variant="body2"
                         sx={{
                           textDecoration: 'line-through',
-                          color: 'text.secondary',
+                          color: '#999',
+                          fontSize: '0.8125rem',
                         }}
                       >
                         {CurrencyUtils.formatAmount(pkg.original_price)}
@@ -258,10 +265,10 @@ const PackageList: React.FC<PackageListProps> = ({
                     {/* Package Price */}
                     <TableCell sx={{ textAlign: 'right' }}>
                       <Typography
-                        variant="body2"
                         sx={{
                           fontWeight: 600,
-                          color: '#0891B2',
+                          color: THEME_COLOR,
+                          fontSize: '0.8125rem',
                         }}
                       >
                         {CurrencyUtils.formatAmount(pkg.package_price)}
@@ -275,10 +282,11 @@ const PackageList: React.FC<PackageListProps> = ({
                           label={`-${pkg.discount_percentage.toFixed(0)}%`}
                           size="small"
                           sx={{
-                            bgcolor: alpha('#10B981', 0.1),
-                            color: '#10B981',
+                            bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1),
+                            color: isMonochrome ? '#1a1a1a' : '#10B981',
                             fontWeight: 600,
                             height: 24,
+                            fontSize: '0.75rem',
                           }}
                         />
                       ) : (
@@ -290,7 +298,7 @@ const PackageList: React.FC<PackageListProps> = ({
 
                     {/* Validity */}
                     <TableCell sx={{ textAlign: 'center' }}>
-                      <Typography variant="body2">
+                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                         {pkg.validity_days} {t('packages.days')}
                       </Typography>
                     </TableCell>
@@ -304,7 +312,8 @@ const PackageList: React.FC<PackageListProps> = ({
                           bgcolor: pkg.status === 'ACTIVE' ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
                           color: pkg.status === 'ACTIVE' ? '#10B981' : '#EF4444',
                           fontWeight: 600,
-                          height: 24,
+                          height: 22,
+                          fontSize: '0.75rem',
                         }}
                       />
                     </TableCell>
@@ -317,8 +326,15 @@ const PackageList: React.FC<PackageListProps> = ({
                           e.stopPropagation();
                           handleMenuOpen(e, pkg);
                         }}
+                        sx={{
+                          color: '#999',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                            color: '#666',
+                          },
+                        }}
                       >
-                        <MoreVertIcon />
+                        <MoreVertIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -327,7 +343,7 @@ const PackageList: React.FC<PackageListProps> = ({
             </TableBody>
           </Table>
         </TableContainer>
-      </Card>
+      </Box>
 
       {/* Action Menu */}
       <Menu
@@ -337,9 +353,11 @@ const PackageList: React.FC<PackageListProps> = ({
         slotProps={{
           paper: {
             sx: {
-              borderRadius: 2,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-              minWidth: 180,
+              borderRadius: 1.5,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              minWidth: 160,
+              mt: 0.5,
             }
           }
         }}
@@ -350,15 +368,13 @@ const PackageList: React.FC<PackageListProps> = ({
             handleMenuClose();
           }}
           sx={{
-            '&:hover': {
-              backgroundColor: alpha('#06B6D4', 0.08),
-            },
+            fontSize: '0.8125rem',
+            py: 1,
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
           }}
         >
-          <VisibilityIcon sx={{ mr: 1.5, fontSize: 20, color: '#06B6D4' }} />
-          <Typography sx={{ color: 'text.primary' }}>
-            {t('packages.viewDetails')}
-          </Typography>
+          <VisibilityIcon sx={{ mr: 1.5, fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
+          {t('packages.viewDetails')}
         </MenuItem>
         {hasPermission('packages:update') && (
           <MenuItem
@@ -367,15 +383,13 @@ const PackageList: React.FC<PackageListProps> = ({
               handleMenuClose();
             }}
             sx={{
-              '&:hover': {
-                backgroundColor: alpha('#10B981', 0.08),
-              },
+              fontSize: '0.8125rem',
+              py: 1,
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
             }}
           >
-            <EditIcon sx={{ mr: 1.5, fontSize: 20, color: '#10B981' }} />
-            <Typography sx={{ color: 'text.primary' }}>
-              {t('packages.editPackage')}
-            </Typography>
+            <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
+            {t('packages.editPackage')}
           </MenuItem>
         )}
         {hasPermission('packages:delete') && (
@@ -384,9 +398,13 @@ const PackageList: React.FC<PackageListProps> = ({
               if (selectedPackage) onDelete(selectedPackage);
               handleMenuClose();
             }}
-            sx={{ color: 'error.main' }}
+            sx={{
+              fontSize: '0.8125rem',
+              py: 1,
+              '&:hover': { backgroundColor: alpha('#EF4444', 0.08) },
+            }}
           >
-            <DeleteIcon sx={{ mr: 1.5, fontSize: 20 }} />
+            <DeleteIcon sx={{ mr: 1.5, fontSize: 16, color: '#EF4444' }} />
             {t('packages.deletePackage')}
           </MenuItem>
         )}

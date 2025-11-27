@@ -62,6 +62,7 @@ import IconButton from '@mui/material/IconButton';
 import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../config/constants';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme as useAppTheme } from '../../contexts/ThemeContext';
 import { API_BASE_URL } from '../../config/environment';
 import { dashboardApi, appointmentApi, notificationApi, staffApi, resourceApi, merchantConfigApi, shiftApi, staffAttendanceApi, getFullImageUrl } from '../../services/api';
 import { getMerchantNow, utcToMerchantTime } from '../../utils/timezoneUtils';
@@ -117,6 +118,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { user } = useAuth();
+  const { themeMode } = useAppTheme();
+
+  // Theme-aware colors
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#4F46E5';
+
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
   const [loading, setLoading] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
@@ -729,7 +737,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       value: CurrencyUtils.formatAmountWithCommas(totalSales),
       change: dashboardStats?.revenueGrowth || 0,
       icon: <MoneyIcon sx={{ fontSize: 32 }} />,
-      color: '#10B981',
+      color: isMonochrome ? '#1a1a1a' : '#10B981',
       gradient: GRADIENTS[2],
     },
     {
@@ -737,7 +745,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       value: totalOrders.toLocaleString(),
       change: dashboardStats?.orderGrowth || 0,
       icon: <ShoppingCartIcon sx={{ fontSize: 32 }} />,
-      color: '#6366F1',
+      color: isMonochrome ? '#1a1a1a' : '#6366F1',
       gradient: GRADIENTS[0],
     },
     {
@@ -745,7 +753,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       value: (dashboardStats?.totalCustomers || 0).toLocaleString(),
       change: dashboardStats?.customerGrowth || 0,
       icon: <VisibilityIcon sx={{ fontSize: 32 }} />,
-      color: '#F59E0B',
+      color: isMonochrome ? '#1a1a1a' : '#F59E0B',
       gradient: GRADIENTS[3],
     },
     {
@@ -753,7 +761,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       value: CurrencyUtils.formatAmountWithCommas(Math.round(avgOrderValue)),
       change: dashboardStats?.appointmentGrowth || 0,
       icon: <TrendingUpIcon sx={{ fontSize: 32 }} />,
-      color: '#EC4899',
+      color: isMonochrome ? '#1a1a1a' : '#EC4899',
       gradient: GRADIENTS[1],
     },
   ];
@@ -798,7 +806,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             component="h1"
             sx={{
               fontWeight: 600,
-              color: '#6366F1',
+              color: THEME_COLOR,
               mb: 0.5,
             }}
           >
@@ -809,23 +817,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </Typography>
         </Box>
         <FormControl size="small" sx={{ minWidth: 140 }}>
-          <Select 
-            value={timeRange} 
+          <Select
+            value={timeRange}
             onChange={handleTimeRangeChange}
             sx={{
-              borderRadius: 2,
+              borderRadius: 1.5,
+              fontSize: '0.8125rem',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: alpha(theme.palette.primary.main, 0.2),
+                borderColor: 'rgba(0,0,0,0.12)',
               },
               '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: theme.palette.primary.main,
+                borderColor: THEME_COLOR,
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: THEME_COLOR,
               },
             }}
           >
-            <MenuItem value="7days">{t('dashboard.last7Days')}</MenuItem>
-            <MenuItem value="30days">{t('dashboard.last30Days')}</MenuItem>
-            <MenuItem value="6months">{t('dashboard.last6Months')}</MenuItem>
-            <MenuItem value="1year">{t('dashboard.last1Year')}</MenuItem>
+            <MenuItem value="7days" sx={{ fontSize: '0.8125rem' }}>{t('dashboard.last7Days')}</MenuItem>
+            <MenuItem value="30days" sx={{ fontSize: '0.8125rem' }}>{t('dashboard.last30Days')}</MenuItem>
+            <MenuItem value="6months" sx={{ fontSize: '0.8125rem' }}>{t('dashboard.last6Months')}</MenuItem>
+            <MenuItem value="1year" sx={{ fontSize: '0.8125rem' }}>{t('dashboard.last1Year')}</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -919,7 +931,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#EF4444',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#EF4444',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
@@ -941,7 +953,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         height: 20,
                         px: 0.5,
                         borderRadius: 1,
-                        bgcolor: '#EF4444',
+                        bgcolor: isMonochrome ? '#1a1a1a' : '#EF4444',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
@@ -994,42 +1006,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   // 根据通知类型设置图标和颜色
                   let icon, color, title;
 
-                  // 使用业务通知类型
+                  // 使用业务通知类型 - 极简模式使用灰度色
                   if (notification.notificationType === 'NEW_APPOINTMENT') {
-                    icon = <AddCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
-                    color = '#10B981';
+                    color = isMonochrome ? '#1a1a1a' : '#10B981';
+                    icon = <AddCircleIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.newAppointmentAlert');
                   } else if (notification.notificationType === 'APPOINTMENT_REMINDER') {
-                    icon = <ScheduleIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
-                    color = '#F59E0B';
+                    color = isMonochrome ? '#666' : '#F59E0B';
+                    icon = <ScheduleIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.upcomingAppointmentAlert');
                   } else if (notification.notificationType === 'APPOINTMENT_CANCELLED') {
-                    icon = <WarningIcon sx={{ fontSize: 18, color: '#EF4444' }} />;
-                    color = '#EF4444';
+                    color = isMonochrome ? '#888' : '#EF4444';
+                    icon = <WarningIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.appointmentCancelledAlert');
                   } else if (notification.notificationType === 'APPOINTMENT_CONFIRMED') {
-                    icon = <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
-                    color = '#10B981';
+                    color = isMonochrome ? '#1a1a1a' : '#10B981';
+                    icon = <CheckCircleIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.appointmentConfirmedAlert');
                   } else if (notification.notificationType === 'PENDING_CONFIRMATION') {
-                    icon = <ScheduleIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
-                    color = '#F59E0B';
+                    color = isMonochrome ? '#666' : '#F59E0B';
+                    icon = <ScheduleIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.pendingConfirmation');
                   } else if (notification.level === 'ERROR') {
-                    icon = <WarningIcon sx={{ fontSize: 18, color: '#EF4444' }} />;
-                    color = '#EF4444';
+                    color = isMonochrome ? '#888' : '#EF4444';
+                    icon = <WarningIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.error');
                   } else if (notification.level === 'WARNING') {
-                    icon = <WarningIcon sx={{ fontSize: 18, color: '#F59E0B' }} />;
-                    color = '#F59E0B';
+                    color = isMonochrome ? '#666' : '#F59E0B';
+                    icon = <WarningIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.warning');
                   } else if (notification.level === 'SUCCESS') {
-                    icon = <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />;
-                    color = '#10B981';
+                    color = isMonochrome ? '#1a1a1a' : '#10B981';
+                    icon = <CheckCircleIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.success');
                   } else {
-                    icon = <InfoIcon sx={{ fontSize: 18, color: '#6366F1' }} />;
-                    color = '#6366F1';
+                    color = isMonochrome ? '#1a1a1a' : '#6366F1';
+                    icon = <InfoIcon sx={{ fontSize: 18, color }} />;
                     title = localizedText.title || t('dashboard.notification');
                   }
                   
@@ -1122,7 +1134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     width: 4,
                     height: 20,
-                    bgcolor: '#6366F1',
+                    bgcolor: THEME_COLOR,
                     borderRadius: 0.5,
                     mr: 1.5,
                   }}
@@ -1144,25 +1156,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   {
                     icon: <CalendarTodayIcon />,
                     label: t('dashboard.viewSchedule'),
-                    color: '#3B82F6',
+                    color: isMonochrome ? '#1a1a1a' : '#3B82F6',
                     onClick: () => onNavigate?.('schedule')
                   },
                   {
                     icon: <PersonPinIcon />,
                     label: t('dashboard.addCustomer'),
-                    color: '#EC4899',
+                    color: isMonochrome ? '#1a1a1a' : '#EC4899',
                     onClick: () => onNavigate?.('customers')
                   },
                   {
                     icon: <StoreIcon />,
                     label: t('dashboard.manageServices'),
-                    color: '#06B6D4',
+                    color: isMonochrome ? '#1a1a1a' : '#06B6D4',
                     onClick: () => onNavigate?.('products')
                   },
                   {
                     icon: <BadgeIcon />,
                     label: t('dashboard.manageStaff'),
-                    color: '#3B82F6',
+                    color: isMonochrome ? '#1a1a1a' : '#3B82F6',
                     onClick: () => onNavigate?.('resources')
                   },
                 ].map((action, index) => (
@@ -1215,7 +1227,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     width: 4,
                     height: 20,
-                    bgcolor: '#6366F1',
+                    bgcolor: THEME_COLOR,
                     borderRadius: 0.5,
                     mr: 1.5,
                   }}
@@ -1301,7 +1313,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     width: 4,
                     height: 20,
-                    bgcolor: '#EC4899',
+                    bgcolor: isMonochrome ? '#1a1a1a' : '#EC4899',
                     borderRadius: 0.5,
                     mr: 1.5,
                   }}
@@ -1370,7 +1382,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     width: 4,
                     height: 20,
-                    bgcolor: '#F59E0B',
+                    bgcolor: isMonochrome ? '#1a1a1a' : '#F59E0B',
                     borderRadius: 0.5,
                     mr: 1.5,
                   }}
@@ -1438,7 +1450,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#8B5CF6',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
@@ -1453,12 +1465,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     {t('dashboard.topServices')}
                   </Typography>
                 </Box>
-                <Chip 
-                  label={`Top ${topServicesData.length}`} 
+                <Chip
+                  label={`Top ${topServicesData.length}`}
                   size="small"
-                  sx={{ 
-                    bgcolor: alpha('#8B5CF6', 0.1),
-                    color: '#8B5CF6',
+                  sx={{
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.1),
+                    color: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                     fontWeight: 600,
                   }}
                 />
@@ -1546,7 +1558,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               sx={{
                                 width: `${percentage}%`,
                                 height: '100%',
-                                bgcolor: '#8B5CF6',
+                                bgcolor: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                                 borderRadius: 2,
                                 transition: 'width 0.5s ease',
                               }}
@@ -1579,7 +1591,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#14B8A6',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#14B8A6',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
@@ -1745,7 +1757,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     width: 4,
                     height: 20,
-                    bgcolor: '#8B5CF6',
+                    bgcolor: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                     borderRadius: 0.5,
                     mr: 1.5,
                   }}
@@ -1797,7 +1809,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     width: 4,
                     height: 20,
-                    bgcolor: '#EC4899',
+                    bgcolor: isMonochrome ? '#1a1a1a' : '#EC4899',
                     borderRadius: 0.5,
                     mr: 1.5,
                   }}
@@ -1816,7 +1828,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* 运营状态指标 */}
               <Box display="flex" alignItems="baseline" gap={4}>
                 <Box display="flex" alignItems="baseline" gap={1}>
-                  <Typography variant="h4" sx={{ fontWeight: 600, color: '#10B981' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 600, color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                     {dashboardStats?.completedAppointments || 0}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#666' }}>
@@ -1824,7 +1836,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </Typography>
                 </Box>
                 <Box display="flex" alignItems="baseline" gap={1}>
-                  <Typography variant="h4" sx={{ fontWeight: 600, color: '#3B82F6' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 600, color: isMonochrome ? '#666' : '#3B82F6' }}>
                     {dashboardStats?.pendingAppointments || 0}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#666' }}>
@@ -1853,7 +1865,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#06B6D4',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#06B6D4',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
@@ -1940,9 +1952,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               width: 10,
                               height: 10,
                               borderRadius: '50%',
-                              bgcolor: '#06B6D4',
+                              bgcolor: isMonochrome ? '#1a1a1a' : '#06B6D4',
                               border: '2px solid white',
-                              boxShadow: '0 0 0 2px rgba(6, 182, 212, 0.2)',
+                              boxShadow: isMonochrome ? '0 0 0 2px rgba(26, 26, 26, 0.2)' : '0 0 0 2px rgba(6, 182, 212, 0.2)',
                               zIndex: 2,
                             }} />
 
@@ -1954,12 +1966,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               py: 0.5,
                               px: 1,
                               borderRadius: 1,
-                              bgcolor: alpha('#06B6D4', 0.08),
+                              bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#06B6D4', 0.08),
                             }}>
-                              <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                              <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
                                 {t('dashboard.currentTime')}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                              <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
                                 {currentTimeStr}
                               </Typography>
                             </Box>
@@ -1997,10 +2009,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               width: 10,
                               height: 10,
                               borderRadius: '50%',
-                              bgcolor: isCompleted ? '#10B981' :
-                                      isCurrent ? '#F59E0B' :
-                                      isCancelled ? '#EF4444' :
-                                      '#3B82F6',
+                              bgcolor: isMonochrome
+                                ? (isCompleted ? '#1a1a1a' : isCurrent ? '#666' : isCancelled ? '#999' : '#444')
+                                : (isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : isCancelled ? '#EF4444' : '#3B82F6'),
                               zIndex: 1,
                             }} />
 
@@ -2026,14 +2037,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                     borderRadius: 1,
                                     fontSize: '0.65rem',
                                     fontWeight: 500,
-                                    bgcolor: isCompleted ? alpha('#10B981', 0.1) :
-                                            isCurrent ? alpha('#F59E0B', 0.1) :
-                                            isCancelled ? alpha('#EF4444', 0.1) :
-                                            alpha('#3B82F6', 0.1),
-                                    color: isCompleted ? '#10B981' :
-                                          isCurrent ? '#F59E0B' :
-                                          isCancelled ? '#EF4444' :
-                                          '#3B82F6',
+                                    bgcolor: isMonochrome
+                                      ? (isCompleted ? 'rgba(26, 26, 26, 0.1)' : isCurrent ? 'rgba(102, 102, 102, 0.1)' : isCancelled ? 'rgba(153, 153, 153, 0.1)' : 'rgba(68, 68, 68, 0.1)')
+                                      : (isCompleted ? alpha('#10B981', 0.1) : isCurrent ? alpha('#F59E0B', 0.1) : isCancelled ? alpha('#EF4444', 0.1) : alpha('#3B82F6', 0.1)),
+                                    color: isMonochrome
+                                      ? (isCompleted ? '#1a1a1a' : isCurrent ? '#666' : isCancelled ? '#999' : '#444')
+                                      : (isCompleted ? '#10B981' : isCurrent ? '#F59E0B' : isCancelled ? '#EF4444' : '#3B82F6'),
                                   }}
                                 >
                                   {isCompleted ? t('dashboard.completed') :
@@ -2135,9 +2144,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             width: 10,
                             height: 10,
                             borderRadius: '50%',
-                            bgcolor: '#06B6D4',
+                            bgcolor: isMonochrome ? '#1a1a1a' : '#06B6D4',
                             border: '2px solid white',
-                            boxShadow: '0 0 0 2px rgba(6, 182, 212, 0.2)',
+                            boxShadow: isMonochrome ? '0 0 0 2px rgba(26, 26, 26, 0.2)' : '0 0 0 2px rgba(6, 182, 212, 0.2)',
                             zIndex: 2,
                           }} />
 
@@ -2149,12 +2158,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             py: 0.5,
                             px: 1,
                             borderRadius: 1,
-                            bgcolor: alpha('#06B6D4', 0.08),
+                            bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#06B6D4', 0.08),
                           }}>
-                            <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
                               {t('dashboard.currentTime')}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#06B6D4', fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
                               {currentTimeStr}
                             </Typography>
                           </Box>

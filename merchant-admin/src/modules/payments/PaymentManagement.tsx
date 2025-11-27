@@ -16,6 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { CurrencyUtils } from '../../config/constants';
+import { useTheme } from '../../contexts/ThemeContext';
 // 支付功能已迁移，暂时注释
 // import PaymentProcess from './components/PaymentProcess';
 import OrderHistory from './components/OrderHistory';
@@ -27,6 +28,12 @@ interface PaymentManagementProps {
 const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // Theme-aware colors
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#10B981';
+
   // 支付功能已迁移，不再需要 tab 切换
   // const [tabValue, setTabValue] = useState(0);
   const [stats, setStats] = useState({
@@ -84,7 +91,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#10B981',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -115,11 +122,11 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#10B981', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#10B981',
+                    color: isMonochrome ? '#1a1a1a' : '#10B981',
                     flexShrink: 0,
                   }}
                 >
@@ -154,11 +161,11 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#6366F1', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#6366F1', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#6366F1',
+                    color: isMonochrome ? '#1a1a1a' : '#6366F1',
                     flexShrink: 0,
                   }}
                 >
@@ -193,11 +200,11 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#F59E0B', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#F59E0B',
+                    color: isMonochrome ? '#1a1a1a' : '#F59E0B',
                     flexShrink: 0,
                   }}
                 >
@@ -232,11 +239,11 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#EC4899', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#EC4899', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#EC4899',
+                    color: isMonochrome ? '#1a1a1a' : '#EC4899',
                     flexShrink: 0,
                   }}
                 >

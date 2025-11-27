@@ -41,6 +41,7 @@ import { format } from 'date-fns';
 import { costsApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../hooks/usePermission';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { CurrencyUtils } from '../../../config/constants';
 
 interface MaterialPurchase {
@@ -63,6 +64,13 @@ const MaterialPurchaseManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#DC2626';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#B91C1C';
+
   const [materials, setMaterials] = useState<MaterialPurchase[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -267,37 +275,40 @@ const MaterialPurchaseManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化搜索和操作区域 */}
+      {/* 搜索和操作区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
+        <CardContent sx={{ p: 2.5 }}>
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
+                size="small"
                 placeholder={t('costs.materials.searchPlaceholder', 'Search materials...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.8125rem',
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#DC2626',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#DC2626',
+                      borderColor: THEME_COLOR,
                     },
                   },
                 }}
@@ -314,15 +325,15 @@ const MaterialPurchaseManagement: React.FC = () => {
                     onClick={() => handleOpenDialog()}
                     sx={{
                       borderRadius: 1.5,
-                      height: 40,
+                      height: 36,
                       px: 2,
                       fontSize: '0.8125rem',
                       fontWeight: 500,
-                      bgcolor: '#DC2626',
+                      bgcolor: THEME_COLOR,
                       boxShadow: 'none',
                       textTransform: 'none',
                       '&:hover': {
-                        bgcolor: '#B91C1C',
+                        bgcolor: THEME_COLOR_DARK,
                         boxShadow: 'none',
                       },
                     }}
@@ -336,43 +347,44 @@ const MaterialPurchaseManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 现代化表格 */}
+      {/* 表格 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >
         <TableContainer>
-          <Table>
+          <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('costs.materials.materialName')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('costs.materials.category')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
                   {t('costs.materials.quantity')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
                   {t('costs.materials.unitPrice')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
                   {t('costs.materials.totalAmount')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('costs.materials.supplier')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('costs.materials.purchaseDate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('costs.materials.statusLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
                   {t('common.actions')}
                 </TableCell>
               </TableRow>
@@ -380,14 +392,14 @@ const MaterialPurchaseManagement: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
-                    <CircularProgress sx={{ color: '#DC2626' }} />
+                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                    <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
                   </TableCell>
                 </TableRow>
               ) : filteredMaterials.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
-                    <Typography variant="body1" color="text.secondary">
+                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                    <Typography variant="body2" color="text.secondary">
                       {searchTerm
                         ? t('costs.materials.noSearchResults', 'No materials match your search')
                         : t('costs.noData', 'No materials found')}
@@ -400,75 +412,80 @@ const MaterialPurchaseManagement: React.FC = () => {
                     key={material.id}
                     sx={{
                       '&:hover': {
-                        backgroundColor: alpha('#DC2626', 0.04),
+                        backgroundColor: alpha(THEME_COLOR, 0.04),
                       },
-                      transition: 'background-color 0.2s ease',
+                      transition: 'background-color 0.15s ease',
                     }}
                   >
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8125rem' }}>
                         {material.materialName}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
                       <Chip
                         label={categories.find(c => c.value === material.materialCategory)?.label}
                         size="small"
                         sx={{
-                          fontWeight: 600,
-                          bgcolor: alpha('#DC2626', 0.1),
-                          color: '#DC2626',
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          height: 24,
+                          bgcolor: alpha(THEME_COLOR, 0.1),
+                          color: THEME_COLOR,
                         }}
                       />
                     </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2">
+                    <TableCell align="right" sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                         {material.quantity ?? 0} {units.find(u => u.value === material.unit)?.label || material.unit}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" color="text.secondary">
+                    <TableCell align="right" sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#666' }}>
                         {CurrencyUtils.formatAmountWithCommas(Number(material.unitPrice ?? 0))}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#DC2626' }}>
+                    <TableCell align="right" sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR }}>
                         {CurrencyUtils.formatAmountWithCommas(Number(material.totalAmount ?? 0))}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#666' }}>
                         {material.supplier || '-'}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                         {material.purchaseDate ? format(new Date(material.purchaseDate), 'yyyy-MM-dd') : '-'}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
                       <Chip
                         label={statusOptions.find(s => s.value === material.paymentStatus)?.label}
                         size="small"
                         sx={{
                           bgcolor: alpha(getStatusColor(material.paymentStatus), 0.1),
                           color: getStatusColor(material.paymentStatus),
-                          fontWeight: 600,
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          height: 24,
                         }}
                       />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ py: 1.5 }}>
                       <IconButton
                         size="small"
                         onClick={(e) => handleMenuOpen(e, material)}
                         sx={{
-                          color: '#6B7280',
+                          color: '#888',
                           '&:hover': {
-                            bgcolor: alpha('#6B7280', 0.1),
+                            bgcolor: alpha(THEME_COLOR, 0.08),
+                            color: THEME_COLOR,
                           },
                         }}
                       >
-                        <MoreVertIcon fontSize="small" />
+                        <MoreVertIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -487,27 +504,36 @@ const MaterialPurchaseManagement: React.FC = () => {
         PaperProps={{
           sx: {
             borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            mt: 1,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            minWidth: 140,
+            mt: 0.5,
           },
         }}
       >
         {hasPermission('costs:update_material') && (
           <MenuItem
             onClick={handleEditFromMenu}
-            sx={{ '&:hover': { backgroundColor: alpha('#DC2626', 0.08) } }}
+            sx={{
+              fontSize: '0.8125rem',
+              py: 1,
+              '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) },
+            }}
           >
-            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#DC2626' }} />
+            <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('common.edit', 'Edit')}
           </MenuItem>
         )}
         {hasPermission('costs:delete_material') && (
           <MenuItem
             onClick={handleDeleteFromMenu}
-            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+            sx={{
+              fontSize: '0.8125rem',
+              py: 1,
+              '&:hover': { backgroundColor: alpha('#EF4444', 0.08) },
+            }}
           >
-            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            <DeleteIcon sx={{ mr: 1.5, fontSize: 16, color: '#EF4444' }} />
             {t('common.delete', 'Delete')}
           </MenuItem>
         )}
@@ -524,111 +550,93 @@ const MaterialPurchaseManagement: React.FC = () => {
         }}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            borderRadius: 2.5,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
           }
         }}
       >
         <DialogTitle
           sx={{
-            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(185, 28, 28, 0.08))',
             borderBottom: '1px solid',
             borderColor: 'divider',
-            pb: 3,
-            pt: 3,
+            pb: 2,
+            pt: 2.5,
           }}
         >
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <MaterialIcon sx={{ fontSize: 20, color: THEME_COLOR }} />
+              <Typography
+                variant="h6"
                 sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  color: 'text.primary',
                 }}
               >
-                <MaterialIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {editingMaterial
-                    ? t('costs.materials.editMaterial')
-                    : t('costs.materials.addMaterial')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {editingMaterial
-                    ? t('costs.materials.editSubtitle', 'Update material purchase information')
-                    : t('costs.materials.addSubtitle', 'Add new material purchase record')}
-                </Typography>
-              </Box>
+                {editingMaterial
+                  ? t('costs.materials.editMaterial')
+                  : t('costs.materials.addMaterial')}
+              </Typography>
             </Box>
             <IconButton
+              size="small"
               onClick={handleCloseDialog}
               sx={{
-                color: 'text.secondary',
-                '&:hover': { backgroundColor: alpha('#DC2626', 0.08) },
+                color: '#888',
+                '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) },
               }}
             >
-              <CloseIcon />
+              <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3}>
+          <Box sx={{ p: 2.5 }}>
+            <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label={t('costs.materials.materialName')}
                   value={formData.materialName}
                   onChange={(e) => setFormData({ ...formData, materialName: e.target.value })}
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   select
                   label={t('costs.materials.category')}
                   value={formData.materialCategory}
                   onChange={(e) => setFormData({ ...formData, materialCategory: e.target.value })}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {categories.map((cat) => (
-                    <MenuItem key={cat.value} value={cat.value}>
+                    <MenuItem key={cat.value} value={cat.value} sx={{ fontSize: '0.8125rem' }}>
                       {cat.label}
                     </MenuItem>
                   ))}
@@ -637,6 +645,7 @@ const MaterialPurchaseManagement: React.FC = () => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
+                  size="small"
                   type="number"
                   label={t('costs.materials.quantity')}
                   value={formData.quantity ?? ''}
@@ -644,20 +653,21 @@ const MaterialPurchaseManagement: React.FC = () => {
                   inputProps={{ min: 0 }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
+                  size="small"
                   type="number"
                   label={t('costs.materials.unitPrice')}
                   value={formData.unitPrice ?? ''}
@@ -665,20 +675,21 @@ const MaterialPurchaseManagement: React.FC = () => {
                   inputProps={{ min: 0 }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
+                  size="small"
                   type="number"
                   label={t('costs.materials.totalAmount')}
                   value={formData.totalAmount ?? 0}
@@ -686,38 +697,43 @@ const MaterialPurchaseManagement: React.FC = () => {
                   helperText={t('costs.materials.autoCalculated', 'Auto-calculated')}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      bgcolor: alpha('#DC2626', 0.04),
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      bgcolor: alpha(THEME_COLOR, 0.04),
                     },
                     '& .MuiInputBase-input': {
                       fontWeight: 600,
-                      color: '#DC2626',
+                      color: THEME_COLOR,
                     },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiFormHelperText-root': { fontSize: '0.7rem' },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label={t('costs.materials.supplier')}
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   type="date"
                   label={t('costs.materials.purchaseDate')}
                   value={formData.purchaseDate}
@@ -725,38 +741,39 @@ const MaterialPurchaseManagement: React.FC = () => {
                   InputLabelProps={{ shrink: true }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   select
                   label={t('costs.materials.statusLabel')}
                   value={formData.paymentStatus}
                   onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {statusOptions.map((status) => (
-                    <MenuItem key={status.value} value={status.value}>
+                    <MenuItem key={status.value} value={status.value} sx={{ fontSize: '0.8125rem' }}>
                       {status.label}
                     </MenuItem>
                   ))}
@@ -765,24 +782,25 @@ const MaterialPurchaseManagement: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   select
                   label={t('costs.materials.unit')}
                   value={formData.unit}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {units.map((unit) => (
-                    <MenuItem key={unit.value} value={unit.value}>
+                    <MenuItem key={unit.value} value={unit.value} sx={{ fontSize: '0.8125rem' }}>
                       {unit.label}
                     </MenuItem>
                   ))}
@@ -791,47 +809,56 @@ const MaterialPurchaseManagement: React.FC = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
+                  size="small"
                   multiline
-                  rows={3}
+                  rows={2}
                   label={t('costs.materials.notes')}
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
+                        borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
               </Grid>
             </Grid>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button
+            size="small"
             onClick={handleCloseDialog}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              color: 'text.secondary',
+              borderRadius: 1.5,
+              px: 2,
+              fontSize: '0.8125rem',
+              color: '#666',
+              textTransform: 'none',
             }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleSave}
             variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
+              borderRadius: 1.5,
+              px: 2,
+              fontSize: '0.8125rem',
+              bgcolor: THEME_COLOR,
+              textTransform: 'none',
+              boxShadow: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #B91C1C, #991B1B)',
+                bgcolor: THEME_COLOR_DARK,
+                boxShadow: 'none',
               },
             }}
           >
@@ -846,44 +873,54 @@ const MaterialPurchaseManagement: React.FC = () => {
         onClose={() => setOpenDeleteDialog(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            maxWidth: 360,
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
+        <DialogTitle sx={{ pb: 1, pt: 2.5, fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
           {t('costs.confirmDelete')}
         </DialogTitle>
         <DialogContent>
-          <Typography>
+          <Typography variant="body2" sx={{ color: '#666' }}>
             {t('costs.materials.deleteConfirm')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
           <Button
+            size="small"
             onClick={() => setOpenDeleteDialog(false)}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2,
+              fontSize: '0.8125rem',
+              color: '#666',
+              textTransform: 'none',
             }}
             disabled={loading}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleDelete}
             variant="contained"
             disabled={loading}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2,
+              fontSize: '0.8125rem',
+              textTransform: 'none',
+              boxShadow: 'none',
               backgroundColor: '#EF4444',
               '&:hover': {
                 backgroundColor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : t('common.delete')}
+            {loading ? <CircularProgress size={16} color="inherit" /> : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

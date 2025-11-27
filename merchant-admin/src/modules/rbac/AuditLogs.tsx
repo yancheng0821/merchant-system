@@ -29,6 +29,7 @@ import {
   DialogActions,
   Button,
   Alert,
+  Popover,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -40,8 +41,9 @@ import {
   Block as DeniedIcon,
   History as HistoryIcon,
   CalendarToday as CalendarIcon,
+  Event as EventIcon,
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useTranslation } from 'react-i18next';
@@ -49,6 +51,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 import { auditApi, handleApiError } from '../../services/api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface AuditLog {
   id: number;
@@ -69,6 +72,13 @@ interface AuditLog {
 const AuditLogs: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#4F46E5';
+
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +95,10 @@ const AuditLogs: React.FC = () => {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const oldValueScrollRef = React.useRef<HTMLDivElement>(null);
   const newValueScrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Date picker popover states
+  const [startDateAnchorEl, setStartDateAnchorEl] = useState<null | HTMLElement>(null);
+  const [endDateAnchorEl, setEndDateAnchorEl] = useState<null | HTMLElement>(null);
 
   const loadAuditLogs = React.useCallback(async () => {
     try {
@@ -319,6 +333,11 @@ const AuditLogs: React.FC = () => {
   };
 
   const getResourceColor = (resource: string): { bg: string; color: string } => {
+    // 极简模式下统一使用黑色
+    if (isMonochrome) {
+      return { bg: alpha('#1a1a1a', 0.1), color: '#1a1a1a' };
+    }
+
     const normalizedResource = resource.toUpperCase();
 
     // Customer-related resources - Pink
@@ -696,13 +715,14 @@ const AuditLogs: React.FC = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box>
-        {/* Filter Bar */}
-        <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', mb: 3 }}>
-          <CardContent sx={{ p: 3 }}>
+        {/* Filter Bar - 简约风格 */}
+        <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', mb: 3 }}>
+          <CardContent sx={{ py: 2, px: 2.5 }}>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   placeholder={t('audit.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -710,85 +730,77 @@ const AuditLogs: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: 'text.secondary' }} />
+                        <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                       </InputAdornment>
                     ),
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#6366F1',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#6366F1',
-                      },
+                      borderRadius: 1.5,
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                     },
                   }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <DatePicker
+                <TextField
+                  fullWidth
+                  size="small"
                   label={t('audit.startDate') || 'Start Date'}
-                  value={startDate}
-                  onChange={(newValue) => setStartDate(newValue)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      sx: {
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#6366F1',
-                          },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#6366F1',
-                          },
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#6366F1',
-                        },
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <DatePicker
-                  label={t('audit.endDate') || 'End Date'}
-                  value={endDate}
-                  onChange={(newValue) => setEndDate(newValue)}
-                  minDate={startDate || undefined}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      sx: {
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#6366F1',
-                          },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#6366F1',
-                          },
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#6366F1',
-                        },
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel
+                  value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
+                  onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
                   sx={{
-                    '&.Mui-focused': {
-                      color: '#6366F1',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      cursor: 'pointer',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                     },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
-                >
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <EventIcon sx={{ fontSize: 18, color: '#999' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label={t('audit.endDate') || 'End Date'}
+                  value={endDate ? format(endDate, 'yyyy-MM-dd') : ''}
+                  onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      cursor: 'pointer',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                  }}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <EventIcon sx={{ fontSize: 18, color: '#999' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.resourceLabel')}
                 </InputLabel>
                 <Select
@@ -796,16 +808,10 @@ const AuditLogs: React.FC = () => {
                   label={t('audit.resourceLabel')}
                   onChange={(e) => setResourceFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0, 0, 0, 0.23)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6366F1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6366F1',
-                    },
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   }}
                 >
                   <MenuItem value="all">{t('audit.all')}</MenuItem>
@@ -838,14 +844,8 @@ const AuditLogs: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel
-                  sx={{
-                    '&.Mui-focused': {
-                      color: '#6366F1',
-                    },
-                  }}
-                >
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.actionLabel')}
                 </InputLabel>
                 <Select
@@ -853,16 +853,10 @@ const AuditLogs: React.FC = () => {
                   label={t('audit.actionLabel')}
                   onChange={(e) => setActionFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0, 0, 0, 0.23)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6366F1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6366F1',
-                    },
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   }}
                 >
                   <MenuItem value="all">{t('audit.all')}</MenuItem>
@@ -883,14 +877,8 @@ const AuditLogs: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel
-                  sx={{
-                    '&.Mui-focused': {
-                      color: '#6366F1',
-                    },
-                  }}
-                >
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.statusLabel')}
                 </InputLabel>
                 <Select
@@ -898,16 +886,10 @@ const AuditLogs: React.FC = () => {
                   label={t('audit.statusLabel')}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0, 0, 0, 0.23)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6366F1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6366F1',
-                    },
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   }}
                 >
                   <MenuItem value="all">{t('audit.all')}</MenuItem>
@@ -921,63 +903,46 @@ const AuditLogs: React.FC = () => {
               <Box display="flex" gap={1} justifyContent="flex-end">
                 <Tooltip title={t('audit.refresh')}>
                   <IconButton
+                    size="small"
                     onClick={loadAuditLogs}
                     sx={{
-                      backgroundColor: alpha('#6366F1', 0.1),
-                      '&:hover': { backgroundColor: alpha('#6366F1', 0.2) },
+                      backgroundColor: alpha(THEME_COLOR, 0.1),
+                      '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.15) },
                     }}
                   >
-                    <RefreshIcon sx={{ color: '#6366F1' }} />
+                    <RefreshIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
-                {/* Temporarily disabled export functionality */}
-                {/* <Tooltip title={t('audit.export')}>
-                  <IconButton
-                    onClick={handleExport}
-                    sx={{
-                      backgroundColor: alpha('#10B981', 0.1),
-                      '&:hover': { backgroundColor: alpha('#10B981', 0.2) },
-                    }}
-                  >
-                    <DownloadIcon sx={{ color: '#10B981' }} />
-                  </IconButton>
-                </Tooltip> */}
               </Box>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Audit Logs Table */}
-      <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+      {/* Audit Logs Table - 简约风格 */}
+      <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
         <CardContent sx={{ p: 0 }}>
           {error && (
-            <Box p={3}>
+            <Box p={2.5}>
               <Alert
                 severity="error"
                 sx={{
                   borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    width: '100%'
-                  }
+                  '& .MuiAlert-message': { width: '100%' }
                 }}
                 action={
                   <Tooltip title={t('audit.refresh')}>
-                    <IconButton
-                      onClick={loadAuditLogs}
-                      size="small"
-                      sx={{ color: 'error.main' }}
-                    >
-                      <RefreshIcon />
+                    <IconButton onClick={loadAuditLogs} size="small" sx={{ color: 'error.main' }}>
+                      <RefreshIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                   </Tooltip>
                 }
               >
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }} gutterBottom>
                     {t('audit.loadError')}
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography sx={{ fontSize: '0.8125rem' }}>
                     {error}
                   </Typography>
                 </Box>
@@ -985,42 +950,42 @@ const AuditLogs: React.FC = () => {
             </Box>
           )}
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-              <CircularProgress />
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+              <CircularProgress sx={{ color: THEME_COLOR }} />
             </Box>
           ) : logs.length === 0 && !error ? (
-            <Box display="flex" flexDirection="column" alignItems="center" py={8}>
-              <FilterIcon sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
-              <Typography color="text.secondary">{t('audit.noLogs')}</Typography>
+            <Box display="flex" flexDirection="column" alignItems="center" py={6}>
+              <FilterIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
+              <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>{t('audit.noLogs')}</Typography>
             </Box>
           ) : logs.length > 0 && !error ? (
             <>
               <TableContainer>
                 <Table>
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                    <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.dateTime')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.user')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.resourceLabel')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.actionLabel')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.resourceId')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.statusLabel')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.changes')}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                         {t('audit.ipAddress')}
                       </TableCell>
                     </TableRow>
@@ -1029,22 +994,23 @@ const AuditLogs: React.FC = () => {
                     {logs.map((log) => (
                       <TableRow
                         key={log.id}
+                        hover
                         sx={{
-                          '&:hover': { backgroundColor: alpha('#6366F1', 0.04) },
-                          transition: 'background-color 0.2s ease',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                          '& td': { py: 1.5, fontSize: '0.8125rem' }
                         }}
                       >
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.813rem' }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
                             {formatDate(log.createdAt)}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Box>
-                            <Typography variant="body2" fontWeight={500}>
+                            <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                               {log.username || `User #${log.userId}`}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                               ID: {log.userId}
                             </Typography>
                           </Box>
@@ -1060,22 +1026,24 @@ const AuditLogs: React.FC = () => {
                                   backgroundColor: colors.bg,
                                   color: colors.color,
                                   fontWeight: 500,
+                                  fontSize: '0.75rem',
+                                  height: 22,
                                 }}
                               />
                             );
                           })()}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" fontWeight={500}>
+                          <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                             {getActionLabel(log.action)}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography
-                            variant="body2"
                             sx={{
                               fontFamily: log.resourceId ? 'monospace' : 'inherit',
-                              color: log.resourceId ? 'text.primary' : 'text.secondary',
+                              fontSize: '0.8125rem',
+                              color: log.resourceId ? '#1a1a1a' : '#888',
                               fontWeight: log.resourceId ? 500 : 400
                             }}
                           >
@@ -1090,23 +1058,19 @@ const AuditLogs: React.FC = () => {
                                 size="small"
                                 onClick={() => handleViewChanges(log)}
                                 sx={{
-                                  color: '#6366F1',
-                                  '&:hover': {
-                                    backgroundColor: alpha('#6366F1', 0.1),
-                                  },
+                                  color: THEME_COLOR,
+                                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
                                 }}
                               >
-                                <HistoryIcon fontSize="small" />
+                                <HistoryIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                           ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              -
-                            </Typography>
+                            <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>-</Typography>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.813rem' }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
                             {log.ipAddress || '-'}
                           </Typography>
                         </TableCell>
@@ -1137,7 +1101,7 @@ const AuditLogs: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Change Comparison Dialog */}
+      {/* Change Comparison Dialog - 简约风格 */}
       <Dialog
         open={changeDialogOpen}
         onClose={() => setChangeDialogOpen(false)}
@@ -1145,47 +1109,140 @@ const AuditLogs: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           },
         }}
       >
-        <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider', pb: 2 }}>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" gap={1}>
-            <HistoryIcon sx={{ color: '#6366F1' }} />
-            <Typography variant="h6" fontWeight={600}>
+            <HistoryIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
               {t('audit.changeHistory')}
             </Typography>
           </Box>
           {selectedLog && (
             <Box mt={1}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                 {getResourceLabel(selectedLog.resource)} - {getActionLabel(selectedLog.action)}
                 {selectedLog.resourceId && ` #${selectedLog.resourceId}`}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                 {formatDate(selectedLog.createdAt)} • {selectedLog.username || `User #${selectedLog.userId}`}
               </Typography>
             </Box>
           )}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        </Box>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           {selectedLog && renderChanges(selectedLog)}
         </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid', borderColor: 'divider', p: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setChangeDialogOpen(false)}
             sx={{
-              color: '#6366F1',
-              '&:hover': {
-                backgroundColor: alpha('#6366F1', 0.1),
-              },
+              textTransform: 'none',
+              color: THEME_COLOR,
+              fontSize: '0.8125rem',
+              '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.1) },
             }}
           >
             {t('common.close')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Start Date Picker Popover */}
+      <Popover
+        open={Boolean(startDateAnchorEl)}
+        anchorEl={startDateAnchorEl}
+        onClose={() => setStartDateAnchorEl(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              '& .MuiPickersDay-root.Mui-selected': {
+                bgcolor: THEME_COLOR,
+                '&:hover': { bgcolor: THEME_COLOR_DARK },
+              },
+              '& .MuiPickersDay-root:focus.Mui-selected': {
+                bgcolor: THEME_COLOR,
+              },
+            }
+          }
+        }}
+      >
+        <StaticDatePicker
+          displayStaticWrapperAs="desktop"
+          value={startDate}
+          onChange={(newDate) => {
+            if (newDate) {
+              setStartDate(newDate);
+              setStartDateAnchorEl(null);
+            }
+          }}
+          slotProps={{
+            actionBar: {
+              actions: []
+            }
+          }}
+        />
+      </Popover>
+
+      {/* End Date Picker Popover */}
+      <Popover
+        open={Boolean(endDateAnchorEl)}
+        anchorEl={endDateAnchorEl}
+        onClose={() => setEndDateAnchorEl(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              '& .MuiPickersDay-root.Mui-selected': {
+                bgcolor: THEME_COLOR,
+                '&:hover': { bgcolor: THEME_COLOR_DARK },
+              },
+              '& .MuiPickersDay-root:focus.Mui-selected': {
+                bgcolor: THEME_COLOR,
+              },
+            }
+          }
+        }}
+      >
+        <StaticDatePicker
+          displayStaticWrapperAs="desktop"
+          value={endDate}
+          onChange={(newDate) => {
+            if (newDate) {
+              setEndDate(newDate);
+              setEndDateAnchorEl(null);
+            }
+          }}
+          slotProps={{
+            actionBar: {
+              actions: []
+            }
+          }}
+        />
+      </Popover>
     </Box>
     </LocalizationProvider>
   );

@@ -27,6 +27,7 @@ interface ImageUploaderProps {
     placeholder?: string; // 占位符文本
     disabled?: boolean;
     uploadType?: 'avatar' | 'room-icon'; // 上传类型
+    themeColor?: string; // 主题色
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -39,6 +40,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     placeholder,
     disabled = false,
     uploadType = 'avatar',
+    themeColor = '#3B82F6',
 }) => {
     const { t } = useTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,24 +130,24 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 sx={{
                     width: size,
                     height: size,
-                    bgcolor: alpha('#2563EB', 0.1),
-                    color: '#2563EB',
-                    border: `2px dashed ${alpha('#2563EB', 0.3)}`,
+                    bgcolor: alpha(themeColor, 0.1),
+                    color: themeColor,
+                    border: `2px dashed ${alpha(themeColor, 0.3)}`,
                     cursor: disabled ? 'default' : 'pointer',
                     '&:hover': disabled ? {} : {
-                        borderColor: '#2563EB',
-                        bgcolor: alpha('#2563EB', 0.05),
+                        borderColor: themeColor,
+                        bgcolor: alpha(themeColor, 0.05),
                     },
                 }}
                 onClick={disabled ? undefined : handleUploadClick}
             >
                 {uploading ? (
-                    <CircularProgress size={size * 0.4} sx={{ color: '#2563EB' }} />
+                    <CircularProgress size={size * 0.4} sx={{ color: themeColor }} />
                 ) : value ? null : (
                     <CameraIcon sx={{ fontSize: size * 0.4 }} />
                 )}
             </Avatar>
-            
+
             {value && !disabled && (
                 <IconButton
                     size="small"
@@ -159,7 +161,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                         width: 24,
                         height: 24,
                         '&:hover': {
-                            bgcolor: '#2563EB',
+                            bgcolor: '#DC2626',
                         },
                     }}
                 >
@@ -175,25 +177,25 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                 sx={{
                     width: size,
                     height: size,
-                    border: `2px dashed ${alpha('#2563EB', 0.3)}`,
+                    border: `2px dashed ${alpha(themeColor, 0.3)}`,
                     borderRadius: 2,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: disabled ? 'default' : 'pointer',
-                    bgcolor: value ? 'white' : alpha('#2563EB', 0.02),
+                    bgcolor: value ? 'white' : alpha(themeColor, 0.02),
                     overflow: 'hidden',
                     position: 'relative',
                     '&:hover': disabled ? {} : {
-                        borderColor: '#2563EB',
-                        bgcolor: value ? 'white' : alpha('#2563EB', 0.05),
+                        borderColor: themeColor,
+                        bgcolor: value ? 'white' : alpha(themeColor, 0.05),
                     },
                 }}
                 onClick={disabled ? undefined : handleUploadClick}
             >
                 {uploading ? (
-                    <CircularProgress size={32} sx={{ color: '#2563EB' }} />
+                    <CircularProgress size={32} sx={{ color: themeColor }} />
                 ) : value ? (
                     <img 
                         src={getFullImageUrl(value)} 
@@ -206,7 +208,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                     />
                 ) : (
                     <Box sx={{ textAlign: 'center', p: 1 }}>
-                        <UploadIcon sx={{ fontSize: 28, color: '#2563EB', mb: 0.5 }} />
+                        <UploadIcon sx={{ fontSize: 28, color: themeColor, mb: 0.5 }} />
                         <Typography 
                             variant="caption" 
                             color="text.secondary" 
@@ -276,9 +278,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
                         onClick={handleUploadClick}
                         disabled={uploading}
                         sx={{
-                            color: '#2563EB',
+                            color: themeColor,
                             '&:hover': {
-                                bgcolor: alpha('#2563EB', 0.08),
+                                bgcolor: alpha(themeColor, 0.08),
                             },
                         }}
                     >

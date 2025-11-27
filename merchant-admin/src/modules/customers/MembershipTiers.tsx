@@ -65,11 +65,20 @@ import { useTranslation } from 'react-i18next';
 import { membershipTierApi, MembershipTier } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const MembershipTiers: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
+  const THEME_COLOR_HOVER = isMonochrome ? '#333' : '#DB2777';
+  const DISCOUNT_COLOR = isMonochrome ? '#1a1a1a' : '#10B981';
+
   const [tiers, setTiers] = useState<MembershipTier[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -338,103 +347,103 @@ const MembershipTiers: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化搜索和操作区域 */}
-      <Card
+      {/* 搜索和操作区域 */}
+      <Box
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          mb: 3,
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
+          bgcolor: '#fff',
+          mb: 2.5,
+          p: 2.5,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder={t('membershipTiers.searchPlaceholder', 'Search by name or code...')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                  },
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Box display="flex" gap={2} justifyContent="flex-end">
-                {hasPermission('membership_tiers:create') && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => handleOpenDialog()}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 0.75,
-                      px: 2,
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      bgcolor: '#EC4899',
-                      boxShadow: 'none',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: '#DB2777',
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {t('membershipTiers.addTier', 'Add Tier')}
-                  </Button>
-                )}
-              </Box>
-            </Grid>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder={t('membershipTiers.searchPlaceholder', 'Search by name or code...')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: '#fff',
+                  '& fieldset': { borderColor: '#d0d0d0' },
+                  '&:hover fieldset': { borderColor: '#bbb' },
+                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                },
+              }}
+            />
           </Grid>
-        </CardContent>
-      </Card>
 
-      {/* 现代化表格 */}
-      <Card
+          <Grid item xs={12} md={6}>
+            <Box display="flex" gap={1.5} justifyContent="flex-end">
+              {hasPermission('membership_tiers:create') && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => handleOpenDialog()}
+                  sx={{
+                    borderRadius: 1.5,
+                    py: 0.75,
+                    px: 2,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    bgcolor: THEME_COLOR,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: THEME_COLOR_HOVER,
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  {t('membershipTiers.addTier', 'Add Tier')}
+                </Button>
+              )}
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* 表格 */}
+      <Box
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
           overflow: 'hidden',
+          bgcolor: '#fff',
         }}
       >
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('membershipTiers.name', 'Name')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('membershipTiers.code', 'Code')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('membershipTiers.requiredPoints', 'Required Points')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('membershipTiers.discountRate', 'Discount Rate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                   {t('membershipTiers.status', 'Status')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }} align="right">
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
                   {t('common.actions', 'Actions')}
                 </TableCell>
               </TableRow>
@@ -442,14 +451,14 @@ const MembershipTiers: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <CircularProgress sx={{ color: '#EC4899' }} />
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
                   </TableCell>
                 </TableRow>
               ) : filteredTiers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <Typography variant="body1" color="text.secondary">
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
                       {searchTerm
                         ? t('membershipTiers.noSearchResults', 'No levels match your search')
                         : t('membershipTiers.noTiers', 'No membership levels found')}
@@ -462,28 +471,28 @@ const MembershipTiers: React.FC = () => {
                     key={tier.id}
                     sx={{
                       '&:hover': {
-                        backgroundColor: alpha('#EC4899', 0.04),
+                        backgroundColor: '#fafafa',
                       },
-                      transition: 'background-color 0.2s ease',
                     }}
                   >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Box
                           sx={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 2,
-                            background: `linear-gradient(135deg, ${tier.color || '#9CA3AF'}, ${tier.color || '#9CA3AF'}80)`,
-                            color: 'white',
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1.5,
+                            bgcolor: alpha(tier.color || '#9CA3AF', 0.15),
+                            color: tier.color || '#9CA3AF',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            '& svg': { fontSize: 16 },
                           }}
                         >
                           {getTierIcon(tier.icon || 'star')}
                         </Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{tier.name}</Typography>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{tier.name}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -491,24 +500,26 @@ const MembershipTiers: React.FC = () => {
                         label={tier.code}
                         size="small"
                         sx={{
-                          fontWeight: 600,
-                          bgcolor: alpha(tier.color || '#EC4899', 0.1),
-                          color: tier.color || '#EC4899',
+                          height: 24,
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          bgcolor: '#fafafa',
+                          color: '#1a1a1a',
+                          border: '1px solid #e0e0e0',
                         }}
                       />
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <StarIcon sx={{ fontSize: 18, color: '#FCD34D' }} />
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{tier.requiredPoints.toLocaleString()}</Typography>
-                      </Box>
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
+                        {tier.requiredPoints.toLocaleString()}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography
-                        variant="body2"
                         sx={{
-                          fontWeight: 600,
-                          color: tier.discountRate < 100 ? '#10B981' : 'text.secondary',
+                          fontSize: '0.8125rem',
+                          fontWeight: 500,
+                          color: tier.discountRate < 100 ? DISCOUNT_COLOR : '#999',
                         }}
                       >
                         {getDiscountDisplay(tier.discountRate)}
@@ -519,9 +530,12 @@ const MembershipTiers: React.FC = () => {
                         label={tier.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                         size="small"
                         sx={{
+                          height: 24,
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
                           bgcolor: tier.isActive ? alpha('#10B981', 0.1) : alpha('#6B7280', 0.1),
-                          color: tier.isActive ? '#10B981' : '#6B7280',
-                          fontWeight: 600,
+                          color: tier.isActive ? '#059669' : '#6B7280',
+                          border: 'none',
                         }}
                       />
                     </TableCell>
@@ -530,13 +544,13 @@ const MembershipTiers: React.FC = () => {
                         size="small"
                         onClick={(e) => handleMenuOpen(e, tier)}
                         sx={{
-                          color: '#6B7280',
+                          color: '#999',
                           '&:hover': {
-                            bgcolor: alpha('#6B7280', 0.1),
+                            bgcolor: 'rgba(0,0,0,0.04)',
                           },
                         }}
                       >
-                        <MoreVertIcon fontSize="small" />
+                        <MoreVertIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -545,7 +559,7 @@ const MembershipTiers: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-      </Card>
+      </Box>
 
       {/* Actions Menu */}
       <Menu
@@ -554,28 +568,29 @@ const MembershipTiers: React.FC = () => {
         onClose={handleMenuClose}
         PaperProps={{
           sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            mt: 1,
+            borderRadius: 1.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            mt: 0.5,
+            minWidth: 140,
           },
         }}
       >
         {hasPermission('membership_tiers:update') && (
           <MenuItem
             onClick={handleEditFromMenu}
-            sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
+            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
-            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
+            <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('membershipTiers.actions.edit', 'Edit')}
           </MenuItem>
         )}
         {hasPermission('membership_tiers:delete') && (
           <MenuItem
             onClick={handleDeleteFromMenu}
-            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+            sx={{ fontSize: '0.8125rem', py: 1, color: '#EF4444', '&:hover': { backgroundColor: alpha('#EF4444', 0.05) } }}
           >
-            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />
             {t('membershipTiers.actions.delete', 'Delete')}
           </MenuItem>
         )}
@@ -592,70 +607,60 @@ const MembershipTiers: React.FC = () => {
         }}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
         <DialogTitle
           sx={{
-            background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.08))',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            py: 2,
+            px: 3,
           }}
         >
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <MembershipIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {selectedTier
-                    ? t('membershipTiers.editTier', 'Edit Membership Level')
-                    : t('membershipTiers.addTier', 'Add Membership Level')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedTier
-                    ? t('membershipTiers.editTierSubtitle', 'Update level information and settings')
-                    : t('membershipTiers.addTierSubtitle', 'Create new membership level')}
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton
-              onClick={handleCloseDialog}
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box
               sx={{
-                color: 'text.secondary',
-                '&:hover': { backgroundColor: alpha('#EC4899', 0.08) },
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: alpha(THEME_COLOR, 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <CloseIcon />
-            </IconButton>
+              <MembershipIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                {selectedTier
+                  ? t('membershipTiers.editTier', 'Edit Membership Level')
+                  : t('membershipTiers.addTier', 'Add Membership Level')}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
+                {selectedTier
+                  ? t('membershipTiers.editTierSubtitle', 'Update level information and settings')
+                  : t('membershipTiers.addTierSubtitle', 'Create new membership level')}
+              </Typography>
+            </Box>
           </Box>
+          <IconButton
+            onClick={handleCloseDialog}
+            size="small"
+            sx={{
+              color: '#999',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3}>
+        <DialogContent dividers sx={{ p: 3 }}>
+          <Grid container spacing={2.5}>
             {/* Row 1: Name and Code */}
             <Grid item xs={12} md={6}>
               <TextField
@@ -664,17 +669,18 @@ const MembershipTiers: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 fullWidth
+                size="small"
                 helperText={t('membershipTiers.nameHelper', 'e.g., Regular, Silver, Gold, Platinum')}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#EC4899',
-                  },
+                  '& .MuiInputLabel-root': { color: '#999', '&.Mui-focused': { color: THEME_COLOR } },
+                  '& .MuiFormHelperText-root': { fontSize: '0.75rem', color: '#888' },
                 }}
               />
             </Grid>
@@ -685,17 +691,18 @@ const MembershipTiers: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                 required
                 fullWidth
+                size="small"
                 helperText={t('membershipTiers.codeHelper', 'Unique code in UPPERCASE')}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#EC4899',
-                  },
+                  '& .MuiInputLabel-root': { color: '#999', '&.Mui-focused': { color: THEME_COLOR } },
+                  '& .MuiFormHelperText-root': { fontSize: '0.75rem', color: '#888' },
                 }}
               />
             </Grid>
@@ -715,17 +722,17 @@ const MembershipTiers: React.FC = () => {
                 }}
                 required
                 fullWidth
+                size="small"
                 inputProps={{ min: 0 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#EC4899',
-                  },
+                  '& .MuiInputLabel-root': { color: '#999', '&.Mui-focused': { color: THEME_COLOR } },
                 }}
               />
             </Grid>
@@ -743,79 +750,57 @@ const MembershipTiers: React.FC = () => {
                 }}
                 required
                 fullWidth
+                size="small"
                 inputProps={{ min: 0, max: 100, step: 0.01 }}
                 helperText={t('membershipTiers.discountHelper', '100 = no discount, 95 = 5% off, 90 = 10% off')}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#EC4899',
-                  },
+                  '& .MuiInputLabel-root': { color: '#999', '&.Mui-focused': { color: THEME_COLOR } },
+                  '& .MuiFormHelperText-root': { fontSize: '0.75rem', color: '#888' },
                 }}
               />
             </Grid>
 
             {/* Row 3: Icon Selector */}
             <Grid item xs={12}>
-            {/* 图标选择器 */}
-            <Box>
-              <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
                 {t('membershipTiers.icon', 'Icon')}
               </Typography>
               <Box
                 sx={{
-                  p: 2,
-                  backgroundColor: '#f8fafc',
+                  p: 1.5,
+                  backgroundColor: '#fafafa',
                   borderRadius: 2,
-                  border: '1px solid #e2e8f0',
-                  maxHeight: 180,
+                  border: '1px solid #e0e0e0',
+                  maxHeight: 140,
                   overflowY: 'auto',
-                  '&::-webkit-scrollbar': {
-                    width: '6px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    backgroundColor: '#f1f1f1',
-                    borderRadius: '3px',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: '#EC4899',
-                    borderRadius: '3px',
-                    '&:hover': {
-                      backgroundColor: '#DB2777',
-                    },
-                  },
                 }}
               >
-                <Grid container spacing={1}>
+                <Grid container spacing={0.75}>
                   {iconOptions.map((option) => (
                     <Grid item key={option.value}>
                       <Box
                         sx={{
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          borderRadius: 2,
+                          borderRadius: 1.5,
                           cursor: 'pointer',
-                          border: formData.icon === option.value
-                            ? '2px solid #EC4899'
-                            : '1px solid #e2e8f0',
-                          backgroundColor: formData.icon === option.value
-                            ? alpha('#EC4899', 0.1)
-                            : 'white',
-                          color: formData.icon === option.value
-                            ? '#EC4899'
-                            : '#6B7280',
-                          transition: 'all 0.2s ease',
+                          border: formData.icon === option.value ? `2px solid ${THEME_COLOR}` : '1px solid #e0e0e0',
+                          backgroundColor: formData.icon === option.value ? alpha(THEME_COLOR, 0.1) : 'white',
+                          color: formData.icon === option.value ? THEME_COLOR : '#888',
+                          '& svg': { fontSize: 18 },
                           '&:hover': {
-                            transform: 'scale(1.05)',
-                            backgroundColor: alpha('#EC4899', 0.08),
-                            color: '#EC4899',
+                            backgroundColor: alpha(THEME_COLOR, 0.08),
+                            color: THEME_COLOR,
                           },
                         }}
                         onClick={() => setFormData({ ...formData, icon: option.value })}
@@ -827,62 +812,37 @@ const MembershipTiers: React.FC = () => {
                   ))}
                 </Grid>
               </Box>
-            </Box>
             </Grid>
 
             {/* Row 4: Color Selector */}
             <Grid item xs={12}>
-            {/* 颜色选择器 */}
-            <Box>
-              <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
                 {t('membershipTiers.color', 'Color')}
               </Typography>
               <Box
                 sx={{
-                  p: 2,
-                  backgroundColor: '#f8fafc',
+                  p: 1.5,
+                  backgroundColor: '#fafafa',
                   borderRadius: 2,
-                  border: '1px solid #e2e8f0',
-                  maxHeight: 200,
+                  border: '1px solid #e0e0e0',
+                  maxHeight: 140,
                   overflowY: 'auto',
-                  '&::-webkit-scrollbar': {
-                    width: '6px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    backgroundColor: '#f1f1f1',
-                    borderRadius: '3px',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: '#EC4899',
-                    borderRadius: '3px',
-                    '&:hover': {
-                      backgroundColor: '#DB2777',
-                    },
-                  },
                 }}
               >
-                <Grid container spacing={1}>
+                <Grid container spacing={0.75}>
                   {colorOptions.map((color) => (
                     <Grid item key={color} xs="auto">
                       <Box
                         sx={{
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
                           backgroundColor: color,
-                          borderRadius: 2,
+                          borderRadius: 1.5,
                           cursor: 'pointer',
-                          border: formData.color === color
-                            ? '3px solid #EC4899'
-                            : '1px solid #e2e8f0',
-                          boxShadow: formData.color === color
-                            ? `0 0 0 2px ${alpha('#EC4899', 0.3)}`
-                            : 'none',
-                          transition: 'all 0.2s ease',
+                          border: formData.color === color ? `2px solid ${THEME_COLOR}` : '1px solid #e0e0e0',
                           position: 'relative',
                           '&:hover': {
-                            transform: 'scale(1.15)',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                            zIndex: 1,
+                            transform: 'scale(1.1)',
                           },
                           '&:after': formData.color === color ? {
                             content: '""',
@@ -890,11 +850,11 @@ const MembershipTiers: React.FC = () => {
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            width: '10px',
-                            height: '10px',
+                            width: '8px',
+                            height: '8px',
                             backgroundColor: 'white',
                             borderRadius: '50%',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
                           } : {},
                         }}
                         onClick={() => setFormData({ ...formData, color })}
@@ -904,7 +864,6 @@ const MembershipTiers: React.FC = () => {
                   ))}
                 </Grid>
               </Box>
-            </Box>
             </Grid>
 
             {/* Row 5: Benefits */}
@@ -914,44 +873,55 @@ const MembershipTiers: React.FC = () => {
                 value={formData.benefits || ''}
                 onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
                 multiline
-                rows={3}
+                rows={2}
                 fullWidth
+                size="small"
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                    '&:hover fieldset': { borderColor: '#bbb' },
+                    '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#EC4899',
-                  },
+                  '& .MuiInputLabel-root': { color: '#999', '&.Mui-focused': { color: THEME_COLOR } },
                 }}
               />
             </Grid>
           </Grid>
-          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={handleCloseDialog}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              color: 'text.secondary',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#666',
+              textTransform: 'none',
             }}
           >
             {t('common.cancel', 'Cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleSave}
             variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #DB2777, #BE185D)',
+                bgcolor: THEME_COLOR_HOVER,
+                boxShadow: 'none',
               },
             }}
           >
@@ -966,44 +936,59 @@ const MembershipTiers: React.FC = () => {
         onClose={() => setOpenDeleteDialog(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
-          {t('membershipTiers.confirmDelete', 'Confirm Delete')}
+        <DialogTitle sx={{ py: 2, px: 3 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('membershipTiers.confirmDelete', 'Confirm Delete')}
+          </Typography>
         </DialogTitle>
-        <DialogContent>
-          <Typography>
+        <DialogContent sx={{ px: 3, pb: 2 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
             {t('membershipTiers.deleteMessage', 'Are you sure you want to delete this tier?')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setOpenDeleteDialog(false)}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#666',
+              textTransform: 'none',
             }}
             disabled={loading}
           >
             {t('common.cancel', 'Cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleDelete}
             variant="contained"
             disabled={loading}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              backgroundColor: '#EF4444',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                backgroundColor: '#DC2626',
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : t('common.delete', 'Delete')}
+            {loading ? <CircularProgress size={16} color="inherit" /> : t('common.delete', 'Delete')}
           </Button>
         </DialogActions>
       </Dialog>

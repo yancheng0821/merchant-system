@@ -101,10 +101,11 @@ import PaymentDialog, { ServicePayment } from './components/PaymentDialog';
 import AdjustAvailabilityDialog from './components/AdjustAvailabilityDialog';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { usePermission } from '../../../hooks/usePermission';
 import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi, staffAttendanceApi } from '../../../services/api';
 import type { Resource, Service as ApiService, Customer, StaffAttendance } from '../../../services/api';
-import { getMerchantNow, getMerchantTimezone } from '../../../utils/timezoneUtils';
+import { getMerchantNow, getMerchantTimezone, getCurrencySymbol } from '../../../utils/timezoneUtils';
 
 interface ResourceShift {
   id: number;
@@ -414,7 +415,13 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const { user } = useAuth();
   const { hasPermission, userPermissions } = usePermission();
   const { isDrawerOpen, setDrawerOpen } = useNavigation();
+  const { themeMode } = useTheme();
   const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#3B82F6';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#2563eb';
 
   // 获取会员等级图标
   const getTierIcon = (iconName: string) => {
@@ -2105,17 +2112,16 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     >
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', gap: 0 }}>
         {/* 左侧边栏 - 始终显示 */}
+        {/* 简约左侧边栏 */}
         <Paper
             elevation={0}
             sx={{
               width: isCompactMode ? 160 : { xs: 200, sm: 220, md: 240, lg: 260 },
               flexShrink: 0,
-              borderRight: '1px solid',
-              borderColor: 'divider',
+              borderRight: '1px solid rgba(0,0,0,0.08)',
               display: 'flex',
               flexDirection: 'column',
-              background: 'linear-gradient(180deg, #fafbfc 0%, #f8f9fa 100%)',
-              boxShadow: '2px 0 8px rgba(0,0,0,0.02)',
+              bgcolor: '#fff',
               transition: 'width 0.3s ease',
             }}
           >
@@ -2129,55 +2135,50 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: isCompactMode ? 16 : 20, color: themeColor }} />
+                    <SearchIcon sx={{ fontSize: isCompactMode ? 16 : 18, color: '#999' }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: isCompactMode ? 1.5 : 2,
-                  backgroundColor: '#f8fafc',
-                  border: '2px solid transparent',
-                  fontSize: isCompactMode ? '0.75rem' : '0.875rem',
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  fontSize: isCompactMode ? '0.75rem' : '0.8125rem',
                   '& input': {
-                    padding: isCompactMode ? '6px 8px' : '8.5px 14px',
+                    padding: isCompactMode ? '6px 8px' : '8px 12px',
                   },
                   '& fieldset': {
-                    border: 'none',
+                    borderColor: 'rgba(0,0,0,0.08)',
                   },
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                    borderColor: alpha(themeColor, 0.2),
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(0,0,0,0.15)',
                   },
-                  '&.Mui-focused': {
-                    backgroundColor: 'white',
-                    borderColor: alpha(themeColor, 0.3),
-                    boxShadow: `0 0 0 3px ${alpha(themeColor, 0.1)}`,
+                  '&.Mui-focused fieldset': {
+                    borderColor: THEME_COLOR,
+                    borderWidth: '1px',
                   },
                 },
               }}
             />
           </Box>
 
-          <Box sx={{ py: isCompactMode ? 0.5 : 1, px: 1, transition: 'padding 0.3s ease' }}>
+          <Box sx={{ py: isCompactMode ? 0.25 : 0.5, px: 0.5, transition: 'padding 0.3s ease' }}>
             <Button
               fullWidth
               size="small"
               sx={{
                 justifyContent: 'flex-start',
-                color: selectedStaffIds.length === 0 ? themeColor : 'text.primary',
+                color: selectedStaffIds.length === 0 ? THEME_COLOR : '#333',
                 textTransform: 'none',
-                borderRadius: isCompactMode ? 1.5 : 2,
-                fontWeight: 600,
-                fontSize: isCompactMode ? '0.75rem' : '0.875rem',
-                px: isCompactMode ? 1 : 2,
-                py: isCompactMode ? 0.5 : 1.25,
-                bgcolor: selectedStaffIds.length === 0 ? alpha(themeColor, 0.12) : 'transparent',
-                transition: 'all 0.2s ease',
+                borderRadius: 1.5,
+                fontWeight: selectedStaffIds.length === 0 ? 600 : 500,
+                fontSize: isCompactMode ? '0.75rem' : '0.8125rem',
+                px: isCompactMode ? 1 : 1.5,
+                py: isCompactMode ? 0.5 : 0.75,
+                bgcolor: selectedStaffIds.length === 0 ? alpha(THEME_COLOR, 0.08) : 'transparent',
+                transition: 'background 0.15s ease',
                 '&:hover': {
-                  bgcolor: alpha(themeColor, 0.08),
-                  transform: 'translateX(4px)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  bgcolor: selectedStaffIds.length === 0 ? alpha(THEME_COLOR, 0.1) : 'rgba(0,0,0,0.04)',
                 }
               }}
               onClick={() => setSelectedStaffIds([])}
@@ -2191,7 +2192,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           <Box sx={{ flex: 1, overflowY: 'auto', py: isCompactMode ? 0.5 : 1, transition: 'padding 0.3s ease' }}>
             {dataLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', py: 4 }}>
-                <CircularProgress size={40} sx={{ color: themeColor }} />
+                <CircularProgress size={40} sx={{ color: THEME_COLOR }} />
               </Box>
             ) : allStaffList.length === 0 ? (
               <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -2200,47 +2201,44 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 </Typography>
               </Box>
             ) : (
-              <List sx={{ py: 0, px: 1 }}>
+              <List sx={{ py: 0, px: 0.5 }}>
                 {allStaffList.map((staff) => {
                 const isSelected = selectedStaffIds.includes(staff.id);
+                // 在monochrome模式下使用深灰色头像
+                const staffAvatarColor = isMonochrome ? '#2a2a2a' : (staff.color || '#5fa67a');
                 return (
                   <ListItemButton
                     key={staff.id}
                     selected={isSelected}
                     onClick={() => toggleStaffSelection(staff.id)}
                     sx={{
-                      py: isCompactMode ? 0.75 : 1.5,
-                      px: isCompactMode ? 1 : 2,
-                      mb: 0.5,
-                      borderRadius: 2,
-                      transition: 'all 0.2s ease',
-                      bgcolor: isSelected ? alpha(themeColor, 0.12) : 'transparent',
+                      py: isCompactMode ? 0.5 : 1,
+                      px: isCompactMode ? 1 : 1.5,
+                      mb: 0.25,
+                      borderRadius: 1.5,
+                      transition: 'background 0.15s ease',
+                      bgcolor: isSelected ? alpha(THEME_COLOR, 0.08) : 'transparent',
                       '&:hover': {
-                        bgcolor: alpha(themeColor, 0.08),
-                        transform: 'translateX(4px)',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        bgcolor: isSelected ? alpha(THEME_COLOR, 0.1) : 'rgba(0,0,0,0.04)',
                       },
                       '&.Mui-selected': {
-                        bgcolor: alpha(themeColor, 0.12),
+                        bgcolor: alpha(THEME_COLOR, 0.08),
                       },
                     }}
                   >
-                    <ListItemAvatar sx={{ minWidth: isCompactMode ? 36 : 56 }}>
+                    <ListItemAvatar sx={{ minWidth: isCompactMode ? 32 : 44 }}>
                       <Avatar
                         src={staff.avatar || undefined}
                         sx={{
-                          width: isCompactMode ? 28 : 40,
-                          height: isCompactMode ? 28 : 40,
-                          bgcolor: staff.color || '#5fa67a', // 使用员工颜色或默认绿色
+                          width: isCompactMode ? 24 : 32,
+                          height: isCompactMode ? 24 : 32,
+                          bgcolor: staffAvatarColor,
                           color: 'white',
                           fontWeight: 600,
-                          fontSize: isCompactMode ? 12 : 16,
-                          border: isSelected ? `2px solid ${themeColor}` : `2px solid ${alpha(staff.color || '#5fa67a', 0.2)}`,
-                          transition: 'all 0.2s ease',
+                          fontSize: isCompactMode ? 10 : 12,
                         }}
                         imgProps={{
                           onError: (e: any) => {
-                            // 图片加载失败时隐藏 img 标签，显示首字母背景
                             e.target.style.display = 'none';
                           }
                         }}
@@ -2252,9 +2250,9 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       primary={
                         <Typography
                           variant="body2"
-                          fontWeight={600}
-                          color={isSelected ? themeColor : 'text.primary'}
-                          sx={{ fontSize: isCompactMode ? 11 : 14 }}
+                          fontWeight={isSelected ? 600 : 500}
+                          color={isSelected ? THEME_COLOR : '#333'}
+                          sx={{ fontSize: isCompactMode ? 11 : 13 }}
                         >
                           {staff.name}
                         </Typography>
@@ -2279,57 +2277,55 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               {selectedStaffIds.length > 0 ? t('appointments.availableServices') : t('appointments.allServicesLabel')}
             </Typography>
           </Box>
-          <Box sx={{ flex: 1, overflowY: 'auto', pb: isCompactMode ? 1 : 2, px: 1, transition: 'padding 0.3s ease' }}>
-            {availableServices.map((service) => (
+          <Box sx={{ flex: 1, overflowY: 'auto', pb: isCompactMode ? 1 : 2, px: 0.5, transition: 'padding 0.3s ease' }}>
+            {availableServices.map((service) => {
+              // 在monochrome模式下使用深灰色
+              const displayColor = isMonochrome ? '#2a2a2a' : service.color;
+              const isSelected = selectedServiceId === service.id;
+              return (
               <Box
                 key={service.id}
-                onClick={() => setSelectedServiceId(selectedServiceId === service.id ? null : service.id)}
+                onClick={() => setSelectedServiceId(isSelected ? null : service.id)}
                 sx={{
-                  mb: isCompactMode ? 0.5 : 1,
-                  p: isCompactMode ? 1 : 1.5,
-                  bgcolor: selectedServiceId === service.id ? alpha(service.color, 0.25) : alpha(service.color, 0.12),
-                  borderRadius: 2,
+                  mb: 0.25,
+                  py: isCompactMode ? 0.5 : 0.75,
+                  px: isCompactMode ? 1 : 1.5,
+                  bgcolor: isSelected ? alpha(displayColor, 0.08) : 'transparent',
+                  borderRadius: 1.5,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: isCompactMode ? 0.75 : 1,
-                  border: selectedServiceId === service.id ? `2px solid ${service.color}` : '2px solid transparent',
-                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transition: 'background 0.15s ease',
                   '&:hover': {
-                    bgcolor: alpha(service.color, 0.2),
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: `0 4px 12px ${alpha(service.color, 0.25)}`,
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
+                    bgcolor: isSelected ? alpha(displayColor, 0.1) : 'rgba(0,0,0,0.04)',
                   },
                 }}
               >
                 <Box
                   sx={{
-                    width: isCompactMode ? 28 : 36,
-                    height: isCompactMode ? 28 : 36,
-                    borderRadius: '50%',
-                    bgcolor: service.color,
+                    width: isCompactMode ? 24 : 28,
+                    height: isCompactMode ? 24 : 28,
+                    borderRadius: 1,
+                    bgcolor: displayColor,
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: isCompactMode ? 12 : 14,
+                    fontWeight: 600,
+                    fontSize: isCompactMode ? 10 : 11,
                     flexShrink: 0,
-                    boxShadow: `0 2px 8px ${alpha(service.color, 0.4)}`,
                   }}
                 >
                   {service.icon}
                 </Box>
                 <Box flex={1} sx={{ minWidth: 0 }}>
                   <Typography
-                    variant="caption"
-                    fontWeight={600}
-                    display="block"
-                    fontSize={isCompactMode ? 10 : 11}
+                    variant="body2"
+                    fontWeight={isSelected ? 600 : 500}
+                    color={isSelected ? displayColor : '#333'}
                     sx={{
+                      fontSize: isCompactMode ? 11 : 12,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -2338,47 +2334,47 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     {service.name}
                   </Typography>
                   {!isCompactMode && (
-                    <Typography variant="caption" color="text.secondary" fontSize={10}>
-                      {service.duration} min · ${service.price}
+                    <Typography variant="caption" color="#888" fontSize={10}>
+                      {service.duration} min · {getCurrencySymbol()}{service.price}
                     </Typography>
                   )}
                 </Box>
               </Box>
-            ))}
+            );
+            })}
           </Box>
         </Paper>
 
         {/* 主内容区域 */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* 简化的日期导航栏 */}
           <Paper
             elevation={0}
             sx={{
-              p: isCompactMode ? 1 : 2.5,
-              borderBottom: '2px solid',
-              borderColor: 'divider',
+              py: isCompactMode ? 0.75 : 1.25,
+              px: isCompactMode ? 1 : 2,
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
               bgcolor: 'white',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
               zIndex: 10,
               transition: 'padding 0.3s ease',
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Box display="flex" alignItems="center" gap={2}>
+              <Box display="flex" alignItems="center" gap={1.5}>
                 <IconButton
                   onClick={handlePrevious}
                   size="small"
                   sx={{
-                    bgcolor: 'white',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    p: isCompactMode ? 0.5 : 1,
+                    width: isCompactMode ? 28 : 32,
+                    height: isCompactMode ? 28 : 32,
+                    color: '#666',
                     '&:hover': {
-                      bgcolor: alpha(themeColor, 0.05),
-                      borderColor: themeColor,
+                      bgcolor: 'rgba(0,0,0,0.04)',
+                      color: THEME_COLOR,
                     },
                   }}
                 >
-                  <ChevronLeftIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} />
+                  <ChevronLeftIcon sx={{ fontSize: isCompactMode ? 18 : 20 }} />
                 </IconButton>
                 <Box
                   onClick={handleDateClick}
@@ -2386,25 +2382,22 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: isCompactMode ? 1 : 1.5,
-                    px: isCompactMode ? 1.5 : 3,
-                    py: isCompactMode ? 0.5 : 1.5,
-                    borderRadius: isCompactMode ? 2 : 3,
-                    bgcolor: 'white',
-                    transition: 'all 0.2s ease',
-                    minWidth: isCompactMode ? 180 : 280,
-                    justifyContent: 'center',
+                    gap: 1,
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1.5,
+                    transition: 'background 0.15s ease',
                     '&:hover': {
-                      bgcolor: alpha(themeColor, 0.03),
+                      bgcolor: 'rgba(0,0,0,0.04)',
                     }
                   }}
                 >
-                  <CalendarIcon sx={{ color: themeColor, fontSize: isCompactMode ? 16 : 20 }} />
+                  <CalendarIcon sx={{ color: THEME_COLOR, fontSize: isCompactMode ? 16 : 18 }} />
                   <Typography
-                    variant={isCompactMode ? "body2" : "h6"}
+                    variant="body2"
                     fontWeight={600}
-                    color="text.primary"
-                    sx={{ fontSize: isCompactMode ? 13 : undefined }}
+                    color="#1a1a1a"
+                    sx={{ fontSize: isCompactMode ? 13 : 14 }}
                   >
                     {format(currentDate, 'MMMM do, yyyy', { locale })}
                   </Typography>
@@ -2413,73 +2406,63 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   onClick={handleNext}
                   size="small"
                   sx={{
-                    bgcolor: 'white',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    p: isCompactMode ? 0.5 : 1,
+                    width: isCompactMode ? 28 : 32,
+                    height: isCompactMode ? 28 : 32,
+                    color: '#666',
                     '&:hover': {
-                      bgcolor: alpha(themeColor, 0.05),
-                      borderColor: themeColor,
+                      bgcolor: 'rgba(0,0,0,0.04)',
+                      color: THEME_COLOR,
                     },
                   }}
                 >
-                  <ChevronRightIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} />
+                  <ChevronRightIcon sx={{ fontSize: isCompactMode ? 18 : 20 }} />
                 </IconButton>
               </Box>
 
-              <Box display="flex" alignItems="center" gap={2}>
-                {/* Compact Fullscreen Mode Toggle - Always visible */}
+              <Box display="flex" alignItems="center" gap={1}>
+                {/* Compact Mode Toggle */}
                 <IconButton
                   onClick={() => {
-                    // Toggle compact mode
                     const newCompactMode = !isCompactMode;
                     setIsCompactMode(newCompactMode);
-                    // 保存到localStorage
                     localStorage.setItem('scheduleViewCompactMode', JSON.stringify(newCompactMode));
-
-                    // If entering compact mode, hide drawer/menu
-                    // If exiting compact mode, show drawer/menu
                     setDrawerOpen(!newCompactMode);
                   }}
-                  size={isCompactMode ? "small" : "medium"}
+                  size="small"
                   sx={{
-                    bgcolor: isCompactMode ? themeColor : 'white',
-                    border: isCompactMode ? '1px solid' : '2px solid',
-                    borderColor: isCompactMode ? themeColor : 'divider',
-                    color: isCompactMode ? 'white' : themeColor,
-                    p: isCompactMode ? 0.5 : 1,
-                    transition: 'all 0.2s ease',
+                    width: 32,
+                    height: 32,
+                    bgcolor: isCompactMode ? THEME_COLOR : 'transparent',
+                    color: isCompactMode ? 'white' : '#666',
+                    transition: 'all 0.15s ease',
                     '&:hover': {
-                      bgcolor: isCompactMode ? '#2563eb' : alpha(themeColor, 0.05),
-                      borderColor: themeColor,
-                      transform: 'scale(1.05)',
+                      bgcolor: isCompactMode ? THEME_COLOR_DARK : 'rgba(0,0,0,0.04)',
+                      color: isCompactMode ? 'white' : THEME_COLOR,
                     },
                   }}
                   title={isCompactMode ? t('calendar.exitCompactView', 'Exit Compact View') : t('calendar.compactView', 'Compact View')}
                 >
-                  {isCompactMode ? <ViewAgendaIcon sx={{ fontSize: 18 }} /> : <ViewCompactIcon sx={{ fontSize: 20 }} />}
+                  {isCompactMode ? <ViewAgendaIcon sx={{ fontSize: 18 }} /> : <ViewCompactIcon sx={{ fontSize: 18 }} />}
                 </IconButton>
 
-                {/* Browser Fullscreen Toggle */}
+                {/* Fullscreen Toggle */}
                 <IconButton
                   onClick={toggleFullscreen}
-                  size={isCompactMode ? "small" : "medium"}
+                  size="small"
                   sx={{
-                    bgcolor: isFullscreen ? themeColor : 'white',
-                    border: isCompactMode ? '1px solid' : '2px solid',
-                    borderColor: isFullscreen ? themeColor : 'divider',
-                    color: isFullscreen ? 'white' : themeColor,
-                    p: isCompactMode ? 0.5 : 1,
-                    transition: 'all 0.2s ease',
+                    width: 32,
+                    height: 32,
+                    bgcolor: isFullscreen ? THEME_COLOR : 'transparent',
+                    color: isFullscreen ? 'white' : '#666',
+                    transition: 'all 0.15s ease',
                     '&:hover': {
-                      bgcolor: isFullscreen ? '#2563eb' : alpha(themeColor, 0.05),
-                      borderColor: themeColor,
-                      transform: 'scale(1.05)',
+                      bgcolor: isFullscreen ? THEME_COLOR_DARK : 'rgba(0,0,0,0.04)',
+                      color: isFullscreen ? 'white' : THEME_COLOR,
                     },
                   }}
                   title={isFullscreen ? t('calendar.exitFullscreen', 'Exit Fullscreen') : t('calendar.fullscreen', 'Fullscreen')}
                 >
-                  {isFullscreen ? <FullscreenExitIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} /> : <FullscreenIcon sx={{ fontSize: isCompactMode ? 18 : 24 }} />}
+                  {isFullscreen ? <FullscreenExitIcon sx={{ fontSize: 18 }} /> : <FullscreenIcon sx={{ fontSize: 18 }} />}
                 </IconButton>
               </Box>
             </Box>
@@ -2506,7 +2489,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   size={40}
                   thickness={3}
                   sx={{
-                    color: themeColor,
+                    color: THEME_COLOR,
                   }}
                 />
               </Box>
@@ -2634,7 +2617,10 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                 position: 'relative',
                                 width: '100%',
                                 height: '100%',
-                                background: `linear-gradient(180deg, ${alpha(staff.color, 0.02)} 0%, ${alpha(staff.color, 0.01)} 50%, white 100%)`,
+                                // monochrome模式下使用灰色渐变
+                                background: isMonochrome
+                                  ? `linear-gradient(180deg, rgba(90, 90, 90, 0.03) 0%, rgba(90, 90, 90, 0.015) 50%, white 100%)`
+                                  : `linear-gradient(180deg, ${alpha(staff.color, 0.02)} 0%, ${alpha(staff.color, 0.01)} 50%, white 100%)`,
                                 borderRadius: 1,
                                 opacity: staff.isAvailable ? 1 : 0.5,
                                 transition: 'opacity 0.3s ease',
@@ -2834,7 +2820,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                   '&:hover': {
                                     bgcolor: isPast || isUnavailable
                                       ? undefined
-                                      : alpha(themeColor, 0.02),
+                                      : alpha(THEME_COLOR, 0.02),
                                   },
                                   // 移除中间的虚线，让界面更简洁
                                 }}
@@ -2936,7 +2922,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                             height: isCompactMode ? 50 : 80,
                             p: isCompactMode ? 1 : 2,
                             borderBottom: '1px solid #dee2e6',
-                            bgcolor: isToday ? alpha(themeColor, 0.1) : 'white',
+                            bgcolor: isToday ? alpha(THEME_COLOR, 0.1) : 'white',
                             textAlign: 'center',
                             transition: 'all 0.3s ease',
                           }}
@@ -2972,7 +2958,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                 borderBottom: '1px solid #dee2e6',
                                 cursor: 'pointer',
                                 '&:hover': {
-                                  bgcolor: alpha(themeColor, 0.02),
+                                  bgcolor: alpha(THEME_COLOR, 0.02),
                                 }
                               }}
                             />
@@ -3051,6 +3037,21 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           vertical: 'top',
           horizontal: 'center',
         }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              '& .MuiPickersDay-root.Mui-selected': {
+                bgcolor: THEME_COLOR,
+                '&:hover': { bgcolor: THEME_COLOR_DARK },
+              },
+              '& .MuiPickersDay-root:focus.Mui-selected': {
+                bgcolor: THEME_COLOR,
+              },
+            }
+          }
+        }}
       >
         <LocalizationProvider
           dateAdapter={AdapterDateFns}
@@ -3077,14 +3078,14 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 }}
                 sx={{
                   cursor: 'pointer',
-                  color: themeColor,
+                  color: THEME_COLOR,
                   fontSize: '0.875rem',
                   fontWeight: 500,
                   px: 1.5,
                   py: 0.5,
                   borderRadius: 1,
                   '&:hover': {
-                    bgcolor: alpha(themeColor, 0.1),
+                    bgcolor: alpha(THEME_COLOR, 0.1),
                   },
                 }}
               >
@@ -3105,7 +3106,8 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
             width: 400,
             zIndex: isFullscreen ? 9999 : 1300,
             position: isFullscreen ? 'fixed' : 'absolute',
-            borderLeft: '1px solid #e2e8f0',
+            borderLeft: '1px solid rgba(0,0,0,0.06)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           },
         }}
         sx={{
@@ -3117,38 +3119,49 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         }}
       >
         {selectedAppointment && (() => {
-          // 获取状态配置 - 与卡片保持一致
+          // 支付主题色 - 与PaymentDialog保持一致
+          const PAYMENT_COLOR = isMonochrome ? '#1a1a1a' : '#10b981';
+          const PAYMENT_COLOR_DARK = isMonochrome ? '#333' : '#059669';
+
+          // 获取状态配置 - CHECKED_IN状态使用支付主题色（绿色）
           const getStatusConfig = () => {
             if (selectedAppointment.status === 'COMPLETED' || selectedAppointment.paid) {
               return {
-                color: '#4CAF50',
-                bgColor: alpha('#4CAF50', 0.08),
-                borderColor: alpha('#4CAF50', 0.2),
+                color: isMonochrome ? '#1a1a1a' : '#4CAF50',
+                bgColor: alpha(isMonochrome ? '#1a1a1a' : '#4CAF50', 0.08),
+                borderColor: alpha(isMonochrome ? '#1a1a1a' : '#4CAF50', 0.2),
               };
             }
             if (selectedAppointment.status === 'CHECKED_IN') {
+              // CHECKED_IN状态使用绿色主题，与支付流程保持一致
               return {
-                color: '#FF9800',
-                bgColor: alpha('#FF9800', 0.08),
-                borderColor: alpha('#FF9800', 0.2),
+                color: PAYMENT_COLOR,
+                bgColor: alpha(PAYMENT_COLOR, 0.08),
+                borderColor: alpha(PAYMENT_COLOR, 0.2),
               };
             }
             return {
-              color: '#1976D2',
-              bgColor: alpha('#1976D2', 0.08),
-              borderColor: alpha('#1976D2', 0.2),
+              color: isMonochrome ? '#6a6a6a' : THEME_COLOR,
+              bgColor: alpha(isMonochrome ? '#6a6a6a' : THEME_COLOR, 0.08),
+              borderColor: alpha(isMonochrome ? '#6a6a6a' : THEME_COLOR, 0.2),
             };
           };
 
           const statusConfig = getStatusConfig();
 
+          // 抽屉主题色 - CHECKED_IN/COMPLETED/已支付状态使用支付主题色（绿色）
+          const usePaymentTheme = selectedAppointment.status === 'CHECKED_IN' || selectedAppointment.status === 'COMPLETED' || selectedAppointment.paid;
+          const drawerThemeColor = usePaymentTheme ? PAYMENT_COLOR : THEME_COLOR;
+          const drawerThemeColorDark = usePaymentTheme ? PAYMENT_COLOR_DARK : THEME_COLOR_DARK;
+
           return (
             <Box>
+              {/* 简约头部 */}
               <Box
                 sx={{
-                  p: 2.5,
-                  bgcolor: statusConfig.bgColor,
-                  borderBottom: `2px solid ${statusConfig.borderColor}`,
+                  px: 2.5,
+                  py: 2,
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -3157,43 +3170,40 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box
                     sx={{
-                      width: 4,
-                      height: 28,
-                      bgcolor: statusConfig.color,
-                      borderRadius: 1,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 1.5,
+                      bgcolor: alpha(drawerThemeColor, 0.1),
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: drawerThemeColor,
                     }}
-                  />
-                  <Typography variant="h6" fontWeight={600} sx={{ color: '#0f172a', fontSize: '1.125rem' }}>
+                  >
+                    <EventIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.125rem' }}>
                     {t('appointments.appointment')}
                   </Typography>
                 </Box>
                 <IconButton
                   size="small"
                   onClick={() => setDetailsDrawerOpen(false)}
-                  sx={{
-                    color: '#64748b',
-                    bgcolor: '#ffffff',
-                    width: 32,
-                    height: 32,
-                    borderRadius: 1.5,
-                    '&:hover': {
-                      bgcolor: alpha(statusConfig.color, 0.15),
-                      color: statusConfig.color,
-                    },
-                  }}
+                  sx={{ color: '#999' }}
                 >
                   <CloseIcon sx={{ fontSize: 20 }} />
                 </IconButton>
               </Box>
 
-            <Box sx={{ p: 3 }}>
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  {t('appointments.customer').toUpperCase()}
+            <Box sx={{ p: 2.5 }}>
+              {/* 客户信息 */}
+              <Box sx={{ mb: 2.5 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: '#888', fontWeight: 500, mb: 1 }}>
+                  {t('appointments.customer')}
                 </Typography>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mt={1}>
+                <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: '#1a1a1a' }}>
                       {selectedAppointment.customerName}
                     </Typography>
                     {selectedAppointment.customerMembershipTier && (
@@ -3235,15 +3245,15 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       size="small"
                       sx={{
                         height: 24,
-                        bgcolor: alpha('#4CAF50', 0.1),
-                        color: '#4CAF50',
+                        bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#4CAF50', 0.1),
+                        color: isMonochrome ? '#1a1a1a' : '#4CAF50',
                         fontWeight: 600,
                         fontSize: '0.75rem',
                         borderRadius: 1.5,
                         border: 'none',
                         '& .MuiChip-icon': {
                           fontSize: 16,
-                          color: '#4CAF50',
+                          color: isMonochrome ? '#1a1a1a' : '#4CAF50',
                         },
                         '& .MuiChip-label': {
                           px: 1,
@@ -3257,15 +3267,15 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       size="small"
                       sx={{
                         height: 24,
-                        bgcolor: alpha('#FF9800', 0.1),
-                        color: '#FF9800',
+                        bgcolor: alpha(isMonochrome ? '#4a4a4a' : '#FF9800', 0.1),
+                        color: isMonochrome ? '#4a4a4a' : '#FF9800',
                         fontWeight: 600,
                         fontSize: '0.75rem',
                         borderRadius: 1.5,
                         border: 'none',
                         '& .MuiChip-icon': {
                           fontSize: 16,
-                          color: '#FF9800',
+                          color: isMonochrome ? '#4a4a4a' : '#FF9800',
                         },
                         '& .MuiChip-label': {
                           px: 1,
@@ -3282,21 +3292,21 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                       sx={{
                         height: 24,
                         bgcolor: 'transparent',
-                        border: `1px solid #1976D2`,
-                        color: '#1976D2',
+                        border: `1px solid ${THEME_COLOR}`,
+                        color: THEME_COLOR,
                         fontWeight: 600,
                         fontSize: '0.75rem',
                         borderRadius: 1.5,
                         cursor: 'pointer',
                         '& .MuiChip-icon': {
                           fontSize: 16,
-                          color: '#1976D2',
+                          color: THEME_COLOR,
                         },
                         '& .MuiChip-label': {
                           px: 1,
                         },
                         '&:hover': {
-                          bgcolor: alpha('#1976D2', 0.08),
+                          bgcolor: alpha(THEME_COLOR, 0.08),
                         },
                         '&.Mui-disabled': {
                           borderColor: '#cbd5e1',
@@ -3323,33 +3333,34 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 )}
               </Box>
 
-              <Divider />
+              <Box sx={{ height: 1, bgcolor: 'rgba(0,0,0,0.06)', my: 2 }} />
 
-              <Box sx={{ my: 3 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {/* 预约信息 */}
+              <Box sx={{ mb: 2.5 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: '#888', fontWeight: 500, mb: 1.5 }}>
                   {t('appointments.bookingInfo')}
                 </Typography>
 
-                {/* Date & Time */}
+                {/* Date & Time - 简约卡片 */}
                 <Box
                   sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: '#f8fafc',
-                    borderRadius: 2,
-                    border: `1px solid #e2e8f0`
+                    p: 1.25,
+                    bgcolor: alpha(drawerThemeColor, 0.04),
+                    borderRadius: 1.5,
+                    border: '1px solid',
+                    borderColor: alpha(drawerThemeColor, 0.1),
                   }}
                 >
-                  <Box display="flex" alignItems="center" gap={4}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <EventIcon sx={{ fontSize: 18, color: '#64748b' }} />
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem', color: '#0f172a' }}>
+                  <Box display="flex" alignItems="center" gap={2.5}>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <EventIcon sx={{ fontSize: 14, color: drawerThemeColor }} />
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
                         {format(new Date(selectedAppointment.date + 'T00:00:00'), 'PP', { locale })}
                       </Typography>
                     </Box>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <AccessTimeIcon sx={{ fontSize: 18, color: '#64748b' }} />
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem', color: '#0f172a' }}>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <AccessTimeIcon sx={{ fontSize: 14, color: drawerThemeColor }} />
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
                         {selectedAppointment.startTime.substring(0, 5)} - {selectedAppointment.endTime.substring(0, 5)}
                       </Typography>
                     </Box>
@@ -3357,7 +3368,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 </Box>
 
                 {/* Services */}
-                <Box mt={2}>
+                <Box mt={1.5}>
                   {selectedAppointment.services && selectedAppointment.services.length > 0 ? (
                     // 多服务场景：显示每个服务及其价格
                     <>
@@ -3365,76 +3376,56 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                         <Box
                           key={service.serviceId}
                           display="flex"
-                          alignItems="flex-start"
+                          alignItems="center"
                           justifyContent="space-between"
-                          gap={1}
-                          mb={1}
                           sx={{
-                            pb: 1,
-                            borderBottom: `1px solid ${alpha('#E5E7EB', 0.5)}`,
+                            py: 0.75,
+                            borderBottom: index < (selectedAppointment.services?.length ?? 0) - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none',
                           }}
                         >
-                          <Box display="flex" alignItems="flex-start" gap={1} flex={1}>
+                          <Box display="flex" alignItems="center" gap={1}>
                             <Box
                               sx={{
-                                width: 4,
-                                height: 4,
+                                width: 6,
+                                height: 6,
                                 borderRadius: '50%',
-                                bgcolor: '#10B981',
-                                mt: 0.75,
-                                flexShrink: 0,
+                                bgcolor: drawerThemeColor,
                               }}
                             />
-                            <Box flex={1}>
-                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem' }}>
-                                {service.serviceName}
-                              </Typography>
-                            </Box>
+                            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
+                              {service.serviceName}
+                            </Typography>
                           </Box>
-                          <Typography
-                            variant="body2"
-                            fontWeight={600}
-                            sx={{
-                              color: '#10B981',
-                              flexShrink: 0,
-                              ml: 2,
-                              fontSize: '0.875rem',
-                            }}
-                          >
-                            ${service.price.toFixed(2)}
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: drawerThemeColor }}>
+                            {getCurrencySymbol()}{service.price.toFixed(2)}
                           </Typography>
                         </Box>
                       ))}
-                      {/* Staff信息显示在所有服务下方 */}
-                      <Box mt={0.5}>
-                        <Typography variant="body2" color="text.secondary">
-                          {t('appointments.staff')}: <span style={{ fontWeight: 500 }}>{allStaffList.find(s => s.id === selectedAppointment.resourceId)?.name}</span>
+                      {/* Staff信息 */}
+                      <Box mt={1} display="flex" alignItems="center" gap={0.5}>
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                          {t('appointments.staff')}:
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: '#666' }}>
+                          {allStaffList.find(s => s.id === selectedAppointment.resourceId)?.name}
                         </Typography>
                       </Box>
                     </>
                   ) : (
                     // 单服务场景或无服务详情：显示服务名称
-                    <Box display="flex" alignItems="flex-start" gap={1} mb={1}>
-                      <Box
-                        sx={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          bgcolor: '#10B981',
-                          mt: 0.75
-                        }}
-                      />
-                      <Box>
-                        <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, whiteSpace: 'pre-line', fontSize: '0.875rem' }}>
+                    <Box display="flex" alignItems="center" gap={1} py={0.5}>
+                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: drawerThemeColor }} />
+                      <Box flex={1}>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a', whiteSpace: 'pre-line' }}>
                           {selectedAppointment.serviceName.replace(/, /g, '\n')}
                         </Typography>
                         {selectedAppointment.serviceDetails && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5, fontSize: '0.8125rem' }}>
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888', mt: 0.25 }}>
                             {selectedAppointment.serviceDetails}
                           </Typography>
                         )}
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
-                          {t('appointments.staff')}: <span style={{ fontWeight: 500 }}>{allStaffList.find(s => s.id === selectedAppointment.resourceId)?.name}</span>
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888', mt: 0.5 }}>
+                          {t('appointments.staff')}: <span style={{ fontWeight: 500, color: '#666' }}>{allStaffList.find(s => s.id === selectedAppointment.resourceId)?.name}</span>
                         </Typography>
                       </Box>
                     </Box>
@@ -3442,27 +3433,24 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                 </Box>
               </Box>
 
-              <Divider />
-
-              <Box sx={{ my: 2.5 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  {t('appointments.pricing')}
-                </Typography>
-                <Box display="flex" justifyContent="space-between" mt={1.5}>
-                  <Typography variant="body2" fontWeight={600}>
+              {/* 价格 */}
+              <Box sx={{ height: 1, bgcolor: 'rgba(0,0,0,0.06)', my: 2 }} />
+              <Box sx={{ mb: 2.5 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#666' }}>
                     {t('appointments.total')}
                   </Typography>
-                  <Typography variant="body1" fontWeight={700} sx={{ color: '#10B981', fontSize: '1.125rem' }}>
-                    ${selectedAppointment.price}
+                  <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: drawerThemeColor }}>
+                    {getCurrencySymbol()}{selectedAppointment.price}
                   </Typography>
                 </Box>
               </Box>
 
               {/* 备注 */}
-              <Divider />
-              <Box sx={{ my: 2.5 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <Box sx={{ height: 1, bgcolor: 'rgba(0,0,0,0.06)', my: 2 }} />
+              <Box sx={{ mb: 2 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#888', fontWeight: 500 }}>
                     {t('appointments.notes', 'Notes')}
                   </Typography>
                   {/* 只有非COMPLETED状态才能编辑Notes */}
@@ -3472,36 +3460,27 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                         size="small"
                         onClick={() => setEditingNotes(true)}
                         sx={{
-                          width: 28,
-                          height: 28,
-                          color: '#64748b',
-                          bgcolor: '#f8fafc',
-                          borderRadius: 1,
-                          '&:hover': {
-                            bgcolor: alpha('#1976D2', 0.1),
-                            color: '#1976D2',
-                          },
+                          width: 24,
+                          height: 24,
+                          color: '#999',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', color: '#666' },
                         }}
                       >
-                        {selectedAppointment.notes ? <ModeEditIcon sx={{ fontSize: 16 }} /> : <AddIcon sx={{ fontSize: 18 }} />}
+                        {selectedAppointment.notes ? <ModeEditIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 16 }} />}
                       </IconButton>
                     ) : (
-                    <Box display="flex" gap={0.75}>
+                    <Box display="flex" gap={0.5}>
                       <IconButton
                         size="small"
                         onClick={handleSaveNotes}
                         sx={{
-                          width: 28,
-                          height: 28,
-                          color: '#10B981',
-                          bgcolor: alpha('#10B981', 0.1),
-                          borderRadius: 1,
-                          '&:hover': {
-                            bgcolor: alpha('#10B981', 0.2),
-                          },
+                          width: 24,
+                          height: 24,
+                          color: drawerThemeColor,
+                          '&:hover': { bgcolor: alpha(drawerThemeColor, 0.1) },
                         }}
                       >
-                        <CheckIcon sx={{ fontSize: 18 }} />
+                        <CheckIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                       <IconButton
                         size="small"
@@ -3510,17 +3489,13 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           setNotesValue(selectedAppointment.notes || '');
                         }}
                         sx={{
-                          width: 28,
-                          height: 28,
-                          color: '#ef4444',
-                          bgcolor: alpha('#ef4444', 0.1),
-                          borderRadius: 1,
-                          '&:hover': {
-                            bgcolor: alpha('#ef4444', 0.2),
-                          },
+                          width: 24,
+                          height: 24,
+                          color: '#999',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', color: '#666' },
                         }}
                       >
-                        <CloseIcon sx={{ fontSize: 16 }} />
+                        <CloseIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Box>
                     )
@@ -3530,24 +3505,24 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    rows={4}
+                    rows={3}
                     value={notesValue}
                     onChange={(e) => setNotesValue(e.target.value)}
                     placeholder={t('appointments.addNotes', 'Add notes here...')}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        bgcolor: '#f8fafc',
+                        bgcolor: '#fafafa',
                         borderRadius: 1.5,
-                        fontSize: '0.875rem',
+                        fontSize: '0.8125rem',
                         '& fieldset': {
-                          borderColor: '#e2e8f0',
+                          borderColor: 'rgba(0,0,0,0.06)',
                         },
                         '&:hover fieldset': {
-                          borderColor: '#cbd5e1',
+                          borderColor: 'rgba(0,0,0,0.12)',
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: '#1976D2',
-                          borderWidth: '1.5px',
+                          borderColor: drawerThemeColor,
+                          borderWidth: '1px',
                         },
                       },
                     }}
@@ -3556,15 +3531,15 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: selectedAppointment.notes ? 'text.secondary' : 'text.disabled',
+                      color: selectedAppointment.notes ? '#666' : '#999',
                       fontStyle: selectedAppointment.notes ? 'normal' : 'italic',
                       whiteSpace: 'pre-wrap',
-                      bgcolor: '#f8fafc',
-                      p: 2,
+                      bgcolor: '#fafafa',
+                      p: 1.5,
                       borderRadius: 1.5,
-                      border: '1px solid #e2e8f0',
-                      minHeight: 60,
-                      fontSize: '0.875rem',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      minHeight: 50,
+                      fontSize: '0.8125rem',
                     }}
                   >
                     {selectedAppointment.notes || t('appointments.noNotes', 'No notes added')}
@@ -3573,58 +3548,44 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
               </Box>
 
               {/* 支付区域 */}
-              <Divider sx={{ my: 3 }} />
+              <Box sx={{ height: 1, bgcolor: 'rgba(0,0,0,0.06)', my: 2 }} />
               <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1.5} display="block">
-                  {t('appointments.payment')}
-                </Typography>
-
                 {selectedAppointment.status === 'COMPLETED' || selectedAppointment.paid ? (
-                  <Chip
-                    icon={<CheckCircleIcon />}
-                    label={`${t('appointments.paid')} ${selectedAppointment.paidTime ? format(new Date(selectedAppointment.paidTime), 'p', { locale }) : ''}`}
+                  <Box
                     sx={{
-                      width: '100%',
-                      height: 44,
-                      bgcolor: alpha('#10B981', 0.1),
-                      color: '#10B981',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 1,
+                      py: 1,
+                      bgcolor: alpha(drawerThemeColor, 0.04),
                       borderRadius: 1.5,
-                      border: 'none',
-                      '& .MuiChip-icon': {
-                        fontSize: 20,
-                        color: '#10B981',
-                      },
-                      '& .MuiChip-label': {
-                        px: 2,
-                      },
+                      border: '1px solid',
+                      borderColor: alpha(drawerThemeColor, 0.1),
                     }}
-                  />
+                  >
+                    <CheckCircleIcon sx={{ fontSize: 16, color: drawerThemeColor }} />
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: drawerThemeColor }}>
+                      {t('appointments.paid')} {selectedAppointment.paidTime ? format(new Date(selectedAppointment.paidTime), 'p', { locale }) : ''}
+                    </Typography>
+                  </Box>
                 ) : (
                   <Button
                     fullWidth
                     variant="contained"
-                    size="medium"
+                    size="small"
                     onClick={handleOpenPaymentDialog}
                     disabled={selectedAppointment.status !== 'CHECKED_IN' || !hasPermission('schedule:checkout')}
                     sx={{
-                      height: 44,
-                      bgcolor: '#10B981',
-                      color: 'white',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
+                      py: 1,
+                      bgcolor: drawerThemeColor,
+                      fontWeight: 500,
+                      fontSize: '0.8125rem',
                       textTransform: 'none',
                       borderRadius: 1.5,
                       boxShadow: 'none',
-                      '&:hover': {
-                        bgcolor: '#059669',
-                        boxShadow: 'none',
-                      },
-                      '&.Mui-disabled': {
-                        bgcolor: '#e2e8f0',
-                        color: '#94a3b8',
-                      },
+                      '&:hover': { bgcolor: drawerThemeColorDark, boxShadow: 'none' },
+                      '&.Mui-disabled': { bgcolor: '#e5e7eb', color: '#9ca3af' },
                     }}
                   >
                     {t('appointments.takePayment')}
@@ -3634,28 +3595,18 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
               {/* 取消预约按钮 */}
               {selectedAppointment.status === 'CONFIRMED' && hasPermission('schedule:cancel') && (
-                <Box mt={2}>
+                <Box mt={1.5}>
                   <Button
                     fullWidth
-                    variant="outlined"
-                    size="medium"
+                    size="small"
                     onClick={() => handleCancelAppointment(selectedAppointment.id)}
                     sx={{
-                      height: 44,
-                      borderColor: '#e2e8f0',
+                      py: 0.75,
                       color: '#ef4444',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      fontSize: '0.8125rem',
                       textTransform: 'none',
-                      borderRadius: 1.5,
-                      borderWidth: '1px',
-                      boxShadow: 'none',
-                      '&:hover': {
-                        borderWidth: '1px',
-                        borderColor: '#ef4444',
-                        bgcolor: alpha('#EF4444', 0.04),
-                        boxShadow: 'none',
-                      },
+                      '&:hover': { bgcolor: alpha('#ef4444', 0.04) },
                     }}
                   >
                     {t('appointments.cancel', 'Cancel Appointment')}

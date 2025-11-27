@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { roleApi, permissionApi, Permission, Role } from '../../services/permissionApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { PERMISSION_MODULE_STRUCTURE } from '../../config/permissionModules';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface PermissionSubModuleGroup {
   subModuleName: string;
@@ -48,6 +49,16 @@ interface PermissionModuleGroup {
 const RolePermissionManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#4F46E5';
+  const THEME_COLOR_LIGHT = isMonochrome ? '#f5f5f5' : '#EEF2FF';
+  const THEME_BORDER_COLOR = isMonochrome ? '#e0e0e0' : '#C7D2FE';
+  const SECONDARY_COLOR = isMonochrome ? '#1a1a1a' : '#8B5CF6';
+
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -231,7 +242,7 @@ const RolePermissionManagement: React.FC = () => {
 
   // 模块图标 - 统一使用盾牌图标
   const getModuleIcon = () => {
-    return <SecurityIcon sx={{ mr: 1.5, color: '#6366F1', fontSize: '1.3rem' }} />;
+    return <SecurityIcon sx={{ mr: 1.5, color: THEME_COLOR, fontSize: '1.1rem' }} />;
   };
 
   // 渲染权限列表（复用组件）
@@ -245,26 +256,24 @@ const RolePermissionManagement: React.FC = () => {
                 checked={selectedPermissionIds.includes(permission.id)}
                 onChange={() => handlePermissionToggle(permission.id)}
                 sx={{
-                  color: '#6366F1',
-                  '&.Mui-checked': {
-                    color: '#6366F1',
-                  },
+                  color: '#ccc',
+                  '&.Mui-checked': { color: THEME_COLOR },
                 }}
               />
             }
             label={
               <Box>
-                <Typography variant="body2" fontWeight={500}>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
                   {translatePermissionName(permission.permissionName)}
                 </Typography>
                 {translatePermissionDescription(permission.permissionName) && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                     {translatePermissionDescription(permission.permissionName)}
                   </Typography>
                 )}
               </Box>
             }
-            sx={{ width: '100%', my: 0.5 }}
+            sx={{ width: '100%', my: 0.25 }}
           />
         </ListItem>
       ))}
@@ -314,8 +323,8 @@ const RolePermissionManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+        <CircularProgress sx={{ color: THEME_COLOR }} />
       </Box>
     );
   }
@@ -323,22 +332,23 @@ const RolePermissionManagement: React.FC = () => {
   return (
     <Box>
       <Grid container spacing={3}>
-        {/* 左侧：角色列表 - 匹配Customers模块风格 */}
+        {/* 左侧：角色列表 - 简约风格 */}
         <Grid item xs={12} md={3}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2, fontSize: '1rem', fontWeight: 600 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography sx={{ mb: 2, fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
                 {t('rbac.selectRole')}
               </Typography>
               {roles.length === 0 ? (
                 <Box display="flex" flexDirection="column" alignItems="center" py={4}>
-                  <SecurityIcon sx={{ fontSize: 48, color: '#CBD5E1', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">
+                  <SecurityIcon sx={{ fontSize: 40, color: '#ccc', mb: 1 }} />
+                  <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
                     {t('rbac.noRoles')}
                   </Typography>
                 </Box>
@@ -350,23 +360,23 @@ const RolePermissionManagement: React.FC = () => {
                         selected={selectedRole?.id === role.id}
                         onClick={() => setSelectedRole(role)}
                         sx={{
-                          borderRadius: 2,
-                          mb: 0.5,
-                          transition: 'all 0.2s ease',
+                          borderRadius: 1.5,
+                          py: 1,
+                          px: 1.5,
                           '&.Mui-selected': {
-                            backgroundColor: alpha('#6366F1', 0.1),
-                            color: '#6366F1',
+                            backgroundColor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
                             '&:hover': {
-                              backgroundColor: alpha('#6366F1', 0.15),
+                              backgroundColor: alpha(THEME_COLOR, 0.15),
                             },
                           },
                           '&:hover': {
-                            backgroundColor: alpha('#6366F1', 0.04),
+                            backgroundColor: 'rgba(0,0,0,0.04)',
                           },
                         }}
                       >
                         <Box sx={{ width: '100%' }}>
-                          <Typography variant="body2" fontWeight={500}>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
                             {translateRoleName(role.roleName)}
                           </Typography>
                           {role.isSystem && (
@@ -375,10 +385,10 @@ const RolePermissionManagement: React.FC = () => {
                               size="small"
                               sx={{
                                 mt: 0.5,
-                                height: 20,
+                                height: 18,
                                 fontSize: '0.6875rem',
-                                backgroundColor: alpha('#8B5CF6', 0.1),
-                                color: '#8B5CF6',
+                                backgroundColor: alpha(SECONDARY_COLOR, 0.1),
+                                color: SECONDARY_COLOR,
                               }}
                             />
                           )}
@@ -392,34 +402,39 @@ const RolePermissionManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* 右侧：权限树 - 匹配Customers模块风格 */}
+        {/* 右侧：权限树 - 简约风格 */}
         <Grid item xs={12} md={9}>
           <Card
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
                   {selectedRole ? t('rbac.rolePermissions', { roleName: translateRoleName(selectedRole.roleName) }) : t('rbac.selectRoleToManagePermissions')}
                 </Typography>
                 {selectedRole && (
                   <Button
+                    size="small"
                     variant="contained"
-                    startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                    startIcon={saving ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <SaveIcon sx={{ fontSize: 16 }} />}
                     onClick={handleSave}
                     disabled={saving}
                     sx={{
-                      px: 3,
-                      py: 1,
-                      textTransform: 'none',
+                      borderRadius: 1.5,
+                      px: 2,
+                      py: 0.75,
+                      fontSize: '0.8125rem',
                       fontWeight: 500,
-                      borderRadius: 2,
-                      backgroundColor: '#6366f1',
+                      bgcolor: THEME_COLOR,
+                      boxShadow: 'none',
+                      textTransform: 'none',
                       '&:hover': {
-                        backgroundColor: '#4f46e5',
+                        bgcolor: THEME_COLOR_DARK,
+                        boxShadow: 'none',
                       },
                       '&:disabled': {
                         backgroundColor: '#e5e7eb',
@@ -432,7 +447,7 @@ const RolePermissionManagement: React.FC = () => {
                 )}
               </Box>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 2.5, borderColor: 'rgba(0,0,0,0.06)' }} />
 
               {selectedRole ? (
                 <Box>
@@ -448,36 +463,41 @@ const RolePermissionManagement: React.FC = () => {
                       const isExpanded = expandedModules[module.moduleName];
 
                       return (
-                        <Box key={module.moduleName} sx={{ mb: 2.5 }}>
+                        <Box key={module.moduleName} sx={{ mb: 2 }}>
                           {/* 模块标题行 */}
                           <Box
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
-                              backgroundColor: '#EEF2FF',
-                              borderRadius: 2,
-                              p: 2,
+                              backgroundColor: THEME_COLOR_LIGHT,
+                              borderRadius: 1.5,
+                              p: 1.5,
                               cursor: 'pointer',
-                              border: '1px solid #C7D2FE',
-                              boxShadow: '0 1px 3px rgba(99, 102, 241, 0.1)',
+                              border: `1px solid ${THEME_BORDER_COLOR}`,
                               '&:hover': {
-                                backgroundColor: '#E0E7FF',
+                                backgroundColor: isMonochrome ? '#f0f0f0' : '#E0E7FF',
                               },
                             }}
                             onClick={() => toggleModuleExpansion(module.moduleName)}
                           >
-                            <IconButton size="small" sx={{ mr: 1 }}>
-                              {isExpanded ? <ExpandMore /> : <ChevronRight />}
+                            <IconButton size="small" sx={{ mr: 0.5, p: 0.5 }}>
+                              {isExpanded ? <ExpandMore sx={{ fontSize: 18 }} /> : <ChevronRight sx={{ fontSize: 18 }} />}
                             </IconButton>
                             {getModuleIcon()}
-                            <Typography sx={{ fontWeight: 700, flex: 1, fontSize: '1.1rem', color: '#4338CA' }}>
+                            <Typography sx={{ fontWeight: 600, flex: 1, fontSize: '0.875rem', color: THEME_COLOR }}>
                               {module.moduleDisplayName}
                             </Typography>
                             <Chip
                               label={`${moduleSelectedCount}/${modulePermissionIds.length}`}
                               size="small"
-                              color={moduleSelectedCount > 0 ? 'primary' : 'default'}
-                              sx={{ fontSize: '0.75rem', fontWeight: 600, mr: 1 }}
+                              sx={{
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                mr: 1,
+                                height: 20,
+                                bgcolor: moduleSelectedCount > 0 ? alpha(THEME_COLOR, 0.2) : '#e5e7eb',
+                                color: moduleSelectedCount > 0 ? THEME_COLOR : '#666',
+                              }}
                             />
                             <Button
                               size="small"
@@ -487,13 +507,14 @@ const RolePermissionManagement: React.FC = () => {
                               }}
                               sx={{
                                 minWidth: 'auto',
-                                color: '#6366F1',
-                                fontSize: '0.75rem',
+                                color: THEME_COLOR,
+                                fontSize: '0.7rem',
                                 fontWeight: 600,
                                 px: 1,
-                                py: 0.5,
+                                py: 0.25,
+                                textTransform: 'none',
                                 '&:hover': {
-                                  backgroundColor: alpha('#6366F1', 0.08),
+                                  backgroundColor: alpha(THEME_COLOR, 0.08),
                                 },
                               }}
                             >
@@ -503,7 +524,7 @@ const RolePermissionManagement: React.FC = () => {
 
                           {/* 子模块列表 */}
                           <Collapse in={isExpanded} timeout="auto">
-                            <Box sx={{ ml: 5, mt: 1.5, pl: 2, borderLeft: '2px solid #E0E7FF' }}>
+                            <Box sx={{ ml: 4, mt: 1, pl: 2, borderLeft: `2px solid ${THEME_BORDER_COLOR}` }}>
                               {module.subModules.map(subModule => {
                                 const subModulePermissionIds = subModule.permissions.map(p => p.id);
                                 const subSelectedCount = subModulePermissionIds.filter(id =>
@@ -514,34 +535,39 @@ const RolePermissionManagement: React.FC = () => {
                                 const isSubExpanded = expandedModules[subModuleId];
 
                                 return (
-                                  <Box key={subModule.subModuleName} sx={{ mb: 1.5 }}>
+                                  <Box key={subModule.subModuleName} sx={{ mb: 1 }}>
                                     {/* 子模块标题行 */}
                                     <Box
                                       sx={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        backgroundColor: '#F9FAFB',
-                                        border: '1px solid #E5E7EB',
-                                        borderRadius: 1.5,
-                                        p: 1.2,
+                                        backgroundColor: '#fafafa',
+                                        border: '1px solid rgba(0,0,0,0.06)',
+                                        borderRadius: 1,
+                                        p: 1,
                                         cursor: 'pointer',
                                         '&:hover': {
-                                          backgroundColor: '#F3F4F6',
+                                          backgroundColor: '#f5f5f5',
                                         },
                                       }}
                                       onClick={() => toggleModuleExpansion(subModuleId)}
                                     >
-                                      <IconButton size="small" sx={{ mr: 0.5, p: 0.5 }}>
-                                        {isSubExpanded ? <ExpandMore sx={{ fontSize: '1.2rem' }} /> : <ChevronRight sx={{ fontSize: '1.2rem' }} />}
+                                      <IconButton size="small" sx={{ mr: 0.5, p: 0.25 }}>
+                                        {isSubExpanded ? <ExpandMore sx={{ fontSize: 16 }} /> : <ChevronRight sx={{ fontSize: 16 }} />}
                                       </IconButton>
-                                      <Typography sx={{ fontWeight: 600, flex: 1, fontSize: '0.95rem', color: '#374151' }}>
+                                      <Typography sx={{ fontWeight: 500, flex: 1, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                                         {subModule.subModuleDisplayName}
                                       </Typography>
                                       <Chip
                                         label={`${subSelectedCount}/${subModule.permissions.length}`}
                                         size="small"
-                                        color={allSelected ? 'primary' : subSelectedCount > 0 ? 'warning' : 'default'}
-                                        sx={{ fontSize: '0.7rem', mr: 1, height: 22 }}
+                                        sx={{
+                                          fontSize: '0.65rem',
+                                          mr: 1,
+                                          height: 18,
+                                          bgcolor: allSelected ? alpha(THEME_COLOR, 0.2) : subSelectedCount > 0 ? alpha('#F59E0B', 0.2) : '#e5e7eb',
+                                          color: allSelected ? THEME_COLOR : subSelectedCount > 0 ? '#D97706' : '#666',
+                                        }}
                                       />
                                       <Button
                                         size="small"
@@ -551,13 +577,14 @@ const RolePermissionManagement: React.FC = () => {
                                         }}
                                         sx={{
                                           minWidth: 'auto',
-                                          color: '#6366F1',
-                                          fontSize: '0.7rem',
+                                          color: THEME_COLOR,
+                                          fontSize: '0.65rem',
                                           fontWeight: 600,
-                                          px: 1,
-                                          py: 0.5,
+                                          px: 0.75,
+                                          py: 0.25,
+                                          textTransform: 'none',
                                           '&:hover': {
-                                            backgroundColor: alpha('#6366F1', 0.08),
+                                            backgroundColor: alpha(THEME_COLOR, 0.08),
                                           },
                                         }}
                                       >
@@ -567,7 +594,7 @@ const RolePermissionManagement: React.FC = () => {
 
                                     {/* 权限列表 */}
                                     <Collapse in={isSubExpanded} timeout="auto">
-                                      <Box sx={{ ml: 3, mt: 1, backgroundColor: '#FAFAFA', borderRadius: 1, p: 1 }}>
+                                      <Box sx={{ ml: 2.5, mt: 0.5, backgroundColor: '#fff', borderRadius: 1, p: 1, border: '1px solid rgba(0,0,0,0.04)' }}>
                                         {renderPermissionList(subModule.permissions)}
                                       </Box>
                                     </Collapse>
@@ -590,36 +617,41 @@ const RolePermissionManagement: React.FC = () => {
                       const isExpanded = expandedModules[module.moduleName];
 
                       return (
-                        <Box key={module.moduleName} sx={{ mb: 2.5 }}>
+                        <Box key={module.moduleName} sx={{ mb: 2 }}>
                           {/* 模块标题行 */}
                           <Box
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
-                              backgroundColor: '#EEF2FF',
-                              borderRadius: 2,
-                              p: 2,
+                              backgroundColor: THEME_COLOR_LIGHT,
+                              borderRadius: 1.5,
+                              p: 1.5,
                               cursor: 'pointer',
-                              border: '1px solid #C7D2FE',
-                              boxShadow: '0 1px 3px rgba(99, 102, 241, 0.1)',
+                              border: `1px solid ${THEME_BORDER_COLOR}`,
                               '&:hover': {
-                                backgroundColor: '#E0E7FF',
+                                backgroundColor: isMonochrome ? '#f0f0f0' : '#E0E7FF',
                               },
                             }}
                             onClick={() => toggleModuleExpansion(module.moduleName)}
                           >
-                            <IconButton size="small" sx={{ mr: 1 }}>
-                              {isExpanded ? <ExpandMore /> : <ChevronRight />}
+                            <IconButton size="small" sx={{ mr: 0.5, p: 0.5 }}>
+                              {isExpanded ? <ExpandMore sx={{ fontSize: 18 }} /> : <ChevronRight sx={{ fontSize: 18 }} />}
                             </IconButton>
                             {getModuleIcon()}
-                            <Typography sx={{ fontWeight: 700, flex: 1, fontSize: '1.1rem', color: '#4338CA' }}>
+                            <Typography sx={{ fontWeight: 600, flex: 1, fontSize: '0.875rem', color: THEME_COLOR }}>
                               {module.moduleDisplayName}
                             </Typography>
                             <Chip
                               label={`${selectedCount}/${modulePermissions.length}`}
                               size="small"
-                              color={allSelected ? 'primary' : selectedCount > 0 ? 'warning' : 'default'}
-                              sx={{ fontSize: '0.75rem', fontWeight: 600, mr: 1 }}
+                              sx={{
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                mr: 1,
+                                height: 20,
+                                bgcolor: allSelected ? alpha(THEME_COLOR, 0.2) : selectedCount > 0 ? alpha('#F59E0B', 0.2) : '#e5e7eb',
+                                color: allSelected ? THEME_COLOR : selectedCount > 0 ? '#D97706' : '#666',
+                              }}
                             />
                             <Button
                               size="small"
@@ -629,13 +661,14 @@ const RolePermissionManagement: React.FC = () => {
                               }}
                               sx={{
                                 minWidth: 'auto',
-                                color: '#6366F1',
-                                fontSize: '0.75rem',
+                                color: THEME_COLOR,
+                                fontSize: '0.7rem',
                                 fontWeight: 600,
                                 px: 1,
-                                py: 0.5,
+                                py: 0.25,
+                                textTransform: 'none',
                                 '&:hover': {
-                                  backgroundColor: alpha('#6366F1', 0.08),
+                                  backgroundColor: alpha(THEME_COLOR, 0.08),
                                 },
                               }}
                             >
@@ -645,7 +678,7 @@ const RolePermissionManagement: React.FC = () => {
 
                           {/* 权限列表 */}
                           <Collapse in={isExpanded} timeout="auto">
-                            <Box sx={{ ml: 7, mt: 1.5, backgroundColor: '#FAFAFA', borderRadius: 1, p: 1.5 }}>
+                            <Box sx={{ ml: 5, mt: 1, backgroundColor: '#fff', borderRadius: 1, p: 1.5, border: '1px solid rgba(0,0,0,0.04)' }}>
                               {renderPermissionList(modulePermissions)}
                             </Box>
                           </Collapse>
@@ -656,9 +689,9 @@ const RolePermissionManagement: React.FC = () => {
                   })}
                 </Box>
               ) : (
-                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="300px">
-                  <SecurityIcon sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
-                  <Typography variant="body1" color="text.secondary">
+                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="200px">
+                  <SecurityIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
+                  <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
                     {t('rbac.selectRoleToManagePermissions')}
                   </Typography>
                 </Box>
@@ -667,23 +700,26 @@ const RolePermissionManagement: React.FC = () => {
               {/* 底部保存按钮 */}
               {selectedRole && (
                 <>
-                  <Divider sx={{ mt: 4, mb: 3 }} />
+                  <Divider sx={{ mt: 3, mb: 2, borderColor: 'rgba(0,0,0,0.06)' }} />
                   <Box display="flex" justifyContent="center" alignItems="center">
                     <Button
+                      size="small"
                       variant="contained"
-                      size="large"
-                      startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                      startIcon={saving ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <SaveIcon sx={{ fontSize: 16 }} />}
                       onClick={handleSave}
                       disabled={saving}
                       sx={{
-                        px: 3,
-                        py: 1,
-                        textTransform: 'none',
+                        borderRadius: 1.5,
+                        px: 2.5,
+                        py: 0.75,
+                        fontSize: '0.8125rem',
                         fontWeight: 500,
-                        borderRadius: 2,
-                        backgroundColor: '#6366f1',
+                        bgcolor: THEME_COLOR,
+                        boxShadow: 'none',
+                        textTransform: 'none',
                         '&:hover': {
-                          backgroundColor: '#4f46e5',
+                          bgcolor: THEME_COLOR_DARK,
+                          boxShadow: 'none',
                         },
                         '&:disabled': {
                           backgroundColor: '#e5e7eb',
@@ -708,7 +744,14 @@ const RolePermissionManagement: React.FC = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

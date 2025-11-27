@@ -6,6 +6,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './contexts/AuthContext';
+import { AppThemeProvider } from './contexts/ThemeContext';
 import './i18n/config';
 
 // Suppress MetaMask and browser extension errors in React error overlay
@@ -93,7 +94,9 @@ root.render(
       <AuthProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <App />
+          <AppThemeProvider>
+            <App />
+          </AppThemeProvider>
         </ThemeProvider>
       </AuthProvider>
     </SnackbarProvider>

@@ -47,6 +47,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import { analyticsApi, appointmentApi } from '../../services/api';
 import { getMerchantNow, getMerchantTimezone, merchantTimeToUtc } from '../../utils/timezoneUtils';
 import {
@@ -93,6 +94,13 @@ const Analytics: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#0891B2';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#0e7490';
+
   const [timeRange, setTimeRange] = useState('today');
   const [selectedTab, setSelectedTab] = useState(0);
   const [analyticsData, setAnalyticsData] = useState<any>({});
@@ -536,7 +544,7 @@ const Analytics: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化页面标题 */}
+      {/* 页面标题 */}
       <Box mb={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
@@ -545,7 +553,7 @@ const Analytics: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#0891B2',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -562,27 +570,31 @@ const Analytics: React.FC = () => {
               value={timeRange}
               onChange={handleTimeRangeChange}
               sx={{
-                borderRadius: 2,
+                borderRadius: 1.5,
+                fontSize: '0.8125rem',
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#0891B2', 0.2),
+                  borderColor: alpha(THEME_COLOR, 0.2),
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#0891B2',
+                  borderColor: THEME_COLOR,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: THEME_COLOR,
                 },
               }}
             >
-              <MenuItem value="today">{t('analytics.timePeriods.today')}</MenuItem>
-              <MenuItem value="thisWeek">{t('analytics.timePeriods.thisWeek')}</MenuItem>
-              <MenuItem value="thisMonth">{t('analytics.timePeriods.thisMonth')}</MenuItem>
-              <MenuItem value="thisQuarter">{t('analytics.timePeriods.thisQuarter')}</MenuItem>
-              <MenuItem value="thisYear">{t('analytics.timePeriods.thisYear')}</MenuItem>
+              <MenuItem value="today" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.today')}</MenuItem>
+              <MenuItem value="thisWeek" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisWeek')}</MenuItem>
+              <MenuItem value="thisMonth" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisMonth')}</MenuItem>
+              <MenuItem value="thisQuarter" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisQuarter')}</MenuItem>
+              <MenuItem value="thisYear" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisYear')}</MenuItem>
             </Select>
           </FormControl>
           </Box>
         </Box>
       </Box>
 
-      {/* 现代化统计卡片 */}
+      {/* 统计卡片 */}
       <Grid container spacing={2.5} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
@@ -600,11 +612,11 @@ const Analytics: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#10B981', 0.08),
+                    bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#10B981',
+                    color: isMonochrome ? '#1a1a1a' : '#10B981',
                     flexShrink: 0,
                   }}
                 >
@@ -639,11 +651,11 @@ const Analytics: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#8B5CF6', 0.08),
+                    bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#8B5CF6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#8B5CF6',
+                    color: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                     flexShrink: 0,
                   }}
                 >
@@ -678,11 +690,11 @@ const Analytics: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#6366F1', 0.08),
+                    bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#6366F1', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#6366F1',
+                    color: isMonochrome ? '#1a1a1a' : '#6366F1',
                     flexShrink: 0,
                   }}
                 >
@@ -722,11 +734,11 @@ const Analytics: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#F59E0B', 0.08),
+                    bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#F59E0B',
+                    color: isMonochrome ? '#1a1a1a' : '#F59E0B',
                     flexShrink: 0,
                   }}
                 >
@@ -776,17 +788,17 @@ const Analytics: React.FC = () => {
                 px: 2,
                 color: '#666',
                 '&:hover': {
-                  color: '#0891B2',
+                  color: THEME_COLOR,
                 },
                 '&.Mui-selected': {
                   fontWeight: 600,
-                  color: '#0891B2',
+                  color: THEME_COLOR,
                 },
               },
               '& .MuiTabs-indicator': {
                 height: 2,
                 borderRadius: 1,
-                bgcolor: '#0891B2',
+                bgcolor: THEME_COLOR,
               },
             }}
           >
@@ -1367,7 +1379,7 @@ const Analytics: React.FC = () => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#6366F1',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#6366F1',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
@@ -1521,8 +1533,8 @@ const Analytics: React.FC = () => {
                                           sx={{
                                             height: 20,
                                             fontSize: '0.75rem',
-                                            backgroundColor: alpha('#0891B2', 0.1),
-                                            color: '#0891B2',
+                                            backgroundColor: alpha(THEME_COLOR, 0.1),
+                                            color: THEME_COLOR,
                                             fontWeight: 500,
                                           }}
                                         />
@@ -1538,10 +1550,10 @@ const Analytics: React.FC = () => {
                                     borderColor: alpha('#cbd5e1', 0.5),
                                   },
                                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#0891B2',
+                                    borderColor: THEME_COLOR,
                                   },
                                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#0891B2',
+                                    borderColor: THEME_COLOR,
                                     borderWidth: 1,
                                   },
                                 }}
@@ -1564,7 +1576,7 @@ const Analytics: React.FC = () => {
                                       py: 1,
                                       px: 2,
                                       '&:hover': {
-                                        backgroundColor: alpha('#0891B2', 0.05),
+                                        backgroundColor: alpha(THEME_COLOR, 0.05),
                                       },
                                     }}
                                   >
@@ -1575,7 +1587,7 @@ const Analytics: React.FC = () => {
                                         p: 0,
                                         mr: 1.5,
                                         '&.Mui-checked': {
-                                          color: '#0891B2',
+                                          color: THEME_COLOR,
                                         }
                                       }}
                                     />
@@ -1627,8 +1639,8 @@ const Analytics: React.FC = () => {
                                           sx={{
                                             height: 20,
                                             fontSize: '0.75rem',
-                                            backgroundColor: alpha('#0891B2', 0.1),
-                                            color: '#0891B2',
+                                            backgroundColor: alpha(THEME_COLOR, 0.1),
+                                            color: THEME_COLOR,
                                             fontWeight: 500,
                                           }}
                                         />
@@ -1640,8 +1652,8 @@ const Analytics: React.FC = () => {
                                           sx={{
                                             height: 20,
                                             fontSize: '0.75rem',
-                                            backgroundColor: alpha('#0891B2', 0.1),
-                                            color: '#0891B2',
+                                            backgroundColor: alpha(THEME_COLOR, 0.1),
+                                            color: THEME_COLOR,
                                             fontWeight: 500,
                                           }}
                                         />
@@ -1657,10 +1669,10 @@ const Analytics: React.FC = () => {
                                     borderColor: alpha('#cbd5e1', 0.5),
                                   },
                                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#0891B2',
+                                    borderColor: THEME_COLOR,
                                   },
                                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#0891B2',
+                                    borderColor: THEME_COLOR,
                                     borderWidth: 1,
                                   },
                                 }}
@@ -1683,7 +1695,7 @@ const Analytics: React.FC = () => {
                                       py: 1,
                                       px: 2,
                                       '&:hover': {
-                                        backgroundColor: alpha('#0891B2', 0.05),
+                                        backgroundColor: alpha(THEME_COLOR, 0.05),
                                       },
                                     }}
                                   >
@@ -1694,7 +1706,7 @@ const Analytics: React.FC = () => {
                                         p: 0,
                                         mr: 1.5,
                                         '&.Mui-checked': {
-                                          color: '#0891B2',
+                                          color: THEME_COLOR,
                                         }
                                       }}
                                     />
@@ -1725,8 +1737,8 @@ const Analytics: React.FC = () => {
                                   px: 2,
                                   '&:hover': {
                                     backgroundColor: alpha('#f1f5f9', 0.8),
-                                    borderColor: '#0891B2',
-                                    color: '#0891B2',
+                                    borderColor: THEME_COLOR,
+                                    color: THEME_COLOR,
                                   }
                                 }}
                                 variant="outlined"
@@ -1815,7 +1827,7 @@ const Analytics: React.FC = () => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#10B981',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#10B981',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
@@ -2117,7 +2129,7 @@ const Analytics: React.FC = () => {
                     sx={{
                       width: 4,
                       height: 20,
-                      bgcolor: '#8B5CF6',
+                      bgcolor: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}

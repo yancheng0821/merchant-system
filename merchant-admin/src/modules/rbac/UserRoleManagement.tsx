@@ -42,6 +42,7 @@ import { useTranslation } from 'react-i18next';
 import { roleApi, userApi, Role } from '../../services/permissionApi';
 import { getFullImageUrl } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface User {
   id: number;
@@ -57,6 +58,14 @@ interface User {
 const UserRoleManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#4F46E5';
+  const ROLE_CHIP_COLOR = isMonochrome ? '#1a1a1a' : '#8B5CF6';
+
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
@@ -235,59 +244,59 @@ const UserRoleManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化搜索区域 - 匹配Customers模块风格 */}
+      {/* 简约搜索区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ py: 2, px: 2.5 }}>
           <TextField
             fullWidth
+            size="small"
             placeholder={t('rbac.searchPlaceholder')}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'text.secondary' }} />
+                  <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#6366F1',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#6366F1',
-                },
+                borderRadius: 1.5,
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
               },
             }}
           />
         </CardContent>
       </Card>
 
-      {/* 现代化表格 - 匹配Customers模块风格 */}
+      {/* 简约表格卡片 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          overflow: 'hidden',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff',
         }}
       >
         <CardContent sx={{ p: 0 }}>
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-              <CircularProgress />
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+              <CircularProgress sx={{ color: THEME_COLOR }} />
             </Box>
           ) : filteredUsers.length === 0 ? (
-            <Box display="flex" flexDirection="column" alignItems="center" py={8}>
-              <SecurityIcon sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
-              <Typography color="text.secondary">
+            <Box display="flex" flexDirection="column" alignItems="center" py={6}>
+              <SecurityIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
+              <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
                 {t('rbac.noUsers')}
               </Typography>
             </Box>
@@ -295,23 +304,23 @@ const UserRoleManagement: React.FC = () => {
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.username')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.email')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.phone')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.status')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.currentRoles')}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.actions')}
                     </TableCell>
                   </TableRow>
@@ -320,11 +329,10 @@ const UserRoleManagement: React.FC = () => {
                   {filteredUsers.map(user => (
                     <TableRow
                       key={user.id}
+                      hover
                       sx={{
-                        '&:hover': {
-                          backgroundColor: alpha('#6366F1', 0.04),
-                        },
-                        transition: 'background-color 0.2s ease',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                        '& td': { py: 1.5, fontSize: '0.8125rem' }
                       }}
                     >
                       <TableCell>
@@ -333,32 +341,32 @@ const UserRoleManagement: React.FC = () => {
                             src={getFullImageUrl(user.avatarUrl)}
                             alt={user.username}
                             sx={{
-                              width: 40,
-                              height: 40,
-                              bgcolor: user.avatarUrl ? 'transparent' : '#6366F1',
-                              fontSize: '1rem',
+                              width: 36,
+                              height: 36,
+                              bgcolor: user.avatarUrl ? 'transparent' : THEME_COLOR,
+                              fontSize: '0.875rem',
                               fontWeight: 600,
                             }}
                           >
                             {!user.avatarUrl && user.username?.charAt(0).toUpperCase()}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                               {user.username}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                               ID: {user.id}
                             </Typography>
                           </Box>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                           {user.email}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                           {user.phone || '-'}
                         </Typography>
                       </TableCell>
@@ -372,14 +380,15 @@ const UserRoleManagement: React.FC = () => {
                                 label={translateRoleName(role.roleName)}
                                 size="small"
                                 sx={{
-                                  backgroundColor: alpha('#8B5CF6', 0.1),
-                                  color: '#8B5CF6',
+                                  backgroundColor: alpha(ROLE_CHIP_COLOR, 0.1),
+                                  color: ROLE_CHIP_COLOR,
                                   fontWeight: 500,
+                                  fontSize: '0.75rem',
                                 }}
                               />
                             ))
                           ) : (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
                               -
                             </Typography>
                           )}
@@ -393,12 +402,11 @@ const UserRoleManagement: React.FC = () => {
                             setSelectedUser(user);
                           }}
                           sx={{
-                            '&:hover': {
-                              backgroundColor: alpha('#6366F1', 0.1),
-                            },
+                            color: '#999',
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
                           }}
                         >
-                          <MoreVertIcon fontSize="small" />
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -410,17 +418,19 @@ const UserRoleManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 操作菜单 */}
+      {/* 操作菜单 - 简约风格 */}
       <Menu
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
         onClose={() => setMenuAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         PaperProps={{
           sx: {
             borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            mt: 1,
+            minWidth: 160,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
           }
         }}
       >
@@ -438,13 +448,14 @@ const UserRoleManagement: React.FC = () => {
             }}
             disabled={selectedUser ? isCurrentUser(selectedUser.id) : false}
             sx={{
-              '&:hover': { backgroundColor: alpha('#6366F1', 0.08) },
-              '&.Mui-disabled': {
-                opacity: 0.5,
-              }
+              py: 1,
+              px: 1.5,
+              fontSize: '0.8125rem',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+              '&.Mui-disabled': { opacity: 0.5 }
             }}
           >
-            <EditIcon sx={{ mr: 1, fontSize: 18, color: selectedUser && isCurrentUser(selectedUser.id) ? '#9CA3AF' : '#6366F1' }} />
+            <EditIcon sx={{ mr: 1, fontSize: 16, color: selectedUser && isCurrentUser(selectedUser.id) ? '#9CA3AF' : THEME_COLOR }} />
             {t('rbac.assignRole')}
           </MenuItem>
         )}
@@ -461,24 +472,21 @@ const UserRoleManagement: React.FC = () => {
             }}
             disabled={selectedUser ? isCurrentUser(selectedUser.id) : false}
             sx={{
-              '&:hover': {
-                backgroundColor: selectedUser?.status === 'ACTIVE'
-                  ? alpha('#EF4444', 0.08)
-                  : alpha('#10B981', 0.08)
-              },
-              '&.Mui-disabled': {
-                opacity: 0.5,
-              }
+              py: 1,
+              px: 1.5,
+              fontSize: '0.8125rem',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+              '&.Mui-disabled': { opacity: 0.5 }
             }}
           >
             {selectedUser?.status === 'ACTIVE' ? (
               <>
-                <BlockIcon sx={{ mr: 1, fontSize: 18, color: selectedUser && isCurrentUser(selectedUser.id) ? '#9CA3AF' : '#EF4444' }} />
+                <BlockIcon sx={{ mr: 1, fontSize: 16, color: selectedUser && isCurrentUser(selectedUser.id) ? '#9CA3AF' : '#EF4444' }} />
                 {t('rbac.deactivateUser')}
               </>
             ) : (
               <>
-                <CheckCircleIcon sx={{ mr: 1, fontSize: 18, color: selectedUser && isCurrentUser(selectedUser.id) ? '#9CA3AF' : '#10B981' }} />
+                <CheckCircleIcon sx={{ mr: 1, fontSize: 16, color: selectedUser && isCurrentUser(selectedUser.id) ? '#9CA3AF' : '#10B981' }} />
                 {t('rbac.activateUser')}
               </>
             )}
@@ -486,23 +494,29 @@ const UserRoleManagement: React.FC = () => {
         )}
       </Menu>
 
-      {/* 分配角色对话框 */}
+      {/* 分配角色对话框 - 简约风格 */}
       <Dialog
         open={openAssignDialog}
         onClose={() => setOpenAssignDialog(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }
+        }}
       >
-        <DialogTitle>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" gap={1}>
-            <SecurityIcon sx={{ color: '#6366F1' }} />
-            <Typography variant="h6" fontWeight={600}>
+            <SecurityIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
               {t('rbac.assignRole')}
             </Typography>
           </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
+        </Box>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Box>
             {roles.map(role => (
               <FormControlLabel
                 key={role.id}
@@ -511,23 +525,21 @@ const UserRoleManagement: React.FC = () => {
                     checked={selectedRoleIds.includes(role.id)}
                     onChange={() => handleToggleRole(role.id)}
                     sx={{
-                      color: '#6366F1',
-                      '&.Mui-checked': {
-                        color: '#6366F1',
-                      },
+                      color: '#ccc',
+                      '&.Mui-checked': { color: THEME_COLOR },
                     }}
                   />
                 }
                 label={
                   <Box>
-                    <Typography variant="body2" fontWeight={500}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>
                       {translateRoleName(role.roleName)}
                     </Typography>
                     {role.isSystem && (
                       <Chip
                         label={t('rbac.systemRole')}
                         size="small"
-                        sx={{ mt: 0.5, height: 20, fontSize: '0.6875rem' }}
+                        sx={{ mt: 0.5, height: 18, fontSize: '0.6875rem', bgcolor: '#f0f0f0', color: '#666' }}
                       />
                     )}
                   </Box>
@@ -537,27 +549,36 @@ const UserRoleManagement: React.FC = () => {
             ))}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setOpenAssignDialog(false)}
             disabled={assignLoading}
             sx={{
-              color: 'text.secondary',
-              '&:hover': {
-                backgroundColor: alpha('#9CA3AF', 0.1),
-              },
+              textTransform: 'none',
+              color: '#666',
+              fontSize: '0.8125rem',
             }}
           >
             {t('rbac.cancel')}
           </Button>
           <Button
+            size="small"
             variant="contained"
             onClick={handleSaveRoles}
             disabled={assignLoading}
             sx={{
-              backgroundColor: '#6366F1',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                backgroundColor: '#4F46E5',
+                bgcolor: THEME_COLOR_DARK,
+                boxShadow: 'none',
               },
             }}
           >
@@ -573,7 +594,14 @@ const UserRoleManagement: React.FC = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -31,11 +31,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { resourceApi } from '../../../services/api';
-
-// 主题色
-const THEME_COLOR = '#3B82F6';
-const THEME_COLOR_DARK = '#2563EB';
-const THEME_COLOR_DARKER = '#1D4ED8';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface TimeSegment {
     id?: number;
@@ -96,6 +92,12 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
     onSave,
 }) => {
     const { t } = useTranslation();
+    const { themeMode } = useTheme();
+
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#3B82F6';
+    const THEME_COLOR_DARK = isMonochrome ? '#333' : '#2563EB';
     const [weekAvailability, setWeekAvailability] = useState<WeekAvailability | null>(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -634,48 +636,34 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 }}
             >
                 {/* 标题 */}
-                <DialogTitle
-                    sx={{
-                        background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.05)}, ${alpha(THEME_COLOR, 0.08)})`,
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        pb: 3,
-                        pt: 3,
-                    }}
-                >
+                <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                     <Box display="flex" alignItems="center" justifyContent="space-between">
                         <Box display="flex" alignItems="center" gap={1.5}>
-                            <Box
-                                sx={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: 2,
-                                    background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                }}
-                            >
-                                <ScheduleIcon />
-                            </Box>
+                            <ScheduleIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
                             <Box>
-                                <Typography variant="body1" sx={{ fontWeight: 600, color: THEME_COLOR }}>
+                                <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
                                     {t('staff.availabilityEditor.title')}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                <Typography variant="caption" sx={{ color: '#888' }}>
                                     {staffName}
                                 </Typography>
                             </Box>
                         </Box>
                         <IconButton
                             onClick={onClose}
-                            sx={{ color: 'text.secondary' }}
+                            size="small"
+                            sx={{
+                                color: '#999',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0,0,0,0.04)',
+                                    color: '#666',
+                                },
+                            }}
                         >
-                            <CloseIcon />
+                            <CloseIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Box>
-                </DialogTitle>
+                </Box>
 
                 {/* 内容 */}
                 <DialogContent sx={{ p: 0 }}>
@@ -737,18 +725,21 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 {/* 操作按钮 */}
                 <DialogActions
                     sx={{
-                        p: 3,
-                        borderTop: '1px solid',
-                        borderColor: 'divider',
-                        background: alpha(THEME_COLOR, 0.02),
+                        px: 3,
+                        py: 2,
+                        borderTop: '1px solid rgba(0,0,0,0.06)',
                     }}
                 >
                     <Button
                         onClick={onClose}
                         disabled={saving}
+                        size="small"
                         sx={{
-                            borderRadius: 2,
-                            px: 3,
+                            borderRadius: 1.5,
+                            px: 2,
+                            color: '#666',
+                            textTransform: 'none',
+                            fontSize: '0.8125rem',
                         }}
                     >
                         {t('staff.availabilityEditor.actions.cancel')}
@@ -757,19 +748,23 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                         variant="contained"
                         onClick={handleSave}
                         disabled={saving || !weekAvailability}
+                        size="small"
                         sx={{
-                            borderRadius: 2,
-                            px: 3,
-                            background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                            boxShadow: `0 4px 15px ${alpha(THEME_COLOR, 0.3)}`,
+                            borderRadius: 1.5,
+                            px: 2.5,
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            fontSize: '0.8125rem',
+                            bgcolor: THEME_COLOR,
+                            boxShadow: 'none',
                             '&:hover': {
-                                background: `linear-gradient(135deg, ${THEME_COLOR_DARK}, ${THEME_COLOR_DARKER})`,
-                                boxShadow: `0 6px 20px ${alpha(THEME_COLOR, 0.4)}`,
+                                bgcolor: THEME_COLOR_DARK,
+                                boxShadow: 'none',
                             },
                         }}
                     >
                         {saving ? (
-                            <CircularProgress size={18} color="inherit" />
+                            <CircularProgress size={16} color="inherit" />
                         ) : (
                             t('staff.availabilityEditor.actions.save')
                         )}

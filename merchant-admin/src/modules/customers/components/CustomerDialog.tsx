@@ -21,7 +21,6 @@ import {
   Radio,
   Autocomplete,
   alpha,
-  Paper,
   Snackbar,
   Alert,
 } from '@mui/material';
@@ -41,6 +40,22 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Customer, Service, serviceApi, membershipTierApi, MembershipTier } from '../../../services/api';
 import CountryCodeSelector from '../../../components/common/CountryCodeSelector';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+// 根据主题模式获取输入框样式
+const getInputStyles = (themeColor: string) => ({
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2,
+    bgcolor: '#fff',
+    '& fieldset': { borderColor: '#d0d0d0' },
+    '&:hover fieldset': { borderColor: '#bbb' },
+    '&.Mui-focused fieldset': { borderColor: themeColor, borderWidth: '1px' },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#999',
+    '&.Mui-focused': { color: themeColor },
+  },
+});
 
 interface CustomerDialogProps {
   open: boolean;
@@ -50,8 +65,6 @@ interface CustomerDialogProps {
   onSave: (customer: Partial<Customer>) => Promise<void>;
 }
 
-
-
 const CustomerDialog: React.FC<CustomerDialogProps> = ({
   open,
   onClose,
@@ -60,6 +73,14 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
   onSave
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
+  const THEME_COLOR_HOVER = isMonochrome ? '#333' : '#DB2777';
+  const inputStyles = getInputStyles(THEME_COLOR);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -89,56 +110,37 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
     severity: 'error',
   });
 
-  // 图标映射函数
   const getTierIcon = (iconName?: string, color?: string) => {
     if (!iconName) return null;
-
     const iconProps = { sx: { fontSize: '0.875rem', color: color || 'inherit' } };
-
     switch (iconName.toLowerCase()) {
-      case 'star':
-        return <StarIcon {...iconProps} />;
-      case 'stars':
-        return <StarsIcon {...iconProps} />;
-      case 'trophy':
-        return <TrophyIcon {...iconProps} />;
-      case 'medal':
-        return <MedalIcon {...iconProps} />;
-      case 'diamond':
-        return <DiamondIcon {...iconProps} />;
-      case 'premium':
-        return <PremiumIcon {...iconProps} />;
-      case 'verified':
-        return <VerifiedIcon {...iconProps} />;
-      case 'membership':
-        return <MembershipIcon {...iconProps} />;
-      default:
-        return <StarIcon {...iconProps} />;
+      case 'star': return <StarIcon {...iconProps} />;
+      case 'stars': return <StarsIcon {...iconProps} />;
+      case 'trophy': return <TrophyIcon {...iconProps} />;
+      case 'medal': return <MedalIcon {...iconProps} />;
+      case 'diamond': return <DiamondIcon {...iconProps} />;
+      case 'premium': return <PremiumIcon {...iconProps} />;
+      case 'verified': return <VerifiedIcon {...iconProps} />;
+      case 'membership': return <MembershipIcon {...iconProps} />;
+      default: return <StarIcon {...iconProps} />;
     }
   };
 
-  // 加载服务列表
   useEffect(() => {
     const loadServices = async () => {
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const tenantId = user.tenantId || 1;
         const serviceList = await serviceApi.getActiveServices(tenantId.toString());
-        // 确保 serviceList 是数组
         setServices(Array.isArray(serviceList) ? serviceList : []);
       } catch (error) {
         console.error('Failed to load services:', error);
-        // 出错时设置为空数组
         setServices([]);
       }
     };
-
-    if (open) {
-      loadServices();
-    }
+    if (open) loadServices();
   }, [open]);
 
-  // 加载会员等级列表
   useEffect(() => {
     const loadMembershipTiers = async () => {
       try {
@@ -151,10 +153,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         setMembershipTiers([]);
       }
     };
-
-    if (open) {
-      loadMembershipTiers();
-    }
+    if (open) loadMembershipTiers();
   }, [open]);
 
   useEffect(() => {
@@ -166,132 +165,71 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         email: customer.email || '',
         address: customer.address || '',
         dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.split('T')[0] : '',
-        // 转换后端大写枚举为前端小写
-        gender: customer.gender ? customer.gender.toLowerCase().replace('_', '-') as 'male' | 'female' | 'other' | 'prefer-not-to-say' : 'prefer-not-to-say',
+        gender: customer.gender ? customer.gender.toLowerCase().replace('_', '-') as any : 'prefer-not-to-say',
         membershipTierId: customer.membershipTierId || customer.membershipTier?.id || null,
         status: customer.status ? customer.status.toLowerCase() as 'active' | 'inactive' : 'active',
         preferredServiceIds: customer.preferredServiceIds || [],
         allergies: customer.allergies || '',
-        communicationPreference: customer.communicationPreference ? (customer.communicationPreference === 'SMS' ? 'sms' : customer.communicationPreference === 'BOTH' ? 'both' : customer.communicationPreference.toLowerCase()) as 'both' | 'email' | 'sms' : 'email',
+        communicationPreference: customer.communicationPreference ? (customer.communicationPreference === 'SMS' ? 'sms' : customer.communicationPreference === 'BOTH' ? 'both' : 'email') as any : 'email',
         notes: customer.notes || ''
       });
-      // 直接使用数据库中的countryCode
       setCountryCode(customer.countryCode || '+1-CA');
     } else {
       setFormData({
-        firstName: '',
-        lastName: '',
-        phone: '',
-        email: '',
-        address: '',
-        dateOfBirth: '',
-        gender: 'prefer-not-to-say' as 'male' | 'female' | 'other' | 'prefer-not-to-say',
+        firstName: '', lastName: '', phone: '', email: '', address: '', dateOfBirth: '',
+        gender: 'prefer-not-to-say',
         membershipTierId: membershipTiers.length > 0 && membershipTiers[0].id ? membershipTiers[0].id : null,
-        status: 'active' as 'active' | 'inactive',
-        preferredServiceIds: [],
-        allergies: '',
-        communicationPreference: 'email',
-        notes: ''
+        status: 'active', preferredServiceIds: [], allergies: '', communicationPreference: 'email', notes: ''
       });
       setCountryCode('+1-CA');
     }
   }, [customer, open, membershipTiers]);
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const validateForm = () => {
-    // 必填字段：firstName, lastName, email, phone, countryCode
     if (!formData.firstName.trim()) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.firstNameRequired'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.firstNameRequired'), severity: 'error' });
       return false;
     }
-
     if (!formData.lastName.trim()) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.lastNameRequired'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.lastNameRequired'), severity: 'error' });
       return false;
     }
-
     if (!formData.phone.trim()) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.phoneRequired'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.phoneRequired'), severity: 'error' });
       return false;
     } else if (!/^[0-9\s\-()]+$/.test(formData.phone.trim())) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.phoneInvalid'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.phoneInvalid'), severity: 'error' });
       return false;
     }
-
     if (!countryCode) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.countryCodeRequired'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.countryCodeRequired'), severity: 'error' });
       return false;
     }
-
     if (!formData.email.trim()) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.emailRequired'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.emailRequired'), severity: 'error' });
       return false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setSnackbar({
-        open: true,
-        message: t('customers.validation.emailInvalid'),
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: t('customers.validation.emailInvalid'), severity: 'error' });
       return false;
     }
-
     return true;
   };
 
   const handleSubmit = async () => {
     if (validateForm()) {
-      // 获取用户信息和租户ID
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const tenantId = user.tenantId || 1;
+      let dateOfBirth = formData.dateOfBirth || undefined;
 
-      // 处理日期格式
-      let dateOfBirth = undefined;
-      if (formData.dateOfBirth) {
-        try {
-          // 确保日期格式正确
-          dateOfBirth = formData.dateOfBirth;
-        } catch (e) {
-          console.error('Invalid date format:', e);
-        }
-      }
-
-      // 安全的枚举值转换函数
       const convertGender = (gender: string): 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY' => {
         switch (gender) {
           case 'male': return 'MALE';
           case 'female': return 'FEMALE';
           case 'other': return 'OTHER';
-          case 'prefer-not-to-say': return 'PREFER_NOT_TO_SAY';
           default: return 'PREFER_NOT_TO_SAY';
         }
       };
@@ -299,7 +237,6 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       const convertCommunicationPreference = (pref: string): 'SMS' | 'EMAIL' | 'BOTH' => {
         switch (pref) {
           case 'sms': return 'SMS';
-          case 'email': return 'EMAIL';
           case 'both': return 'BOTH';
           default: return 'EMAIL';
         }
@@ -309,38 +246,29 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim(),
-        countryCode: countryCode || '+1-CA', // 单独存储国家码，确保有值
+        countryCode: countryCode || '+1-CA',
         email: formData.email.trim(),
         address: formData.address.trim() || undefined,
-        dateOfBirth: dateOfBirth,
-        // 只有编辑时才传ID
+        dateOfBirth,
         id: customer?.id,
         tenantId: customer?.tenantId || tenantId,
         points: customer?.points || 0,
         totalSpent: customer?.totalSpent || 0,
-        // 转换状态为大写
         status: (formData.status === 'active' ? 'ACTIVE' : 'INACTIVE') as 'ACTIVE' | 'INACTIVE',
-        // 会员等级使用tierId
         membershipTierId: formData.membershipTierId || undefined,
-        // 使用安全的性别转换
         gender: convertGender(formData.gender),
-        // 使用安全的通信偏好转换
         communicationPreference: convertCommunicationPreference(formData.communicationPreference),
         notes: formData.notes.trim() || undefined,
         allergies: formData.allergies.trim() || undefined,
         preferredServiceIds: formData.preferredServiceIds,
       };
 
-      // 设置 lastVisit：编辑时保留原值，新创建时设置为当前时间
       if (customer?.id) {
-        // 编辑现有客户，保留原有的 lastVisit
         customerData.lastVisit = customer.lastVisit;
       } else {
-        // 新创建客户，设置 lastVisit 为当前时间
         customerData.lastVisit = new Date().toISOString();
       }
 
-      // 只移除 undefined 值，保留用户填写的空字符串
       Object.keys(customerData).forEach(key => {
         if (customerData[key as keyof Customer] === undefined) {
           delete customerData[key as keyof Customer];
@@ -349,22 +277,13 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
       try {
         await onSave(customerData);
-        // 只有在成功保存后才关闭对话框
         onClose();
       } catch (error: any) {
-        // 在对话框内部显示错误，这样用户可以直接看到并修改
         console.error('Failed to save customer:', error);
-        setSnackbar({
-          open: true,
-          message: error.message || t('customers.saveFailed'),
-          severity: 'error',
-        });
-        // 对话框保持打开状态，让用户可以修改后重试
+        setSnackbar({ open: true, message: error.message || t('customers.saveFailed'), severity: 'error' });
       }
     }
   };
-
-
 
   return (
     <Dialog
@@ -372,592 +291,210 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      TransitionProps={{
-        onExited: onExited,
-      }}
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          bgcolor: 'background.paper',
-        }
-      }}
+      TransitionProps={{ onExited }}
+      PaperProps={{ sx: { borderRadius: 2.5, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}
     >
-      {/* 现代化对话框标题 */}
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.08))',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          pb: 3,
-          pt: 3,
-        }}
-      >
+      {/* 简约标题 */}
+      <DialogTitle sx={{ p: 2.5, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-              }}
-            >
-              <PersonIcon sx={{ fontSize: 24 }} />
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box sx={{
+              width: 36, height: 36, borderRadius: 1.5,
+              bgcolor: alpha(THEME_COLOR, 0.1),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: THEME_COLOR,
+            }}>
+              <PersonIcon sx={{ fontSize: 20 }} />
             </Box>
             <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: 'text.primary',
-                  mb: 0.5,
-                }}
-              >
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem', color: '#1a1a1a' }}>
                 {customer ? t('customers.editCustomer') : t('customers.addCustomer')}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" sx={{ color: '#888' }}>
                 {customer ? t('customers.editCustomerInfo') : t('customers.createNewCustomerProfile')}
               </Typography>
             </Box>
           </Box>
-          <IconButton
-            onClick={onClose}
-            sx={{
-              '&:hover': {
-                backgroundColor: alpha('#EC4899', 0.1),
-              },
-            }}
-          >
-            <CloseIcon />
+          <IconButton size="small" onClick={onClose} sx={{ color: '#999' }}>
+            <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ p: 3 }}>
-          {/* 基本信息部分 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.2),
-              borderRadius: 2,
-              background: alpha('#EC4899', 0.02),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
-                {t('customers.basicInfo')}
-              </Typography>
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('customers.firstName')}
-                  value={formData.firstName}
-                  onChange={(e) => handleChange('firstName', e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('customers.lastName')}
-                  value={formData.lastName}
-                  onChange={(e) => handleChange('lastName', e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Grid container spacing={1}>
-                  <Grid item xs={4}>
-                    <CountryCodeSelector
-                      value={countryCode}
-                      onChange={(value) => setCountryCode(value)}
-                      label={t('customers.countryCode', 'Code')}
-                      size="medium"
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={8}>
-                    <TextField
-                      fullWidth
-                      label={t('customers.phone')}
-                      value={formData.phone}
-                      onChange={(e) => handleChange('phone', e.target.value)}
-                      placeholder="1234567890"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#EC4899',
-                          },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#EC4899',
-                          },
-                        },
-                      }}
-                    />
-                  </Grid>
+      <DialogContent sx={{ p: 2.5 }}>
+        {/* 基本信息 */}
+        <Box sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <PersonIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+              {t('customers.basicInfo')}
+            </Typography>
+          </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label={t('customers.firstName')} value={formData.firstName}
+                onChange={(e) => handleChange('firstName', e.target.value)} sx={inputStyles} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label={t('customers.lastName')} value={formData.lastName}
+                onChange={(e) => handleChange('lastName', e.target.value)} sx={inputStyles} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Grid container spacing={1}>
+                <Grid item xs={4}>
+                  <CountryCodeSelector value={countryCode} onChange={setCountryCode}
+                    label={t('customers.countryCode', 'Code')} size="medium" fullWidth />
+                </Grid>
+                <Grid item xs={8}>
+                  <TextField fullWidth label={t('customers.phone')} value={formData.phone}
+                    onChange={(e) => handleChange('phone', e.target.value)} placeholder="1234567890" sx={inputStyles} />
                 </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('customers.email')}
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label={`${t('customers.address')} (${t('customers.optional')})`}
-                  value={formData.address}
-                  onChange={(e) => handleChange('address', e.target.value)}
-
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={`${t('customers.dateOfBirth')} (${t('customers.optional')})`}
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <FormLabel sx={{ color: '#EC4899', fontWeight: 600, mb: 1 }}>
-                    {t('customers.gender')} ({t('customers.optional')})
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.gender}
-                    onChange={(e) => handleChange('gender', e.target.value)}
-                  >
-                    <FormControlLabel
-                      value="male"
-                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
-                      label={t('customers.male')}
-                    />
-                    <FormControlLabel
-                      value="female"
-                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
-                      label={t('customers.female')}
-                    />
-                    <FormControlLabel
-                      value="other"
-                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
-                      label={t('customers.other')}
-                    />
-                    <FormControlLabel
-                      value="prefer-not-to-say"
-                      control={<Radio sx={{ color: '#EC4899', '&.Mui-checked': { color: '#EC4899' } }} />}
-                      label={t('customers.preferNotToSay')}
-                    />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
             </Grid>
-          </Paper>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label={t('customers.email')} type="email" value={formData.email}
+                onChange={(e) => handleChange('email', e.target.value)} sx={inputStyles} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth label={`${t('customers.address')} (${t('customers.optional')})`}
+                value={formData.address} onChange={(e) => handleChange('address', e.target.value)} sx={inputStyles} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label={`${t('customers.dateOfBirth')} (${t('customers.optional')})`}
+                type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                InputLabelProps={{ shrink: true }} sx={inputStyles} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <FormLabel sx={{ color: '#666', fontSize: '0.875rem', mb: 0.5 }}>
+                  {t('customers.gender')} ({t('customers.optional')})
+                </FormLabel>
+                <RadioGroup row value={formData.gender} onChange={(e) => handleChange('gender', e.target.value)}>
+                  {['male', 'female', 'other', 'prefer-not-to-say'].map((g) => (
+                    <FormControlLabel key={g} value={g}
+                      control={<Radio size="small" sx={{ color: '#999', '&.Mui-checked': { color: THEME_COLOR } }} />}
+                      label={<Typography variant="caption">{t(`customers.${g === 'prefer-not-to-say' ? 'preferNotToSay' : g}`)}</Typography>} />
+                  ))}
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
 
-          {/* 会员信息部分 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.2),
-              borderRadius: 2,
-              background: alpha('#EC4899', 0.02),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <MembershipIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
-                {t('customers.membershipInfo')}
-              </Typography>
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('customers.membershipLevel')}</InputLabel>
-                  <Select
-                    value={formData.membershipTierId || ''}
-                    label={t('customers.membershipLevel')}
-                    onChange={(e) => handleChange('membershipTierId', e.target.value)}
-                    sx={{
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    }}
-                  >
-                    {membershipTiers.map((tier) => (
-                      <MenuItem key={tier.id} value={tier.id}>
-                        <Chip
-                          icon={getTierIcon(tier.icon, tier.color) || undefined}
-                          label={tier.name}
-                          size="small"
-                          sx={{
-                            backgroundColor: alpha(tier.color || '#6B7280', 0.1),
-                            color: tier.color || '#6B7280',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': {
-                              color: tier.color || '#6B7280',
-                              marginLeft: 1,
-                              marginRight: -0.5,
-                            },
-                          }}
-                        />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('customers.status')}</InputLabel>
-                  <Select
-                    value={formData.status}
-                    label={t('customers.status')}
-                    onChange={(e) => handleChange('status', e.target.value)}
-                    sx={{
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    }}
-                  >
-                    <MenuItem value="active">
-                      <Chip
-                        label={t('customers.customerStatuses.active')}
-                        size="small"
-                        sx={{
-                          backgroundColor: alpha('#10B981', 0.1),
-                          color: '#10B981',
-                          fontWeight: 600,
-                        }}
-                      />
+        {/* 会员信息 */}
+        <Box sx={{ mb: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <MembershipIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+              {t('customers.membershipInfo')}
+            </Typography>
+          </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth sx={inputStyles}>
+                <InputLabel>{t('customers.membershipLevel')}</InputLabel>
+                <Select value={formData.membershipTierId || ''} label={t('customers.membershipLevel')}
+                  onChange={(e) => handleChange('membershipTierId', e.target.value)}>
+                  {membershipTiers.map((tier) => (
+                    <MenuItem key={tier.id} value={tier.id}>
+                      <Chip icon={getTierIcon(tier.icon, tier.color) || undefined} label={tier.name} size="small"
+                        sx={{ bgcolor: alpha(tier.color || '#6B7280', 0.1), color: tier.color || '#6B7280', fontWeight: 500 }} />
                     </MenuItem>
-                    <MenuItem value="inactive">
-                      <Chip
-                        label={t('customers.customerStatuses.inactive')}
-                        size="small"
-                        sx={{
-                          backgroundColor: alpha('#EF4444', 0.1),
-                          color: '#EF4444',
-                          fontWeight: 600,
-                        }}
-                      />
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('customers.communicationPreference')} </InputLabel>
-                  <Select
-                    value={formData.communicationPreference}
-                    label={t('customers.communicationPreference')}
-                    onChange={(e) => handleChange('communicationPreference', e.target.value)}
-                    sx={{
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    }}
-                  >
-                    <MenuItem value="email">{t('customers.email')}</MenuItem>
-                    <MenuItem value="sms">{t('customers.sms')}</MenuItem>
-                    <MenuItem value="both">{t('customers.both')}</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-          </Paper>
-
-          {/* 服务偏好部分 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha('#EC4899', 0.2),
-              borderRadius: 2,
-              background: alpha('#EC4899', 0.02),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <PreferencesIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
-                {t('customers.preferences')}({t('customers.optional')})
-              </Typography>
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Autocomplete
-                  multiple
-                  options={services}
-                  getOptionLabel={(option) => option.name}
-                  value={Array.isArray(services) ? services.filter(service => formData.preferredServiceIds.includes(service.id)) : []}
-                  onChange={(_, newValue) => handleChange('preferredServiceIds', newValue.map(service => service.id))}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        label={option.name}
-                        sx={{
-                          backgroundColor: alpha('#EC4899', 0.1),
-                          color: '#EC4899',
-                          fontWeight: 600,
-                        }}
-                      />
-                    ))
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label={t('customers.preferredServices')}
-                      placeholder={t('customers.selectServices')}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#EC4899',
-                          },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#EC4899',
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label={t('customers.allergies')}
-                  value={formData.allergies}
-                  onChange={(e) => handleChange('allergies', e.target.value)}
-                  placeholder={t('customers.allergiesPlaceholder')}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label={t('customers.notes')}
-                  value={formData.notes}
-                  onChange={(e) => handleChange('notes', e.target.value)}
-                  placeholder={t('customers.notesPlaceholder')}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#EC4899',
-                      },
-                    },
-                  }}
-                />
-              </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth sx={inputStyles}>
+                <InputLabel>{t('customers.status')}</InputLabel>
+                <Select value={formData.status} label={t('customers.status')}
+                  onChange={(e) => handleChange('status', e.target.value)}>
+                  <MenuItem value="active">
+                    <Chip label={t('customers.customerStatuses.active')} size="small"
+                      sx={{ bgcolor: alpha('#10B981', 0.1), color: '#10B981', fontWeight: 500 }} />
+                  </MenuItem>
+                  <MenuItem value="inactive">
+                    <Chip label={t('customers.customerStatuses.inactive')} size="small"
+                      sx={{ bgcolor: alpha('#EF4444', 0.1), color: '#EF4444', fontWeight: 500 }} />
+                  </MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
-          </Paper>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth sx={inputStyles}>
+                <InputLabel>{t('customers.communicationPreference')}</InputLabel>
+                <Select value={formData.communicationPreference} label={t('customers.communicationPreference')}
+                  onChange={(e) => handleChange('communicationPreference', e.target.value)}>
+                  <MenuItem value="email">{t('customers.email')}</MenuItem>
+                  <MenuItem value="sms">{t('customers.sms')}</MenuItem>
+                  <MenuItem value="both">{t('customers.both')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* 服务偏好 */}
+        <Box>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <PreferencesIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+              {t('customers.preferences')} ({t('customers.optional')})
+            </Typography>
+          </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple options={services} getOptionLabel={(option) => option.name}
+                value={services.filter(service => formData.preferredServiceIds.includes(service.id))}
+                onChange={(_, newValue) => handleChange('preferredServiceIds', newValue.map(s => s.id))}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip {...getTagProps({ index })} key={option.id} label={option.name} size="small"
+                      sx={{ bgcolor: alpha(THEME_COLOR, 0.1), color: THEME_COLOR, fontWeight: 500 }} />
+                  ))
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label={t('customers.preferredServices')}
+                    placeholder={t('customers.selectServices')} sx={inputStyles} />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth multiline rows={2} label={t('customers.allergies')} value={formData.allergies}
+                onChange={(e) => handleChange('allergies', e.target.value)}
+                placeholder={t('customers.allergiesPlaceholder')} sx={inputStyles} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth multiline rows={2} label={t('customers.notes')} value={formData.notes}
+                onChange={(e) => handleChange('notes', e.target.value)}
+                placeholder={t('customers.notesPlaceholder')} sx={inputStyles} />
+            </Grid>
+          </Grid>
         </Box>
       </DialogContent>
 
-      <DialogActions
-        sx={{
-          p: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          background: alpha('#EC4899', 0.02),
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            color: 'text.secondary',
-          }}
-        >
+      <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <Button size="small" onClick={onClose} sx={{
+          borderRadius: 1.5, px: 2.5, py: 0.75, fontSize: '0.8125rem', fontWeight: 500,
+          color: '#666', textTransform: 'none', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+        }}>
           {t('customers.cancel')}
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-            boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #DB2777, #BE185D)',
-              boxShadow: '0 6px 20px rgba(236, 72, 153, 0.4)',
-            },
-          }}
-        >
+        <Button size="small" variant="contained" onClick={handleSubmit} sx={{
+          borderRadius: 1.5, px: 2.5, py: 0.75, fontSize: '0.8125rem', fontWeight: 500,
+          bgcolor: THEME_COLOR, boxShadow: 'none', textTransform: 'none',
+          '&:hover': { bgcolor: THEME_COLOR_HOVER, boxShadow: 'none' },
+        }}>
           {customer ? t('customers.updateCustomer') : t('customers.createCustomer')}
         </Button>
       </DialogActions>
 
-      {/* Snackbar for validation errors */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
+      <Snackbar open={snackbar.open} autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{
-            width: '100%',
-            borderRadius: 2,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          }}
-        >
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: 1.5 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
@@ -965,4 +502,4 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
   );
 };
 
-export default CustomerDialog; 
+export default CustomerDialog;

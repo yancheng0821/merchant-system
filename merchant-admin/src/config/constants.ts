@@ -1,4 +1,6 @@
 // 系统常量配置
+import { getCurrencyConfig, getCurrencySymbol, getCurrencyCode } from '../utils/timezoneUtils';
+
 export const SYSTEM_CONFIG = {
   // 时区配置
   TIMEZONE: {
@@ -98,14 +100,15 @@ export const TimeZoneUtils = {
   },
 };
 
-// 货币工具函数
+// 货币工具函数 - 根据商户时区动态获取货币配置
 export const CurrencyUtils = {
   /**
    * 格式化金额显示
    */
   formatAmount: (amount: number, showSymbol: boolean = true): string => {
-    const formatted = amount.toFixed(SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES);
-    return showSymbol ? `${SYSTEM_CONFIG.CURRENCY.SYMBOL}${formatted}` : formatted;
+    const config = getCurrencyConfig();
+    const formatted = amount.toFixed(config.decimals);
+    return showSymbol ? `${config.symbol}${formatted}` : formatted;
   },
 
   /**
@@ -113,31 +116,33 @@ export const CurrencyUtils = {
    * 将类似 300.159999999999972 的值标准化为 300.16
    */
   normalizeAmount: (amount: number): number => {
-    return Math.round(amount * Math.pow(10, SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES)) / Math.pow(10, SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES);
+    const config = getCurrencyConfig();
+    return Math.round(amount * Math.pow(10, config.decimals)) / Math.pow(10, config.decimals);
   },
 
   /**
    * 格式化金额显示（带千分位分隔符）
    */
   formatAmountWithCommas: (amount: number, showSymbol: boolean = true): string => {
+    const config = getCurrencyConfig();
     const formatted = amount.toLocaleString('en-CA', {
-      minimumFractionDigits: SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES,
-      maximumFractionDigits: SYSTEM_CONFIG.CURRENCY.DECIMAL_PLACES,
+      minimumFractionDigits: config.decimals,
+      maximumFractionDigits: config.decimals,
     });
-    return showSymbol ? `${SYSTEM_CONFIG.CURRENCY.SYMBOL}${formatted}` : formatted;
+    return showSymbol ? `${config.symbol}${formatted}` : formatted;
   },
 
   /**
-   * 获取货币符号
+   * 获取货币符号（根据商户时区动态获取）
    */
   getSymbol: (): string => {
-    return SYSTEM_CONFIG.CURRENCY.SYMBOL;
+    return getCurrencySymbol();
   },
 
   /**
-   * 获取货币代码
+   * 获取货币代码（根据商户时区动态获取）
    */
   getCode: (): string => {
-    return SYSTEM_CONFIG.CURRENCY.CODE;
+    return getCurrencyCode();
   },
 };

@@ -56,6 +56,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n/config';
 import { CurrencyUtils } from '../../config/constants';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getMerchantToday, getMerchantNow } from '../../utils/timezoneUtils';
 import AddAppointmentDialog from './components/AddAppointmentDialog';
 import { Customer, Appointment, appointmentApi, customerApi, notificationApi, handleApiError } from '../../services/api';
@@ -70,7 +71,13 @@ interface AppointmentStats {
 const AppointmentManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Theme-aware colors
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#8B5CF6';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#7C3AED';
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<AppointmentStats | null>(null);
@@ -296,7 +303,7 @@ const AppointmentManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#8B5CF6',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -327,11 +334,11 @@ const AppointmentManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#8B5CF6', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#8B5CF6',
+                    color: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                     flexShrink: 0,
                   }}
                 >
@@ -366,11 +373,11 @@ const AppointmentManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#3B82F6', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#3B82F6', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#3B82F6',
+                    color: isMonochrome ? '#1a1a1a' : '#3B82F6',
                     flexShrink: 0,
                   }}
                 >
@@ -405,11 +412,11 @@ const AppointmentManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#10B981', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#10B981',
+                    color: isMonochrome ? '#1a1a1a' : '#10B981',
                     flexShrink: 0,
                   }}
                 >
@@ -444,11 +451,11 @@ const AppointmentManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#F59E0B', 0.08),
+                    bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#F59E0B', 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#F59E0B',
+                    color: isMonochrome ? '#1a1a1a' : '#F59E0B',
                     flexShrink: 0,
                   }}
                 >
@@ -486,21 +493,26 @@ const AppointmentManagement: React.FC = () => {
                 placeholder={t('appointments.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                size="small"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.8125rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8B5CF6',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8B5CF6',
+                      borderColor: THEME_COLOR,
                     },
                   },
                 }}
@@ -508,53 +520,61 @@ const AppointmentManagement: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>{t('appointments.statusFilter')}</InputLabel>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: '#666', fontSize: '0.8125rem' }}>{t('appointments.statusFilter')}</InputLabel>
                 <Select
                   value={statusFilter}
                   label={t('appointments.statusFilter')}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.8125rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8B5CF6',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8B5CF6',
+                      borderColor: THEME_COLOR,
                     },
                   }}
                 >
-                  <MenuItem value="all">{t('appointments.allStatuses')}</MenuItem>
-                  <MenuItem value="confirmed">{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
-                  <MenuItem value="checked_in">{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
-                  <MenuItem value="completed">{t('appointments.appointmentStatuses.completed')}</MenuItem>
-                  <MenuItem value="cancelled">{t('appointments.appointmentStatuses.cancelled')}</MenuItem>
-                  <MenuItem value="no_show">{t('appointments.appointmentStatuses.no-show')}</MenuItem>
+                  <MenuItem value="all" sx={{ fontSize: '0.8125rem' }}>{t('appointments.allStatuses')}</MenuItem>
+                  <MenuItem value="confirmed" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
+                  <MenuItem value="checked_in" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
+                  <MenuItem value="completed" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.completed')}</MenuItem>
+                  <MenuItem value="cancelled" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.cancelled')}</MenuItem>
+                  <MenuItem value="no_show" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.no-show')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>{t('appointments.dateFilter')}</InputLabel>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: '#666', fontSize: '0.8125rem' }}>{t('appointments.dateFilter')}</InputLabel>
                 <Select
                   value={dateFilter}
                   label={t('appointments.dateFilter')}
                   onChange={(e) => setDateFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.8125rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8B5CF6',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8B5CF6',
+                      borderColor: THEME_COLOR,
                     },
                   }}
                 >
-                  <MenuItem value="all">{t('appointments.dateOptions.allDates')}</MenuItem>
-                  <MenuItem value="today">{t('appointments.dateOptions.today')}</MenuItem>
-                  <MenuItem value="tomorrow">{t('appointments.dateOptions.tomorrow')}</MenuItem>
-                  <MenuItem value="this-week">{t('appointments.dateOptions.thisWeek')}</MenuItem>
+                  <MenuItem value="all" sx={{ fontSize: '0.8125rem' }}>{t('appointments.dateOptions.allDates')}</MenuItem>
+                  <MenuItem value="today" sx={{ fontSize: '0.8125rem' }}>{t('appointments.dateOptions.today')}</MenuItem>
+                  <MenuItem value="tomorrow" sx={{ fontSize: '0.8125rem' }}>{t('appointments.dateOptions.tomorrow')}</MenuItem>
+                  <MenuItem value="this-week" sx={{ fontSize: '0.8125rem' }}>{t('appointments.dateOptions.thisWeek')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -597,30 +617,30 @@ const AppointmentManagement: React.FC = () => {
       >
         <TableContainer>
           <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('appointments.tableHeaders.id')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.customer')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.services')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.dateTime')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.staff')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.amount')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.status')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.rating')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('appointments.tableHeaders.actions')}</TableCell>
+            <TableHead sx={{ backgroundColor: '#fafafa' }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.id')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.customer')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.services')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.dateTime')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.staff')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.amount')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.status')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.rating')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>{t('appointments.tableHeaders.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <CircularProgress sx={{ color: '#8B5CF6' }} />
+                    <CircularProgress sx={{ color: THEME_COLOR }} size={32} />
                   </TableCell>
                 </TableRow>
               ) : filteredAppointments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">
+                    <Typography sx={{ color: '#888', fontSize: '0.8125rem' }}>
                       {t('appointments.noAppointments')}
                     </Typography>
                   </TableCell>
@@ -631,45 +651,44 @@ const AppointmentManagement: React.FC = () => {
                   .map((appointment) => (
                     <TableRow
                       key={appointment.id}
+                      hover
                       sx={{
-                        '&:hover': {
-                          backgroundColor: alpha('#8B5CF6', 0.04),
-                        },
-                        transition: 'background-color 0.2s ease',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                        '& td': { py: 1.5, fontSize: '0.8125rem' },
                       }}
                     >
                       <TableCell>
                         <Typography
-                          variant="body2"
                           sx={{
                             fontFamily: 'monospace',
-                            color: 'text.secondary',
-                            fontWeight: 500
+                            color: '#888',
+                            fontWeight: 500,
+                            fontSize: '0.75rem',
                           }}
                         >
                           #{appointment.id}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={2}>
+                        <Box display="flex" alignItems="center" gap={1.5}>
                           <Avatar
                             sx={{
-                              width: 32,
-                              height: 32,
-                              bgcolor: '#8B5CF6',
-                              fontSize: '0.875rem',
+                              width: 28,
+                              height: 28,
+                              bgcolor: THEME_COLOR,
+                              fontSize: '0.75rem',
                             }}
                           >
                             {appointment.customer?.firstName?.charAt(0) || 'U'}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                               {appointment.customer ?
                                 `${appointment.customer.firstName} ${appointment.customer.lastName}` :
                                 t('appointments.unknownCustomer')
                               }
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                               {appointment.customer?.phone || '-'}
                             </Typography>
                           </Box>
@@ -684,8 +703,8 @@ const AppointmentManagement: React.FC = () => {
                                 label={service.serviceName}
                                 size="small"
                                 sx={{
-                                  backgroundColor: alpha('#10B981', 0.1),
-                                  color: '#10B981',
+                                  backgroundColor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.1),
+                                  color: isMonochrome ? '#1a1a1a' : '#10B981',
                                   fontWeight: 500,
                                   fontSize: '0.7rem',
                                   height: 22,
@@ -694,21 +713,21 @@ const AppointmentManagement: React.FC = () => {
                             ))}
                           </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
                             {t('appointments.noServiceDetails')}
                           </Typography>
                         )}
                       </TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                          <CalendarIcon sx={{ fontSize: 14, color: '#8B5CF6' }} />
-                          <Typography variant="body2">
+                          <CalendarIcon sx={{ fontSize: 14, color: THEME_COLOR }} />
+                          <Typography sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
                             {formatDate(appointment.appointmentDate)}
                           </Typography>
                         </Box>
                         <Box display="flex" alignItems="center" gap={1}>
-                          <TimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                          <Typography variant="caption" color="text.secondary">
+                          <TimeIcon sx={{ fontSize: 14, color: '#888' }} />
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                             {formatTime(appointment.appointmentTime)} ({appointment.duration} {t('appointments.minutesUnit')})
                           </Typography>
                         </Box>
@@ -720,25 +739,25 @@ const AppointmentManagement: React.FC = () => {
                               {appointment.appointmentResources.map((resource, idx) => (
                                 <Box key={idx} display="flex" alignItems="center" gap={0.5}>
                                   {resource.resourceType === 'STAFF' ? (
-                                    <PersonIcon sx={{ fontSize: 14, color: '#6366F1' }} />
+                                    <PersonIcon sx={{ fontSize: 14, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
                                   ) : (
-                                    <MeetingRoomIcon sx={{ fontSize: 14, color: '#10B981' }} />
+                                    <MeetingRoomIcon sx={{ fontSize: 14, color: isMonochrome ? '#6a6a6a' : '#10B981' }} />
                                   )}
-                                  <Typography variant="caption">
+                                  <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
                                     {resource.resourceName || t('appointments.unassigned')}
                                   </Typography>
                                 </Box>
                               ))}
                             </Box>
                           ) : (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                               {t('appointments.unassigned')}
                             </Typography>
                           )}
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR }}>
                           {formatCurrency(appointment.totalAmount || 0)}
                         </Typography>
                       </TableCell>
@@ -759,17 +778,17 @@ const AppointmentManagement: React.FC = () => {
                                 />
                               ))}
                             </Box>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                               {appointment.rating}
                             </Typography>
                           </Box>
                         ) : (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                             {t('appointments.noRating')}
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
                         {(hasPermission('appointments:view') || hasPermission('appointments:update')) && (
                           <IconButton
                             size="small"
@@ -780,12 +799,14 @@ const AppointmentManagement: React.FC = () => {
                               e.currentTarget.blur();
                             }}
                             sx={{
+                              color: '#999',
                               '&:hover': {
-                                backgroundColor: alpha('#8B5CF6', 0.1),
+                                backgroundColor: 'rgba(0,0,0,0.04)',
+                                color: '#666',
                               },
                             }}
                           >
-                            <MoreVertIcon />
+                            <MoreVertIcon sx={{ fontSize: 18 }} />
                           </IconButton>
                         )}
                       </TableCell>
@@ -807,9 +828,12 @@ const AppointmentManagement: React.FC = () => {
             setPage(0);
           }}
           sx={{
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            backgroundColor: '#f8fafc',
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+            backgroundColor: '#fafafa',
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontSize: '0.8125rem',
+              color: '#666',
+            },
           }}
         />
       </Card>
@@ -820,12 +844,15 @@ const AppointmentManagement: React.FC = () => {
         open={Boolean(menuAnchorEl)}
         onClose={() => setMenuAnchorEl(null)}
         disableRestoreFocus
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            mt: 1,
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 1.5,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              minWidth: 160,
+              mt: 0.5,
+            }
           }
         }}
       >
@@ -838,9 +865,13 @@ const AppointmentManagement: React.FC = () => {
               setViewDetailsOpen(true);
             }, 100);
           }}
-          sx={{ '&:hover': { backgroundColor: alpha('#6366F1', 0.08) } }}
+          sx={{
+            fontSize: '0.8125rem',
+            py: 1,
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+          }}
         >
-          <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#6366F1' }} />
+          <VisibilityIcon sx={{ mr: 1.5, fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
           {t('appointments.viewDetails')}
         </MenuItem>
 
@@ -960,21 +991,21 @@ const AppointmentManagement: React.FC = () => {
         disableEnforceFocus
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ pb: 2 }}>
+        <Box sx={{ py: 2, px: 3, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
               {t('appointments.appointmentDetails')}
             </Typography>
-            <IconButton onClick={() => setViewDetailsOpen(false)}>
-              <CloseIcon />
+            <IconButton onClick={() => setViewDetailsOpen(false)} size="small" sx={{ color: '#888' }}>
+              <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
+        </Box>
         <DialogContent>
           {selectedAppointment && (
             <Grid container spacing={3}>
@@ -1020,9 +1051,9 @@ const AppointmentManagement: React.FC = () => {
                     {selectedAppointment.appointmentResources.map((resource, idx) => (
                       <Box key={idx} display="flex" alignItems="center" gap={1} mb={1}>
                         {resource.resourceType === 'STAFF' ? (
-                          <PersonIcon sx={{ fontSize: 16, color: '#6366F1' }} />
+                          <PersonIcon sx={{ fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
                         ) : (
-                          <MeetingRoomIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                          <MeetingRoomIcon sx={{ fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#10B981' }} />
                         )}
                         <Typography variant="body2">
                           {resource.resourceName || t('appointments.unassigned')}
@@ -1060,11 +1091,11 @@ const AppointmentManagement: React.FC = () => {
                         </Typography>
                       </Box>
                     ))}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} pt={2} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} pt={2} sx={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>
                         {t('appointments.total')}
                       </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                         {formatCurrency(selectedAppointment.totalAmount || 0)}
                       </Typography>
                     </Box>
@@ -1126,18 +1157,19 @@ const AppointmentManagement: React.FC = () => {
         onClose={() => setDeleteDialogOpen(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            maxWidth: 400,
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
+        <Box sx={{ py: 2, px: 3, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
             {t('appointments.confirmCancelTitle')}
           </Typography>
-        </DialogTitle>
+        </Box>
         <DialogContent>
-          <Typography>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
             {t('appointments.confirmCancelMessage', {
               customerName: selectedAppointment?.customer ?
                 `${selectedAppointment.customer.firstName} ${selectedAppointment.customer.lastName}` :
@@ -1145,12 +1177,18 @@ const AppointmentManagement: React.FC = () => {
             })}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ p: 2.5, pt: 1.5 }}>
           <Button
             onClick={() => setDeleteDialogOpen(false)}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2.5,
+              color: '#666',
+              fontSize: '0.8125rem',
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.04)',
+              },
             }}
           >
             {t('common.cancel')}
@@ -1177,11 +1215,15 @@ const AppointmentManagement: React.FC = () => {
             }}
             variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2.5,
               backgroundColor: '#EF4444',
+              fontSize: '0.8125rem',
+              textTransform: 'none',
+              boxShadow: 'none',
               '&:hover': {
                 backgroundColor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >

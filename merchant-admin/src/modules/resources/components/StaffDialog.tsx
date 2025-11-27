@@ -37,11 +37,7 @@ import { useTranslation } from 'react-i18next';
 import { StaffResource } from '../types';
 import { getFullImageUrl } from '../../../services/api';
 import { getMerchantToday } from '../../../utils/timezoneUtils';
-
-// Resources模块主题色 - 蓝色
-const THEME_COLOR = '#3B82F6';
-const THEME_COLOR_DARK = '#2563EB';
-const THEME_COLOR_DARKER = '#1D4ED8';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface StaffDialogProps {
     open: boolean;
@@ -59,6 +55,33 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
     onSave,
 }) => {
     const { t } = useTranslation();
+    const { themeMode } = useTheme();
+
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#3B82F6';
+    const THEME_COLOR_DARK = isMonochrome ? '#333' : '#2563EB';
+
+    // 获取技能等级颜色
+    const getSkillLevelColor = (level: string) => {
+        if (isMonochrome) {
+            switch (level) {
+                case 'BEGINNER': return '#9a9a9a';
+                case 'INTERMEDIATE': return '#6a6a6a';
+                case 'EXPERT': return '#4a4a4a';
+                case 'MASTER': return '#1a1a1a';
+                default: return '#9a9a9a';
+            }
+        }
+        // 彩色模式
+        switch (level) {
+            case 'BEGINNER': return '#94a3b8';
+            case 'INTERMEDIATE': return '#3b82f6';
+            case 'EXPERT': return '#f59e0b';
+            case 'MASTER': return '#ef4444';
+            default: return '#94a3b8';
+        }
+    };
     const [formData, setFormData] = useState<Partial<StaffResource>>({
         name: '',
         description: '',
@@ -300,66 +323,35 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
             }}
             PaperProps={{
                 sx: {
-                    borderRadius: 3,
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-                    bgcolor: 'background.paper',
+                    borderRadius: 2.5,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                 },
             }}
         >
-            {/* 现代化对话框标题 */}
-            <DialogTitle
-                sx={{
-                    background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.08)}, ${alpha(THEME_COLOR_DARK, 0.08)})`,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    pb: 3,
-                    pt: 3,
-                }}
-            >
+            {/* 简化对话框标题 */}
+            <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box display="flex" alignItems="center" gap={2}>
-                        <Box
-                            sx={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 2,
-                                background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                            }}
-                        >
-                            <PersonIcon sx={{ fontSize: 24 }} />
-                        </Box>
-                        <Box>
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    fontWeight: 700,
-                                    color: 'text.primary',
-                                    mb: 0.5,
-                                }}
-                            >
-                                {staff ? t('staff.editStaff') : t('staff.addStaff')}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                {staff ? t('dialogs.editStaffInfo') : t('dialogs.createNewStaff')}
-                            </Typography>
-                        </Box>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                        <PersonIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+                        <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                            {staff ? t('staff.editStaff') : t('staff.addStaff')}
+                        </Typography>
                     </Box>
                     <IconButton
                         onClick={onClose}
+                        size="small"
                         sx={{
+                            color: '#999',
                             '&:hover': {
-                                backgroundColor: alpha(THEME_COLOR, 0.1),
+                                backgroundColor: 'rgba(0,0,0,0.04)',
+                                color: '#666',
                             },
                         }}
                     >
-                        <CloseIcon />
+                        <CloseIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                 </Box>
-            </DialogTitle>
+            </Box>
 
             <DialogContent sx={{ p: 0 }}>
                 <Box sx={{ p: 3 }}>
@@ -367,33 +359,28 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     <Paper
                         elevation={0}
                         sx={{
-                            p: 3,
-                            mb: 3,
-                            border: '1px solid',
-                            borderColor: alpha(THEME_COLOR, 0.2),
+                            p: 2.5,
+                            mb: 2,
+                            border: '1px solid rgba(0,0,0,0.06)',
                             borderRadius: 2,
-                            background: alpha(THEME_COLOR, 0.02),
+                            background: '#fafafa',
                         }}
                     >
-                        <Box display="flex" alignItems="center" gap={2} mb={3}>
-                            <Box
-                                sx={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 2,
-                                    background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                }}
-                            >
-                                <PersonIcon sx={{ fontSize: 18 }} />
-                            </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                                {t('staff.basicInfo')}
-                            </Typography>
-                        </Box>
+                        <Typography
+                            variant="subtitle2"
+                            sx={{
+                                fontWeight: 600,
+                                color: '#1a1a1a',
+                                mb: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                fontSize: '0.875rem',
+                            }}
+                        >
+                            <PersonIcon sx={{ fontSize: 16, color: THEME_COLOR }} />
+                            {t('staff.basicInfo')}
+                        </Typography>
 
                         <Grid container spacing={2}>
                             {/* 姓名字段 */}
@@ -413,7 +400,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                     }}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
+                                            borderRadius: 1.5,
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
                                                 borderColor: THEME_COLOR,
                                             },
@@ -440,6 +427,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                         size={80}
                                         placeholder={t('staff.avatarPlaceholder')}
                                         uploadType="avatar"
+                                        themeColor={THEME_COLOR}
                                     />
                                 </Box>
                             </Grid>
@@ -455,7 +443,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                     placeholder={t('staff.descriptionPlaceholder')}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
+                                            borderRadius: 1.5,
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
                                                 borderColor: THEME_COLOR,
                                             },
@@ -526,7 +514,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                     }}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
+                                            borderRadius: 1.5,
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
                                                 borderColor: THEME_COLOR,
                                             },
@@ -550,7 +538,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                     }}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
+                                            borderRadius: 1.5,
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
                                                 borderColor: THEME_COLOR,
                                             },
@@ -568,33 +556,28 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     <Paper
                         elevation={0}
                         sx={{
-                            p: 3,
-                            mb: 3,
-                            border: '1px solid',
-                            borderColor: alpha(THEME_COLOR, 0.2),
+                            p: 2.5,
+                            mb: 2,
+                            border: '1px solid rgba(0,0,0,0.06)',
                             borderRadius: 2,
-                            background: alpha(THEME_COLOR, 0.02),
+                            background: '#fafafa',
                         }}
                     >
-                        <Box display="flex" alignItems="center" gap={2} mb={3}>
-                            <Box
-                                sx={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 2,
-                                    background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                }}
-                            >
-                                <WorkIcon sx={{ fontSize: 18 }} />
-                            </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                                {t('staff.workInfo')}
-                            </Typography>
-                        </Box>
+                        <Typography
+                            variant="subtitle2"
+                            sx={{
+                                fontWeight: 600,
+                                color: '#1a1a1a',
+                                mb: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                fontSize: '0.875rem',
+                            }}
+                        >
+                            <WorkIcon sx={{ fontSize: 16, color: THEME_COLOR }} />
+                            {t('staff.workInfo')}
+                        </Typography>
 
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
@@ -605,7 +588,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                     onChange={(e) => handleInputChange('position', e.target.value)}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
+                                            borderRadius: 1.5,
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
                                                 borderColor: THEME_COLOR,
                                             },
@@ -625,7 +608,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                         label={t('staff.status')}
                                         onChange={(e) => handleInputChange('status', e.target.value)}
                                         sx={{
-                                            borderRadius: 2,
+                                            borderRadius: 1.5,
                                             '&:hover .MuiOutlinedInput-notchedOutline': {
                                                 borderColor: THEME_COLOR,
                                             },
@@ -647,32 +630,18 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     <Paper
                         elevation={0}
                         sx={{
-                            p: 3,
-                            mb: 3,
-                            border: '1px solid',
-                            borderColor: alpha(THEME_COLOR, 0.2),
+                            p: 2.5,
+                            mb: 2,
+                            border: '1px solid rgba(0,0,0,0.06)',
                             borderRadius: 2,
-                            background: alpha(THEME_COLOR, 0.02),
+                            background: '#fafafa',
                         }}
                     >
-                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-                            <Box display="flex" alignItems="center" gap={2}>
-                                <Box
-                                    sx={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 2,
-                                        background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'white',
-                                    }}
-                                >
-                                    <BuildIcon sx={{ fontSize: 18 }} />
-                                </Box>
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <BuildIcon sx={{ fontSize: 16, color: THEME_COLOR }} />
                                 <Box>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
+                                    <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.875rem' }}>
                                         {t('staff.serviceExpertise', 'Service Expertise')}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
@@ -823,25 +792,25 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                                 >
                                                     <MenuItem value="BEGINNER">
                                                         <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#94a3b8' }} />
+                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('BEGINNER') }} />
                                                             <Typography variant="body2">{t('staff.skillLevels.beginner', 'Beginner')}</Typography>
                                                         </Box>
                                                     </MenuItem>
                                                     <MenuItem value="INTERMEDIATE">
                                                         <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#3b82f6' }} />
+                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('INTERMEDIATE') }} />
                                                             <Typography variant="body2">{t('staff.skillLevels.intermediate', 'Intermediate')}</Typography>
                                                         </Box>
                                                     </MenuItem>
                                                     <MenuItem value="EXPERT">
                                                         <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('EXPERT') }} />
                                                             <Typography variant="body2">{t('staff.skillLevels.expert', 'Expert')}</Typography>
                                                         </Box>
                                                     </MenuItem>
                                                     <MenuItem value="MASTER">
                                                         <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('MASTER') }} />
                                                             <Typography variant="body2">{t('staff.skillLevels.master', 'Master')}</Typography>
                                                         </Box>
                                                     </MenuItem>
@@ -863,18 +832,20 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
 
             <DialogActions
                 sx={{
-                    p: 3,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    background: alpha(THEME_COLOR, 0.02),
+                    px: 3,
+                    py: 2,
+                    borderTop: '1px solid rgba(0,0,0,0.06)',
                 }}
             >
                 <Button
                     onClick={onClose}
+                    size="small"
                     sx={{
-                        borderRadius: 2,
-                        px: 3,
-                        color: 'text.secondary',
+                        borderRadius: 1.5,
+                        px: 2,
+                        color: '#666',
+                        textTransform: 'none',
+                        fontSize: '0.8125rem',
                     }}
                 >
                     {t('common.cancel')}
@@ -882,20 +853,24 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 <Button
                     onClick={handleSubmit}
                     variant="contained"
+                    size="small"
                     disabled={loading}
                     sx={{
-                        borderRadius: 2,
-                        px: 3,
-                        background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                        boxShadow: `0 4px 15px ${alpha(THEME_COLOR, 0.3)}`,
+                        borderRadius: 1.5,
+                        px: 2.5,
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        fontSize: '0.8125rem',
+                        bgcolor: THEME_COLOR,
+                        boxShadow: 'none',
                         '&:hover': {
-                            background: `linear-gradient(135deg, ${THEME_COLOR_DARK}, ${THEME_COLOR_DARKER})`,
-                            boxShadow: `0 6px 20px ${alpha(THEME_COLOR, 0.4)}`,
+                            bgcolor: THEME_COLOR_DARK,
+                            boxShadow: 'none',
                         },
                     }}
                 >
                     {loading ? (
-                        <CircularProgress size={20} color="inherit" />
+                        <CircularProgress size={16} color="inherit" />
                     ) : (
                         staff ? t('common.update') : t('common.create')
                     )}

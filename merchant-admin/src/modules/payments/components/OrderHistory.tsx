@@ -19,16 +19,10 @@ import {
     IconButton,
     Avatar,
     InputAdornment,
-    Card,
-    CardContent,
     Button,
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
-    List,
-    ListItem,
-    ListItemText,
     Divider,
     alpha,
     Menu,
@@ -40,7 +34,7 @@ import {
 import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import zhCNLocale from 'date-fns/locale/zh-CN';
 import enUSLocale from 'date-fns/locale/en-US';
 import {
@@ -90,6 +84,7 @@ import { formatUtcToMerchantTime, getMerchantNow } from '../../../utils/timezone
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../../hooks/usePermission';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface MembershipTier {
     id: number;
@@ -141,9 +136,12 @@ const OrderHistory: React.FC = () => {
     const { user } = useAuth();
     const { hasPermission } = usePermission();
     const navigate = useNavigate();
+    const { themeMode } = useTheme();
 
-    // Orders theme color
-    const ORDERS_COLOR = '#10B981';
+    // Theme-aware colors
+    const isMonochrome = themeMode === 'monochrome';
+    const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#10B981';
+    const THEME_COLOR_DARK = isMonochrome ? '#333' : '#059669';
 
     // Get locale for date picker
     const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
@@ -267,11 +265,13 @@ const OrderHistory: React.FC = () => {
     };
 
     const getStatusChip = (status: string) => {
+        // Payment status colors - paid uses theme color in monochrome mode
+        const paidColor = isMonochrome ? '#1a1a1a' : '#10B981';
         const statusConfig = {
-            pending: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('orders.pending') },
-            paid: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('orders.paid') },
-            refunded: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.refunded') },
-            failed: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.failed') },
+            pending: { color: isMonochrome ? '#6a6a6a' : '#F59E0B', bg: isMonochrome ? 'rgba(106, 106, 106, 0.1)' : alpha('#F59E0B', 0.1), label: t('orders.pending') },
+            paid: { color: paidColor, bg: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1), label: t('orders.paid') },
+            refunded: { color: isMonochrome ? '#4a4a4a' : '#EF4444', bg: isMonochrome ? 'rgba(74, 74, 74, 0.1)' : alpha('#EF4444', 0.1), label: t('orders.refunded') },
+            failed: { color: isMonochrome ? '#4a4a4a' : '#EF4444', bg: isMonochrome ? 'rgba(74, 74, 74, 0.1)' : alpha('#EF4444', 0.1), label: t('orders.failed') },
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -291,12 +291,14 @@ const OrderHistory: React.FC = () => {
     };
 
     const getOrderStatusChip = (status: string) => {
+        // Order status colors - completed uses theme color in monochrome mode
+        const completedColor = isMonochrome ? '#1a1a1a' : '#10B981';
         const statusConfig = {
-            draft: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: t('orders.draft') },
-            confirmed: { color: '#3B82F6', bg: alpha('#3B82F6', 0.1), label: t('orders.confirmed') },
-            in_progress: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('orders.inProgress') },
-            completed: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('orders.completed') },
-            cancelled: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('orders.cancelled') },
+            draft: { color: isMonochrome ? '#6a6a6a' : '#6B7280', bg: isMonochrome ? 'rgba(106, 106, 106, 0.1)' : alpha('#6B7280', 0.1), label: t('orders.draft') },
+            confirmed: { color: isMonochrome ? '#4a4a4a' : '#3B82F6', bg: isMonochrome ? 'rgba(74, 74, 74, 0.1)' : alpha('#3B82F6', 0.1), label: t('orders.confirmed') },
+            in_progress: { color: isMonochrome ? '#6a6a6a' : '#F59E0B', bg: isMonochrome ? 'rgba(106, 106, 106, 0.1)' : alpha('#F59E0B', 0.1), label: t('orders.inProgress') },
+            completed: { color: completedColor, bg: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1), label: t('orders.completed') },
+            cancelled: { color: isMonochrome ? '#4a4a4a' : '#EF4444', bg: isMonochrome ? 'rgba(74, 74, 74, 0.1)' : alpha('#EF4444', 0.1), label: t('orders.cancelled') },
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
@@ -316,15 +318,16 @@ const OrderHistory: React.FC = () => {
     };
 
     const getPaymentMethodIcon = (method: string) => {
+        const iconColor = isMonochrome ? '#1a1a1a' : '#6B7280';
         switch (method) {
-            case 'cash': return <MoneyIcon sx={{ fontSize: 16 }} />;
-            case 'credit_card': return <CreditCardIcon sx={{ fontSize: 16 }} />;
-            case 'debit_card': return <DebitCardIcon sx={{ fontSize: 16 }} />;
-            case 'mobile_pay': return <WalletIcon sx={{ fontSize: 16 }} />;
-            case 'package': return <PackageIcon sx={{ fontSize: 16 }} />;
-            case 'gift_card': return <GiftCardIcon sx={{ fontSize: 16 }} />;
-            case 'mixed': return <MixedPaymentIcon sx={{ fontSize: 16 }} />;
-            default: return <PaymentIcon sx={{ fontSize: 16 }} />;
+            case 'cash': return <MoneyIcon sx={{ fontSize: 16, color: iconColor }} />;
+            case 'credit_card': return <CreditCardIcon sx={{ fontSize: 16, color: iconColor }} />;
+            case 'debit_card': return <DebitCardIcon sx={{ fontSize: 16, color: iconColor }} />;
+            case 'mobile_pay': return <WalletIcon sx={{ fontSize: 16, color: iconColor }} />;
+            case 'package': return <PackageIcon sx={{ fontSize: 16, color: iconColor }} />;
+            case 'gift_card': return <GiftCardIcon sx={{ fontSize: 16, color: iconColor }} />;
+            case 'mixed': return <MixedPaymentIcon sx={{ fontSize: 16, color: iconColor }} />;
+            default: return <PaymentIcon sx={{ fontSize: 16, color: iconColor }} />;
         }
     };
 
@@ -520,226 +523,190 @@ const OrderHistory: React.FC = () => {
 
     return (
         <Box>
-            {/* Search and Filter Section */}
-            <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff', mb: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                    <Grid container spacing={3} alignItems="center">
-                        <Grid item xs={12} md={3}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder={t('orders.searchPlaceholder')}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: 'text.secondary' }} />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: ORDERS_COLOR,
-                                        },
-                                    },
-                                }}
-                            />
-                        </Grid>
+            {/* Search and Filter Section - 简约设计 */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                    mb: 2.5,
+                    alignItems: 'center',
+                }}
+            >
+                <TextField
+                    placeholder={t('orders.searchPlaceholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    size="small"
+                    sx={{
+                        minWidth: 280,
+                        flex: 1,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            bgcolor: '#fafafa',
+                            '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                            '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
+                            '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                        },
+                    }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
 
-                        <Grid item xs={12} sm={6} md={2.25}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel sx={{ '&.Mui-focused': { color: ORDERS_COLOR } }}>
-                                    {t('orders.paymentMethod')}
-                                </InputLabel>
-                                <Select
-                                    value={paymentMethodFilter}
-                                    label={t('orders.paymentMethod')}
-                                    onChange={(e) => setPaymentMethodFilter(e.target.value)}
-                                    sx={{
-                                        borderRadius: 2,
-                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: ORDERS_COLOR,
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="">{t('orders.allMethods')}</MenuItem>
-                                    <MenuItem value="cash">
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {getPaymentMethodIcon('cash')}
-                                            {t('orders.cash')}
-                                        </Box>
-                                    </MenuItem>
-                                    <MenuItem value="credit_card">
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {getPaymentMethodIcon('credit_card')}
-                                            {t('orders.credit_card')}
-                                        </Box>
-                                    </MenuItem>
-                                    <MenuItem value="debit_card">
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {getPaymentMethodIcon('debit_card')}
-                                            {t('orders.debit_card')}
-                                        </Box>
-                                    </MenuItem>
-                                    <MenuItem value="package">
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {getPaymentMethodIcon('package')}
-                                            {t('orders.package')}
-                                        </Box>
-                                    </MenuItem>
-                                    <MenuItem value="gift_card">
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {getPaymentMethodIcon('gift_card')}
-                                            {t('orders.gift_card')}
-                                        </Box>
-                                    </MenuItem>
-                                    <MenuItem value="mixed">
-                                        <Box display="flex" alignItems="center" gap={1}>
-                                            {getPaymentMethodIcon('mixed')}
-                                            {t('orders.mixed')}
-                                        </Box>
-                                    </MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
+                        {t('orders.paymentMethod')}
+                    </InputLabel>
+                    <Select
+                        value={paymentMethodFilter}
+                        label={t('orders.paymentMethod')}
+                        onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                        sx={{
+                            borderRadius: 2,
+                            bgcolor: '#fafafa',
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                        }}
+                    >
+                        <MenuItem value="">{t('orders.allMethods')}</MenuItem>
+                        <MenuItem value="cash">
+                            <Box display="flex" alignItems="center" gap={1}>
+                                {getPaymentMethodIcon('cash')}
+                                {t('orders.cash')}
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="credit_card">
+                            <Box display="flex" alignItems="center" gap={1}>
+                                {getPaymentMethodIcon('credit_card')}
+                                {t('orders.credit_card')}
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="debit_card">
+                            <Box display="flex" alignItems="center" gap={1}>
+                                {getPaymentMethodIcon('debit_card')}
+                                {t('orders.debit_card')}
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="package">
+                            <Box display="flex" alignItems="center" gap={1}>
+                                {getPaymentMethodIcon('package')}
+                                {t('orders.package')}
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="gift_card">
+                            <Box display="flex" alignItems="center" gap={1}>
+                                {getPaymentMethodIcon('gift_card')}
+                                {t('orders.gift_card')}
+                            </Box>
+                        </MenuItem>
+                        <MenuItem value="mixed">
+                            <Box display="flex" alignItems="center" gap={1}>
+                                {getPaymentMethodIcon('mixed')}
+                                {t('orders.mixed')}
+                            </Box>
+                        </MenuItem>
+                    </Select>
+                </FormControl>
 
-                        <Grid item xs={12} sm={6} md={2.25}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel sx={{ '&.Mui-focused': { color: ORDERS_COLOR } }}>
-                                    {t('orders.paymentStatus')}
-                                </InputLabel>
-                                <Select
-                                    value={paymentStatusFilter}
-                                    label={t('orders.paymentStatus')}
-                                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                                    sx={{
-                                        borderRadius: 2,
-                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: ORDERS_COLOR,
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="">{t('orders.allPayments')}</MenuItem>
-                                    <MenuItem value="pending">{t('orders.pending')}</MenuItem>
-                                    <MenuItem value="paid">{t('orders.paid')}</MenuItem>
-                                    <MenuItem value="refunded">{t('orders.refunded')}</MenuItem>
-                                    <MenuItem value="failed">{t('orders.failed')}</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
+                        {t('orders.paymentStatus')}
+                    </InputLabel>
+                    <Select
+                        value={paymentStatusFilter}
+                        label={t('orders.paymentStatus')}
+                        onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                        sx={{
+                            borderRadius: 2,
+                            bgcolor: '#fafafa',
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                        }}
+                    >
+                        <MenuItem value="">{t('orders.allPayments')}</MenuItem>
+                        <MenuItem value="pending">{t('orders.pending')}</MenuItem>
+                        <MenuItem value="paid">{t('orders.paid')}</MenuItem>
+                        <MenuItem value="refunded">{t('orders.refunded')}</MenuItem>
+                        <MenuItem value="failed">{t('orders.failed')}</MenuItem>
+                    </Select>
+                </FormControl>
 
-                        {/* Order Status Filter - Temporarily Commented Out */}
-                        {/* <Grid item xs={12} sm={6} md={1.5}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ '&.Mui-focused': { color: ORDERS_COLOR } }}>
-                  {t('orders.orderStatus')}
-                </InputLabel>
-                <Select
-                  value={orderStatusFilter}
-                  label={t('orders.orderStatus')}
-                  onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  sx={{
-                    borderRadius: 2,
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: ORDERS_COLOR,
-                    },
-                  }}
-                >
-                  <MenuItem value="">{t('orders.allStatuses')}</MenuItem>
-                  <MenuItem value="draft">{t('orders.draft')}</MenuItem>
-                  <MenuItem value="confirmed">{t('orders.confirmed')}</MenuItem>
-                  <MenuItem value="in_progress">{t('orders.inProgress')}</MenuItem>
-                  <MenuItem value="completed">{t('orders.completed')}</MenuItem>
-                  <MenuItem value="cancelled">{t('orders.cancelled')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid> */}
+                <TextField
+                    size="small"
+                    label={t('orders.startDate')}
+                    value={format(dateRange.start, 'yyyy-MM-dd')}
+                    onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
+                    sx={{
+                        minWidth: 140,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            bgcolor: '#fafafa',
+                            cursor: 'pointer',
+                            '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                            '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
+                            '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                    }}
+                    InputProps={{
+                        readOnly: true,
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <EventIcon sx={{ fontSize: 18, color: '#999' }} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
 
-                        <Grid item xs={12} sm={6} md={2}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label={t('orders.startDate')}
-                                value={format(dateRange.start, 'yyyy-MM-dd')}
-                                onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
-                                InputProps={{
-                                    readOnly: true,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
-                                                edge="end"
-                                                size="small"
-                                            >
-                                                <EventIcon fontSize="small" />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        cursor: 'pointer',
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: ORDERS_COLOR,
-                                        },
-                                    },
-                                    '& .MuiInputLabel-root.Mui-focused': {
-                                        color: ORDERS_COLOR,
-                                    },
-                                }}
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} sm={6} md={2}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label={t('orders.endDate')}
-                                value={format(dateRange.end, 'yyyy-MM-dd')}
-                                onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
-                                InputProps={{
-                                    readOnly: true,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
-                                                edge="end"
-                                                size="small"
-                                            >
-                                                <EventIcon fontSize="small" />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        cursor: 'pointer',
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: ORDERS_COLOR,
-                                        },
-                                    },
-                                    '& .MuiInputLabel-root.Mui-focused': {
-                                        color: ORDERS_COLOR,
-                                    },
-                                }}
-                            />
-                        </Grid>
-                    </Grid>
-                </CardContent>
-            </Card>
+                <TextField
+                    size="small"
+                    label={t('orders.endDate')}
+                    value={format(dateRange.end, 'yyyy-MM-dd')}
+                    onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
+                    sx={{
+                        minWidth: 140,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            bgcolor: '#fafafa',
+                            cursor: 'pointer',
+                            '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                            '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
+                            '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                    }}
+                    InputProps={{
+                        readOnly: true,
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <EventIcon sx={{ fontSize: 18, color: '#999' }} />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+            </Box>
 
             {/* Orders Table */}
-            <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+            <Box
+                sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    overflow: 'hidden',
+                    bgcolor: '#fff',
+                }}
+            >
                 <TableContainer>
                     <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('orders.orderNumber')}</TableCell>
+                        <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.orderNumber')}</TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.customer')}</TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.services')}</TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('orders.subtotal')}</TableCell>
@@ -760,22 +727,23 @@ const OrderHistory: React.FC = () => {
                                         key={order.id}
                                         sx={{
                                             '&:hover': {
-                                                backgroundColor: alpha('#10B981', 0.04),
+                                                backgroundColor: alpha(THEME_COLOR, 0.04),
                                             },
+                                            transition: 'background-color 0.2s ease',
                                         }}
                                     >
                                         <TableCell>
-                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: THEME_COLOR }}>
                                                 {order.orderNumber}
                                             </Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Box display="flex" alignItems="center" gap={2}>
+                                            <Box display="flex" alignItems="center" gap={1.5}>
                                                 <Avatar
                                                     sx={{
                                                         width: 32,
                                                         height: 32,
-                                                        bgcolor: '#6366F1',
+                                                        bgcolor: isMonochrome ? '#1a1a1a' : '#6366F1',
                                                         fontSize: '0.875rem',
                                                     }}
                                                 >
@@ -812,7 +780,7 @@ const OrderHistory: React.FC = () => {
                                             </Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: THEME_COLOR }}>
                                                 {CurrencyUtils.formatAmount(order.totalAmount)}
                                             </Typography>
                                         </TableCell>
@@ -835,11 +803,6 @@ const OrderHistory: React.FC = () => {
                                             <IconButton
                                                 size="small"
                                                 onClick={(event) => handleMenuOpen(event, order)}
-                                                sx={{
-                                                    '&:hover': {
-                                                        backgroundColor: alpha('#6B7280', 0.1),
-                                                    },
-                                                }}
                                             >
                                                 <MoreVertIcon sx={{ color: '#6B7280' }} />
                                             </IconButton>
@@ -859,38 +822,55 @@ const OrderHistory: React.FC = () => {
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={handleRowsPerPageChange}
                     sx={{
-                        borderTop: '1px solid',
-                        borderColor: 'divider',
+                        borderTop: '1px solid rgba(0,0,0,0.06)',
                         backgroundColor: '#f8fafc',
                     }}
                 />
-            </Card>
+            </Box>
 
             {/* Actions Menu */}
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
-                PaperProps={{
-                    sx: {
-                        borderRadius: 2,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                        minWidth: 160,
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: 2,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            border: '1px solid rgba(0,0,0,0.06)',
+                            minWidth: 180,
+                            mt: 0.5,
+                        }
                     }
                 }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                <MenuItem onClick={handleMenuViewDetails}>
+                <MenuItem
+                    onClick={handleMenuViewDetails}
+                    sx={{
+                        '&:hover': {
+                            backgroundColor: alpha(THEME_COLOR, 0.08),
+                        },
+                    }}
+                >
                     <ListItemIcon>
-                        <VisibilityIcon sx={{ fontSize: 20, color: '#10B981' }} />
+                        <VisibilityIcon sx={{ fontSize: 18, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
                     </ListItemIcon>
                     <Typography variant="body2">{t('orders.viewDetails')}</Typography>
                 </MenuItem>
                 {hasPermission('orders:update_payment_method') && menuOrder && canUpdatePaymentMethod(menuOrder) && (
-                    <MenuItem onClick={handleMenuUpdatePaymentMethod}>
+                    <MenuItem
+                        onClick={handleMenuUpdatePaymentMethod}
+                        sx={{
+                            '&:hover': {
+                                backgroundColor: alpha(THEME_COLOR, 0.08),
+                            },
+                        }}
+                    >
                         <ListItemIcon>
-                            <CreditCardIcon sx={{ fontSize: 20, color: '#10B981' }} />
+                            <CreditCardIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
                         </ListItemIcon>
                         <Typography variant="body2">{t('orders.updatePaymentMethod')}</Typography>
                     </MenuItem>
@@ -914,66 +894,61 @@ const OrderHistory: React.FC = () => {
                 fullWidth
                 PaperProps={{
                     sx: {
-                        borderRadius: 3,
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                        borderRadius: 2.5,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                     }
                 }}
             >
-                <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
+                {/* 简约对话框头部 */}
+                <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                     <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#10B981' }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: THEME_COLOR }}>
                             {t('orders.orderDetails')}
                         </Typography>
-                        <IconButton
-                            onClick={() => setDetailsDialog(false)}
-                            sx={{
-                                color: 'text.secondary',
-                                '&:hover': { backgroundColor: alpha('#10B981', 0.08) }
-                            }}
-                        >
-                            <CloseIcon />
+                        <IconButton onClick={() => setDetailsDialog(false)} size="small" sx={{ color: '#999' }}>
+                            <CloseIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Box>
-                </DialogTitle>
-                <DialogContent sx={{ px: 3, pt: 2, pb: 3 }}>
+                </Box>
+                <DialogContent sx={{ px: 3, pt: 2.5, pb: 3 }}>
                     {selectedOrder && (
                         <Box>
                             {/* Order Header */}
-                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
+                            <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2.5}>
                                 <Box>
-                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
                                         {t('orders.orderNumber')}
                                     </Typography>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+                                    <Typography variant="body1" sx={{ fontWeight: 600, color: THEME_COLOR }}>
                                         {selectedOrder.orderNumber}
                                     </Typography>
                                 </Box>
                                 <Box sx={{ textAlign: 'right' }}>
-                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
                                         {formatDateTime(selectedOrder.createdAt).date}
                                     </Typography>
-                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                    <Typography variant="body2" sx={{ color: '#666' }}>
                                         {formatDateTime(selectedOrder.createdAt).time}
                                     </Typography>
                                 </Box>
                             </Box>
 
-                            <Divider sx={{ my: 2.5 }} />
+                            <Divider sx={{ my: 2 }} />
 
                             {/* Customer & Order Info */}
-                            <Grid container spacing={3} sx={{ mb: 3 }}>
+                            <Grid container spacing={3} sx={{ mb: 2.5 }}>
                                 <Grid item xs={12} sm={6}>
-                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mb: 1.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', display: 'block', mb: 1.5 }}>
                                         {t('orders.customer')}
                                     </Typography>
                                     <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-                                        <PersonIcon sx={{ fontSize: 18, color: '#10B981' }} />
+                                        <PersonIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                             {selectedOrder.customerName}
                                         </Typography>
                                     </Box>
                                     <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-                                        <PhoneIcon sx={{ fontSize: 18, color: '#64748b' }} />
+                                        <PhoneIcon sx={{ fontSize: 18, color: '#999' }} />
                                         <Typography variant="body2" color="text.secondary">
                                             {selectedOrder.customerPhone}
                                         </Typography>
@@ -1003,11 +978,11 @@ const OrderHistory: React.FC = () => {
                                 </Grid>
 
                                 <Grid item xs={12} sm={6}>
-                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mb: 1.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', display: 'block', mb: 1.5 }}>
                                         {t('orders.orderInfo')}
                                     </Typography>
                                     <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-                                        <Box sx={{ color: '#10B981' }}>
+                                        <Box sx={{ color: THEME_COLOR }}>
                                             {getPaymentMethodIcon(selectedOrder.paymentMethod)}
                                         </Box>
                                         <Typography variant="body2">{t(`orders.${selectedOrder.paymentMethod}`)}</Typography>
@@ -1049,15 +1024,15 @@ const OrderHistory: React.FC = () => {
 
                             {/* Appointment & Staff Info */}
                             {(selectedOrder.appointmentId || selectedOrder.resourceId) && (
-                                <Box sx={{ mb: 3 }}>
-                                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mb: 1.5 }}>
+                                <Box sx={{ mb: 2.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', display: 'block', mb: 1.5 }}>
                                         {t('orders.appointmentInfo')}
                                     </Typography>
                                     <Grid container spacing={2}>
                                         {selectedOrder.appointmentId && (
                                             <Grid item xs={12} sm={6}>
                                                 <Box display="flex" alignItems="center" gap={1.5}>
-                                                    <EventNoteIcon sx={{ fontSize: 18, color: '#10B981' }} />
+                                                    <EventNoteIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
                                                     <Box>
                                                         <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.7rem' }}>
                                                             {t('orders.relatedAppointment')}
@@ -1083,7 +1058,7 @@ const OrderHistory: React.FC = () => {
                                                                 minWidth: 'auto',
                                                                 padding: 0,
                                                                 textTransform: 'none',
-                                                                color: '#10B981',
+                                                                color: THEME_COLOR,
                                                                 fontWeight: 500,
                                                                 fontSize: '0.875rem',
                                                                 '&:hover': {
@@ -1101,7 +1076,7 @@ const OrderHistory: React.FC = () => {
                                         {selectedOrder.resourceId && (
                                             <Grid item xs={12} sm={6}>
                                                 <Box display="flex" alignItems="center" gap={1.5}>
-                                                    <PersonIcon sx={{ fontSize: 18, color: '#10B981' }} />
+                                                    <PersonIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
                                                     <Box>
                                                         <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.7rem' }}>
                                                             {selectedOrder.resourceType}
@@ -1147,8 +1122,8 @@ const OrderHistory: React.FC = () => {
                                                                     px: 1,
                                                                     py: 0.3,
                                                                     borderRadius: 1,
-                                                                    bgcolor: alpha('#10B981', 0.1),
-                                                                    color: '#10B981',
+                                                                    bgcolor: alpha(THEME_COLOR, 0.1),
+                                                                    color: THEME_COLOR,
                                                                 }}
                                                             >
                                                                 {getPaymentMethodIcon(service.paymentMethod)}
@@ -1199,8 +1174,8 @@ const OrderHistory: React.FC = () => {
                                                         sx={{
                                                             height: 20,
                                                             fontSize: '0.7rem',
-                                                            bgcolor: alpha('#10B981', 0.1),
-                                                            color: '#10B981',
+                                                            bgcolor: alpha(THEME_COLOR, 0.1),
+                                                            color: THEME_COLOR,
                                                         }}
                                                     />
                                                 )}
@@ -1214,10 +1189,10 @@ const OrderHistory: React.FC = () => {
 
                                         {/* Total */}
                                         <Box display="flex" justifyContent="space-between" alignItems="center">
-                                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
                                                 {t('orders.total')}
                                             </Typography>
-                                            <Typography variant="h5" sx={{ fontWeight: 700, color: '#10B981' }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 700, color: THEME_COLOR }}>
                                                 {CurrencyUtils.formatAmount(selectedOrder.totalAmount)}
                                             </Typography>
                                         </Box>
@@ -1348,31 +1323,26 @@ const OrderHistory: React.FC = () => {
                 fullWidth
                 PaperProps={{
                     sx: {
-                        borderRadius: 3,
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                        borderRadius: 2.5,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                     }
                 }}
             >
-                <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
+                {/* 简约对话框头部 */}
+                <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                     <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#10B981' }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: THEME_COLOR }}>
                             {t('orders.updatePaymentMethodTitle')}
                         </Typography>
-                        <IconButton
-                            onClick={() => setUpdatePaymentMethodDialog(false)}
-                            sx={{
-                                color: 'text.secondary',
-                                '&:hover': { backgroundColor: alpha('#10B981', 0.08) }
-                            }}
-                        >
-                            <CloseIcon />
+                        <IconButton onClick={() => setUpdatePaymentMethodDialog(false)} size="small" sx={{ color: '#999' }}>
+                            <CloseIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Box>
-                </DialogTitle>
-                <DialogContent sx={{ px: 3, pt: 2, pb: 3 }}>
+                </Box>
+                <DialogContent sx={{ px: 3, pt: 2.5, pb: 3 }}>
                     {selectedOrder && (
                         <Box>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
                                 {t('orders.updatePaymentMethodInfo', { orderNumber: selectedOrder.orderNumber })}
                             </Typography>
 
@@ -1387,8 +1357,8 @@ const OrderHistory: React.FC = () => {
                                             label={selectedOrder.tipPaymentMethod ? t(`orders.${selectedOrder.tipPaymentMethod}`) : t('orders.notSet')}
                                             size="small"
                                             sx={{
-                                                bgcolor: alpha('#10B981', 0.1),
-                                                color: '#10B981',
+                                                bgcolor: alpha(THEME_COLOR, 0.1),
+                                                color: THEME_COLOR,
                                                 fontWeight: 600,
                                             }}
                                         />
@@ -1397,7 +1367,7 @@ const OrderHistory: React.FC = () => {
 
                                 <Grid item xs={12}>
                                     <FormControl fullWidth>
-                                        <InputLabel sx={{ '&.Mui-focused': { color: '#10B981' } }}>
+                                        <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
                                             {t('orders.newPaymentMethod')}
                                         </InputLabel>
                                         <Select
@@ -1409,8 +1379,9 @@ const OrderHistory: React.FC = () => {
                                             label={t('orders.newPaymentMethod')}
                                             error={Boolean(updateError)}
                                             sx={{
+                                                borderRadius: 2,
                                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                    borderColor: '#10B981',
+                                                    borderColor: THEME_COLOR,
                                                 },
                                             }}
                                         >
@@ -1436,11 +1407,14 @@ const OrderHistory: React.FC = () => {
                                         placeholder={t('orders.updateReasonPlaceholder')}
                                         error={Boolean(updateError)}
                                         sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: 2,
+                                            },
                                             '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: '#10B981',
+                                                borderColor: THEME_COLOR,
                                             },
                                             '& .MuiInputLabel-root.Mui-focused': {
-                                                color: '#10B981',
+                                                color: THEME_COLOR,
                                             },
                                         }}
                                     />
@@ -1457,33 +1431,45 @@ const OrderHistory: React.FC = () => {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 3, pt: 2 }}>
+                <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                     <Button
+                        size="small"
                         onClick={() => setUpdatePaymentMethodDialog(false)}
                         sx={{
-                            mr: 1,
-                            color: 'text.secondary',
+                            borderRadius: 1.5,
+                            px: 2.5,
+                            py: 0.75,
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            color: '#666',
+                            textTransform: 'none',
                             '&:hover': {
-                                backgroundColor: alpha('#10B981', 0.08),
+                                bgcolor: 'rgba(0,0,0,0.04)',
                             },
                         }}
                     >
                         {t('common.cancel')}
                     </Button>
                     <Button
+                        size="small"
                         onClick={processUpdatePaymentMethod}
                         variant="contained"
                         disabled={updateLoading || !newPaymentMethod || !updateReason}
                         sx={{
-                            bgcolor: '#10B981',
-                            color: '#fff',
-                            fontWeight: 600,
-                            px: 3,
+                            borderRadius: 1.5,
+                            px: 2.5,
+                            py: 0.75,
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            bgcolor: THEME_COLOR,
+                            boxShadow: 'none',
+                            textTransform: 'none',
                             '&:hover': {
-                                bgcolor: '#059669',
+                                bgcolor: THEME_COLOR_DARK,
+                                boxShadow: 'none',
                             },
                             '&:disabled': {
-                                bgcolor: alpha('#10B981', 0.3),
+                                bgcolor: alpha(THEME_COLOR, 0.3),
                                 color: alpha('#fff', 0.5),
                             },
                         }}
@@ -1538,6 +1524,21 @@ const OrderHistory: React.FC = () => {
                     vertical: 'top',
                     horizontal: 'center',
                 }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: 2,
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                            '& .MuiPickersDay-root.Mui-selected': {
+                                bgcolor: THEME_COLOR,
+                                '&:hover': { bgcolor: THEME_COLOR_DARK },
+                            },
+                            '& .MuiPickersDay-root:focus.Mui-selected': {
+                                bgcolor: THEME_COLOR,
+                            },
+                        }
+                    }
+                }}
             >
                 <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={locale}>
                     <StaticDatePicker
@@ -1570,6 +1571,21 @@ const OrderHistory: React.FC = () => {
                 transformOrigin={{
                     vertical: 'top',
                     horizontal: 'center',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: 2,
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                            '& .MuiPickersDay-root.Mui-selected': {
+                                bgcolor: THEME_COLOR,
+                                '&:hover': { bgcolor: THEME_COLOR_DARK },
+                            },
+                            '& .MuiPickersDay-root:focus.Mui-selected': {
+                                bgcolor: THEME_COLOR,
+                            },
+                        }
+                    }
                 }}
             >
                 <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={locale}>

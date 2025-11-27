@@ -1854,6 +1854,11 @@
       "weekly": "Weekly"
     },
     "sessionTimeout": "Session Timeout (minutes)",
+    "themeStyle": "Theme Style",
+    "themeColorful": "Colorful Modern",
+    "themeColorfulDesc": "Vibrant colors for each module, modern and lively interface",
+    "themeMonochrome": "Monochrome Professional",
+    "themeMonochromeDesc": "Clean black and white design, minimalist and professional",
     "debugMode": "Enable Debug Mode",
     "usageStatistics": "Send Usage Statistics",
     "contactPerson": "Contact Person",

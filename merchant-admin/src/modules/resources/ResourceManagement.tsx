@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import StaffResourceManagement from './components/StaffResourceManagement';
 import RoomResourceManagement from './components/RoomResourceManagement';
 import ResourceAvailabilityView from './components/ResourceAvailabilityView';
@@ -48,11 +49,12 @@ function TabPanel(props: TabPanelProps) {
 const ResourceManagement: React.FC = () => {
     const { t } = useTranslation();
     const { hasPermission } = usePermission();
+    const { themeMode } = useTheme();
     const [tabValue, setTabValue] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
-    
+
     // 立即检查缓存，避免初始loading状态
     const [initialConfig] = useState<MerchantConfig | null>(() => {
         try {
@@ -64,8 +66,9 @@ const ResourceManagement: React.FC = () => {
         }
     });
 
-    // 主题色
-    const themeColor = '#3B82F6';
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const themeColor = isMonochrome ? '#1a1a1a' : '#3B82F6';
 
     // 使用配置预加载器 - 零闪烁加载
     useEffect(() => {
@@ -309,11 +312,13 @@ const ResourceManagement: React.FC = () => {
                                 variant="scrollable"
                                 scrollButtons="auto"
                                 sx={{
-                                    backgroundColor: '#f8fafc',
+                                    backgroundColor: '#fafafa',
                                     '& .MuiTab-root': {
-                                        color: 'text.secondary',
+                                        color: '#666',
                                         fontWeight: 500,
-                                        py: 2,
+                                        fontSize: '0.875rem',
+                                        textTransform: 'none',
+                                        py: 1.5,
                                         minWidth: 120,
                                         '&.Mui-selected': {
                                             color: themeColor,
@@ -443,7 +448,7 @@ const ResourceManagement: React.FC = () => {
                             component="h1"
                             sx={{
                                 fontWeight: 600,
-                                color: '#3B82F6',
+                                color: themeColor,
                                 mb: 0.5,
                             }}
                         >

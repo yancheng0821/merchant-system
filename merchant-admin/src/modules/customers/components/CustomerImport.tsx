@@ -54,6 +54,7 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { customerApi } from '../../../services/api';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface CustomerImportProps {
   open: boolean;
@@ -128,6 +129,12 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
+
   const systemFields = getSystemFields(t);
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -691,7 +698,7 @@ export const CustomerImport: React.FC<CustomerImportProps> = ({
     >
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#EC4899' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
             {t('customers.import.title')}
           </Typography>
           <IconButton onClick={handleClose}>

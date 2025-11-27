@@ -90,6 +90,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { ServiceCategory, serviceCategoryApi, handleApiError } from '../../../services/api';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ServiceCategoryDialogProps {
   open: boolean;
@@ -107,6 +108,7 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
   tenantId,
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
   const [localCategories, setLocalCategories] = useState<ServiceCategory[]>([]);
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -127,8 +129,10 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 统一的主题色
-  const themeColor = '#06B6D4';
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const themeColor = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const themeColorDark = isMonochrome ? '#333' : '#0891B2';
 
   React.useEffect(() => {
     if (open) {
@@ -538,62 +542,72 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
       PaperProps={{
         sx: {
           minHeight: '70vh',
-          borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(6, 182, 212, 0.12)',
+          borderRadius: 2.5,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
         }
       }}
     >
-      <DialogTitle sx={{ 
-        borderBottom: `1px solid ${themeColor}20`,
-        color: themeColor,
-        fontWeight: 600,
-        background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+      <DialogTitle sx={{
+        py: 2,
+        px: 3,
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
       }}>
-        {t('services.manageCategoriesTitle')}
+        <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: themeColor }}>
+          {t('services.manageCategoriesTitle')}
+        </Typography>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3, backgroundColor: '#f8fafc' }}>
+      <DialogContent dividers sx={{ p: 3, backgroundColor: '#fafafa' }}>
         {(isAdding || editingCategory) && formData.name.trim() && formData.description.trim() && (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            {isAdding 
+          <Alert
+            severity="info"
+            sx={{
+              mb: 2.5,
+              borderRadius: 1.5,
+              bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.06)' : 'rgba(6, 182, 212, 0.06)',
+              color: isMonochrome ? '#1a1a1a' : '#0891B2',
+              fontSize: '0.8125rem',
+              '& .MuiAlert-icon': {
+                color: themeColor,
+              },
+            }}
+          >
+            {isAdding
               ? t('services.unsavedNewCategoryHint')
               : t('services.unsavedEditCategoryHint')
             }
           </Alert>
         )}
-        <Grid container spacing={3}>
+        <Grid container spacing={2.5}>
           {/* 分类列表 */}
           <Grid item xs={12} md={8}>
-            <Box 
-              display="flex" 
-              justifyContent="space-between" 
-              alignItems="center" 
-              mb={3}
-              sx={{
-                p: 2,
-                backgroundColor: 'white',
-                borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              }}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
             >
-              <Typography variant="h5" sx={{ color: themeColor, fontWeight: 600 }}>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
                 {t('services.existingCategories')}
               </Typography>
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                size="small"
+                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                 onClick={handleAddNew}
                 sx={{
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #0891B2)`,
-                  boxShadow: `0 4px 15px ${themeColor}30`,
-                  fontWeight: 600,
+                  borderRadius: 1.5,
+                  bgcolor: themeColor,
+                  boxShadow: 'none',
+                  fontWeight: 500,
+                  fontSize: '0.8125rem',
+                  textTransform: 'none',
+                  px: 2,
+                  py: 0.75,
                   '&:hover': {
-                    background: `linear-gradient(135deg, #0891B2, #0E7490)`,
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 6px 20px ${themeColor}40`,
+                    bgcolor: themeColorDark,
+                    boxShadow: 'none',
                   },
-                  transition: 'all 0.3s ease',
                 }}
               >
                 {t('services.addCategory')}
@@ -602,120 +616,115 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
 
             <Box
               sx={{
-                backgroundColor: 'white',
-                borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                backgroundColor: '#fff',
+                borderRadius: 2,
+                border: '1px solid rgba(0,0,0,0.08)',
                 overflow: 'hidden',
               }}
             >
               <List sx={{ p: 0 }}>
-                {localCategories.map((category, index) => (
-                  <ListItem 
-                    key={category.id} 
-                    divider={index < localCategories.length - 1}
-                    sx={{
-                      py: 2,
-                      px: 3,
-                      '&:hover': {
-                        backgroundColor: `${themeColor}08`,
-                      },
-                      transition: 'background-color 0.2s ease',
-                    }}
-                  >
-                    <ListItemText
-                      primary={
-                        <Box display="flex" alignItems="center" gap={2}>
-                          <Box 
-                            sx={{ 
-                              color: 'white',
-                              backgroundColor: category.color,
-                              borderRadius: 2,
-                              p: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minWidth: 40,
-                              height: 40,
-                            }}
-                          >
-                            {getCategoryIcon(category.icon || 'hair')}
+                {localCategories.map((category, index) => {
+                  const isActive = category.status === 'ACTIVE';
+
+                  return (
+                    <ListItem
+                      key={category.id}
+                      divider={index < localCategories.length - 1}
+                      sx={{
+                        py: 1.5,
+                        px: 2,
+                        '&:hover': {
+                          backgroundColor: 'rgba(0,0,0,0.02)',
+                        },
+                      }}
+                    >
+                      <ListItemText
+                        primary={
+                          <Box display="flex" alignItems="center" gap={1.5}>
+                            <Box
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 1.5,
+                                bgcolor: `${category.color}15`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: category.color,
+                              }}
+                            >
+                              {getCategoryIcon(category.icon || 'hair')}
+                            </Box>
+                            <Box>
+                              <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                                {category.name}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={isActive ? t('services.active') : t('services.inactive')}
+                              size="small"
+                              sx={{
+                                bgcolor: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                                color: isActive ? '#10B981' : '#6B7280',
+                                fontWeight: 600,
+                                fontSize: '0.7rem',
+                                height: 20,
+                              }}
+                            />
                           </Box>
-                          <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              {category.name}
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label={category.status === 'ACTIVE' ? t('services.active') : t('services.inactive')}
+                        }
+                        secondary={
+                          <Typography sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem', color: '#888' }}>
+                            {category.description}
+                          </Typography>
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          <Switch
+                            checked={isActive}
+                            onChange={() => handleToggleActive(category)}
+                            size="small"
                             sx={{
-                              backgroundColor: category.status === 'ACTIVE' 
-                                ? 'rgba(16, 185, 129, 0.1)' 
-                                : 'rgba(107, 114, 128, 0.1)',
-                              color: category.status === 'ACTIVE' ? '#10B981' : '#6B7280',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              height: 24,
+                              '& .MuiSwitch-switchBase.Mui-checked': {
+                                color: themeColor,
+                              },
+                              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                backgroundColor: themeColor,
+                              },
                             }}
                           />
+                          <IconButton
+                            onClick={() => handleEdit(category)}
+                            size="small"
+                            sx={{
+                              color: '#999',
+                              '&:hover': {
+                                backgroundColor: 'rgba(0,0,0,0.04)',
+                                color: themeColor,
+                              },
+                            }}
+                          >
+                            <EditIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => handleDelete(category)}
+                            size="small"
+                            sx={{
+                              color: '#999',
+                              '&:hover': {
+                                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                                color: '#EF4444',
+                              },
+                            }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
                         </Box>
-                      }
-                      secondary={
-                        <Typography 
-                          variant="caption" 
-                          color="text.secondary"
-                          sx={{ mt: 1, display: 'block' }}
-                        >
-                          {category.description}
-                        </Typography>
-                      }
-                    />
-                    <ListItemSecondaryAction>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Switch
-                          checked={category.status === 'ACTIVE'}
-                          onChange={() => handleToggleActive(category)}
-                          size="small"
-                          sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: themeColor,
-                            },
-                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: themeColor,
-                            },
-                          }}
-                        />
-                        <IconButton
-                          onClick={() => handleEdit(category)}
-                          size="small"
-                          sx={{
-                            color: themeColor,
-                            '&:hover': {
-                              backgroundColor: `${themeColor}15`,
-                              transform: 'scale(1.1)',
-                            },
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          <EditIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handleDelete(category)}
-                          size="small"
-                          sx={{
-                            color: '#EF4444',
-                            '&:hover': {
-                              backgroundColor: '#EF444415',
-                              transform: 'scale(1.1)',
-                            },
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          <DeleteIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Box>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  );
+                })}
               </List>
             </Box>
           </Grid>
@@ -725,29 +734,29 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
             {(isAdding || editingCategory) && (
               <Box
                 sx={{
-                  backgroundColor: 'white',
-                  borderRadius: 3,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  p: 3,
+                  backgroundColor: '#fff',
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  p: 2.5,
                 }}
               >
-                <Typography 
-                  variant="h5" 
-                  gutterBottom 
-                  sx={{ 
-                    color: themeColor, 
+                <Typography
+                  sx={{
+                    fontSize: '0.875rem',
                     fontWeight: 600,
-                    mb: 3,
-                    pb: 2,
-                    borderBottom: `2px solid ${themeColor}20`,
+                    color: '#1a1a1a',
+                    mb: 2,
+                    pb: 1.5,
+                    borderBottom: '1px solid rgba(0,0,0,0.06)',
                   }}
                 >
                   {isAdding ? t('services.addNewCategory') : t('services.editCategory')}
                 </Typography>
 
-                <Box display="flex" flexDirection="column" gap={3}>
+                <Box display="flex" flexDirection="column" gap={2}>
                   <TextField
                     fullWidth
+                    size="small"
                     label={t('services.categoryName')}
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -756,88 +765,83 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                     required
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: `${themeColor}80`,
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: themeColor,
-                        },
+                        borderRadius: 1.5,
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: themeColor, borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root.Mui-focused': { color: themeColor },
                     }}
                   />
 
                   <TextField
                     fullWidth
+                    size="small"
                     label={t('services.categoryDescription')}
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     error={!!errors.description}
                     helperText={errors.description}
                     multiline
-                    rows={3}
+                    rows={2}
                     required
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: `${themeColor}80`,
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: themeColor,
-                        },
+                        borderRadius: 1.5,
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: themeColor, borderWidth: '1px' },
                       },
+                      '& .MuiInputLabel-root.Mui-focused': { color: themeColor },
                     }}
                   />
 
 
 
                   <Box>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#666', mb: 1 }}>
                       {t('services.categoryIcon')}
                     </Typography>
                     <Box
                       sx={{
-                        p: 2,
-                        backgroundColor: '#f8fafc',
-                        borderRadius: 2,
-                        border: '1px solid #e2e8f0',
-                        maxHeight: 200,
+                        p: 1.5,
+                        backgroundColor: '#fafafa',
+                        borderRadius: 1.5,
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        maxHeight: 150,
                         overflowY: 'auto',
                       }}
                     >
-                      <Grid container spacing={1}>
+                      <Grid container spacing={0.5}>
                         {iconOptions.map((option) => (
                           <Grid item key={option.value}>
                             <Box
                               sx={{
-                                width: 40,
-                                height: 40,
+                                width: 32,
+                                height: 32,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                borderRadius: 2,
+                                borderRadius: 1,
                                 cursor: 'pointer',
-                                border: formData.icon === option.value 
-                                  ? `2px solid ${themeColor}` 
-                                  : '1px solid #e2e8f0',
-                                backgroundColor: formData.icon === option.value 
-                                  ? `${themeColor}10` 
-                                  : 'white',
-                                color: formData.icon === option.value 
-                                  ? themeColor 
-                                  : '#6B7280',
-                                transition: 'all 0.2s ease',
+                                border: formData.icon === option.value
+                                  ? `2px solid ${themeColor}`
+                                  : '1px solid transparent',
+                                backgroundColor: formData.icon === option.value
+                                  ? `${themeColor}10`
+                                  : 'transparent',
+                                color: formData.icon === option.value
+                                  ? themeColor
+                                  : '#888',
                                 '&:hover': {
-                                  transform: 'scale(1.05)',
-                                  backgroundColor: `${themeColor}08`,
+                                  backgroundColor: 'rgba(0,0,0,0.04)',
                                   color: themeColor,
                                 },
                               }}
                               onClick={() => setFormData(prev => ({ ...prev, icon: option.value }))}
                               title={option.label}
                             >
-                              {option.icon}
+                              {React.cloneElement(option.icon as React.ReactElement, { sx: { fontSize: 18 } })}
                             </Box>
                           </Grid>
                         ))}
@@ -846,55 +850,35 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                   </Box>
 
                   <Box>
-                    <Typography variant="body2" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#666', mb: 1 }}>
                       {t('services.categoryColor')}
                     </Typography>
                     <Box
                       sx={{
-                        p: 2,
-                        backgroundColor: '#f8fafc',
-                        borderRadius: 2,
-                        border: '1px solid #e2e8f0',
-                        maxHeight: 240,
+                        p: 1.5,
+                        backgroundColor: '#fafafa',
+                        borderRadius: 1.5,
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        maxHeight: 150,
                         overflowY: 'auto',
-                        '&::-webkit-scrollbar': {
-                          width: '6px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                          backgroundColor: '#f1f1f1',
-                          borderRadius: '3px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                          backgroundColor: themeColor,
-                          borderRadius: '3px',
-                          '&:hover': {
-                            backgroundColor: '#0891B2',
-                          },
-                        },
                       }}
                     >
-                      <Grid container spacing={1}>
+                      <Grid container spacing={0.5}>
                         {colorOptions.map((color) => (
                           <Grid item key={color} xs="auto">
                             <Box
                               sx={{
-                                width: 28,
-                                height: 28,
+                                width: 24,
+                                height: 24,
                                 backgroundColor: color,
-                                borderRadius: 2,
+                                borderRadius: 1,
                                 cursor: 'pointer',
-                                border: formData.color === color 
-                                  ? `2px solid ${themeColor}` 
-                                  : '1px solid #e2e8f0',
-                                boxShadow: formData.color === color 
-                                  ? `0 0 0 2px ${themeColor}30` 
-                                  : 'none',
-                                transition: 'all 0.2s ease',
+                                border: formData.color === color
+                                  ? `2px solid ${themeColor}`
+                                  : '1px solid rgba(0,0,0,0.1)',
                                 position: 'relative',
                                 '&:hover': {
-                                  transform: 'scale(1.15)',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                  zIndex: 1,
+                                  transform: 'scale(1.1)',
                                 },
                                 '&:after': formData.color === color ? {
                                   content: '""',
@@ -902,11 +886,11 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                                   top: '50%',
                                   left: '50%',
                                   transform: 'translate(-50%, -50%)',
-                                  width: '8px',
-                                  height: '8px',
+                                  width: '6px',
+                                  height: '6px',
                                   backgroundColor: 'white',
                                   borderRadius: '50%',
-                                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
                                 } : {},
                               }}
                               onClick={() => setFormData(prev => ({ ...prev, color }))}
@@ -918,40 +902,42 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
                     </Box>
                   </Box>
 
-                  <Box display="flex" gap={2} mt={3}>
+                  <Box display="flex" gap={1.5} mt={2}>
                     <Button
+                      size="small"
                       variant="contained"
                       onClick={handleSaveCategory}
                       disabled={loading}
                       fullWidth
                       sx={{
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${themeColor}, #0891B2)`,
-                        boxShadow: `0 4px 15px ${themeColor}30`,
-                        fontWeight: 600,
-                        py: 1.5,
+                        borderRadius: 1.5,
+                        bgcolor: themeColor,
+                        boxShadow: 'none',
+                        fontWeight: 500,
+                        fontSize: '0.8125rem',
+                        textTransform: 'none',
+                        py: 0.75,
                         '&:hover': {
-                          background: `linear-gradient(135deg, #0891B2, #0E7490)`,
-                          transform: 'translateY(-1px)',
-                          boxShadow: `0 6px 20px ${themeColor}40`,
+                          bgcolor: themeColorDark,
+                          boxShadow: 'none',
                         },
-                        transition: 'all 0.3s ease',
                       }}
                     >
                       {loading ? t('common.saving') : (isAdding ? t('services.create') : t('services.update'))}
                     </Button>
                     <Button
-                      variant="outlined"
+                      size="small"
                       onClick={handleCancelEdit}
                       fullWidth
                       sx={{
-                        borderRadius: 2,
-                        borderColor: '#6B7280',
-                        color: '#6B7280',
-                        py: 1.5,
+                        borderRadius: 1.5,
+                        border: '1px solid rgba(0,0,0,0.12)',
+                        color: '#666',
+                        fontSize: '0.8125rem',
+                        textTransform: 'none',
+                        py: 0.75,
                         '&:hover': {
-                          borderColor: '#4B5563',
-                          backgroundColor: '#F9FAFB',
+                          backgroundColor: 'rgba(0,0,0,0.04)',
                         },
                       }}
                     >
@@ -965,32 +951,32 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
             {!isAdding && !editingCategory && (
               <Box
                 sx={{
-                  backgroundColor: 'white',
-                  borderRadius: 3,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  p: 4,
+                  backgroundColor: '#fff',
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  p: 3,
                   textAlign: 'center',
                 }}
               >
                 <Box
                   sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '50%',
-                    backgroundColor: `${themeColor}15`,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 1.5,
+                    backgroundColor: `${themeColor}10`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     mx: 'auto',
-                    mb: 2,
+                    mb: 1.5,
                   }}
                 >
-                  <EditIcon sx={{ fontSize: 32, color: themeColor }} />
+                  <EditIcon sx={{ fontSize: 24, color: themeColor }} />
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a', mb: 0.5 }}>
                   {t('services.selectCategoryToEdit')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                   {t('services.selectCategoryToEditDescription')}
                 </Typography>
               </Box>
@@ -999,43 +985,40 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
         </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ 
-        p: 3, 
-        borderTop: `1px solid ${themeColor}20`,
-        backgroundColor: '#f8fafc',
-        gap: 2,
-      }}>
-        <Button 
+      <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <Button
+          size="small"
           onClick={onClose}
-          sx={{ 
-            borderRadius: 2,
-            px: 4,
-            py: 1.5,
-            color: '#6B7280',
-            '&:hover': {
-              backgroundColor: '#F3F4F6',
-            },
+          sx={{
+            borderRadius: 1.5,
+            px: 2.5,
+            py: 0.75,
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            color: '#666',
+            textTransform: 'none',
           }}
         >
           {t('services.cancel')}
         </Button>
-        <Button 
-          onClick={handleSave} 
+        <Button
+          size="small"
+          onClick={handleSave}
           variant="contained"
           disabled={loading}
           sx={{
-            borderRadius: 2,
-            px: 4,
-            py: 1.5,
-            background: `linear-gradient(135deg, ${themeColor}, #0891B2)`,
-            boxShadow: `0 4px 15px ${themeColor}30`,
-            fontWeight: 600,
+            borderRadius: 1.5,
+            px: 2.5,
+            py: 0.75,
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            bgcolor: themeColor,
+            boxShadow: 'none',
+            textTransform: 'none',
             '&:hover': {
-              background: `linear-gradient(135deg, #0891B2, #0E7490)`,
-              transform: 'translateY(-1px)',
-              boxShadow: `0 6px 20px ${themeColor}40`,
+              bgcolor: themeColorDark,
+              boxShadow: 'none',
             },
-            transition: 'all 0.3s ease',
           }}
         >
           {loading ? t('common.saving') : (

@@ -14,12 +14,9 @@ import {
   TableRow,
   Chip,
   Box,
-  Avatar,
   IconButton,
   Tabs,
   Tab,
-  Card,
-  CardContent,
   Grid,
   TablePagination,
   CircularProgress,
@@ -29,22 +26,17 @@ import {
 import {
   Close as CloseIcon,
   CalendarToday as CalendarIcon,
-  AccessTime as TimeIcon,
-  CheckCircle as CheckIcon,
-  Cancel as CancelIcon,
-  Schedule as ScheduleIcon,
   Star as StarIcon,
   Groups as GroupsIcon,
   TrendingUp as TrendingUpIcon,
   AccountBalanceWallet as WalletIcon,
   RateReview as ReviewIcon,
-  Person as PersonIcon,
-  MeetingRoom as MeetingRoomIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
 import { Customer, Appointment, AppointmentStats, appointmentApi, handleApiError } from '../../../services/api';
 import { CurrencyUtils } from '../../../config/constants';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 
 const AppointmentHistory: React.FC<{
@@ -57,6 +49,18 @@ const AppointmentHistory: React.FC<{
   customer,
 }) => {
     const { t } = useTranslation();
+    const { themeMode } = useTheme();
+
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
+
+    // 统计卡片图标颜色 - 极简模式下使用灰色调
+    const STATS_COLOR_1 = isMonochrome ? '#1a1a1a' : '#6366F1';
+    const STATS_COLOR_2 = isMonochrome ? '#4a4a4a' : '#10B981';
+    const STATS_COLOR_3 = isMonochrome ? '#6a6a6a' : '#EC4899';
+    const STATS_COLOR_4 = isMonochrome ? '#8a8a8a' : '#F59E0B';
+
     const [activeTab, setActiveTab] = useState(0);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -144,26 +148,6 @@ const AppointmentHistory: React.FC<{
       setPage(0);
     };
 
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'CONFIRMED': return 'primary';
-        case 'COMPLETED': return 'success';
-        case 'CANCELLED': return 'error';
-        case 'NO_SHOW': return 'warning';
-        default: return 'default';
-      }
-    };
-
-    const getStatusIcon = (status: string) => {
-      switch (status) {
-        case 'CONFIRMED': return <ScheduleIcon />;
-        case 'COMPLETED': return <CheckIcon />;
-        case 'CANCELLED': return <CancelIcon />;
-        case 'NO_SHOW': return <CancelIcon />;
-        default: return <ScheduleIcon />;
-      }
-    };
-
     // 获取当前语言设置
     const currentLocale = i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
 
@@ -200,8 +184,8 @@ const AppointmentHistory: React.FC<{
         PaperProps={{
           sx: {
             minHeight: '80vh',
-            borderRadius: 3,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -210,49 +194,51 @@ const AppointmentHistory: React.FC<{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            py: 3,
+            py: 2,
+            px: 3,
           }}
         >
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box
               sx={{
-                width: 48,
-                height: 48,
-                bgcolor: '#6366F1',
-                color: 'white',
-                fontSize: '1.2rem',
-                fontWeight: 600,
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: alpha(THEME_COLOR, 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {customer?.firstName?.charAt(0)}{customer?.lastName?.charAt(0)}
-            </Avatar>
+              <CalendarIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
+            </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
                 {customer?.firstName} {customer?.lastName}
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
                 {t('customers.appointmentHistory')}
               </Typography>
             </Box>
           </Box>
           <IconButton
             onClick={onClose}
-            size="large"
+            size="small"
             sx={{
-              color: 'text.secondary',
+              color: '#999',
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.04)',
               }
             }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </DialogTitle>
 
         <DialogContent dividers sx={{ p: 3 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" py={8}>
-              <CircularProgress size={48} sx={{ color: '#EC4899' }} />
+              <CircularProgress size={48} sx={{ color: THEME_COLOR }} />
             </Box>
           ) : error ? (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -265,8 +251,8 @@ const AppointmentHistory: React.FC<{
                 <Grid item xs={6} sm={3}>
                   <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
                     <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#6366F1', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <GroupsIcon sx={{ fontSize: 18, color: '#6366F1' }} />
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_1, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <GroupsIcon sx={{ fontSize: 18, color: STATS_COLOR_1 }} />
                       </Box>
                       <Box>
                         <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
@@ -282,8 +268,8 @@ const AppointmentHistory: React.FC<{
                 <Grid item xs={6} sm={3}>
                   <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
                     <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#10B981', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <TrendingUpIcon sx={{ fontSize: 18, color: '#10B981' }} />
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_2, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUpIcon sx={{ fontSize: 18, color: STATS_COLOR_2 }} />
                       </Box>
                       <Box>
                         <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
@@ -299,8 +285,8 @@ const AppointmentHistory: React.FC<{
                 <Grid item xs={6} sm={3}>
                   <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
                     <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#EC4899', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <WalletIcon sx={{ fontSize: 18, color: '#EC4899' }} />
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_3, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <WalletIcon sx={{ fontSize: 18, color: STATS_COLOR_3 }} />
                       </Box>
                       <Box>
                         <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
@@ -316,8 +302,8 @@ const AppointmentHistory: React.FC<{
                 <Grid item xs={6} sm={3}>
                   <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
                     <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha('#F59E0B', 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ReviewIcon sx={{ fontSize: 18, color: '#F59E0B' }} />
+                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_4, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ReviewIcon sx={{ fontSize: 18, color: STATS_COLOR_4 }} />
                       </Box>
                       <Box>
                         <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
@@ -334,24 +320,28 @@ const AppointmentHistory: React.FC<{
             </>
           )}
 
-          {/* 现代化标签页 */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          {/* 标签页 */}
+          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', mb: 2.5 }}>
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
               sx={{
+                minHeight: 40,
                 '& .MuiTab-root': {
                   textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
+                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                  minHeight: 40,
+                  py: 1,
+                  px: 2,
+                  color: '#666',
                   '&.Mui-selected': {
-                    color: '#EC4899',
+                    color: THEME_COLOR,
                   },
                 },
                 '& .MuiTabs-indicator': {
-                  backgroundColor: '#EC4899',
-                  height: 3,
-                  borderRadius: '3px 3px 0 0',
+                  backgroundColor: THEME_COLOR,
+                  height: 2,
                 },
               }}
             >
@@ -362,24 +352,25 @@ const AppointmentHistory: React.FC<{
             </Tabs>
           </Box>
 
-          {/* 现代化预约记录表格 */}
-          <Card
+          {/* 预约记录表格 */}
+          <Box
             sx={{
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.08)',
               overflow: 'hidden',
+              bgcolor: '#fff',
             }}
           >
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('customers.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.dateTime')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.resource')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.status')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.price')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.rating')}</TableCell>
+                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.service')}</TableCell>
+                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.dateTime')}</TableCell>
+                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.resource')}</TableCell>
+                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.status')}</TableCell>
+                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.price')}</TableCell>
+                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.rating')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -388,112 +379,100 @@ const AppointmentHistory: React.FC<{
                       key={appointment.id}
                       sx={{
                         '&:hover': {
-                          backgroundColor: alpha('#EC4899', 0.04),
+                          backgroundColor: '#fafafa',
                         },
-                        transition: 'background-color 0.2s ease',
                       }}
                     >
                       <TableCell>
                         <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {t('customers.appointmentService')}
-                          </Typography>
                           {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
-                            <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
+                            <Box display="flex" flexWrap="wrap" gap={0.5}>
                               {appointment.appointmentServices.map((service, index) => (
                                 <Chip
                                   key={index}
                                   label={service.serviceName}
                                   size="small"
-                                  variant="outlined"
                                   sx={{
-                                    borderColor: alpha('#EC4899', 0.3),
-                                    color: '#DB2777',
-                                    '&:hover': {
-                                      backgroundColor: alpha('#EC4899', 0.1),
-                                    },
+                                    height: 24,
+                                    fontSize: '0.75rem',
+                                    bgcolor: '#fafafa',
+                                    color: '#1a1a1a',
+                                    border: '1px solid #e0e0e0',
                                   }}
                                 />
                               ))}
                             </Box>
                           ) : (
-                            <Typography variant="body2" color="text.secondary" mt={0.5}>
+                            <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
                               {t('customers.noServiceDetails')}
                             </Typography>
                           )}
-                          <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888', mt: 0.5 }}>
                             {appointment.duration} {t('customers.minutesUnit')}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                          <CalendarIcon sx={{ fontSize: 16, color: '#6366F1' }} />
-                          <Typography variant="body2">
-                            {formatDate(appointment.appointmentDate)}
-                          </Typography>
-                        </Box>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <TimeIcon sx={{ fontSize: 16, color: '#6366F1' }} />
-                          <Typography variant="body2">
-                            {formatTime(appointment.appointmentTime)}
-                          </Typography>
-                        </Box>
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                          {formatDate(appointment.appointmentDate)}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                          {formatTime(appointment.appointmentTime)}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         {appointment.appointmentResources && appointment.appointmentResources.length > 0 ? (
-                          <Box display="flex" flexDirection="column" gap={0.5}>
+                          <Box display="flex" flexDirection="column" gap={0.25}>
                             {appointment.appointmentResources.map((resource, idx) => (
-                              <Box key={idx} display="flex" alignItems="center" gap={0.5}>
-                                {resource.resourceType === 'STAFF' ? (
-                                  <PersonIcon sx={{ fontSize: 14, color: '#6366F1' }} />
-                                ) : (
-                                  <MeetingRoomIcon sx={{ fontSize: 14, color: '#10B981' }} />
-                                )}
-                                <Typography variant="caption">
-                                  {resource.resourceName || t('customers.unassigned')}
-                                  <Typography variant="caption" color="text.secondary" component="span" sx={{ ml: 0.5 }}>
-                                    ({resource.resourceType === 'STAFF' ? t('customers.staff') : t('customers.room')})
-                                  </Typography>
+                              <Typography key={idx} sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                                {resource.resourceName || t('customers.unassigned')}
+                                <Typography component="span" sx={{ fontSize: '0.75rem', color: '#888', ml: 0.5 }}>
+                                  ({resource.resourceType === 'STAFF' ? t('customers.staff') : t('customers.room')})
                                 </Typography>
-                              </Box>
+                              </Typography>
                             ))}
                           </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
                             {t('customers.unassigned')}
                           </Typography>
                         )}
                       </TableCell>
                       <TableCell>
                         <Chip
-                          icon={getStatusIcon(appointment.status)}
                           label={t(`customers.appointmentStatus.${appointment.status.toLowerCase()}`)}
-                          color={getStatusColor(appointment.status) as any}
                           size="small"
                           sx={{
-                            fontWeight: 600,
-                            '& .MuiChip-icon': {
-                              fontSize: 16,
-                            },
+                            height: 24,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            bgcolor: appointment.status === 'COMPLETED' ? alpha('#10B981', 0.1) :
+                                    appointment.status === 'CONFIRMED' ? alpha('#3B82F6', 0.1) :
+                                    appointment.status === 'CANCELLED' ? alpha('#EF4444', 0.1) :
+                                    alpha('#F59E0B', 0.1),
+                            color: appointment.status === 'COMPLETED' ? '#059669' :
+                                   appointment.status === 'CONFIRMED' ? '#2563EB' :
+                                   appointment.status === 'CANCELLED' ? '#DC2626' :
+                                   '#D97706',
+                            border: 'none',
                           }}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#EC4899' }}>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
                           {formatCurrency(appointment.totalAmount || 0)}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         {appointment.rating ? (
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <StarIcon sx={{ fontSize: 14, color: '#F59E0B' }} />
+                            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
                               {appointment.rating}
                             </Typography>
-                            <StarIcon sx={{ fontSize: 16, color: '#EC4899' }} />
                           </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
                             -
                           </Typography>
                         )}
@@ -503,12 +482,9 @@ const AppointmentHistory: React.FC<{
                   {paginatedAppointments.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} align="center">
-                        <Box py={6}>
-                          <Typography variant="h6" color="text.secondary" gutterBottom>
+                        <Box py={4}>
+                          <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
                             {t('customers.noAppointmentRecords')}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {t('customers.customerHasNoAppointments')}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -527,12 +503,11 @@ const AppointmentHistory: React.FC<{
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[5, 10, 25]}
               sx={{
-                borderTop: '1px solid',
-                borderColor: 'divider',
-                backgroundColor: '#f8fafc',
+                borderTop: '1px solid rgba(0,0,0,0.08)',
+                backgroundColor: '#fafafa',
               }}
             />
-          </Card>
+          </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>

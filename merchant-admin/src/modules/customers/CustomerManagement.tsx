@@ -7,13 +7,19 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import Customers from './Customers';
 import MembershipTiers from './MembershipTiers';
 
 const CustomerManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
   const [tabValue, setTabValue] = useState(0);
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
 
   // 定义所有tabs及其对应的权限
   const allTabsConfig = [
@@ -56,7 +62,7 @@ const CustomerManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#EC4899',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -84,13 +90,13 @@ const CustomerManagement: React.FC = () => {
               minHeight: 56,
               '&.Mui-selected': {
                 fontWeight: 600,
-                color: '#EC4899',
+                color: THEME_COLOR,
               },
             },
             '& .MuiTabs-indicator': {
               height: 3,
               borderRadius: '3px 3px 0 0',
-              backgroundColor: '#EC4899',
+              backgroundColor: THEME_COLOR,
             },
           }}
         >

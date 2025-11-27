@@ -42,12 +42,16 @@ import {
   CheckBoxOutlineBlank as CheckBoxBlankIcon,
   Receipt as ReceiptIcon,
   LocalPostOffice as PostCodeIcon,
+  Palette as PaletteIcon,
+  ColorLens as ColorfulIcon,
+  Contrast as MonochromeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTax } from '../../contexts/TaxContext';
 import { useSession } from '../../contexts/SessionContext';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme, ThemeMode } from '../../contexts/ThemeContext';
 import { merchantConfigApi } from '../../services/api';
 import StripeConnectTab from './StripeConnectTab';
 import BillingTab from './BillingTab';
@@ -105,6 +109,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
   const { hasPermission } = usePermission();
+  const { themeMode, setThemeMode } = useTheme();
   const location = useLocation();
 
   // 权限过滤后的tabs配置
@@ -1356,6 +1361,125 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                       />
                     </Grid>
                   </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Theme Toggle Card */}
+            <Grid item xs={12} md={6}>
+              <Card
+                sx={{
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: 'none',
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" mb={3}>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                        bgcolor: '#f5f5f5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                      }}
+                    >
+                      <PaletteIcon sx={{ fontSize: 18, color: '#666' }} />
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                      {t('settings.themeStyle', 'Theme Style')}
+                    </Typography>
+                  </Box>
+
+                  <Box display="flex" gap={2}>
+                    {/* Colorful Modern Option */}
+                    <Box
+                      onClick={() => setThemeMode('colorful')}
+                      sx={{
+                        flex: 1,
+                        p: 2,
+                        borderRadius: 2,
+                        border: themeMode === 'colorful' ? '2px solid #8B5CF6' : '1px solid #e0e0e0',
+                        bgcolor: themeMode === 'colorful' ? alpha('#8B5CF6', 0.05) : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          borderColor: themeMode === 'colorful' ? '#8B5CF6' : '#bbb',
+                          bgcolor: themeMode === 'colorful' ? alpha('#8B5CF6', 0.08) : '#fafafa',
+                        },
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
+                        <ColorfulIcon sx={{ fontSize: 20, color: '#8B5CF6' }} />
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                          {t('settings.themeColorful', 'Colorful Modern')}
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.5 }}>
+                        {t('settings.themeColorfulDesc', 'Vibrant colors for each module, modern and lively interface')}
+                      </Typography>
+                      {/* Color Preview */}
+                      <Box display="flex" gap={0.5} mt={1.5}>
+                        {['#6366F1', '#8B5CF6', '#EC4899', '#10B981', '#F97316'].map((color) => (
+                          <Box
+                            key={color}
+                            sx={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: '50%',
+                              bgcolor: color,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+
+                    {/* Monochrome Professional Option */}
+                    <Box
+                      onClick={() => setThemeMode('monochrome')}
+                      sx={{
+                        flex: 1,
+                        p: 2,
+                        borderRadius: 2,
+                        border: themeMode === 'monochrome' ? '2px solid #1a1a1a' : '1px solid #e0e0e0',
+                        bgcolor: themeMode === 'monochrome' ? alpha('#1a1a1a', 0.03) : '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          borderColor: themeMode === 'monochrome' ? '#1a1a1a' : '#bbb',
+                          bgcolor: themeMode === 'monochrome' ? alpha('#1a1a1a', 0.05) : '#fafafa',
+                        },
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
+                        <MonochromeIcon sx={{ fontSize: 20, color: '#1a1a1a' }} />
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                          {t('settings.themeMonochrome', 'Monochrome Professional')}
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.5 }}>
+                        {t('settings.themeMonochromeDesc', 'Clean black and white design, minimalist and professional')}
+                      </Typography>
+                      {/* Color Preview */}
+                      <Box display="flex" gap={0.5} mt={1.5}>
+                        {['#1a1a1a', '#333', '#666', '#999', '#ccc'].map((color) => (
+                          <Box
+                            key={color}
+                            sx={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: '50%',
+                              bgcolor: color,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>

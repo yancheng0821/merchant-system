@@ -44,11 +44,19 @@ import { useTranslation } from 'react-i18next';
 import { roleApi, Role } from '../../services/permissionApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const RoleManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#4F46E5';
+  const SECONDARY_COLOR = isMonochrome ? '#1a1a1a' : '#8B5CF6';
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -196,56 +204,58 @@ const RoleManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 搜索和创建区域 - 匹配User Management风格 */}
+      {/* 简约搜索和创建区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ py: 2, px: 2.5 }}>
           <Box display="flex" gap={2} alignItems="center">
             <TextField
               fullWidth
+              size="small"
               placeholder={t('rbac.searchRoles')}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#6366F1',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#6366F1',
-                  },
+                  borderRadius: 1.5,
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                 },
               }}
             />
             {hasPermission('rbac:create_role') && (
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                size="small"
+                startIcon={<AddIcon sx={{ fontSize: 18 }} />}
                 onClick={handleCreate}
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   textTransform: 'none',
-                  fontWeight: 600,
+                  fontWeight: 500,
                   whiteSpace: 'nowrap',
-                  px: 3,
-                  background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-                  boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
+                  px: 2.5,
+                  py: 0.75,
+                  fontSize: '0.8125rem',
+                  bgcolor: THEME_COLOR,
+                  boxShadow: 'none',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
-                    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.4)',
+                    bgcolor: THEME_COLOR_DARK,
+                    boxShadow: 'none',
                   },
                 }}
               >
@@ -256,23 +266,24 @@ const RoleManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 角色列表 - 匹配User Management风格 */}
+      {/* 简约角色列表卡片 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          overflow: 'hidden',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff',
         }}
       >
         <CardContent sx={{ p: 0 }}>
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-              <CircularProgress />
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+              <CircularProgress sx={{ color: THEME_COLOR }} />
             </Box>
           ) : filteredRoles.length === 0 ? (
-            <Box display="flex" flexDirection="column" alignItems="center" py={8}>
-              <RoleIcon sx={{ fontSize: 64, color: '#CBD5E1', mb: 2 }} />
-              <Typography color="text.secondary">
+            <Box display="flex" flexDirection="column" alignItems="center" py={6}>
+              <RoleIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
+              <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
                 {searchTerm ? t('rbac.noSearchResults') : t('rbac.noRoles')}
               </Typography>
             </Box>
@@ -280,29 +291,29 @@ const RoleManagement: React.FC = () => {
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.roleName')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.roleCode')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.displayName')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.description')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.level')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.isSystem')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.status')}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                       {t('rbac.actions')}
                     </TableCell>
                   </TableRow>
@@ -311,15 +322,14 @@ const RoleManagement: React.FC = () => {
                   {filteredRoles.map((role) => (
                     <TableRow
                       key={role.id}
+                      hover
                       sx={{
-                        '&:hover': {
-                          backgroundColor: alpha('#6366F1', 0.04),
-                        },
-                        transition: 'background-color 0.2s ease',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                        '& td': { py: 1.5, fontSize: '0.8125rem' }
                       }}
                     >
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                           {translateRoleName(role.roleName)}
                         </Typography>
                       </TableCell>
@@ -328,24 +338,24 @@ const RoleManagement: React.FC = () => {
                           label={role.roleCode}
                           size="small"
                           sx={{
-                            backgroundColor: alpha('#6366F1', 0.1),
-                            color: '#6366F1',
+                            backgroundColor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
                             fontWeight: 600,
                             fontSize: '0.75rem',
-                            height: 24,
+                            height: 22,
                           }}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                           {role.displayName || '-'}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography
-                          variant="body2"
-                          color="text.secondary"
                           sx={{
+                            fontSize: '0.8125rem',
+                            color: '#888',
                             maxWidth: 300,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -360,7 +370,7 @@ const RoleManagement: React.FC = () => {
                           label={role.level}
                           size="small"
                           variant="outlined"
-                          sx={{ fontSize: '0.75rem' }}
+                          sx={{ fontSize: '0.75rem', height: 22, borderColor: '#ddd' }}
                         />
                       </TableCell>
                       <TableCell>
@@ -369,11 +379,11 @@ const RoleManagement: React.FC = () => {
                             label={t('rbac.systemRole')}
                             size="small"
                             sx={{
-                              backgroundColor: alpha('#8B5CF6', 0.1),
-                              color: '#8B5CF6',
+                              backgroundColor: alpha(SECONDARY_COLOR, 0.1),
+                              color: SECONDARY_COLOR,
                               fontWeight: 600,
                               fontSize: '0.75rem',
-                              height: 24,
+                              height: 22,
                             }}
                           />
                         ) : (
@@ -381,7 +391,7 @@ const RoleManagement: React.FC = () => {
                             label={t('rbac.customRole')}
                             size="small"
                             variant="outlined"
-                            sx={{ fontSize: '0.75rem', height: 24 }}
+                            sx={{ fontSize: '0.75rem', height: 22, borderColor: '#ddd', color: '#666' }}
                           />
                         )}
                       </TableCell>
@@ -395,7 +405,7 @@ const RoleManagement: React.FC = () => {
                               color: '#10B981',
                               fontWeight: 600,
                               fontSize: '0.75rem',
-                              height: 24,
+                              height: 22,
                             }}
                           />
                         ) : (
@@ -407,24 +417,24 @@ const RoleManagement: React.FC = () => {
                               color: '#EF4444',
                               fontWeight: 600,
                               fontSize: '0.75rem',
-                              height: 24,
+                              height: 22,
                             }}
                           />
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        <Box display="flex" justifyContent="flex-end" gap={1}>
+                        <Box display="flex" justifyContent="flex-end" gap={0.5}>
                           {hasPermission('rbac:update_role') && (
                             <Tooltip title={t('common.update')}>
                               <IconButton
                                 size="small"
                                 onClick={() => handleEdit(role)}
                                 sx={{
-                                  color: '#6366F1',
-                                  '&:hover': { backgroundColor: alpha('#6366F1', 0.1) },
+                                  color: THEME_COLOR,
+                                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
                                 }}
                               >
-                                <EditIcon fontSize="small" />
+                                <EditIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -435,10 +445,10 @@ const RoleManagement: React.FC = () => {
                                 onClick={() => handleDelete(role)}
                                 sx={{
                                   color: '#EF4444',
-                                  '&:hover': { backgroundColor: alpha('#EF4444', 0.1) },
+                                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
                                 }}
                               >
-                                <DeleteIcon fontSize="small" />
+                                <DeleteIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -453,287 +463,171 @@ const RoleManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 创建/编辑对话框 - 现代化风格 */}
+      {/* 创建/编辑对话框 - 简约风格 */}
       <Dialog
         open={dialogOpen}
         onClose={() => !saving && setDialogOpen(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            bgcolor: 'background.paper',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           },
         }}
       >
-        {/* 现代化对话框标题 */}
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${alpha('#6366F1', 0.08)}, ${alpha('#8B5CF6', 0.08)})`,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
-          }}
-        >
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <SecurityIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {editingRole ? t('rbac.editRole') : t('rbac.createRole')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {editingRole ? t('rbac.editRoleSubtitle') : t('rbac.createRoleSubtitle')}
-                </Typography>
-              </Box>
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <SecurityIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                {editingRole ? t('rbac.editRole') : t('rbac.createRole')}
+              </Typography>
             </Box>
             <IconButton
+              size="small"
               onClick={() => setDialogOpen(false)}
               disabled={saving}
-              sx={{
-                '&:hover': {
-                  backgroundColor: alpha('#6366F1', 0.1),
-                },
-              }}
+              sx={{ color: '#999' }}
             >
-              <CloseIcon />
+              <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
+        </Box>
 
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            {/* 基本信息 */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                mb: 3,
-                border: '1px solid',
-                borderColor: alpha('#6366F1', 0.2),
-                borderRadius: 2,
-                background: alpha('#6366F1', 0.02),
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 2,
-                    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                  }}
-                >
-                  <SecurityIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#6366F1' }}>
-                  {t('rbac.basicInfo')}
-                </Typography>
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label={t('rbac.roleName')}
-                    value={formData.roleName}
-                    onChange={(e) => setFormData({ ...formData, roleName: e.target.value })}
-                    required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <RoleIcon sx={{ color: '#6366F1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label={t('rbac.roleCode')}
-                    value={formData.roleCode}
-                    onChange={(e) => setFormData({ ...formData, roleCode: e.target.value })}
-                    required
-                    disabled={!!editingRole}
-                    helperText={t('rbac.roleCodeHelper')}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <CodeIcon sx={{ color: editingRole ? 'text.disabled' : '#6366F1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: editingRole ? undefined : '#6366F1',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: editingRole ? undefined : '#6366F1',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label={t('rbac.displayName')}
-                    value={formData.displayName}
-                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <DescriptionIcon sx={{ color: '#6366F1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label={t('rbac.level')}
-                    type="number"
-                    value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value) || 0 })}
-                    helperText={t('rbac.levelHelper')}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LevelIcon sx={{ color: '#6366F1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label={t('rbac.description')}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    multiline
-                    rows={3}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#6366F1',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('rbac.roleName')}
+                value={formData.roleName}
+                onChange={(e) => setFormData({ ...formData, roleName: e.target.value })}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('rbac.roleCode')}
+                value={formData.roleCode}
+                onChange={(e) => setFormData({ ...formData, roleCode: e.target.value })}
+                required
+                disabled={!!editingRole}
+                helperText={t('rbac.roleCodeHelper')}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: editingRole ? undefined : '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('rbac.displayName')}
+                value={formData.displayName}
+                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('rbac.level')}
+                type="number"
+                value={formData.level}
+                onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value) || 0 })}
+                helperText={t('rbac.levelHelper')}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('rbac.description')}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                multiline
+                rows={3}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                }}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
 
-        <DialogActions
-          sx={{
-            p: 3,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            background: alpha('#6366F1', 0.02),
-          }}
-        >
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setDialogOpen(false)}
             disabled={saving}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              color: 'text.secondary',
+              textTransform: 'none',
+              color: '#666',
+              fontSize: '0.8125rem',
             }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleSave}
             variant="contained"
             disabled={saving || !formData.roleName || !formData.roleCode}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
-              boxShadow: `0 4px 15px ${alpha('#6366F1', 0.3)}`,
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-                boxShadow: `0 6px 20px ${alpha('#6366F1', 0.4)}`,
+                bgcolor: THEME_COLOR_DARK,
+                boxShadow: 'none',
               },
             }}
           >
             {saving ? (
-              <CircularProgress size={20} color="inherit" />
+              <CircularProgress size={16} sx={{ color: 'white' }} />
             ) : (
               editingRole ? t('common.update') : t('common.create')
             )}
@@ -741,7 +635,7 @@ const RoleManagement: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* 删除确认对话框 */}
+      {/* 删除确认对话框 - 简约风格 */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -749,40 +643,49 @@ const RoleManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           },
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
-          {t('common.confirm')}
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#EF4444' }}>
+            {t('common.confirm')}
+          </Typography>
+        </Box>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
             {t('rbac.confirmDeleteRole', { name: deletingRole?.roleName })}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setDeleteDialogOpen(false)}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              textTransform: 'none',
+              color: '#666',
+              fontSize: '0.8125rem',
             }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={confirmDelete}
             variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(135deg, #EF4444, #DC2626)',
-              boxShadow: `0 4px 15px ${alpha('#EF4444', 0.3)}`,
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-                boxShadow: `0 6px 20px ${alpha('#EF4444', 0.4)}`,
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >
@@ -798,7 +701,14 @@ const RoleManagement: React.FC = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

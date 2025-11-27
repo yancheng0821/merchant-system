@@ -2117,6 +2117,11 @@
       "weekly": "每周"
     },
     "sessionTimeout": "会话超时时间 (分钟)",
+    "themeStyle": "主题风格",
+    "themeColorful": "彩色现代风格",
+    "themeColorfulDesc": "每个模块使用不同的鲜艳颜色，界面现代活泼",
+    "themeMonochrome": "黑白专业风格",
+    "themeMonochromeDesc": "简洁的黑白设计，极简且专业",
     "debugMode": "启用调试模式",
     "usageStatistics": "发送使用统计",
     "contactPerson": "联系人",

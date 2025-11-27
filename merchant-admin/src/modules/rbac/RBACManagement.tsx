@@ -12,12 +12,18 @@ import RoleManagement from './RoleManagement';
 import RolePermissionManagement from './RolePermissionManagement';
 import AuditLogs from './AuditLogs';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type TabType = 'users' | 'roles' | 'permissions' | 'audit';
 
 const RBACManagement: React.FC = () => {
   const { t } = useTranslation();
   const { isSuperAdmin, hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
 
   // 计算可见的 tabs
   const visibleTabs: TabType[] = [];
@@ -44,7 +50,7 @@ const RBACManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#6366F1',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -72,13 +78,13 @@ const RBACManagement: React.FC = () => {
               minHeight: 56,
               '&.Mui-selected': {
                 fontWeight: 600,
-                color: '#6366F1',
+                color: THEME_COLOR,
               },
             },
             '& .MuiTabs-indicator': {
               height: 3,
               borderRadius: '3px 3px 0 0',
-              backgroundColor: '#6366F1',
+              backgroundColor: THEME_COLOR,
             },
           }}
         >

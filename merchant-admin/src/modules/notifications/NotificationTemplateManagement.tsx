@@ -49,6 +49,7 @@ import {
 } from '@mui/icons-material';
 import { notificationApi } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 
 interface NotificationTemplate {
@@ -88,6 +89,7 @@ function TabPanel(props: TabPanelProps) {
 const NotificationTemplateManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +105,10 @@ const NotificationTemplateManagement: React.FC = () => {
   const [previewHtml, setPreviewHtml] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // 橙色主题色，提高可读性
-  const themeColor = '#F97316';
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const themeColor = isMonochrome ? '#1a1a1a' : '#F97316';
+  const themeColorDark = isMonochrome ? '#333' : '#EA580C';
 
   // 获取租户ID
   const tenantId = useMemo(() => {
@@ -351,22 +355,22 @@ const NotificationTemplateManagement: React.FC = () => {
 
   const renderTemplateTable = (templateList: NotificationTemplate[]) => (
     <TableContainer>
-      <Table>
+      <Table size="small">
         <TableHead>
-          <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-            <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+          <TableRow sx={{ backgroundColor: '#fafafa' }}>
+            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
               {t('notifications.templateCode')}
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
               {t('notifications.templateName')}
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
               {t('notifications.status')}
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
               {t('notifications.updatedAt')}
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
               {t('notifications.actions')}
             </TableCell>
           </TableRow>
@@ -463,12 +467,13 @@ const NotificationTemplateManagement: React.FC = () => {
       {/* 操作按钮区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               {t('notifications.templateManagement')}
@@ -500,11 +505,11 @@ const NotificationTemplateManagement: React.FC = () => {
                 onClick={() => handleOpenDialog()}
                 sx={{
                   borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
+                  background: isMonochrome ? themeColor : `linear-gradient(135deg, ${themeColor}, ${themeColorDark})`,
                   boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
                   fontWeight: 600,
                   '&:hover': {
-                    background: `linear-gradient(135deg, #EA580C, #C2410C)`,
+                    background: isMonochrome ? themeColorDark : `linear-gradient(135deg, ${themeColorDark}, #C2410C)`,
                     transform: 'translateY(-1px)',
                     boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
                   },
@@ -536,21 +541,24 @@ const NotificationTemplateManagement: React.FC = () => {
       {/* 模板表格 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
       >
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabValue} 
+        <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Tabs
+            value={tabValue}
             onChange={handleTabChange}
             sx={{
-              backgroundColor: '#f8fafc',
+              backgroundColor: '#fafafa',
               '& .MuiTab-root': {
-                color: 'text.secondary',
+                color: '#666',
                 fontWeight: 500,
-                py: 2,
+                fontSize: '0.875rem',
+                textTransform: 'none',
+                py: 1.5,
                 '&.Mui-selected': {
                   color: themeColor,
                   fontWeight: 600,
@@ -587,66 +595,35 @@ const NotificationTemplateManagement: React.FC = () => {
         }}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            bgcolor: 'background.paper',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        {/* 现代化对话框标题 */}
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#EA580C', 0.08)})`,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
-          }}
-        >
+        {/* 简化对话框标题 */}
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <EmailIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {editingTemplate ? t('notifications.editTemplate') : t('notifications.addTemplate')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {editingTemplate ? t('dialogs.editTemplateInfo') : t('dialogs.createNewTemplate')}
-                </Typography>
-              </Box>
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <EmailIcon sx={{ color: themeColor, fontSize: 20 }} />
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                {editingTemplate ? t('notifications.editTemplate') : t('notifications.addTemplate')}
+              </Typography>
             </Box>
-            <IconButton 
+            <IconButton
               onClick={handleCloseDialog}
+              size="small"
               sx={{
+                color: '#999',
                 '&:hover': {
-                  backgroundColor: alpha(themeColor, 0.1),
+                  backgroundColor: 'rgba(0,0,0,0.04)',
+                  color: '#666',
                 },
               }}
             >
-              <CloseIcon />
+              <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
+        </Box>
 
         <DialogContent sx={{ p: 0 }}>
           <Box sx={{ p: 3 }}>
@@ -654,33 +631,28 @@ const NotificationTemplateManagement: React.FC = () => {
             <Paper
               elevation={0}
               sx={{
-                p: 3,
-                mb: 3,
-                border: '1px solid',
-                borderColor: alpha(themeColor, 0.2),
+                p: 2.5,
+                mb: 2,
+                border: '1px solid rgba(0,0,0,0.06)',
                 borderRadius: 2,
-                background: alpha(themeColor, 0.02),
+                background: '#fafafa',
               }}
             >
-              <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 2,
-                    background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                  }}
-                >
-                  <CodeIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
-                  {t('notifications.basicInfo')}
-                </Typography>
-              </Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: '#1a1a1a',
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontSize: '0.875rem',
+                }}
+              >
+                <CodeIcon sx={{ fontSize: 16, color: themeColor }} />
+                {t('notifications.basicInfo')}
+              </Typography>
 
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
@@ -792,32 +764,27 @@ const NotificationTemplateManagement: React.FC = () => {
             <Paper
               elevation={0}
               sx={{
-                p: 3,
-                border: '1px solid',
-                borderColor: alpha(themeColor, 0.2),
+                p: 2.5,
+                border: '1px solid rgba(0,0,0,0.06)',
                 borderRadius: 2,
-                background: alpha(themeColor, 0.02),
+                background: '#fafafa',
               }}
             >
-              <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 2,
-                    background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                  }}
-                >
-                  <DescriptionIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
-                  {t('notifications.contentConfiguration')}
-                </Typography>
-              </Box>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: '#1a1a1a',
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontSize: '0.875rem',
+                }}
+              >
+                <DescriptionIcon sx={{ fontSize: 16, color: themeColor }} />
+                {t('notifications.contentConfiguration')}
+              </Typography>
 
               <Grid container spacing={2}>
                 {formData.type === 'EMAIL' && (
@@ -919,10 +886,9 @@ const NotificationTemplateManagement: React.FC = () => {
         </DialogContent>
         <DialogActions
           sx={{
-            p: 3,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            background: alpha(themeColor, 0.02),
+            px: 3,
+            py: 2,
+            borderTop: '1px solid rgba(0,0,0,0.06)',
             display: 'flex',
             justifyContent: 'space-between',
           }}
@@ -930,14 +896,17 @@ const NotificationTemplateManagement: React.FC = () => {
           <Button
             onClick={handlePreview}
             variant="outlined"
-            startIcon={<VisibilityIcon />}
+            size="small"
+            startIcon={<VisibilityIcon sx={{ fontSize: 16 }} />}
             disabled={!formData.content}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2,
               borderColor: themeColor,
               color: themeColor,
-              fontWeight: 600,
+              fontWeight: 500,
+              textTransform: 'none',
+              fontSize: '0.8125rem',
               '&:hover': {
                 borderColor: themeColor,
                 backgroundColor: alpha(themeColor, 0.08),
@@ -949,11 +918,14 @@ const NotificationTemplateManagement: React.FC = () => {
           <Box>
             <Button
               onClick={handleCloseDialog}
+              size="small"
               sx={{
-                borderRadius: 2,
-                px: 3,
-                color: 'text.secondary',
-                mr: 2,
+                borderRadius: 1.5,
+                px: 2,
+                color: '#666',
+                mr: 1.5,
+                textTransform: 'none',
+                fontSize: '0.8125rem',
               }}
             >
               {t('notifications.cancel')}
@@ -961,14 +933,18 @@ const NotificationTemplateManagement: React.FC = () => {
             <Button
               onClick={handleSave}
               variant="contained"
+              size="small"
               sx={{
-                borderRadius: 2,
-                px: 3,
-                background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+                borderRadius: 1.5,
+                px: 2.5,
+                textTransform: 'none',
+                fontWeight: 500,
+                fontSize: '0.8125rem',
+                bgcolor: themeColor,
+                boxShadow: 'none',
                 '&:hover': {
-                  background: `linear-gradient(135deg, #EA580C, #C2410C)`,
-                  boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                  bgcolor: themeColorDark,
+                  boxShadow: 'none',
                 },
               }}
             >
@@ -979,42 +955,47 @@ const NotificationTemplateManagement: React.FC = () => {
       </Dialog>
 
       {/* 删除确认弹窗 */}
-      <Dialog 
-        open={openDeleteDialog} 
+      <Dialog
+        open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(239, 68, 68, 0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ 
-          borderBottom: '1px solid #EF444420',
-          color: '#EF4444',
-          fontWeight: 600
-        }}>
-          {t('notifications.confirmDelete')}
-        </DialogTitle>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('notifications.confirmDelete')}
+          </Typography>
+        </Box>
         <DialogContent sx={{ pt: 2 }}>
-          <Typography>
+          <Typography variant="body2" color="text.secondary">
             {t('notifications.deleteConfirmMessage')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, borderTop: '1px solid #EF444420' }}>
-          <Button 
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <Button
             onClick={() => setOpenDeleteDialog(false)}
-            sx={{ color: 'text.secondary' }}
+            size="small"
+            sx={{ color: '#666', borderRadius: 1.5, textTransform: 'none', fontSize: '0.8125rem' }}
           >
             {t('notifications.cancel')}
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirmDelete}
             variant="contained"
+            size="small"
             sx={{
-              backgroundColor: '#EF4444',
+              borderRadius: 1.5,
+              textTransform: 'none',
+              fontSize: '0.8125rem',
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
               '&:hover': {
-                backgroundColor: '#DC2626',
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
               }
             }}
           >
@@ -1024,47 +1005,52 @@ const NotificationTemplateManagement: React.FC = () => {
       </Dialog>
 
       {/* 初始化默认模板弹窗 */}
-      <Dialog 
-        open={openInitDialog} 
+      <Dialog
+        open={openInitDialog}
         onClose={() => setOpenInitDialog(false)}
         maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(168, 85, 247, 0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ 
-          borderBottom: `1px solid ${themeColor}20`,
-          color: themeColor,
-          fontWeight: 600
-        }}>
-          {t('notifications.confirmInit')}
-        </DialogTitle>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('notifications.confirmInit')}
+          </Typography>
+        </Box>
         <DialogContent sx={{ pt: 2 }}>
-          <Typography gutterBottom>
+          <Typography variant="body2" gutterBottom>
             {t('notifications.initConfirmMessage')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             {t('notifications.initDefaultTemplatesDescription')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, borderTop: `1px solid ${themeColor}20` }}>
-          <Button 
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <Button
             onClick={() => setOpenInitDialog(false)}
-            sx={{ color: 'text.secondary' }}
+            size="small"
+            sx={{ color: '#666', borderRadius: 1.5, textTransform: 'none', fontSize: '0.8125rem' }}
           >
             {t('notifications.cancel')}
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirmInit}
             variant="contained"
+            size="small"
             sx={{
-              backgroundColor: themeColor,
+              borderRadius: 1.5,
+              textTransform: 'none',
+              fontSize: '0.8125rem',
+              bgcolor: themeColor,
+              boxShadow: 'none',
               '&:hover': {
-                backgroundColor: `${themeColor}dd`,
+                bgcolor: themeColorDark,
+                boxShadow: 'none',
               }
             }}
           >
@@ -1081,64 +1067,34 @@ const NotificationTemplateManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle
-          sx={{
-            background: `linear-gradient(135deg, ${alpha(themeColor, 0.08)}, ${alpha('#EA580C', 0.08)})`,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
-          }}
-        >
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <VisibilityIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {t('notifications.templatePreview')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {formData.type === 'EMAIL' ? t('notifications.emailPreview') : t('notifications.smsPreview')}
-                </Typography>
-              </Box>
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <VisibilityIcon sx={{ color: themeColor, fontSize: 20 }} />
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                {t('notifications.templatePreview')}
+              </Typography>
             </Box>
             <IconButton
               onClick={() => setOpenPreviewDialog(false)}
+              size="small"
               sx={{
+                color: '#999',
                 '&:hover': {
-                  backgroundColor: alpha(themeColor, 0.1),
+                  backgroundColor: 'rgba(0,0,0,0.04)',
+                  color: '#666',
                 },
               }}
             >
-              <CloseIcon />
+              <CloseIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
+        </Box>
         <DialogContent sx={{ p: 0 }}>
           {formData.type === 'EMAIL' ? (
             <Box
@@ -1162,17 +1118,16 @@ const NotificationTemplateManagement: React.FC = () => {
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3,
-                  border: '1px solid',
-                  borderColor: alpha(themeColor, 0.2),
+                  p: 2.5,
+                  border: '1px solid rgba(0,0,0,0.06)',
                   borderRadius: 2,
-                  background: alpha(themeColor, 0.02),
+                  background: '#fafafa',
                   minHeight: 200,
                 }}
               >
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <SmsIcon sx={{ color: themeColor, fontSize: 24 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: themeColor }}>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <SmsIcon sx={{ color: themeColor, fontSize: 18 }} />
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.875rem' }}>
                     {t('notifications.smsContent')}
                   </Typography>
                 </Box>
@@ -1197,23 +1152,26 @@ const NotificationTemplateManagement: React.FC = () => {
         </DialogContent>
         <DialogActions
           sx={{
-            p: 3,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            background: alpha(themeColor, 0.02),
+            px: 3,
+            py: 2,
+            borderTop: '1px solid rgba(0,0,0,0.06)',
           }}
         >
           <Button
             onClick={() => setOpenPreviewDialog(false)}
             variant="contained"
+            size="small"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: `linear-gradient(135deg, ${themeColor}, #EA580C)`,
-              boxShadow: `0 4px 15px ${alpha(themeColor, 0.3)}`,
+              borderRadius: 1.5,
+              px: 2.5,
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '0.8125rem',
+              bgcolor: themeColor,
+              boxShadow: 'none',
               '&:hover': {
-                background: `linear-gradient(135deg, #EA580C, #C2410C)`,
-                boxShadow: `0 6px 20px ${alpha(themeColor, 0.4)}`,
+                bgcolor: themeColorDark,
+                boxShadow: 'none',
               },
             }}
           >
@@ -1229,9 +1187,10 @@ const NotificationTemplateManagement: React.FC = () => {
         onClose={() => setMenuAnchorEl(null)}
         PaperProps={{
           sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
+            borderRadius: 1.5,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            minWidth: 150,
             mt: 1,
           }
         }}

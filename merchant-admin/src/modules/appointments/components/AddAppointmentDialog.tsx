@@ -61,6 +61,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import i18n from '../../../i18n/config';
 import { CurrencyUtils } from '../../../config/constants';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { Appointment, Customer, Resource, Service, ServiceCategory, customerApi, resourceApi, serviceApi, serviceCategoryApi, merchantConfigApi } from '../../../services/api';
 import ResourceSelector from '../../../components/common/ResourceSelector';
 import SmartTimeSelector from '../../../components/common/SmartTimeSelector';
@@ -82,6 +83,13 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
   onSave
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
+
+  // Theme-aware colors
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#8B5CF6';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#7C3AED';
+
   const steps = [t('dialogs.selectCustomerStep'), t('dialogs.selectServiceStep'), t('dialogs.scheduleTimeStep'), t('dialogs.confirmAppointmentStep')];
   const [activeStep, setActiveStep] = useState(0);
 
@@ -499,7 +507,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       case 0:
         return (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 3 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: THEME_COLOR, mb: 2.5 }}>
               {t('appointments.selectCustomer')}
             </Typography>
 
@@ -508,13 +516,14 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               placeholder={t('appointments.searchCustomerPlaceholder')}
               value={customerSearch}
               onChange={(e) => setCustomerSearch(e.target.value)}
+              size="small"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     {selectedCustomer?.membershipTier ? (
                       <Box
                         sx={{
-                          fontSize: 20,
+                          fontSize: 18,
                           color: selectedCustomer.membershipTier.color || '#9CA3AF',
                           display: 'flex',
                           alignItems: 'center',
@@ -524,20 +533,24 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         {getTierIcon(selectedCustomer.membershipTier.icon || 'star')}
                       </Box>
                     ) : (
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
                     )}
                   </InputAdornment>
                 ),
               }}
               sx={{
-                mb: 3,
+                mb: 2.5,
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
+                  fontSize: '0.8125rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#8B5CF6',
+                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#8B5CF6',
+                    borderColor: THEME_COLOR,
                   },
                 },
               }}
@@ -555,13 +568,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   elevation={0}
                   sx={{
                     p: 2,
-                    border: '1px solid',
-                    borderColor: alpha('#8B5CF6', 0.2),
-                    borderRadius: 2,
-                    background: alpha('#8B5CF6', 0.02),
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    borderRadius: 1.5,
+                    bgcolor: '#fafafa',
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a', mb: 2 }}>
                     {t('appointments.searchResults')}
                   </Typography>
                   <List sx={{ maxHeight: 200, overflow: 'auto' }}>
@@ -572,19 +584,19 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         selected={selectedCustomer?.id === customer.id}
                         onClick={() => setSelectedCustomer(customer)}
                         sx={{
-                          borderRadius: 2,
+                          borderRadius: 1.5,
                           mb: 1,
                           '&.Mui-selected': {
-                            backgroundColor: alpha('#8B5CF6', 0.1),
+                            backgroundColor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.1),
                           },
                           '&:hover': {
-                            backgroundColor: alpha('#8B5CF6', 0.05),
+                            backgroundColor: 'rgba(0,0,0,0.04)',
                           },
                         }}
                       >
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: '#8B5CF6' }}>
-                            <PersonIcon />
+                          <Avatar sx={{ bgcolor: THEME_COLOR, width: 32, height: 32 }}>
+                            <PersonIcon sx={{ fontSize: 16 }} />
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
@@ -629,19 +641,19 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   elevation={0}
                   sx={{
                     p: 2,
-                    border: '1px solid',
-                    borderColor: alpha('#8B5CF6', 0.2),
-                    borderRadius: 2,
-                    background: alpha('#8B5CF6', 0.02),
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    borderRadius: 1.5,
+                    bgcolor: '#fafafa',
                   }}
                 >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a', mb: 2 }}>
                     {t('appointments.orAddNewCustomer')}
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
+                        size="small"
                         label={t('dialogs.firstName')}
                         value={newCustomerData.firstName}
                         onChange={(e) => setNewCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
@@ -649,20 +661,26 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         helperText={errors.firstName}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1.5,
+                            fontSize: '0.8125rem',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'rgba(0,0,0,0.12)',
+                            },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                           },
+                          '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
                         }}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
+                        size="small"
                         label={t('dialogs.lastName')}
                         value={newCustomerData.lastName}
                         onChange={(e) => setNewCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
@@ -670,20 +688,26 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         helperText={errors.lastName}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1.5,
+                            fontSize: '0.8125rem',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'rgba(0,0,0,0.12)',
+                            },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                           },
+                          '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
                         }}
                       />
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
+                        size="small"
                         label={t('dialogs.phoneNumber')}
                         value={newCustomerData.phone}
                         onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
@@ -691,20 +715,26 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         helperText={errors.phone}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1.5,
+                            fontSize: '0.8125rem',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'rgba(0,0,0,0.12)',
+                            },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                           },
+                          '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
                         }}
                       />
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
                         fullWidth
+                        size="small"
                         label={t('dialogs.emailAddress')}
                         type="email"
                         value={newCustomerData.email}
@@ -713,14 +743,19 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         helperText={errors.email}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1.5,
+                            fontSize: '0.8125rem',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'rgba(0,0,0,0.12)',
+                            },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8B5CF6',
+                              borderColor: THEME_COLOR,
                             },
                           },
+                          '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
                         }}
                       />
                     </Grid>
@@ -734,40 +769,39 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       case 1:
         return (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 3 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: THEME_COLOR, mb: 2.5 }}>
               {t('appointments.selectServices')}
             </Typography>
 
             {errors.services && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
                 {errors.services}
               </Alert>
             )}
 
             {loadingServices ? (
               <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-                <CircularProgress sx={{ color: '#8B5CF6' }} />
+                <CircularProgress sx={{ color: THEME_COLOR }} size={32} />
               </Box>
             ) : (
               <Grid container spacing={2}>
                 {serviceCategories.map((category) => {
                   const categoryServices = services.filter(service => service.categoryId === category.id && service.status === 'ACTIVE');
-                  
+
                   if (categoryServices.length === 0) return null;
-                  
+
                   return (
                     <Grid item xs={12} sm={6} key={category.id}>
                       <Paper
                         elevation={0}
                         sx={{
                           p: 2,
-                          border: '1px solid',
-                          borderColor: alpha('#8B5CF6', 0.2),
-                          borderRadius: 2,
-                          background: alpha('#8B5CF6', 0.02),
+                          border: '1px solid rgba(0,0,0,0.08)',
+                          borderRadius: 1.5,
+                          bgcolor: '#fafafa',
                         }}
                       >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 2 }}>
                           {category.name}
                         </Typography>
                         {categoryServices.map((service) => (
@@ -775,6 +809,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                             key={service.id}
                             label={`${service.name} - ${formatCurrency(service.price)}`}
                             clickable
+                            size="small"
                             variant={selectedServices.some(s => s.id === service.id) ? "filled" : "outlined"}
                             onClick={() => {
                               if (selectedServices.some(s => s.id === service.id)) {
@@ -788,13 +823,14 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                             }}
                             sx={{
                               m: 0.5,
-                              borderColor: '#8B5CF6',
-                              color: selectedServices.some(s => s.id === service.id) ? 'white' : '#8B5CF6',
-                              backgroundColor: selectedServices.some(s => s.id === service.id) ? '#8B5CF6' : 'transparent',
+                              fontSize: '0.75rem',
+                              borderColor: THEME_COLOR,
+                              color: selectedServices.some(s => s.id === service.id) ? 'white' : THEME_COLOR,
+                              backgroundColor: selectedServices.some(s => s.id === service.id) ? THEME_COLOR : 'transparent',
                               '&:hover': {
                                 backgroundColor: selectedServices.some(s => s.id === service.id)
-                                  ? '#7C3AED'
-                                  : alpha('#8B5CF6', 0.1),
+                                  ? THEME_COLOR_DARK
+                                  : isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.1),
                               },
                             }}
                           />
@@ -811,14 +847,13 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                 elevation={0}
                 sx={{
                   p: 2,
-                  mt: 3,
-                  border: '1px solid',
-                  borderColor: alpha('#10B981', 0.2),
-                  borderRadius: 2,
-                  background: alpha('#10B981', 0.02),
+                  mt: 2.5,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
                 }}
               >
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#10B981', mb: 1 }}>
+                <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: isMonochrome ? '#1a1a1a' : '#10B981', mb: 1.5 }}>
                   {t('appointments.selectedServices')}
                 </Typography>
                 <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
@@ -826,6 +861,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     <Chip
                       key={service.id}
                       label={`${service.name} - ${formatCurrency(service.price)}`}
+                      size="small"
                       onDelete={() => {
                         setSelectedServices(prev => prev.filter(s => s.id !== service.id));
                         // 清空资源选择，因为服务变化可能需要不同类型的资源
@@ -833,27 +869,28 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         setSelectedRoom('');
                       }}
                       sx={{
-                        backgroundColor: alpha('#10B981', 0.1),
-                        color: '#10B981',
+                        backgroundColor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.1),
+                        color: isMonochrome ? '#1a1a1a' : '#10B981',
                         fontWeight: 600,
+                        fontSize: '0.75rem',
                       }}
                     />
                   ))}
                 </Box>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                       {t('appointments.estimatedDuration')}:
                     </Typography>
-                    <Typography variant="h6" sx={{ color: '#10B981' }}>
+                    <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                       {selectedServices.reduce((total, service) => total + service.duration, 0)} {t('dialogs.minutes')}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                       {t('appointments.estimatedPrice')}:
                     </Typography>
-                    <Typography variant="h6" sx={{ color: '#10B981' }}>
+                    <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                       {formatCurrency(selectedServices.reduce((total, service) => total + service.price, 0))}
                     </Typography>
                   </Grid>
@@ -866,20 +903,21 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       case 2:
         return (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 3 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: THEME_COLOR, mb: 2.5 }}>
               {t('appointments.scheduleAppointment')}
             </Typography>
 
             {errors.schedule && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
                 {errors.schedule}
               </Alert>
             )}
 
-            <Grid container spacing={3}>
+            <Grid container spacing={2.5}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  size="small"
                   label={t('appointments.appointmentDate')}
                   type="date"
                   value={appointmentDate}
@@ -890,7 +928,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <CalendarIcon sx={{ color: '#8B5CF6' }} />
+                        <CalendarIcon sx={{ color: THEME_COLOR, fontSize: 18 }} />
                       </InputAdornment>
                     ),
                     inputProps: {
@@ -914,14 +952,19 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
+                        borderColor: THEME_COLOR,
                       },
                     },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
                   }}
                 />
               </Grid>
@@ -939,28 +982,27 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
               {/* 根据当前选择的服务需要的资源类型显示资源选择器 */}
               {loadingResourceTypes ? (
                 <Grid item xs={12}>
-                  <Box 
-                    display="flex" 
-                    justifyContent="center" 
-                    alignItems="center" 
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
                     minHeight={200}
                     sx={{
-                      backgroundColor: alpha('#8B5CF6', 0.02),
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: alpha('#8B5CF6', 0.1),
+                      backgroundColor: '#fafafa',
+                      borderRadius: 1.5,
+                      border: '1px solid rgba(0,0,0,0.08)',
                     }}
                   >
-                    <CircularProgress sx={{ color: '#8B5CF6' }} />
-                    <Typography variant="body2" sx={{ ml: 2 }}>
+                    <CircularProgress sx={{ color: THEME_COLOR }} size={28} />
+                    <Typography sx={{ ml: 2, fontSize: '0.8125rem', color: '#666' }}>
                       {t('resources.loadingResourceTypes')}
                     </Typography>
                   </Box>
                 </Grid>
               ) : selectedServices.length === 0 ? (
                 <Grid item xs={12}>
-                  <Alert severity="info" sx={{ borderRadius: 2 }}>
-                    <Typography variant="body2">
+                  <Alert severity="info" sx={{ borderRadius: 1.5 }}>
+                    <Typography sx={{ fontSize: '0.8125rem' }}>
                       {t('appointments.selectServicesFirst')}
                     </Typography>
                   </Alert>
@@ -970,8 +1012,8 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   {/* 显示当前选择的服务需要的资源类型提示 */}
                   {selectedServices.length > 0 && (
                     <Grid item xs={12}>
-                      <Alert severity="info" sx={{ borderRadius: 2 }}>
-                        <Typography variant="body2">
+                      <Alert severity="info" sx={{ borderRadius: 1.5 }}>
+                        <Typography sx={{ fontSize: '0.8125rem' }}>
                           {getRequiredResourceTypes.includes('ROOM') && getRequiredResourceTypes.includes('STAFF')
                             ? t('appointments.requiresBothStaffAndRoom')
                             : getRequiredResourceTypes.includes('ROOM')
@@ -990,7 +1032,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                     <>
                       <Grid item xs={12}>
                         <Box sx={{ minHeight: 80 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 1 }}>
                             {t('appointments.selectRoomFirst')}
                           </Typography>
                           <ResourceSelector
@@ -1018,7 +1060,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                       
                       <Grid item xs={12}>
                         <Box sx={{ minHeight: 80 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 1 }}>
                             {t('appointments.selectStaffForRoom')}
                           </Typography>
                           <ResourceSelector
@@ -1124,20 +1166,26 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   fullWidth
                   multiline
                   rows={3}
+                  size="small"
                   label={t('appointments.notes')}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={t('appointments.notesPlaceholder')}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
+                        borderColor: THEME_COLOR,
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#8B5CF6',
+                        borderColor: THEME_COLOR,
                       },
                     },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
                   }}
                 />
               </Grid>
@@ -1154,12 +1202,12 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
         return (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 3 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: THEME_COLOR, mb: 2.5 }}>
               {t('appointments.confirmAppointment')}
             </Typography>
 
             {errors.submit && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
                 {errors.submit}
               </Alert>
             )}
@@ -1167,16 +1215,15 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
             <Card
               elevation={0}
               sx={{
-                border: '1px solid',
-                borderColor: alpha('#8B5CF6', 0.2),
-                borderRadius: 3,
-                background: alpha('#8B5CF6', 0.02),
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: 1.5,
+                bgcolor: '#fafafa',
               }}
             >
               <CardContent>
-                <Grid container spacing={3}>
+                <Grid container spacing={2.5}>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 1.5 }}>
                       {t('dialogs.customerInfoSection')}
                     </Typography>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -1194,7 +1241,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 1.5 }}>
                       {t('dialogs.appointmentDetails')}
                     </Typography>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -1233,7 +1280,7 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                   </Grid>
 
                   <Grid item xs={12}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 2 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 1.5 }}>
                       {t('appointments.services')}
                     </Typography>
                     <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
@@ -1241,28 +1288,30 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
                         <Chip
                           key={service.id}
                           label={`${service.name} - ${formatCurrency(service.price)}`}
+                          size="small"
                           sx={{
-                            backgroundColor: alpha('#8B5CF6', 0.1),
-                            color: '#8B5CF6',
+                            backgroundColor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.1),
+                            color: THEME_COLOR,
                             fontWeight: 600,
+                            fontSize: '0.75rem',
                           }}
                         />
                       ))}
                     </Box>
                     <Grid container spacing={2}>
                       <Grid item xs={4}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                           {t('appointments.duration')}
                         </Typography>
-                        <Typography variant="h6" sx={{ color: '#8B5CF6' }}>
+                        <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: THEME_COLOR }}>
                           {selectedServices.reduce((total, service) => total + service.duration, 0)} {t('dialogs.minutes')}
                         </Typography>
                       </Grid>
                       <Grid item xs={4}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                           {t('dialogs.estimatedPrice')}
                         </Typography>
-                        <Typography variant="h6" sx={{ color: '#10B981' }}>
+                        <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                           {formatCurrency(selectedServices.reduce((total, service) => total + service.price, 0))}
                         </Typography>
                       </Grid>
@@ -1271,10 +1320,10 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
                   {notes && (
                     <Grid item xs={12}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8B5CF6', mb: 1 }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR, mb: 1 }}>
                         {t('dialogs.notes')}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                         {notes}
                       </Typography>
                     </Grid>
@@ -1302,103 +1351,95 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
       disableAutoFocus
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          borderRadius: 2,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           bgcolor: 'background.paper',
           minHeight: '70vh',
         }
       }}
     >
-      {/* 现代化对话框标题 */}
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(124, 58, 237, 0.08))',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          pb: 3,
-          pt: 3,
-        }}
-      >
-        <Box display="flex" alignItems="center" justifyContent="space-between">
+      {/* 简约对话框标题 */}
+      <Box sx={{ py: 2, px: 3, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box display="flex" alignItems="center" gap={2}>
             <Box
               sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
+                width: 40,
+                height: 40,
+                borderRadius: 1.5,
+                bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.1),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
+                color: THEME_COLOR,
               }}
             >
-              <AppointmentIcon sx={{ fontSize: 24 }} />
+              <AppointmentIcon sx={{ fontSize: 22 }} />
             </Box>
             <Box>
               <Typography
-                variant="h5"
                 sx={{
-                  fontWeight: 700,
-                  color: 'text.primary',
-                  mb: 0.5,
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  color: '#1a1a1a',
                 }}
               >
                 {t('appointments.addAppointment')}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                 {t('dialogs.createNewAppointment')}
               </Typography>
             </Box>
           </Box>
           <IconButton
             onClick={onClose}
+            size="small"
             sx={{
+              color: '#888',
               '&:hover': {
-                backgroundColor: alpha('#8B5CF6', 0.1),
+                backgroundColor: 'rgba(0,0,0,0.04)',
               },
             }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
 
         {/* 步骤器 */}
-        <Box mt={3}>
-          <Stepper
-            activeStep={activeStep}
-            alternativeLabel
-            sx={{
-              '& .MuiStepLabel-root .Mui-completed': {
-                color: '#8B5CF6',
-              },
-              '& .MuiStepLabel-root .Mui-active': {
-                color: '#8B5CF6',
-              },
-              '& .MuiStepConnector-line': {
-                borderColor: alpha('#8B5CF6', 0.3),
-              },
-            }}
-          >
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel
-                  sx={{
-                    '& .MuiStepLabel-label': {
-                      fontWeight: 500,
-                      '&.Mui-active': {
-                        fontWeight: 600,
-                      },
+        <Stepper
+          activeStep={activeStep}
+          alternativeLabel
+          sx={{
+            '& .MuiStepLabel-root .Mui-completed': {
+              color: THEME_COLOR,
+            },
+            '& .MuiStepLabel-root .Mui-active': {
+              color: THEME_COLOR,
+            },
+            '& .MuiStepConnector-line': {
+              borderColor: isMonochrome ? 'rgba(26, 26, 26, 0.2)' : alpha('#8B5CF6', 0.3),
+            },
+          }}
+        >
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel
+                sx={{
+                  '& .MuiStepLabel-label': {
+                    fontWeight: 500,
+                    fontSize: '0.8125rem',
+                    '&.Mui-active': {
+                      fontWeight: 600,
                     },
-                  }}
-                >
-                  {label}
-                </StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Box>
-      </DialogTitle>
+                  },
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Box>
 
       <DialogContent sx={{ p: 3, minHeight: 500, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ flex: 1, minHeight: 400 }}>
@@ -1408,18 +1449,22 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
 
       <DialogActions
         sx={{
-          p: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          background: alpha('#8B5CF6', 0.02),
+          p: 2.5,
+          borderTop: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fafafa',
         }}
       >
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            color: 'text.secondary',
+            borderRadius: 1.5,
+            px: 2.5,
+            color: '#666',
+            fontSize: '0.8125rem',
+            textTransform: 'none',
+            '&:hover': {
+              backgroundColor: 'rgba(0,0,0,0.04)',
+            },
           }}
         >
           {t('common.cancel')}
@@ -1429,11 +1474,13 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           <Button
             onClick={handleBack}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              color: '#8B5CF6',
+              borderRadius: 1.5,
+              px: 2.5,
+              color: THEME_COLOR,
+              fontSize: '0.8125rem',
+              textTransform: 'none',
               '&:hover': {
-                backgroundColor: alpha('#8B5CF6', 0.1),
+                backgroundColor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.1),
               },
             }}
           >
@@ -1446,16 +1493,18 @@ const AddAppointmentDialog: React.FC<AddAppointmentDialogProps> = ({
           onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
           disabled={isSubmitting}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
-            boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
+            borderRadius: 1.5,
+            px: 2.5,
+            bgcolor: THEME_COLOR,
+            fontSize: '0.8125rem',
+            textTransform: 'none',
+            boxShadow: 'none',
             '&:hover': {
-              background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
-              boxShadow: '0 6px 20px rgba(139, 92, 246, 0.4)',
+              bgcolor: THEME_COLOR_DARK,
+              boxShadow: 'none',
             },
             '&:disabled': {
-              background: 'linear-gradient(135deg, #9CA3AF, #6B7280)',
+              bgcolor: '#ccc',
               boxShadow: 'none',
             },
           }}

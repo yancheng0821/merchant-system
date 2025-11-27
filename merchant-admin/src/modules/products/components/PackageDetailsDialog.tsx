@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { Package, PackageService } from '../../../services/api';
 import { CurrencyUtils } from '../../../config/constants';
 import { getPackageIconComponent } from '../utils/packageIcons';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface Service {
   id: number;
@@ -45,6 +46,12 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
   services,
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#0891B2';
 
   if (!packageData) return null;
 
@@ -171,7 +178,7 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
                 <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem' }}>
                   {t('packages.packagePrice')}
                 </Typography>
-                <Typography variant="h6" fontWeight={600} sx={{ color: '#0891B2', mt: 0.5 }}>
+                <Typography variant="h6" fontWeight={600} sx={{ color: THEME_COLOR_DARK, mt: 0.5 }}>
                   {CurrencyUtils.formatAmount(packageData.package_price)}
                 </Typography>
               </Box>
@@ -180,7 +187,7 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
                   {t('packages.savings')}
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-                  <Typography variant="body1" fontWeight={600} sx={{ color: '#10B981' }}>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                     {CurrencyUtils.formatAmount(savingsAmount)}
                   </Typography>
                   {packageData.discount_percentage && packageData.discount_percentage > 0 && (
@@ -188,8 +195,8 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
                       label={`-${packageData.discount_percentage.toFixed(0)}%`}
                       size="small"
                       sx={{
-                        bgcolor: alpha('#10B981', 0.1),
-                        color: '#10B981',
+                        bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1),
+                        color: isMonochrome ? '#1a1a1a' : '#10B981',
                         fontWeight: 500,
                         height: 20,
                         fontSize: '0.7rem',
@@ -235,12 +242,12 @@ const PackageDetailsDialog: React.FC<PackageDetailsDialogProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            bgcolor: alpha('#0891B2', 0.1),
+                            bgcolor: alpha(THEME_COLOR, 0.1),
                             borderRadius: 1,
                             px: 1,
                           }}
                         >
-                          <Typography variant="caption" sx={{ color: '#0891B2', fontWeight: 600, fontSize: '0.75rem' }}>
+                          <Typography variant="caption" sx={{ color: THEME_COLOR_DARK, fontWeight: 600, fontSize: '0.75rem' }}>
                             {ps.count}×
                           </Typography>
                         </Box>

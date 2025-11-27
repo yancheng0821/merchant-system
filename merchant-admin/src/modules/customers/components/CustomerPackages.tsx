@@ -27,6 +27,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Customer, customerApi, serviceApi, packageUsageApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { format, parseISO } from 'date-fns';
 import { formatUtcToMerchantTime } from '../../../utils/timezoneUtils';
 
@@ -103,6 +104,13 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
+  const THEME_COLOR_LIGHT = isMonochrome ? '#f5f5f5' : 'rgba(236, 72, 153, 0.08)';
+
   const [packages, setPackages] = useState<CustomerPackage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -249,66 +257,54 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 4,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
-          maxHeight: '90vh',
+          borderRadius: 2.5,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          maxHeight: '85vh',
         }
       }}
     >
-      {/* Header matching Purchase Package style */}
+      {/* Header - 简约风格 */}
       <Box sx={{
         px: 3,
-        pt: 3,
-        pb: 3,
-        background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.08))',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
+        py: 2,
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        bgcolor: '#fff',
       }}>
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box display="flex" alignItems="center" gap={2}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box display="flex" alignItems="center" gap={1.5}>
             <Box
               sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, #EC4899, #DB2777)',
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: alpha(THEME_COLOR, 0.1),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
               }}
             >
-              <PackageIcon sx={{ fontSize: 24 }} />
+              <PackageIcon sx={{ fontSize: 18, color: THEME_COLOR }} />
             </Box>
             <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
                 {t('packages.title')}
               </Typography>
               {customer && (
-                <Typography variant="caption" color="text.secondary">
-                  {customer.firstName} {customer.lastName} ({customer.phone})
+                <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
+                  {customer.firstName} {customer.lastName}
                 </Typography>
               )}
             </Box>
           </Box>
           <IconButton
             onClick={onClose}
+            size="small"
             sx={{
-              '&:hover': {
-                bgcolor: alpha('#EC4899', 0.1),
-              }
+              color: '#999',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
             }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </Box>
       </Box>
@@ -316,7 +312,7 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
       <DialogContent sx={{ p: 0, bgcolor: 'white' }}>
         {loading ? (
           <Box display="flex" flexDirection="column" alignItems="center" py={8}>
-            <CircularProgress size={40} thickness={4} />
+            <CircularProgress size={32} thickness={4} sx={{ color: THEME_COLOR }} />
             <Typography variant="body2" color="text.secondary" mt={2}>
               {t('common.loading')}
             </Typography>
@@ -339,8 +335,8 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
           </Box>
         ) : (
           <>
-            {/* Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'white', display: 'flex', alignItems: 'center' }}>
+            {/* Tabs - 简约风格 */}
+            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', bgcolor: 'white', display: 'flex', alignItems: 'center' }}>
               <Tabs
                 value={selectedTab}
                 onChange={handleTabChange}
@@ -349,20 +345,22 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                 sx={{
                   flex: 1,
                   px: 2,
+                  minHeight: 48,
                   '& .MuiTab-root': {
-                    minHeight: 64,
+                    minHeight: 48,
                     textTransform: 'none',
-                    fontSize: '0.9rem',
+                    fontSize: '0.875rem',
                     fontWeight: 500,
-                    color: 'text.secondary',
+                    color: '#666',
+                    py: 1.5,
                     '&.Mui-selected': {
-                      color: '#EC4899',
+                      color: THEME_COLOR,
                       fontWeight: 600,
                     },
                   },
                   '& .MuiTabs-indicator': {
-                    backgroundColor: '#EC4899',
-                    height: 3,
+                    backgroundColor: THEME_COLOR,
+                    height: 2,
                   },
                 }}
               >
@@ -397,15 +395,16 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
               {onPurchasePackage && (
                 <IconButton
                   onClick={onPurchasePackage}
+                  size="small"
                   sx={{
                     mx: 2,
-                    bgcolor: alpha('#EC4899', 0.1),
+                    bgcolor: alpha(THEME_COLOR, 0.1),
                     '&:hover': {
-                      bgcolor: alpha('#EC4899', 0.2),
+                      bgcolor: alpha(THEME_COLOR, 0.2),
                     }
                   }}
                 >
-                  <AddIcon sx={{ color: '#EC4899' }} />
+                  <AddIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
                 </IconButton>
               )}
             </Box>
@@ -440,7 +439,11 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                           {t('packages.usageSummary')}
                         </Typography>
                         <Box display="flex" alignItems="baseline" gap={1} mb={0.5}>
-                          <Typography variant="h4" fontWeight={600} color="text.primary">
+                          <Typography
+                            variant="h4"
+                            fontWeight={600}
+                            sx={{ color: isMonochrome ? '#1a1a1a' : (totalRemaining > 0 ? '#10B981' : '#9CA3AF') }}
+                          >
                             {totalRemaining}
                           </Typography>
                           <Typography variant="h5" color="text.secondary" fontWeight={400}>
@@ -460,12 +463,9 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                             bgcolor: alpha('#000', 0.06),
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 2,
-                              bgcolor:
-                                totalRemaining === 0
-                                  ? '#EF4444'
-                                  : totalRemaining <= totalAllowed * 0.3
-                                  ? '#F59E0B'
-                                  : '#10B981',
+                              bgcolor: isMonochrome
+                                ? (totalRemaining === 0 ? '#888' : totalRemaining <= totalAllowed * 0.3 ? '#666' : '#1a1a1a')
+                                : (totalRemaining === 0 ? '#EF4444' : totalRemaining <= totalAllowed * 0.3 ? '#F59E0B' : '#10B981'),
                             },
                           }}
                         />
@@ -530,10 +530,10 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                           justifyContent: 'space-between',
                           borderRadius: 2,
                           '&:hover': {
-                            bgcolor: alpha('#EC4899', 0.08),
+                            bgcolor: alpha(THEME_COLOR, 0.08),
                           },
                           '&:active': {
-                            bgcolor: alpha('#EC4899', 0.12),
+                            bgcolor: alpha(THEME_COLOR, 0.12),
                           },
                         }}
                       >
@@ -574,12 +574,9 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                                           bgcolor: alpha('#000', 0.06),
                                           '& .MuiLinearProgress-bar': {
                                             borderRadius: 2,
-                                            bgcolor:
-                                              service.remaining === 0
-                                                ? '#EF4444'
-                                                : service.remaining <= service.allowed * 0.3
-                                                ? '#F59E0B'
-                                                : '#10B981',
+                                            bgcolor: isMonochrome
+                                              ? (service.remaining === 0 ? '#888' : service.remaining <= service.allowed * 0.3 ? '#666' : '#1a1a1a')
+                                              : (service.remaining === 0 ? '#EF4444' : service.remaining <= service.allowed * 0.3 ? '#F59E0B' : '#10B981'),
                                           },
                                         }}
                                       />
@@ -593,8 +590,12 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                                   <Typography
                                     variant="h6"
                                     fontWeight={700}
-                                    color={service.remaining > 0 ? '#10B981' : '#9CA3AF'}
-                                    sx={{ textAlign: 'right' }}
+                                    sx={{
+                                      textAlign: 'right',
+                                      color: service.remaining > 0
+                                        ? (isMonochrome ? '#1a1a1a' : '#10B981')
+                                        : '#9CA3AF',
+                                    }}
                                   >
                                     {service.remaining}
                                   </Typography>
@@ -644,10 +645,10 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                           justifyContent: 'space-between',
                           borderRadius: 2,
                           '&:hover': {
-                            bgcolor: alpha('#EC4899', 0.08),
+                            bgcolor: alpha(THEME_COLOR, 0.08),
                           },
                           '&:active': {
-                            bgcolor: alpha('#EC4899', 0.12),
+                            bgcolor: alpha(THEME_COLOR, 0.12),
                           },
                         }}
                       >
@@ -658,7 +659,7 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                         <Box sx={{ mt: 2 }}>
                           {loadingLogs.get(pkg.id) ? (
                             <Box display="flex" justifyContent="center" py={3}>
-                              <CircularProgress size={24} sx={{ color: '#EC4899' }} />
+                              <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
                             </Box>
                           ) : usageLogs.get(pkg.id)?.length === 0 ? (
                             <Box textAlign="center" py={3}>

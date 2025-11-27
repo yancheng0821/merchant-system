@@ -20,6 +20,7 @@ import {
   Group as BothIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export type ResourceType = 'STAFF' | 'ROOM' | 'BOTH';
 
@@ -41,11 +42,14 @@ const ServiceResourceTypeDialog: React.FC<ServiceResourceTypeDialogProps> = ({
   merchantResourceTypes,
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
   const [selectedResourceType, setSelectedResourceType] = useState<ResourceType>('STAFF');
   const [hasResources, setHasResources] = useState(true);
 
-  // 主题色
-  const themeColor = '#2563EB';
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const themeColor = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const themeColorDark = isMonochrome ? '#333' : '#0891B2';
 
   useEffect(() => {
     if (open) {
@@ -128,20 +132,16 @@ const ServiceResourceTypeDialog: React.FC<ServiceResourceTypeDialogProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          borderRadius: 2.5,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
         }
       }}
     >
-      <DialogTitle
-        sx={{
-          background: `linear-gradient(135deg, ${themeColor}, #EF4444)`,
-          color: 'white',
-          fontWeight: 600,
-        }}
-      >
-        {t('services.setResourceType')}
-      </DialogTitle>
+      <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: themeColor }}>
+          {t('services.setResourceType')}
+        </Typography>
+      </Box>
       
       <DialogContent sx={{ pt: 3 }}>
         <Typography variant="body1" sx={{ mb: 2, color: 'text.secondary' }}>
@@ -248,12 +248,15 @@ const ServiceResourceTypeDialog: React.FC<ServiceResourceTypeDialogProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, pt: 1 }}>
+      <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: 2,
-            px: 3,
+            borderRadius: 1.5,
+            px: 2.5,
+            color: '#666',
+            textTransform: 'none',
+            fontWeight: 500,
           }}
         >
           {t('common.cancel')}
@@ -263,11 +266,15 @@ const ServiceResourceTypeDialog: React.FC<ServiceResourceTypeDialogProps> = ({
           variant="contained"
           disabled={!hasResources}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            background: `linear-gradient(45deg, ${themeColor}, #EF4444)`,
+            borderRadius: 1.5,
+            px: 2.5,
+            bgcolor: themeColor,
+            boxShadow: 'none',
+            textTransform: 'none',
+            fontWeight: 500,
             '&:hover': {
-              background: `linear-gradient(45deg, #B91C1C, ${themeColor})`,
+              bgcolor: themeColorDark,
+              boxShadow: 'none',
             },
           }}
         >

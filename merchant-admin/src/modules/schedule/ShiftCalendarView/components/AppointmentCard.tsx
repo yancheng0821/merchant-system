@@ -15,6 +15,7 @@ import {
   EditCalendar as EditCalendarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../../contexts/ThemeContext';
 
 interface AppointmentCardProps {
   appointment: {
@@ -48,6 +49,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   cardHeight = 100,
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#3B82F6';
 
   // 根据卡片高度决定显示级别
   const isTiny = cardHeight < 50;      // 极短：只显示时间和客户名
@@ -64,37 +68,50 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     return 3; // 普通长卡片显示3行
   };
 
-  // 状态配置 - 使用系统统一的配色方案
+  // 状态配置 - 使用系统统一的配色方案（支持主题切换）
+  // 极简模式下使用不同的视觉样式区分状态：
+  // - COMPLETED: 深色 + 实线边框
+  // - CHECKED_IN: 中灰 + 虚线边框（更明显区分）
+  // - CONFIRMED: 浅灰 + 正常边框
   const getStatusConfig = () => {
     if (appointment.status === 'COMPLETED' || appointment.paid) {
       // 完成状态 - 绿色系（柔和背景）
+      const statusColor = isMonochrome ? '#1a1a1a' : '#4CAF50';
       return {
         label: t('customers.appointmentStatus.completed'),
-        color: '#4CAF50',
-        lightColor: '#66BB6A',
-        bgColor: alpha('#4CAF50', 0.09), // 加深的绿色背景
-        borderColor: alpha('#4CAF50', 0.2),
+        color: statusColor,
+        lightColor: isMonochrome ? '#333' : '#66BB6A',
+        bgColor: isMonochrome ? 'rgba(26,26,26,0.08)' : alpha(statusColor, 0.09),
+        borderColor: alpha(statusColor, 0.3),
+        borderStyle: 'solid',
+        borderWidth: '1px',
         icon: <CheckIcon sx={{ fontSize: 14 }} />,
       };
     }
     if (appointment.status === 'CHECKED_IN') {
       // 进行中状态 - 橙色系（柔和背景）
+      const statusColor = isMonochrome ? '#555' : '#FF9800';
       return {
         label: t('customers.appointmentStatus.checked_in'),
-        color: '#FF9800',
-        lightColor: '#FFB74D',
-        bgColor: alpha('#FF9800', 0.09), // 加深的橙色背景
-        borderColor: alpha('#FF9800', 0.2),
+        color: statusColor,
+        lightColor: isMonochrome ? '#666' : '#FFB74D',
+        bgColor: isMonochrome ? 'rgba(85,85,85,0.12)' : alpha(statusColor, 0.09),
+        borderColor: isMonochrome ? 'rgba(85,85,85,0.5)' : alpha(statusColor, 0.35),
+        borderStyle: isMonochrome ? 'dashed' : 'solid', // 极简模式用虚线边框区分
+        borderWidth: isMonochrome ? '2px' : '1px', // 极简模式下加粗虚线
         icon: <PendingIcon sx={{ fontSize: 14 }} />,
       };
     }
     // 已预约状态 - 蓝色系（柔和背景）
+    const statusColor = isMonochrome ? '#999' : THEME_COLOR;
     return {
       label: t('customers.appointmentStatus.confirmed'),
-      color: '#1976D2',
-      lightColor: '#42A5F5',
-      bgColor: alpha('#1976D2', 0.08), // 加深的蓝色背景
-      borderColor: alpha('#1976D2', 0.15),
+      color: statusColor,
+      lightColor: isMonochrome ? '#aaa' : '#42A5F5',
+      bgColor: isMonochrome ? 'rgba(153,153,153,0.06)' : alpha(statusColor, 0.08),
+      borderColor: alpha(statusColor, 0.2),
+      borderStyle: 'solid',
+      borderWidth: '1px',
       icon: <TimeIcon sx={{ fontSize: 14 }} />,
     };
   };
@@ -140,7 +157,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           p: compactPadding,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
-          border: '1px solid',
+          borderWidth: statusConfig.borderWidth,
+          borderStyle: statusConfig.borderStyle,
           borderColor: statusConfig.borderColor,
           overflow: 'hidden',
           boxShadow: 'none',
@@ -256,7 +274,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
-        border: '1px solid',
+        borderWidth: statusConfig.borderWidth,
+        borderStyle: statusConfig.borderStyle,
         borderColor: statusConfig.borderColor,
         boxShadow: 'none',
         '&:hover': {

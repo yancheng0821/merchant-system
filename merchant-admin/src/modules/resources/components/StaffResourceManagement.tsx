@@ -54,12 +54,14 @@ import StaffAvailabilityEditor from './StaffAvailabilityEditor';
 import { StaffResource, convertToStaffResource, convertStaffToResource } from '../types';
 import { getFullImageUrl, resourceApi, staffAttendanceApi } from '../../../services/api';
 import { usePermission } from '../../../hooks/usePermission';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { format, parseISO } from 'date-fns';
 import { getMerchantNow } from '../../../utils/timezoneUtils';
 
 const StaffResourceManagement: React.FC = () => {
     const { t } = useTranslation();
     const { hasPermission } = usePermission();
+    const { themeMode } = useTheme();
     const [staff, setStaff] = useState<StaffResource[]>([]);
     const [filteredStaff, setFilteredStaff] = useState<StaffResource[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -94,8 +96,10 @@ const StaffResourceManagement: React.FC = () => {
     // 员工考勤数据（check-in/out时间）
     const [staffAttendance, setStaffAttendance] = useState<Map<number, any>>(new Map());
 
-    // 主题色
-    const themeColor = '#3B82F6';
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const themeColor = isMonochrome ? '#1a1a1a' : '#3B82F6';
+    const themeColorDark = isMonochrome ? '#333' : '#1D4ED8';
 
     // 获取租户ID
     const tenantId = useMemo(() => {
@@ -296,14 +300,29 @@ const StaffResourceManagement: React.FC = () => {
         );
     };
 
-    const getAvatarColor = (name: string) => {
-        const colors = ['#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#00BCD4', '#009688', '#4CAF50'];
-        const index = name.charCodeAt(0) % colors.length;
-        return colors[index];
+    // 头像背景色 - 直接使用主题色（参考客户管理）
+    const getAvatarColor = (_name: string) => {
+        return themeColor;
     };
 
     // 根据技能等级获取颜色
     const getSkillLevelColor = (level: string) => {
+        if (isMonochrome) {
+            // 极简模式：使用不同深浅的灰色表示等级
+            switch (level) {
+                case 'BEGINNER':
+                    return '#9a9a9a'; // 最浅灰
+                case 'INTERMEDIATE':
+                    return '#6a6a6a'; // 中灰
+                case 'EXPERT':
+                    return '#4a4a4a'; // 深灰
+                case 'MASTER':
+                    return '#1a1a1a'; // 最深黑
+                default:
+                    return '#9a9a9a';
+            }
+        }
+        // 彩色模式
         switch (level) {
             case 'BEGINNER':
                 return '#94a3b8'; // 灰色
@@ -479,11 +498,11 @@ const StaffResourceManagement: React.FC = () => {
                                         width: 44,
                                         height: 44,
                                         borderRadius: 1.5,
-                                        bgcolor: alpha('#10B981', 0.08),
+                                        bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#10B981', 0.08),
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        color: '#10B981',
+                                        color: isMonochrome ? '#1a1a1a' : '#10B981',
                                         flexShrink: 0,
                                     }}
                                 >
@@ -503,90 +522,95 @@ const StaffResourceManagement: React.FC = () => {
                 </Grid>
             </Grid>
 
-            {/* 搜索和筛选区域 */}
-            <Grid container spacing={3} mb={3}>
-                <Grid item xs={12} md={5}>
-                    <TextField
-                        fullWidth
-                        placeholder={t('staff.searchPlaceholder')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: 'text.secondary' }} />
-                                </InputAdornment>
-                            ),
-                        }}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
-                                '&:hover fieldset': {
-                                    borderColor: 'rgba(0,0,0,0.23)',
-                                },
-                                '&.Mui-focused fieldset': {
-                                    borderColor: themeColor,
-                                    borderWidth: '2px',
-                                },
-                            },
-                        }}
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <FormControl fullWidth>
-                        <InputLabel>{t('staff.status')}</InputLabel>
-                        <Select
-                            value={statusFilter}
-                            label={t('staff.status')}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            sx={{
-                                borderRadius: 2,
-                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: 'rgba(0,0,0,0.23)',
-                                },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: themeColor,
-                                    borderWidth: '2px',
-                                },
-                            }}
-                        >
-                            <MenuItem value="all">{t('staff.allStatuses')}</MenuItem>
-                            <MenuItem value="ACTIVE">{t('staff.statusOptions.active')}</MenuItem>
-                            <MenuItem value="INACTIVE">{t('staff.statusOptions.inactive')}</MenuItem>
-                            <MenuItem value="VACATION">{t('staff.statusOptions.vacation')}</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
-                {hasPermission('staff:create') && (
-                    <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <Button
+            {/* 搜索和过滤区域 */}
+            <Box
+                sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    bgcolor: '#fff',
+                    mb: 2.5,
+                    p: 2.5,
+                }}
+            >
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={6} md={4}>
+                        <TextField
+                            fullWidth
                             size="small"
-                            variant="contained"
-                            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                            onClick={() => {
-                                setSelectedStaff(null);
-                                setStaffDialogOpen(true);
+                            placeholder={t('staff.searchPlaceholder')}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
                             }}
                             sx={{
-                                borderRadius: 1.5,
-                                height: 40,
-                                px: 2,
-                                fontSize: '0.8125rem',
-                                fontWeight: 500,
-                                bgcolor: themeColor,
-                                boxShadow: 'none',
-                                textTransform: 'none',
-                                '&:hover': {
-                                    bgcolor: '#1D4ED8',
-                                    boxShadow: 'none',
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                    bgcolor: '#fff',
+                                    '& fieldset': { borderColor: '#d0d0d0' },
+                                    '&:hover fieldset': { borderColor: '#bbb' },
+                                    '&.Mui-focused fieldset': { borderColor: themeColor, borderWidth: '1px' },
                                 },
                             }}
-                        >
-                            {t('staff.addStaff')}
-                        </Button>
+                        />
                     </Grid>
-                )}
-            </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                        <FormControl fullWidth size="small">
+                            <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: themeColor } }}>{t('staff.status')}</InputLabel>
+                            <Select
+                                value={statusFilter}
+                                label={t('staff.status')}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                sx={{
+                                    borderRadius: 2,
+                                    bgcolor: '#fff',
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: themeColor, borderWidth: '1px' },
+                                }}
+                            >
+                                <MenuItem value="all">{t('staff.allStatuses')}</MenuItem>
+                                <MenuItem value="ACTIVE">{t('staff.statusOptions.active')}</MenuItem>
+                                <MenuItem value="INACTIVE">{t('staff.statusOptions.inactive')}</MenuItem>
+                                <MenuItem value="VACATION">{t('staff.statusOptions.vacation')}</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    {hasPermission('staff:create') && (
+                        <Grid item xs={12} sm={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                            <Button
+                                size="small"
+                                variant="contained"
+                                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                                onClick={() => {
+                                    setSelectedStaff(null);
+                                    setStaffDialogOpen(true);
+                                }}
+                                sx={{
+                                    borderRadius: 1.5,
+                                    py: 0.75,
+                                    px: 2,
+                                    fontSize: '0.8125rem',
+                                    fontWeight: 500,
+                                    bgcolor: themeColor,
+                                    boxShadow: 'none',
+                                    textTransform: 'none',
+                                    '&:hover': {
+                                        bgcolor: themeColorDark,
+                                        boxShadow: 'none',
+                                    },
+                                }}
+                            >
+                                {t('staff.addStaff')}
+                            </Button>
+                        </Grid>
+                    )}
+                </Grid>
+            </Box>
 
             {/* 错误提示 */}
             {error && (
@@ -603,26 +627,26 @@ const StaffResourceManagement: React.FC = () => {
             )}
 
             {/* 员工列表表格 */}
-            <Card
+            <Box
                 sx={{
-                    borderRadius: 4,
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
-                    border: '1px solid rgba(0,0,0,0.06)',
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.08)',
                     overflow: 'hidden',
+                    bgcolor: '#fff',
                 }}
             >
                 <TableContainer>
                     <Table>
-                        <TableHead sx={{ backgroundColor: '#f8fafc' }}>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.staff')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.contact')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.position')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.staff')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.contact')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.position')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
                                     {t('staff.serviceExpertise', 'Service Expertise')}
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.status')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('staff.actions')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.status')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -646,11 +670,10 @@ const StaffResourceManagement: React.FC = () => {
                                     .map((staffMember) => (
                                         <TableRow
                                             key={staffMember.id}
+                                            hover
                                             sx={{
-                                                '&:hover': {
-                                                    backgroundColor: alpha(themeColor, 0.04),
-                                                },
-                                                transition: 'background-color 0.2s ease',
+                                                '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                                                '& td': { py: 1.5, fontSize: '0.8125rem' },
                                             }}
                                         >
                                             <TableCell>
@@ -811,15 +834,22 @@ const StaffResourceManagement: React.FC = () => {
                                             <TableCell>
                                                 {getStatusChip(staffMember)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell sx={{ textAlign: 'center' }}>
                                                 <IconButton
                                                     size="small"
                                                     onClick={(e) => {
                                                         setMenuAnchorEl(e.currentTarget);
                                                         setSelectedStaff(staffMember);
                                                     }}
+                                                    sx={{
+                                                        color: '#999',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(0,0,0,0.04)',
+                                                            color: '#666',
+                                                        },
+                                                    }}
                                                 >
-                                                    <MoreVertIcon />
+                                                    <MoreVertIcon sx={{ fontSize: 18 }} />
                                                 </IconButton>
                                             </TableCell>
                                         </TableRow>
@@ -839,14 +869,32 @@ const StaffResourceManagement: React.FC = () => {
                         setRowsPerPage(parseInt(e.target.value, 10));
                         setPage(0);
                     }}
+                    sx={{
+                        borderTop: '1px solid rgba(0,0,0,0.08)',
+                        '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                            fontSize: '0.8125rem',
+                            color: '#666',
+                        },
+                    }}
                 />
-            </Card>
+            </Box>
 
             {/* 操作菜单 */}
             <Menu
                 anchorEl={menuAnchorEl}
                 open={Boolean(menuAnchorEl)}
                 onClose={() => setMenuAnchorEl(null)}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: 1.5,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                            border: '1px solid rgba(0,0,0,0.06)',
+                            minWidth: 160,
+                            mt: 0.5,
+                        }
+                    }
+                }}
             >
                 {hasPermission('staff:update') && (
                     <MenuItem
@@ -854,8 +902,13 @@ const StaffResourceManagement: React.FC = () => {
                             setStaffDialogOpen(true);
                             setMenuAnchorEl(null);
                         }}
+                        sx={{
+                            fontSize: '0.8125rem',
+                            py: 1,
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+                        }}
                     >
-                        <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+                        <EditIcon sx={{ mr: 1.5, fontSize: 16, color: themeColor }} />
                         {t('staff.editStaff')}
                     </MenuItem>
                 )}
@@ -865,9 +918,13 @@ const StaffResourceManagement: React.FC = () => {
                             setAvailabilityEditorOpen(true);
                             setMenuAnchorEl(null);
                         }}
-                        sx={{ color: themeColor }}
+                        sx={{
+                            fontSize: '0.8125rem',
+                            py: 1,
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+                        }}
                     >
-                        <ScheduleIcon sx={{ mr: 1, fontSize: 18 }} />
+                        <ScheduleIcon sx={{ mr: 1.5, fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
                         {t('staff.advancedScheduleManagement')}
                     </MenuItem>
                 )}
@@ -877,9 +934,13 @@ const StaffResourceManagement: React.FC = () => {
                             setDeleteDialogOpen(true);
                             setMenuAnchorEl(null);
                         }}
-                        sx={{ color: 'error.main' }}
+                        sx={{
+                            fontSize: '0.8125rem',
+                            py: 1,
+                            '&:hover': { backgroundColor: alpha('#EF4444', 0.08) },
+                        }}
                     >
-                        <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+                        <DeleteIcon sx={{ mr: 1.5, fontSize: 16, color: '#EF4444' }} />
                         {t('staff.deleteStaff')}
                     </MenuItem>
                 )}
@@ -900,32 +961,44 @@ const StaffResourceManagement: React.FC = () => {
                 onClose={() => setDeleteDialogOpen(false)}
                 PaperProps={{
                     sx: {
-                        borderRadius: 3,
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                        borderRadius: 2.5,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                     },
                 }}
             >
-                <DialogTitle sx={{ fontWeight: 600 }}>
-                    {t('staff.confirmDelete')}
-                </DialogTitle>
+                <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                        {t('staff.confirmDelete')}
+                    </Typography>
+                </Box>
                 <DialogContent>
-                    <Typography>
+                    <Typography variant="body2" color="text.secondary">
                         {t('staff.deleteConfirmMessage', { name: selectedStaff?.name })}
                     </Typography>
                 </DialogContent>
-                <DialogActions sx={{ p: 3 }}>
+                <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                     <Button
                         onClick={() => setDeleteDialogOpen(false)}
-                        variant="outlined"
-                        sx={{ borderRadius: 2 }}
+                        size="small"
+                        sx={{ color: '#666', borderRadius: 1.5, textTransform: 'none', fontSize: '0.8125rem' }}
                     >
                         {t('common.cancel')}
                     </Button>
                     <Button
                         onClick={handleDeleteStaff}
                         variant="contained"
-                        color="error"
-                        sx={{ borderRadius: 2 }}
+                        size="small"
+                        sx={{
+                            borderRadius: 1.5,
+                            textTransform: 'none',
+                            fontSize: '0.8125rem',
+                            bgcolor: '#EF4444',
+                            boxShadow: 'none',
+                            '&:hover': {
+                                bgcolor: '#DC2626',
+                                boxShadow: 'none',
+                            },
+                        }}
                     >
                         {t('common.delete')}
                     </Button>
@@ -967,9 +1040,9 @@ const StaffResourceManagement: React.FC = () => {
                 PaperProps={{
                     sx: {
                         mt: 1,
-                        borderRadius: 3,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                        border: '1px solid #e5e7eb',
+                        borderRadius: 2,
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+                        border: '1px solid rgba(0,0,0,0.06)',
                         maxWidth: 380,
                         minWidth: 300,
                     },
@@ -1074,9 +1147,10 @@ const StaffResourceManagement: React.FC = () => {
                 }}
                 PaperProps={{
                     sx: {
-                        borderRadius: 2,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                        minWidth: 180,
+                        borderRadius: 1.5,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        minWidth: 160,
                     },
                 }}
             >

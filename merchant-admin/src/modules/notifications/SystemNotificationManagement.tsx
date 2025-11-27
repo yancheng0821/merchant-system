@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 
 interface SystemNotification {
@@ -49,6 +50,14 @@ interface SystemNotification {
 const SystemNotificationManagement: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#F97316';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#EA6A0A';
+  const THEME_COLOR_LIGHT = isMonochrome ? '#666' : '#FB923C';
+
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -220,44 +229,61 @@ const SystemNotificationManagement: React.FC = () => {
   return (
     <Box>
       {/* 操作栏 */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: '#475569' }}>
-          {t('notifications.systemNotifications')}
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            background: 'linear-gradient(45deg, #F97316, #FB923C)',
-            color: 'white',
-            fontWeight: 600,
-            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #EA6A0A, #F97316)',
-              boxShadow: '0 6px 16px rgba(249, 115, 22, 0.4)',
-              transform: 'translateY(-1px)',
-            },
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
-          {t('common.create')}
-        </Button>
-      </Box>
+      <Paper
+        sx={{
+          p: 2.5,
+          mb: 3,
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+        }}
+      >
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('notifications.systemNotifications')}
+          </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            onClick={() => handleOpenDialog()}
+            sx={{
+              borderRadius: 1.5,
+              px: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '0.8125rem',
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: THEME_COLOR_DARK,
+                boxShadow: 'none',
+              },
+            }}
+          >
+            {t('common.create')}
+          </Button>
+        </Box>
+      </Paper>
 
       {/* 表格 */}
-      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-        <Table>
+      <TableContainer
+        component={Paper}
+        sx={{
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+        }}
+      >
+        <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>{t('notifications.title')}</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>{t('notifications.content')}</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>{t('notifications.level')}</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#475569' }}>{t('notifications.createdAt')}</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600, color: '#475569' }}>
+            <TableRow sx={{ backgroundColor: '#fafafa' }}>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>ID</TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.title')}</TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.content')}</TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.level')}</TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.createdAt')}</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
                 {t('common.actions')}
               </TableCell>
             </TableRow>
@@ -308,7 +334,7 @@ const SystemNotificationManagement: React.FC = () => {
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDialog(notification)}
-                        sx={{ color: '#3B82F6' }}
+                        sx={{ color: THEME_COLOR }}
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
@@ -342,6 +368,14 @@ const SystemNotificationManagement: React.FC = () => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+            backgroundColor: '#fafafa',
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontSize: '0.8125rem',
+              color: '#666',
+            },
+          }}
         />
       </TableContainer>
 
@@ -353,21 +387,18 @@ const SystemNotificationManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{
-          fontWeight: 600,
-          fontSize: '1.25rem',
-          color: '#1e293b',
-          pb: 2,
-        }}>
-          {editingNotification
-            ? t('notifications.editSystemNotification')
-            : t('notifications.createSystemNotification')}
-        </DialogTitle>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {editingNotification
+              ? t('notifications.editSystemNotification')
+              : t('notifications.createSystemNotification')}
+          </Typography>
+        </Box>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* 级别选择 */}
@@ -379,16 +410,16 @@ const SystemNotificationManagement: React.FC = () => {
               fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   '&:hover fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#F97316',
+                  color: THEME_COLOR,
                 },
               }}
             >
@@ -418,16 +449,16 @@ const SystemNotificationManagement: React.FC = () => {
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   '&:hover fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#F97316',
+                  color: THEME_COLOR,
                 },
               }}
             />
@@ -441,16 +472,16 @@ const SystemNotificationManagement: React.FC = () => {
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   '&:hover fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#F97316',
+                  color: THEME_COLOR,
                 },
               }}
             />
@@ -466,16 +497,16 @@ const SystemNotificationManagement: React.FC = () => {
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   '&:hover fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#F97316',
+                  color: THEME_COLOR,
                 },
               }}
             />
@@ -491,32 +522,32 @@ const SystemNotificationManagement: React.FC = () => {
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: 1.5,
                   '&:hover fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#F97316',
+                    borderColor: THEME_COLOR,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#F97316',
+                  color: THEME_COLOR,
                 },
               }}
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
             onClick={handleCloseDialog}
             disabled={loading}
+            size="small"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              color: '#64748b',
-              '&:hover': {
-                backgroundColor: '#f1f5f9',
-              },
+              borderRadius: 1.5,
+              px: 2,
+              color: '#666',
+              textTransform: 'none',
+              fontSize: '0.8125rem',
             }}
           >
             {t('common.cancel')}
@@ -524,16 +555,19 @@ const SystemNotificationManagement: React.FC = () => {
           <Button
             onClick={handleSave}
             variant="contained"
+            size="small"
             disabled={loading}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(45deg, #F97316, #FB923C)',
-              color: 'white',
-              boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+              borderRadius: 1.5,
+              px: 2.5,
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '0.8125rem',
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
               '&:hover': {
-                background: 'linear-gradient(45deg, #EA6A0A, #F97316)',
-                boxShadow: '0 6px 16px rgba(249, 115, 22, 0.4)',
+                bgcolor: THEME_COLOR_DARK,
+                boxShadow: 'none',
               },
             }}
           >
@@ -548,28 +582,28 @@ const SystemNotificationManagement: React.FC = () => {
         onClose={handleCloseDeleteDialog}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
-          {t('common.confirmDelete')}
-        </DialogTitle>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('common.confirmDelete')}
+          </Typography>
+        </Box>
         <DialogContent>
-          <Typography>
+          <Typography variant="body2" color="text.secondary">
             {t('notifications.deleteConfirmMessage', {
               title: notificationToDelete?.titleEn || notificationToDelete?.title
             })}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
             onClick={handleCloseDeleteDialog}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-            }}
+            size="small"
+            sx={{ color: '#666', borderRadius: 1.5, textTransform: 'none', fontSize: '0.8125rem' }}
             disabled={loading}
           >
             {t('common.cancel')}
@@ -577,13 +611,17 @@ const SystemNotificationManagement: React.FC = () => {
           <Button
             onClick={handleConfirmDelete}
             variant="contained"
+            size="small"
             disabled={loading}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              backgroundColor: '#EF4444',
+              borderRadius: 1.5,
+              textTransform: 'none',
+              fontSize: '0.8125rem',
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
               '&:hover': {
-                backgroundColor: '#DC2626',
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >

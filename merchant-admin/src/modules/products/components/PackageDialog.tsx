@@ -68,11 +68,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Package } from '../../../services/api';
-
-// 主题颜色 - 使用青色主题
-const THEME_COLOR = '#06B6D4';
-const THEME_COLOR_DARK = '#0891B2';
-const THEME_COLOR_DARKER = '#0E7490';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface Service {
   id: number;
@@ -178,6 +174,12 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
   mode,
 }) => {
   const { t } = useTranslation();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#0891B2';
 
   // Separate state type to handle editable fields properly
   interface EditableFormData extends Omit<Partial<Package>, 'services' | 'validity_days' | 'max_shared_users'> {
@@ -378,60 +380,21 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
         }
       }}
     >
-      {/* 现代化对话框标题 */}
-      <DialogTitle
-        sx={{
-          background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.08)}, ${alpha(THEME_COLOR_DARK, 0.08)})`,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          pb: 3,
-          pt: 3,
-        }}
-      >
+      {/* 简约对话框标题 */}
+      <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-              }}
-            >
-              <PackageIcon sx={{ fontSize: 24 }} />
-            </Box>
-            <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: 'text.primary',
-                  mb: 0.5,
-                }}
-              >
-                {mode === 'edit' ? t('packages.editPackage') : t('packages.createPackage')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {mode === 'edit' ? t('packages.editPackageDescription') : t('packages.createPackageDescription')}
-              </Typography>
-            </Box>
-          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: THEME_COLOR }}>
+            {mode === 'edit' ? t('packages.editPackage') : t('packages.createPackage')}
+          </Typography>
           <IconButton
             onClick={onClose}
-            sx={{
-              '&:hover': {
-                backgroundColor: alpha(THEME_COLOR, 0.1),
-              },
-            }}
+            size="small"
+            sx={{ color: '#999', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)', color: '#666' } }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
-      </DialogTitle>
+      </Box>
 
       <DialogContent sx={{ p: 0 }}>
         <Box sx={{ p: 3 }}>
@@ -439,33 +402,16 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
+              p: 2.5,
+              mb: 2.5,
+              border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
+              background: '#fafafa',
             }}
           >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <PackageIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                {t('packages.basicInfo')}
-              </Typography>
-            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: THEME_COLOR, mb: 2 }}>
+              {t('packages.basicInfo')}
+            </Typography>
 
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -632,41 +578,26 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
+              p: 2.5,
+              mb: 2.5,
+              border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
+              background: '#fafafa',
             }}
           >
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 2,
-                    background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                  }}
-                >
-                  <ServiceIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                  {t('packages.includedServices')}
-                </Typography>
-              </Box>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: THEME_COLOR }}>
+                {t('packages.includedServices')}
+              </Typography>
               <Button
                 size="small"
                 startIcon={<AddIcon />}
                 onClick={handleAddService}
                 sx={{
                   color: THEME_COLOR,
-                  borderRadius: 2,
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 500,
                   '&:hover': {
                     backgroundColor: alpha(THEME_COLOR, 0.1),
                   },
@@ -803,33 +734,16 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
+              p: 2.5,
+              mb: 2.5,
+              border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
+              background: '#fafafa',
             }}
           >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <PriceIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                {t('packages.pricing')}
-              </Typography>
-            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: THEME_COLOR, mb: 2 }}>
+              {t('packages.pricing')}
+            </Typography>
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
@@ -911,33 +825,16 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
+              p: 2.5,
+              mb: 2.5,
+              border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
+              background: '#fafafa',
             }}
           >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <SettingsIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                {t('packages.settings')}
-              </Typography>
-            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: THEME_COLOR, mb: 2 }}>
+              {t('packages.settings')}
+            </Typography>
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -1085,19 +982,20 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
 
       <DialogActions
         sx={{
-          p: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          background: alpha(THEME_COLOR, 0.02),
+          px: 3,
+          py: 2,
+          borderTop: '1px solid rgba(0,0,0,0.06)',
         }}
       >
         <Button
           onClick={onClose}
           disabled={saving}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            color: 'text.secondary',
+            borderRadius: 1.5,
+            px: 2.5,
+            color: '#666',
+            textTransform: 'none',
+            fontWeight: 500,
           }}
         >
           {t('common.cancel')}
@@ -1107,13 +1005,15 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
           onClick={handleSubmit}
           disabled={saving}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-            boxShadow: `0 4px 15px ${alpha(THEME_COLOR, 0.3)}`,
+            borderRadius: 1.5,
+            px: 2.5,
+            bgcolor: THEME_COLOR,
+            boxShadow: 'none',
+            textTransform: 'none',
+            fontWeight: 500,
             '&:hover': {
-              background: `linear-gradient(135deg, ${THEME_COLOR_DARK}, ${THEME_COLOR_DARKER})`,
-              boxShadow: `0 6px 20px ${alpha(THEME_COLOR, 0.4)}`,
+              bgcolor: THEME_COLOR_DARK,
+              boxShadow: 'none',
             },
           }}
         >

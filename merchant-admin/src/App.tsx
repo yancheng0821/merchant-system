@@ -35,6 +35,7 @@ import { useAuth } from './contexts/AuthContext';
 import { TaxProvider } from './contexts/TaxContext';
 import { SessionProvider } from './contexts/SessionContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
+import { useTheme } from './contexts/ThemeContext';
 import { LoginPage, UserProfile } from './components';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import {
@@ -69,6 +70,7 @@ const MainAppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, logout, loading } = useAuth();
   const { isDrawerOpen, setDrawerOpen } = useNavigation();
+  const { getMenuColor } = useTheme();
   const { userPermissions, isSuperAdmin } = usePermission();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const location = useLocation();
@@ -389,18 +391,16 @@ const MainAppContent: React.FC = () => {
                     top: 18,
                     right: -15,
                     height: 18,
-                    fontSize: '0.625rem',
-                    fontWeight: 600,
-                    background: subscription.status === 'TRIAL'
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                    fontSize: '0.6rem',
+                    fontWeight: 500,
+                    bgcolor: subscription.status === 'TRIAL'
+                      ? '#3B82F6'
                       : subscription.status === 'ACTIVE'
-                      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+                      ? '#10B981'
                       : subscription.status === 'PAST_DUE'
-                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
-                      : 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)',
+                      ? '#F59E0B'
+                      : '#6B7280',
                     color: 'white',
-                    border: '1.5px solid white',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
                     '& .MuiChip-label': {
                       px: 0.75,
                       py: 0,
@@ -413,55 +413,44 @@ const MainAppContent: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 现代化菜单列表 */}
-      <List sx={{ flex: 1, p: 2 }}>
+      {/* 简约菜单列表 */}
+      <List sx={{ flex: 1, px: 1.5, py: 1 }}>
         {menuItems.map((item) => (
           <React.Fragment key={item.id}>
             <ListItemButton
               selected={selectedItem === item.id}
               onClick={() => handleMenuClick(item.id)}
               sx={{
-                borderRadius: 2,
-                mb: 1,
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'all 0.3s ease',
+                borderRadius: 1.5,
+                mb: 0.5,
+                py: 1,
+                px: 1.5,
+                transition: 'all 0.2s ease',
                 '&:hover': {
-                  transform: 'translateX(4px)',
-                  boxShadow: `0 4px 15px ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.3)}`,
+                  bgcolor: alpha(getMenuColor(item.color), 0.06),
                 },
                 '&.Mui-selected': {
-                  background: `linear-gradient(135deg, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.1)}, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.05)})`,
-                  borderLeft: `4px solid ${item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1')}`,
+                  bgcolor: alpha(getMenuColor(item.color), 0.08),
                   '&:hover': {
-                    background: `linear-gradient(135deg, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.15)}, ${alpha(item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'), 0.08)})`,
+                    bgcolor: alpha(getMenuColor(item.color), 0.12),
                   },
                   '& .MuiListItemIcon-root': {
-                    color: item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'),
+                    color: getMenuColor(item.color),
                   },
                   '& .MuiListItemText-primary': {
-                    color: item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'),
+                    color: getMenuColor(item.color),
                     fontWeight: 600,
                   },
                 },
-                '&::before': selectedItem === item.id ? {
-                  content: '""',
-                  position: 'absolute',
-                  right: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: 3,
-                  height: '60%',
-                  background: item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1'),
-                  borderRadius: '2px 0 0 2px',
-                } : {},
               }}
             >
               <ListItemIcon
                 sx={{
-                  minWidth: 44,
-                  color: selectedItem === item.id ? (item.id === 'settings' ? '#1a1a1a' : (item.color || '#6366F1')) : 'text.secondary',
-                  transition: 'color 0.3s ease',
+                  minWidth: 36,
+                  color: selectedItem === item.id ? getMenuColor(item.color) : '#888',
+                  '& .MuiSvgIcon-root': {
+                    fontSize: '1.25rem',
+                  },
                 }}
               >
                 {item.icon}
@@ -469,11 +458,12 @@ const MainAppContent: React.FC = () => {
               <ListItemText
                 primary={t(item.textKey)}
                 primaryTypographyProps={{
-                  fontSize: '0.9rem',
+                  fontSize: '0.875rem',
                   fontWeight: selectedItem === item.id ? 600 : 500,
+                  color: selectedItem === item.id ? getMenuColor(item.color) : '#333',
                 }}
               />
-              {item.children && (expandedMenus[item.id] ? <ExpandLess /> : <ExpandMore />)}
+              {item.children && (expandedMenus[item.id] ? <ExpandLess sx={{ fontSize: 18, color: '#999' }} /> : <ExpandMore sx={{ fontSize: 18, color: '#999' }} />)}
             </ListItemButton>
 
             {item.children && (
@@ -483,22 +473,32 @@ const MainAppContent: React.FC = () => {
                     <ListItemButton
                       key={child.id}
                       sx={{
-                        pl: 4,
-                        borderRadius: 2,
-                        ml: 1,
-                        mr: 1,
-                        mb: 0.5,
+                        py: 0.75,
+                        pl: 6,
+                        pr: 1.5,
+                        borderRadius: 1.5,
+                        mx: 0.5,
+                        mb: 0.25,
                         '&:hover': {
-                          background: alpha(child.color || '#6366F1', 0.08),
+                          bgcolor: alpha(getMenuColor(child.color), 0.06),
+                        },
+                        '&.Mui-selected': {
+                          bgcolor: alpha(getMenuColor(child.color), 0.08),
                         },
                       }}
                       selected={selectedItem === child.id}
                       onClick={() => setSelectedItem(child.id)}
                     >
-                      <ListItemIcon sx={{ minWidth: 40 }}>
+                      <ListItemIcon sx={{ minWidth: 32, '& .MuiSvgIcon-root': { fontSize: '1.1rem' } }}>
                         {child.icon}
                       </ListItemIcon>
-                      <ListItemText primary={t(child.textKey)} />
+                      <ListItemText
+                        primary={t(child.textKey)}
+                        primaryTypographyProps={{
+                          fontSize: '0.8125rem',
+                          fontWeight: selectedItem === child.id ? 600 : 400,
+                        }}
+                      />
                     </ListItemButton>
                   ))}
                 </List>
@@ -508,78 +508,37 @@ const MainAppContent: React.FC = () => {
         ))}
       </List>
 
-      {/* 公司标识和隐藏导航栏按钮 */}
-      <Box sx={{ p: 2, mt: 'auto' }}>
-        {/* 公司信息 */}
-        <Box
-          sx={{
-            mb: 2,
-            pb: 2,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            textAlign: 'center',
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              color: '#aaa',
-              fontSize: '0.65rem',
-              mb: 0.5,
-            }}
-          >
-            Powered by
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              color: '#666',
-              letterSpacing: '0.3px',
-            }}
-          >
-            SwiftmindSystems
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              color: '#aaa',
-              fontSize: '0.6rem',
-              mt: 0.5,
-            }}
-          >
-            © {new Date().getFullYear()}
-          </Typography>
-        </Box>
-
+      {/* 底部区域 */}
+      <Box sx={{ px: 1.5, py: 2, mt: 'auto' }}>
+        {/* 隐藏菜单按钮 */}
         <Button
           fullWidth
-          startIcon={<ChevronLeftIcon />}
+          startIcon={<ChevronLeftIcon sx={{ fontSize: 18 }} />}
           onClick={() => setDrawerOpen(false)}
           sx={{
             justifyContent: 'flex-start',
-            color: 'text.secondary',
+            color: '#888',
             textTransform: 'none',
-            borderRadius: 2,
-            py: 1.5,
-            px: 2,
+            borderRadius: 1.5,
+            py: 1,
+            px: 1.5,
+            fontSize: '0.8125rem',
             fontWeight: 500,
-            transition: 'all 0.3s ease',
             '&:hover': {
-              bgcolor: alpha('#667eea', 0.08),
-              color: '#667eea',
-              transform: 'translateX(-4px)',
-              '& .MuiSvgIcon-root': {
-                transform: 'translateX(-4px)',
-              }
+              bgcolor: 'rgba(0,0,0,0.04)',
+              color: '#333',
             },
           }}
         >
           {t('nav.hideMenu', 'Hide Menu')}
         </Button>
+
+        {/* 公司信息 */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)', textAlign: 'center' }}>
+          <Typography sx={{ fontSize: '0.6875rem', color: '#bbb' }}>
+            Powered by <span style={{ color: '#999', fontWeight: 500 }}>SwiftmindSystems</span>
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

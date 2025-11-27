@@ -31,11 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrencyUtils } from '../../../config/constants';
 import { ServiceManagement as ServiceManagementType, ServiceCategory, merchantConfigApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
-
-// 主题颜色 - 使用青色主题
-const THEME_COLOR = '#06B6D4';
-const THEME_COLOR_DARK = '#0891B2';
-const THEME_COLOR_DARKER = '#0E7490';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ServiceDialogProps {
   open: boolean;
@@ -58,6 +54,12 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#0891B2';
   const [formData, setFormData] = useState<Partial<ServiceManagementType>>({
     name: '',
     categoryId: 0,
@@ -228,60 +230,21 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
         }
       }}
     >
-      {/* 现代化对话框标题 */}
-      <DialogTitle
-        sx={{
-          background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.08)}, ${alpha(THEME_COLOR_DARK, 0.08)})`,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          pb: 3,
-          pt: 3,
-        }}
-      >
+      {/* 简约对话框标题 */}
+      <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-              }}
-            >
-              <ServiceIcon sx={{ fontSize: 24 }} />
-            </Box>
-            <Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 700,
-                  color: 'text.primary',
-                  mb: 0.5,
-                }}
-              >
-                {mode === 'add' ? t('services.addService') : t('services.editService')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {mode === 'add' ? t('dialogs.createNewService') : t('dialogs.editService')}
-              </Typography>
-            </Box>
-          </Box>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: THEME_COLOR }}>
+            {mode === 'add' ? t('services.addService') : t('services.editService')}
+          </Typography>
           <IconButton
             onClick={onClose}
-            sx={{
-              '&:hover': {
-                backgroundColor: alpha(THEME_COLOR, 0.1),
-              },
-            }}
+            size="small"
+            sx={{ color: '#999', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)', color: '#666' } }}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
-      </DialogTitle>
+      </Box>
 
       <DialogContent sx={{ p: 0 }}>
         <Box sx={{ p: 3 }}>
@@ -289,33 +252,16 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
+              p: 2.5,
+              mb: 2.5,
+              border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
+              background: '#fafafa',
             }}
           >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <ServiceIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                {t('services.basicInfo')}
-              </Typography>
-            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: THEME_COLOR, mb: 2 }}>
+              {t('services.basicInfo')}
+            </Typography>
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -426,33 +372,16 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              border: '1px solid',
-              borderColor: alpha(THEME_COLOR, 0.2),
+              p: 2.5,
+              mb: 2.5,
+              border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: 2,
-              background: alpha(THEME_COLOR, 0.02),
+              background: '#fafafa',
             }}
           >
-            <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2,
-                  background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <PriceIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: THEME_COLOR }}>
-                {t('services.serviceDetails')}
-              </Typography>
-            </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: THEME_COLOR, mb: 2 }}>
+              {t('services.serviceDetails')}
+            </Typography>
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
@@ -591,18 +520,19 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
 
       <DialogActions
         sx={{
-          p: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          background: alpha(THEME_COLOR, 0.02),
+          px: 3,
+          py: 2,
+          borderTop: '1px solid rgba(0,0,0,0.06)',
         }}
       >
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: 2,
-            px: 3,
-            color: 'text.secondary',
+            borderRadius: 1.5,
+            px: 2.5,
+            color: '#666',
+            textTransform: 'none',
+            fontWeight: 500,
           }}
         >
           {t('services.cancel')}
@@ -611,13 +541,15 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
           onClick={handleSave}
           variant="contained"
           sx={{
-            borderRadius: 2,
-            px: 3,
-            background: `linear-gradient(135deg, ${THEME_COLOR}, ${THEME_COLOR_DARK})`,
-            boxShadow: `0 4px 15px ${alpha(THEME_COLOR, 0.3)}`,
+            borderRadius: 1.5,
+            px: 2.5,
+            bgcolor: THEME_COLOR,
+            boxShadow: 'none',
+            textTransform: 'none',
+            fontWeight: 500,
             '&:hover': {
-              background: `linear-gradient(135deg, ${THEME_COLOR_DARK}, ${THEME_COLOR_DARKER})`,
-              boxShadow: `0 6px 20px ${alpha(THEME_COLOR, 0.4)}`,
+              bgcolor: THEME_COLOR_DARK,
+              boxShadow: 'none',
             },
           }}
         >

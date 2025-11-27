@@ -40,6 +40,7 @@ import { resourceApi, appointmentApi, staffAttendanceApi } from '../../services/
 import i18n from '../../i18n/config';
 import { format as formatDate } from 'date-fns';
 import { getMerchantNow } from '../../utils/timezoneUtils';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface DetailedAvailabilityViewProps {
     resourceId: number;
@@ -55,6 +56,11 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
     onBack,
 }) => {
     const { t } = useTranslation();
+    const { themeMode } = useTheme();
+
+    // 根据主题模式动态设置主题色
+    const isMonochrome = themeMode === 'monochrome';
+    const themeColor = isMonochrome ? '#1a1a1a' : '#3B82F6';
     // 获取本地日期字符串（避免时区问题）
     const getLocalDateString = (date: Date) => {
         const year = date.getFullYear();
@@ -334,8 +340,6 @@ const DetailedAvailabilityView: React.FC<DetailedAvailabilityViewProps> = ({
             </Box>
         );
     }
-
-    const themeColor = '#3B82F6';
 
     return (
         <Box>

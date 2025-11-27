@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import NotificationTemplateManagement from './NotificationTemplateManagement';
 import NotificationLogManagement from './NotificationLogManagement';
 import SystemNotificationManagement from './SystemNotificationManagement';
@@ -18,10 +19,12 @@ const NotificationManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
   const [tabValue, setTabValue] = useState(0);
 
-  // 橙色主题色
-  const themeColor = '#F97316';
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#F97316';
 
   // 检查是否是超级管理员
   const isSuperAdmin = React.useMemo(() => {
@@ -94,7 +97,7 @@ const NotificationManagement: React.FC = () => {
               component="h1"
               sx={{
                 fontWeight: 600,
-                color: '#F97316',
+                color: THEME_COLOR,
                 mb: 0.5,
               }}
             >
@@ -120,18 +123,20 @@ const NotificationManagement: React.FC = () => {
           value={tabValue}
           onChange={handleTabChange}
           sx={{
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#fafafa',
             '& .MuiTab-root': {
-              color: 'text.secondary',
+              color: '#666',
               fontWeight: 500,
-              py: 2,
+              fontSize: '0.875rem',
+              textTransform: 'none',
+              py: 1.5,
               '&.Mui-selected': {
-                color: themeColor,
+                color: THEME_COLOR,
                 fontWeight: 600,
               }
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: themeColor,
+              backgroundColor: THEME_COLOR,
               height: 3,
             }
           }}

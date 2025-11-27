@@ -26,6 +26,7 @@ import enUSLocale from 'date-fns/locale/en-US';
 import { format } from 'date-fns';
 import { shiftApi, handleApiError } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { getMerchantNow } from '../../../utils/timezoneUtils';
 import {
   Close as CloseIcon,
@@ -33,12 +34,6 @@ import {
   Event as EventIcon,
   AccessTime as TimeIcon,
 } from '@mui/icons-material';
-
-// 系统主题颜色 - 使用浅蓝色
-const themeColor = '#3B82F6';
-const themeColorLight = 'rgba(59, 130, 246, 0.15)'; // alpha 0.15 的浅蓝色
-const themeColorDark = '#2563EB';
-const themeColorDarker = '#1D4ED8';
 
 interface ShiftDialogProps {
   open: boolean;
@@ -50,6 +45,13 @@ interface ShiftDialogProps {
 const ShiftDialog: React.FC<ShiftDialogProps> = ({ open, shift, resourceId, onClose }) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const themeColor = isMonochrome ? '#1a1a1a' : '#3B82F6';
+  const themeColorLight = isMonochrome ? 'rgba(26, 26, 26, 0.1)' : 'rgba(59, 130, 246, 0.15)';
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resources, setResources] = useState<any[]>([]);

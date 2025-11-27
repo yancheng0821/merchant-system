@@ -41,6 +41,7 @@ import { format } from 'date-fns';
 import { costsApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePermission } from '../../../hooks/usePermission';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface Certificate {
   id?: number;
@@ -60,6 +61,13 @@ const CertificateManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#DC2626';
+  const THEME_COLOR_DARK = isMonochrome ? '#333' : '#B91C1C';
+
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -237,38 +245,37 @@ const CertificateManagement: React.FC = () => {
 
   return (
     <Box>
-      {/* 现代化搜索和操作区域 */}
+      {/* 简约搜索和操作区域 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
           mb: 3,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
+        <CardContent sx={{ py: 2, px: 2.5 }}>
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
+                size="small"
                 placeholder={t('costs.certificates.searchPlaceholder', 'Search certificates...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#DC2626',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#DC2626',
-                    },
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                   },
                 }}
               />
@@ -284,15 +291,15 @@ const CertificateManagement: React.FC = () => {
                     onClick={() => handleOpenDialog()}
                     sx={{
                       borderRadius: 1.5,
-                      height: 40,
                       px: 2,
+                      py: 0.75,
                       fontSize: '0.8125rem',
                       fontWeight: 500,
-                      bgcolor: '#DC2626',
+                      bgcolor: THEME_COLOR,
                       boxShadow: 'none',
                       textTransform: 'none',
                       '&:hover': {
-                        bgcolor: '#B91C1C',
+                        bgcolor: THEME_COLOR_DARK,
                         boxShadow: 'none',
                       },
                     }}
@@ -306,34 +313,35 @@ const CertificateManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 现代化表格 */}
+      {/* 简约表格卡片 */}
       <Card
         sx={{
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          overflow: 'hidden',
+          borderRadius: 2.5,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff',
         }}
       >
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.certificateName')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.certificateType')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.certificateNumber')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.expiryDate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.statusLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }} align="right">
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }} align="right">
                   {t('common.actions')}
                 </TableCell>
               </TableRow>
@@ -341,14 +349,14 @@ const CertificateManagement: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <CircularProgress sx={{ color: '#DC2626' }} />
+                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                    <CircularProgress sx={{ color: THEME_COLOR }} />
                   </TableCell>
                 </TableRow>
               ) : filteredCertificates.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <Typography variant="body1" color="text.secondary">
+                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                    <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
                       {searchTerm
                         ? t('costs.certificates.noSearchResults', 'No certificates match your search')
                         : t('costs.noData', 'No certificates found')}
@@ -359,15 +367,14 @@ const CertificateManagement: React.FC = () => {
                 filteredCertificates.map((cert) => (
                   <TableRow
                     key={cert.id}
+                    hover
                     sx={{
-                      '&:hover': {
-                        backgroundColor: alpha('#DC2626', 0.04),
-                      },
-                      transition: 'background-color 0.2s ease',
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                      '& td': { py: 1.5, fontSize: '0.8125rem' }
                     }}
                   >
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
                         {cert.certificateName}
                       </Typography>
                     </TableCell>
@@ -376,19 +383,21 @@ const CertificateManagement: React.FC = () => {
                         label={certificateTypes.find(t => t.value === cert.certificateType)?.label}
                         size="small"
                         sx={{
-                          fontWeight: 600,
-                          bgcolor: alpha('#DC2626', 0.1),
-                          color: '#DC2626',
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          height: 22,
+                          bgcolor: alpha(THEME_COLOR, 0.1),
+                          color: THEME_COLOR,
                         }}
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                         {cert.certificateNumber}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">
+                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
                         {cert.expiryDate ? format(new Date(cert.expiryDate), 'yyyy-MM-dd') : '-'}
                       </Typography>
                     </TableCell>
@@ -399,7 +408,9 @@ const CertificateManagement: React.FC = () => {
                         sx={{
                           bgcolor: alpha(getStatusColor(cert.status), 0.1),
                           color: getStatusColor(cert.status),
-                          fontWeight: 600,
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          height: 22,
                         }}
                       />
                     </TableCell>
@@ -408,13 +419,11 @@ const CertificateManagement: React.FC = () => {
                         size="small"
                         onClick={(e) => handleMenuOpen(e, cert)}
                         sx={{
-                          color: '#6B7280',
-                          '&:hover': {
-                            bgcolor: alpha('#6B7280', 0.1),
-                          },
+                          color: '#999',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                         }}
                       >
-                        <MoreVertIcon fontSize="small" />
+                        <MoreVertIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -425,334 +434,285 @@ const CertificateManagement: React.FC = () => {
         </TableContainer>
       </Card>
 
-      {/* Actions Menu */}
+      {/* Actions Menu - 简约风格 */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         PaperProps={{
           sx: {
             borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            mt: 1,
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
           },
         }}
       >
         {hasPermission('costs:update_certificate') && (
           <MenuItem
             onClick={handleEditFromMenu}
-            sx={{ '&:hover': { backgroundColor: alpha('#DC2626', 0.08) } }}
+            sx={{ py: 1, px: 1.5, fontSize: '0.8125rem', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
           >
-            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#DC2626' }} />
+            <EditIcon sx={{ mr: 1, fontSize: 16, color: THEME_COLOR }} />
             {t('common.edit', 'Edit')}
           </MenuItem>
         )}
         {hasPermission('costs:delete_certificate') && (
           <MenuItem
             onClick={handleDeleteFromMenu}
-            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+            sx={{ py: 1, px: 1.5, fontSize: '0.8125rem', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
           >
-            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            <DeleteIcon sx={{ mr: 1, fontSize: 16, color: '#EF4444' }} />
             {t('common.delete', 'Delete')}
           </MenuItem>
         )}
       </Menu>
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Edit Dialog - 简约风格 */}
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
         TransitionProps={{
           onExited: handleDialogExited,
         }}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle
-          sx={{
-            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(185, 28, 28, 0.08))',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            pb: 3,
-            pt: 3,
-          }}
-        >
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <CertificateIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    mb: 0.5,
-                  }}
-                >
-                  {editingCertificate
-                    ? t('costs.certificates.editCertificate')
-                    : t('costs.certificates.addCertificate')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {editingCertificate
-                    ? t('costs.certificates.editSubtitle', 'Update certificate information')
-                    : t('costs.certificates.addSubtitle', 'Add new certificate or permit')}
-                </Typography>
-              </Box>
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <CertificateIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+              <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                {editingCertificate
+                  ? t('costs.certificates.editCertificate')
+                  : t('costs.certificates.addCertificate')}
+              </Typography>
             </Box>
             <IconButton
+              size="small"
               onClick={handleCloseDialog}
-              sx={{
-                color: 'text.secondary',
-                '&:hover': { backgroundColor: alpha('#DC2626', 0.08) },
-              }}
+              sx={{ color: '#999' }}
             >
-              <CloseIcon />
+              <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('costs.certificates.certificateName')}
-                  value={formData.certificateName}
-                  onChange={(e) => setFormData({ ...formData, certificateName: e.target.value })}
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label={t('costs.certificates.certificateType')}
-                  value={formData.certificateType}
-                  onChange={(e) => setFormData({ ...formData, certificateType: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                >
-                  {certificateTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('costs.certificates.certificateNumber')}
-                  value={formData.certificateNumber}
-                  onChange={(e) => setFormData({ ...formData, certificateNumber: e.target.value })}
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label={t('costs.certificates.issuingAuthority')}
-                  value={formData.issuingAuthority}
-                  onChange={(e) => setFormData({ ...formData, issuingAuthority: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label={t('costs.certificates.issueDate')}
-                  value={formData.issueDate}
-                  onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label={t('costs.certificates.expiryDate')}
-                  value={formData.expiryDate}
-                  onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label={t('costs.certificates.renewalFee')}
-                  value={formData.renewalFee ?? ''}
-                  onChange={(e) => setFormData({ ...formData, renewalFee: e.target.value === '' ? null : Number(e.target.value) })}
-                  inputProps={{ min: 0 }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label={t('costs.certificates.statusLabel')}
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                >
-                  {statusOptions.map((status) => (
-                    <MenuItem key={status.value} value={status.value}>
-                      {status.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label={t('costs.certificates.notes')}
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#DC2626',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#DC2626',
-                    },
-                  }}
-                />
-              </Grid>
+        </Box>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('costs.certificates.certificateName')}
+                value={formData.certificateName}
+                onChange={(e) => setFormData({ ...formData, certificateName: e.target.value })}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
             </Grid>
-          </Box>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                select
+                label={t('costs.certificates.certificateType')}
+                value={formData.certificateType}
+                onChange={(e) => setFormData({ ...formData, certificateType: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              >
+                {certificateTypes.map((type) => (
+                  <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('costs.certificates.certificateNumber')}
+                value={formData.certificateNumber}
+                onChange={(e) => setFormData({ ...formData, certificateNumber: e.target.value })}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label={t('costs.certificates.issuingAuthority')}
+                value={formData.issuingAuthority}
+                onChange={(e) => setFormData({ ...formData, issuingAuthority: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                label={t('costs.certificates.issueDate')}
+                value={formData.issueDate}
+                onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                label={t('costs.certificates.expiryDate')}
+                value={formData.expiryDate}
+                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label={t('costs.certificates.renewalFee')}
+                value={formData.renewalFee ?? ''}
+                onChange={(e) => setFormData({ ...formData, renewalFee: e.target.value === '' ? null : Number(e.target.value) })}
+                inputProps={{ min: 0 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                select
+                label={t('costs.certificates.statusLabel')}
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              >
+                {statusOptions.map((status) => (
+                  <MenuItem key={status.value} value={status.value}>{status.label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                multiline
+                rows={2}
+                label={t('costs.certificates.notes')}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
+                }}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={handleCloseDialog}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-              color: 'text.secondary',
-            }}
+            sx={{ textTransform: 'none', color: '#666', fontSize: '0.8125rem' }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleSave}
             variant="contained"
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #B91C1C, #991B1B)',
-              },
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: THEME_COLOR,
+              boxShadow: 'none',
+              textTransform: 'none',
+              '&:hover': { bgcolor: THEME_COLOR_DARK, boxShadow: 'none' },
             }}
           >
             {t('common.save')}
@@ -760,50 +720,54 @@ const CertificateManagement: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog - 简约风格 */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 600, color: '#EF4444' }}>
-          {t('costs.confirmDelete')}
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('costs.confirmDelete')}
+          </Typography>
+        </Box>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
             {t('costs.certificates.deleteConfirm')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setOpenDeleteDialog(false)}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-            }}
             disabled={loading}
+            sx={{ textTransform: 'none', color: '#666', fontSize: '0.8125rem' }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleDelete}
             variant="contained"
             disabled={loading}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              backgroundColor: '#EF4444',
-              '&:hover': {
-                backgroundColor: '#DC2626',
-              },
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#DC2626', boxShadow: 'none' },
             }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : t('common.delete')}
+            {loading ? <CircularProgress size={16} sx={{ color: 'white' }} /> : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

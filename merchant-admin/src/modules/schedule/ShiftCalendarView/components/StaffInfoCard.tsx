@@ -7,6 +7,7 @@ import {
   TrendingUp as TrendingUpIcon,
   Circle as DotIcon,
 } from '@mui/icons-material';
+import { useTheme } from '../../../../contexts/ThemeContext';
 
 interface StaffInfoCardProps {
   staff: {
@@ -43,8 +44,17 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
   hasTemporaryAdjustment = false,
   isWithinWorkingHours = true,
 }) => {
+  const { themeMode } = useTheme();
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#1976D2';
+
   // 根据利用率计算颜色
   const getUtilizationColor = (value: number) => {
+    if (isMonochrome) {
+      if (value < 30) return '#1a1a1a'; // 深黑 - 空闲
+      if (value < 70) return '#4a4a4a'; // 中灰 - 适中
+      return '#6a6a6a'; // 浅灰 - 繁忙
+    }
     if (value < 30) return '#10B981'; // 绿色 - 空闲
     if (value < 70) return '#1976D2'; // 蓝色 - 适中
     return '#FF9800'; // 橙色 - 繁忙
@@ -68,7 +78,7 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
         filter: isUnavailable ? 'grayscale(0.3)' : 'none',
         '&:hover': onClick ? {
           bgcolor: isUnavailable ? '#F3F4F6' : '#F9FAFB',
-          borderBottom: isUnavailable ? '1px solid #E5E7EB' : '2px solid #1976D2',
+          borderBottom: isUnavailable ? '1px solid #E5E7EB' : `2px solid ${THEME_COLOR}`,
         } : {},
       }}
     >
@@ -91,7 +101,7 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
             transform: 'translateY(-50%)',
             width: 3,
             height: '60%',
-            bgcolor: isSelected ? '#1976D2' : 'transparent',
+            bgcolor: isSelected ? THEME_COLOR : 'transparent',
             borderRadius: '0 4px 4px 0',
             transition: 'all 0.2s ease',
           }}
@@ -104,14 +114,14 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
             sx={{
               width: compact ? 30 : 48,
               height: compact ? 30 : 48,
-              border: compact ? '1px solid' : '2px solid',
-              borderColor: isUnavailable ? '#D1D5DB' : (isSelected ? '#1976D2' : '#E5E7EB'),
-              bgcolor: staff.color || '#1976D2',
+              border: compact ? '2px solid' : '3px solid',
+              borderColor: isUnavailable ? '#D1D5DB' : (isSelected ? THEME_COLOR : 'white'),
+              bgcolor: isMonochrome ? '#2a2a2a' : (staff.color || THEME_COLOR),
               color: 'white',
               fontSize: compact ? 11 : 18,
               fontWeight: 600,
               transition: 'all 0.2s ease',
-              boxShadow: isSelected ? `0 0 0 ${compact ? 2 : 4}px ${alpha('#1976D2', 0.1)}` : 'none',
+              boxShadow: isSelected ? `0 0 0 ${compact ? 2 : 4}px ${alpha(THEME_COLOR, 0.15)}` : 'none',
               opacity: isUnavailable ? 0.6 : 1,
             }}
             imgProps={{
@@ -124,7 +134,7 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
             {staff.name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </Avatar>
 
-          {/* 在线状态指示器 - compact模式下使用更小尺寸 */}
+          {/* 在线状态指示器 - compact模式下使用更小尺寸，始终保持绿色 */}
           <Box
             sx={{
               position: 'absolute',
@@ -188,7 +198,7 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
                     <ScheduleIcon
                       sx={{
                         fontSize: 10,
-                        color: hasTemporaryAdjustment ? '#1976D2' : '#6B7280',
+                        color: hasTemporaryAdjustment ? THEME_COLOR : '#6B7280',
                         flexShrink: 0,
                         mt: 0.15,
                       }}
@@ -197,7 +207,7 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
                       sx={{
                         fontSize: 9,
                         fontWeight: 500,
-                        color: hasTemporaryAdjustment ? '#1976D2' : '#6B7280',
+                        color: hasTemporaryAdjustment ? THEME_COLOR : '#6B7280',
                         lineHeight: 1.2,
                         wordBreak: 'keep-all',
                         whiteSpace: 'pre-wrap',
@@ -218,9 +228,9 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
                     height: 14,
                     px: 0.5,
                     borderRadius: '3px',
-                    background: `linear-gradient(135deg, ${alpha('#1976D2', 0.12)} 0%, ${alpha('#1976D2', 0.08)} 100%)`,
+                    background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.12)} 0%, ${alpha(THEME_COLOR, 0.08)} 100%)`,
                     border: '1px solid',
-                    borderColor: alpha('#1976D2', 0.25),
+                    borderColor: alpha(THEME_COLOR, 0.25),
                     flexShrink: 0,
                   }}
                 >
@@ -228,7 +238,7 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
                     sx={{
                       fontSize: 9,
                       fontWeight: 700,
-                      color: '#1976D2',
+                      color: THEME_COLOR,
                       lineHeight: 1,
                     }}
                   >
@@ -290,14 +300,14 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
                   <ScheduleIcon
                     sx={{
                       fontSize: 12,
-                      color: hasTemporaryAdjustment ? '#1976D2' : '#6B7280',
+                      color: hasTemporaryAdjustment ? THEME_COLOR : '#6B7280',
                     }}
                   />
                   <Typography
                     sx={{
                       fontSize: 10,
                       fontWeight: 500,
-                      color: hasTemporaryAdjustment ? '#1976D2' : '#6B7280',
+                      color: hasTemporaryAdjustment ? THEME_COLOR : '#6B7280',
                       lineHeight: 1,
                     }}
                   >
@@ -328,16 +338,16 @@ const StaffInfoCard: React.FC<StaffInfoCardProps> = ({
                 width: 40,
                 height: 40,
                 borderRadius: '12px',
-                background: `linear-gradient(135deg, ${alpha('#1976D2', 0.1)} 0%, ${alpha('#1976D2', 0.05)} 100%)`,
+                background: `linear-gradient(135deg, ${alpha(THEME_COLOR, 0.1)} 0%, ${alpha(THEME_COLOR, 0.05)} 100%)`,
                 border: '1px solid',
-                borderColor: alpha('#1976D2', 0.2),
+                borderColor: alpha(THEME_COLOR, 0.2),
               }}
             >
               <Typography
                 sx={{
                   fontSize: 18,
                   fontWeight: 700,
-                  color: '#1976D2',
+                  color: THEME_COLOR,
                   lineHeight: 1,
                 }}
               >

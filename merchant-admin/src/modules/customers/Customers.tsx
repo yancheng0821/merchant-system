@@ -70,6 +70,7 @@ import { useTranslation } from 'react-i18next';
 import { customerApi, Customer, CustomerStats, handleApiError, membershipTierApi, MembershipTier } from '../../services/api';
 import { CurrencyUtils } from '../../config/constants';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 import CustomerDialog from './components/CustomerDialog';
 import AppointmentHistory from './components/AppointmentHistory';
@@ -83,6 +84,23 @@ import { ImportHistory } from './components/ImportHistory';
 const CustomerManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式动态设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#EC4899';
+  const THEME_COLOR_HOVER = isMonochrome ? '#333' : '#DB2777';
+
+  // 统计卡片图标颜色 - 极简模式下使用灰色调
+  const STATS_COLOR_PRIMARY = isMonochrome ? '#1a1a1a' : '#EC4899';
+  const STATS_COLOR_SECONDARY = isMonochrome ? '#4a4a4a' : '#10B981';
+  const STATS_COLOR_TERTIARY = isMonochrome ? '#6a6a6a' : '#F59E0B';
+  const STATS_COLOR_QUATERNARY = isMonochrome ? '#8a8a8a' : '#3B82F6';
+
+  // 积分颜色和套餐/超链接颜色
+  const POINTS_COLOR = isMonochrome ? '#1a1a1a' : '#F59E0B';
+  const PACKAGE_COLOR = isMonochrome ? '#1a1a1a' : '#06B6D4';
+  const PACKAGE_COLOR_DARK = isMonochrome ? '#333' : '#0891B2';
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [membershipTiers, setMembershipTiers] = useState<MembershipTier[]>([]);
@@ -468,7 +486,7 @@ const CustomerManagement: React.FC = () => {
   const getTierIcon = (iconName?: string, color?: string) => {
     if (!iconName) return null;
 
-    const iconSx = { fontSize: '1rem', color: color || 'inherit' };
+    const iconSx = { fontSize: '1rem', color: color || '#6B7280' };
 
     switch (iconName.toLowerCase()) {
       case 'star': return <StarIcon sx={iconSx} />;
@@ -604,11 +622,11 @@ const CustomerManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#EC4899', 0.08),
+                    bgcolor: alpha(STATS_COLOR_PRIMARY, 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#EC4899',
+                    color: STATS_COLOR_PRIMARY,
                     flexShrink: 0,
                   }}
                 >
@@ -643,11 +661,11 @@ const CustomerManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#10B981', 0.08),
+                    bgcolor: alpha(STATS_COLOR_SECONDARY, 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#10B981',
+                    color: STATS_COLOR_SECONDARY,
                     flexShrink: 0,
                   }}
                 >
@@ -682,11 +700,11 @@ const CustomerManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#F59E0B', 0.08),
+                    bgcolor: alpha(STATS_COLOR_TERTIARY, 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#F59E0B',
+                    color: STATS_COLOR_TERTIARY,
                     flexShrink: 0,
                   }}
                 >
@@ -721,11 +739,11 @@ const CustomerManagement: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: 1.5,
-                    bgcolor: alpha('#3B82F6', 0.08),
+                    bgcolor: alpha(STATS_COLOR_QUATERNARY, 0.08),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#3B82F6',
+                    color: STATS_COLOR_QUATERNARY,
                     flexShrink: 0,
                   }}
                 >
@@ -745,284 +763,275 @@ const CustomerManagement: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* 现代化搜索和过滤区域 */}
-      <Card
+      {/* 搜索和过滤区域 */}
+      <Box
         sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
           bgcolor: '#fff',
-          mb: 3,
+          mb: 2.5,
+          p: 2.5,
         }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                placeholder={t('customers.searchPlaceholder')}
-                value={searchTerm}
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder={t('customers.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => {
+                const newSearchTerm = e.target.value;
+                setSearchTerm(newSearchTerm);
+                if (page !== 0) {
+                  setPage(0);
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: '#fff',
+                  '& fieldset': { borderColor: '#d0d0d0' },
+                  '&:hover fieldset': { borderColor: '#bbb' },
+                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                },
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: THEME_COLOR } }}>{t('customers.membershipFilter')}</InputLabel>
+              <Select
+                value={membershipFilter}
+                label={t('customers.membershipFilter')}
                 onChange={(e) => {
-                  const newSearchTerm = e.target.value;
-                  setSearchTerm(newSearchTerm);
+                  setMembershipFilter(e.target.value);
                   if (page !== 0) {
-                    setPage(0); // 只有当前不在第一页时才重置
+                    setPage(0);
                   }
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#fff',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                }}
+              >
+                <MenuItem value="all">{t('customers.allLevels')}</MenuItem>
+                {membershipTiers.map((tier) => (
+                  <MenuItem key={tier.id} value={tier.code}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {getTierIcon(tier.icon, tier.color)}
+                      <span style={{ color: tier.color || '#6B7280', fontWeight: 500 }}>{tier.name}</span>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: THEME_COLOR } }}>{t('customers.statusFilter')}</InputLabel>
+              <Select
+                value={statusFilter}
+                label={t('customers.statusFilter')}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  if (page !== 0) {
+                    setPage(0);
+                  }
                 }}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                  },
+                  borderRadius: 2,
+                  bgcolor: '#fff',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
                 }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.membershipFilter')}</InputLabel>
-                <Select
-                  value={membershipFilter}
-                  label={t('customers.membershipFilter')}
-                  onChange={(e) => {
-                    setMembershipFilter(e.target.value);
-                    if (page !== 0) {
-                      setPage(0); // 只有当前不在第一页时才重置
-                    }
-                  }}
-                  sx={{
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                  }}
-                >
-                  <MenuItem value="all">{t('customers.allLevels')}</MenuItem>
-                  {membershipTiers.map((tier) => (
-                    <MenuItem key={tier.id} value={tier.code}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {getTierIcon(tier.icon, tier.color)}
-                        <span style={{ color: tier.color || '#6B7280', fontWeight: 600 }}>{tier.name}</span>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.statusFilter')}</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label={t('customers.statusFilter')}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    if (page !== 0) {
-                      setPage(0); // 只有当前不在第一页时才重置
-                    }
-                  }}
-                  sx={{
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                  }}
-                >
-                  <MenuItem value="all">{t('customers.allStatuses')}</MenuItem>
-                  <MenuItem value="active">{t('customers.customerStatuses.active')}</MenuItem>
-                  <MenuItem value="inactive">{t('customers.customerStatuses.inactive')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>{t('customers.sortBy')}</InputLabel>
-                <Select
-                  value={sortBy}
-                  label={t('customers.sortBy')}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    if (page !== 0) {
-                      setPage(0);
-                    }
-                  }}
-                  sx={{
-                    borderRadius: 2,
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#EC4899',
-                    },
-                  }}
-                >
-                  <MenuItem value="createdAt">{t('customers.sortOptions.createdAt')}</MenuItem>
-                  <MenuItem value="updatedAt">{t('customers.sortOptions.updatedAt')}</MenuItem>
-                  <MenuItem value="firstName">{t('customers.sortOptions.name')}</MenuItem>
-                  <MenuItem value="lastVisitDate">{t('customers.sortOptions.lastVisit')}</MenuItem>
-                  <MenuItem value="totalSpent">{t('customers.sortOptions.totalSpent')}</MenuItem>
-                  <MenuItem value="points">{t('customers.sortOptions.points')}</MenuItem>
-                  <MenuItem value="membershipTier">{t('customers.sortOptions.membershipLevel')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Box display="flex" gap={1.5} flexWrap="wrap" justifyContent="flex-start">
-                {hasPermission('customers:create') && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => {
-                      setSelectedCustomer(null);
-                      setCustomerDialogOpen(true);
-                    }}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 0.75,
-                      px: 2,
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      bgcolor: '#EC4899',
-                      boxShadow: 'none',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: '#DB2777',
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {t('customers.addCustomer')}
-                  </Button>
-                )}
-
-                {hasPermission('customers:import') && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => setTemplateDialogOpen(true)}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 0.75,
-                      px: 1.5,
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      color: '#666',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: alpha('#000', 0.04),
-                        color: '#1a1a1a',
-                      },
-                    }}
-                  >
-                    {t('customers.downloadTemplate')}
-                  </Button>
-                )}
-
-                {hasPermission('customers:import') && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    startIcon={<UploadIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => setCustomerImportOpen(true)}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 0.75,
-                      px: 1.5,
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      color: '#666',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: alpha('#000', 0.04),
-                        color: '#1a1a1a',
-                      },
-                    }}
-                  >
-                    {t('customers.batchImport')}
-                  </Button>
-                )}
-
-                {hasPermission('customers:import') && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => setImportHistoryOpen(true)}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 0.75,
-                      px: 1.5,
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      color: '#666',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: alpha('#000', 0.04),
-                        color: '#1a1a1a',
-                      },
-                    }}
-                  >
-                    {t('customers.importHistory')}
-                  </Button>
-                )}
-              </Box>
-            </Grid>
+              >
+                <MenuItem value="all">{t('customers.allStatuses')}</MenuItem>
+                <MenuItem value="active">{t('customers.customerStatuses.active')}</MenuItem>
+                <MenuItem value="inactive">{t('customers.customerStatuses.inactive')}</MenuItem>
+              </Select>
+            </FormControl>
           </Grid>
-        </CardContent>
-      </Card>
 
-      {/* 现代化表格 */}
-      <Card
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: THEME_COLOR } }}>{t('customers.sortBy')}</InputLabel>
+              <Select
+                value={sortBy}
+                label={t('customers.sortBy')}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  if (page !== 0) {
+                    setPage(0);
+                  }
+                }}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#fff',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                }}
+              >
+                <MenuItem value="createdAt">{t('customers.sortOptions.createdAt')}</MenuItem>
+                <MenuItem value="updatedAt">{t('customers.sortOptions.updatedAt')}</MenuItem>
+                <MenuItem value="firstName">{t('customers.sortOptions.name')}</MenuItem>
+                <MenuItem value="lastVisitDate">{t('customers.sortOptions.lastVisit')}</MenuItem>
+                <MenuItem value="totalSpent">{t('customers.sortOptions.totalSpent')}</MenuItem>
+                <MenuItem value="points">{t('customers.sortOptions.points')}</MenuItem>
+                <MenuItem value="membershipTier">{t('customers.sortOptions.membershipLevel')}</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Box display="flex" gap={1.5} flexWrap="wrap" justifyContent="flex-start">
+              {hasPermission('customers:create') && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerDialogOpen(true);
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    py: 0.75,
+                    px: 2,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    bgcolor: THEME_COLOR,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: THEME_COLOR_HOVER,
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  {t('customers.addCustomer')}
+                </Button>
+              )}
+
+              {hasPermission('customers:import') && (
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => setTemplateDialogOpen(true)}
+                  sx={{
+                    borderRadius: 1.5,
+                    py: 0.75,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    color: '#666',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: alpha(THEME_COLOR, 0.08),
+                      color: THEME_COLOR,
+                    },
+                  }}
+                >
+                  {t('customers.downloadTemplate')}
+                </Button>
+              )}
+
+              {hasPermission('customers:import') && (
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<UploadIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => setCustomerImportOpen(true)}
+                  sx={{
+                    borderRadius: 1.5,
+                    py: 0.75,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    color: '#666',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: alpha(THEME_COLOR, 0.08),
+                      color: THEME_COLOR,
+                    },
+                  }}
+                >
+                  {t('customers.batchImport')}
+                </Button>
+              )}
+
+              {hasPermission('customers:import') && (
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => setImportHistoryOpen(true)}
+                  sx={{
+                    borderRadius: 1.5,
+                    py: 0.75,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    color: '#666',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: alpha(THEME_COLOR, 0.08),
+                      color: THEME_COLOR,
+                    },
+                  }}
+                >
+                  {t('customers.importHistory')}
+                </Button>
+              )}
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* 表格 */}
+      <Box
         sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
           overflow: 'hidden',
+          bgcolor: '#fff',
         }}
       >
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>{t('customers.tableHeaders.customer')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.contact')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.membership')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.packages')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.points')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.totalSpent')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.lastVisit')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.status')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{t('customers.tableHeaders.actions')}</TableCell>
+              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.customer')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.contact')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.membership')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.packages')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.points')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.totalSpent')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.lastVisit')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.status')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <CircularProgress />
+                    <CircularProgress sx={{ color: THEME_COLOR }} />
                   </TableCell>
                 </TableRow>
               ) : customers.length === 0 ? (
@@ -1039,9 +1048,8 @@ const CustomerManagement: React.FC = () => {
                     key={customer.id}
                     sx={{
                       '&:hover': {
-                        backgroundColor: alpha('#EC4899', 0.04),
+                        backgroundColor: '#fafafa',
                       },
-                      transition: 'background-color 0.2s ease',
                     }}
                   >
                     <TableCell>
@@ -1050,7 +1058,7 @@ const CustomerManagement: React.FC = () => {
                           sx={{
                             width: 40,
                             height: 40,
-                            bgcolor: '#EC4899',
+                            bgcolor: THEME_COLOR,
                             fontSize: '1rem',
                             fontWeight: 600,
                           }}
@@ -1097,7 +1105,7 @@ const CustomerManagement: React.FC = () => {
                               cursor: hasPermission('customer_packages:view') ? 'pointer' : 'default',
                               '&:hover': hasPermission('customer_packages:view') ? {
                                 '& .package-count': {
-                                  backgroundColor: alpha('#06B6D4', 0.2),
+                                  backgroundColor: alpha(PACKAGE_COLOR, 0.2),
                                 }
                               } : {},
                             }}
@@ -1116,11 +1124,11 @@ const CustomerManagement: React.FC = () => {
                               size="small"
                               sx={{
                                 height: 24,
-                                backgroundColor: alpha('#06B6D4', 0.1),
-                                color: '#0891B2',
+                                backgroundColor: alpha(PACKAGE_COLOR, 0.1),
+                                color: PACKAGE_COLOR_DARK,
                                 fontWeight: 600,
                                 '& .MuiChip-icon': {
-                                  color: '#06B6D4',
+                                  color: PACKAGE_COLOR,
                                 },
                               }}
                             />
@@ -1128,7 +1136,7 @@ const CustomerManagement: React.FC = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: '#06B6D4',
+                                  color: PACKAGE_COLOR,
                                   fontWeight: 500,
                                   textDecoration: 'underline',
                                   textDecorationStyle: 'dotted',
@@ -1153,15 +1161,15 @@ const CustomerManagement: React.FC = () => {
                               sx={{
                                 height: 24,
                                 fontSize: '0.75rem',
-                                backgroundColor: alpha('#EC4899', 0.1),
-                                color: '#DB2777',
+                                backgroundColor: alpha(THEME_COLOR, 0.1),
+                                color: THEME_COLOR_HOVER,
                                 cursor: 'pointer',
                                 '& .MuiChip-icon': {
-                                  color: '#EC4899',
+                                  color: THEME_COLOR,
                                   fontSize: 16,
                                 },
                                 '&:hover': {
-                                  backgroundColor: alpha('#EC4899', 0.2),
+                                  backgroundColor: alpha(THEME_COLOR, 0.2),
                                 },
                                 transition: 'background-color 0.2s ease',
                               }}
@@ -1172,8 +1180,8 @@ const CustomerManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <StarIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+                        <StarIcon sx={{ fontSize: 16, color: POINTS_COLOR }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: POINTS_COLOR }}>
                           {customer.points || 0}
                         </Typography>
                       </Box>
@@ -1215,7 +1223,7 @@ const CustomerManagement: React.FC = () => {
                           }}
                           sx={{
                             '&:hover': {
-                              backgroundColor: alpha('#F59E0B', 0.1),
+                              backgroundColor: alpha(THEME_COLOR, 0.1),
                             },
                           }}
                         >
@@ -1241,12 +1249,11 @@ const CustomerManagement: React.FC = () => {
             setPage(0);
           }}
           sx={{
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            backgroundColor: '#f8fafc',
+            borderTop: '1px solid rgba(0,0,0,0.08)',
+            backgroundColor: '#fafafa',
           }}
         />
-      </Card>
+      </Box>
 
       {/* 操作菜单 */}
       <Menu
@@ -1255,10 +1262,11 @@ const CustomerManagement: React.FC = () => {
         onClose={() => setMenuAnchorEl(null)}
         PaperProps={{
           sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            mt: 1,
+            borderRadius: 1.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            mt: 0.5,
+            minWidth: 160,
           }
         }}
       >
@@ -1268,9 +1276,9 @@ const CustomerManagement: React.FC = () => {
               setAppointmentHistoryOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
+            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
-            <VisibilityIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
+            <VisibilityIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('customers.viewAppointments')}
           </MenuItem>
         )}
@@ -1280,9 +1288,9 @@ const CustomerManagement: React.FC = () => {
               setPackagePurchaseDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ '&:hover': { backgroundColor: alpha('#10B981', 0.08) } }}
+            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
-            <AddIcon sx={{ mr: 1, fontSize: 18, color: '#10B981' }} />
+            <AddIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('customers.purchasePackage')}
           </MenuItem>
         )}
@@ -1292,9 +1300,9 @@ const CustomerManagement: React.FC = () => {
               setCustomerDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ '&:hover': { backgroundColor: alpha('#EC4899', 0.08) } }}
+            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
-            <EditIcon sx={{ mr: 1, fontSize: 18, color: '#EC4899' }} />
+            <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('customers.editCustomer')}
           </MenuItem>
         )}
@@ -1332,9 +1340,9 @@ const CustomerManagement: React.FC = () => {
               setDeleteDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ '&:hover': { backgroundColor: alpha('#EF4444', 0.08) } }}
+            sx={{ fontSize: '0.8125rem', py: 1, color: '#EF4444', '&:hover': { backgroundColor: alpha('#EF4444', 0.05) } }}
           >
-            <DeleteIcon sx={{ mr: 1, fontSize: 18, color: '#EF4444' }} />
+            <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />
             {t('customers.deleteCustomer')}
           </MenuItem>
         )}
@@ -1410,38 +1418,38 @@ const CustomerManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ py: 2, px: 3 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#10B981' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
               {t('customers.templateDialog.title')}
             </Typography>
-            <IconButton onClick={() => setTemplateDialogOpen(false)} size="small">
-              <Close />
+            <IconButton onClick={() => setTemplateDialogOpen(false)} size="small" sx={{ color: '#999' }}>
+              <Close sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <DialogContent dividers sx={{ p: 3 }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#666', mb: 2.5 }}>
             {t('customers.templateDialog.description')}
           </Typography>
 
           {/* 必填字段 */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#EC4899', mb: 2 }}>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a', mb: 1.5 }}>
               {t('customers.templateDialog.requiredFields')}
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {['firstName', 'lastName', 'phone'].map((field) => (
                 <Box key={field} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <CheckCircleIcon sx={{ fontSize: 20, color: '#EC4899', mt: 0.2 }} />
+                  <CheckCircleIcon sx={{ fontSize: 16, color: '#10B981', mt: 0.25 }} />
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{field}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                       {t(`customers.templateDialog.fieldDescriptions.${field}`)}
                     </Typography>
                   </Box>
@@ -1451,17 +1459,17 @@ const CustomerManagement: React.FC = () => {
           </Box>
 
           {/* 建议填写字段 */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#F59E0B', mb: 2 }}>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a', mb: 1.5 }}>
               {t('customers.templateDialog.recommendedFields')}
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {['email', 'countryCode', 'address', 'membershipLevel', 'communicationPreference'].map((field) => (
                 <Box key={field} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <WarningIcon sx={{ fontSize: 20, color: '#F59E0B', mt: 0.2 }} />
+                  <WarningIcon sx={{ fontSize: 16, color: '#F59E0B', mt: 0.25 }} />
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{field}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                       {t(`customers.templateDialog.fieldDescriptions.${field}`)} - {t(`customers.templateDialog.fieldPurposes.${field}`)}
                     </Typography>
                   </Box>
@@ -1472,17 +1480,17 @@ const CustomerManagement: React.FC = () => {
 
           {/* 可选字段 */}
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#10B981', mb: 2 }}>
+            <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a', mb: 1.5 }}>
               {t('customers.templateDialog.optionalFields')}
             </Typography>
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               {['gender', 'dateOfBirth', 'points', 'totalSpent', 'notes', 'allergies'].map((field) => (
                 <Grid item xs={12} key={field}>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                    <InfoOutlined sx={{ fontSize: 20, color: '#10B981', mt: 0.2 }} />
+                    <InfoOutlined sx={{ fontSize: 16, color: '#999', mt: 0.25 }} />
                     <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{field}</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                         {t(`customers.templateDialog.fieldDescriptions.${field}`)}
                       </Typography>
                     </Box>
@@ -1492,26 +1500,42 @@ const CustomerManagement: React.FC = () => {
             </Grid>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => setTemplateDialogOpen(false)}
-            sx={{ borderRadius: 2, px: 3 }}
+            sx={{
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#666',
+              textTransform: 'none',
+            }}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={() => {
               handleDownloadTemplate();
               setTemplateDialogOpen(false);
             }}
             variant="contained"
-            startIcon={<DownloadIcon />}
+            startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              background: 'linear-gradient(135deg, #10B981, #059669)',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#1a1a1a',
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #059669, #047857)',
+                bgcolor: '#333',
+                boxShadow: 'none',
               },
             }}
           >
@@ -1526,51 +1550,64 @@ const CustomerManagement: React.FC = () => {
         onClose={() => setDeleteDialogOpen(false)}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#EF4444' }}>
+        <DialogTitle sx={{ py: 2, px: 3 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
             {t('customers.confirmDelete')}
           </Typography>
         </DialogTitle>
-        <DialogContent>
-          <Typography>
+        <DialogContent sx={{ px: 3, pb: 2 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
             {t('customers.deleteConfirmMessage', {
               name: selectedCustomer?.fullName || `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}`
             }) || `确定要删除客户 ${selectedCustomer?.firstName}${selectedCustomer?.lastName} 吗？此操作无法撤销。`}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
+            size="small"
             onClick={() => {
               setDeleteDialogOpen(false);
               setSelectedCustomer(null);
             }}
             sx={{
-              borderRadius: 2,
-              px: 3,
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: '#666',
+              textTransform: 'none',
             }}
             disabled={loading}
           >
             {t('common.cancel')}
           </Button>
           <Button
+            size="small"
             onClick={handleDeleteCustomer}
             variant="contained"
             disabled={loading}
             sx={{
-              borderRadius: 2,
-              px: 3,
-              backgroundColor: '#EF4444',
+              borderRadius: 1.5,
+              px: 2.5,
+              py: 0.75,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              bgcolor: '#EF4444',
+              boxShadow: 'none',
+              textTransform: 'none',
               '&:hover': {
-                backgroundColor: '#DC2626',
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : t('common.delete')}
+            {loading ? <CircularProgress size={16} color="inherit" /> : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
