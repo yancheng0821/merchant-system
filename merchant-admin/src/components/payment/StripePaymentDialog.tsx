@@ -115,6 +115,8 @@ const CheckoutForm: React.FC<{
         <PaymentElement
           options={{
             layout: 'tabs',
+            // 地址字段使用Stripe默认行为 - 根据用户IP自动检测国家
+            // 这对大多数用户来说是友好的，他们可以手动修改
           }}
         />
       </Box>
@@ -164,7 +166,7 @@ const StripePaymentDialog: React.FC<StripePaymentDialogProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,8 +225,13 @@ const StripePaymentDialog: React.FC<StripePaymentDialogProps> = ({
 
   if (!invoice) return null;
 
+  // 根据当前语言设置Stripe语言
+  // Stripe支持的语言代码: https://stripe.com/docs/js/appendix/supported_locales
+  const stripeLocale = i18n.language === 'zh-CN' ? 'zh' : 'en';
+
   const options: StripeElementsOptions = {
     clientSecret: clientSecret || undefined,
+    locale: stripeLocale as any, // 设置Stripe界面语言
     appearance: {
       theme: 'stripe',
       variables: {

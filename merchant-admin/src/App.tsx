@@ -751,7 +751,7 @@ const MainAppContent: React.FC = () => {
             }}
           >
             <Toolbar />
-            <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
+            <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3 } }}>
               {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
               {selectedItem === 'products' && <ServiceManagement />}
               {selectedItem === 'orders' && <PaymentManagement onNavigate={setSelectedItem} />}
