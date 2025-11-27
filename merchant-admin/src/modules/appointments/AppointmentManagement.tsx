@@ -325,6 +325,7 @@ const AppointmentManagement: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -344,8 +345,8 @@ const AppointmentManagement: React.FC = () => {
                 >
                   <EventNoteIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.totalAppointments')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -364,6 +365,7 @@ const AppointmentManagement: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -383,8 +385,8 @@ const AppointmentManagement: React.FC = () => {
                 >
                   <CheckIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.pendingService')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -403,6 +405,7 @@ const AppointmentManagement: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -422,8 +425,8 @@ const AppointmentManagement: React.FC = () => {
                 >
                   <TrendingUpIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.completedAppointments')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -442,6 +445,7 @@ const AppointmentManagement: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -461,8 +465,8 @@ const AppointmentManagement: React.FC = () => {
                 >
                   <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.totalRevenue')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>

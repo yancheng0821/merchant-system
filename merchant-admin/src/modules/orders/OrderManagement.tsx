@@ -337,14 +337,15 @@ const OrderManagement: React.FC = () => {
       </Box>
 
       {/* 简约统计卡片 */}
-      <Grid container spacing={2.5} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={2.5} mb={4} alignItems="stretch">
+        <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
           <Card
             sx={{
               borderRadius: 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              flex: 1,
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -364,8 +365,8 @@ const OrderManagement: React.FC = () => {
                 >
                   <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('orders.todayRevenue')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -377,13 +378,14 @@ const OrderManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
           <Card
             sx={{
               borderRadius: 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              flex: 1,
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -403,8 +405,8 @@ const OrderManagement: React.FC = () => {
                 >
                   <OrdersIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('orders.todayOrders')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -416,13 +418,14 @@ const OrderManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
           <Card
             sx={{
               borderRadius: 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              flex: 1,
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -442,8 +445,8 @@ const OrderManagement: React.FC = () => {
                 >
                   <PaymentIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('orders.pendingPayments')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -455,13 +458,14 @@ const OrderManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3} sx={{ display: 'flex' }}>
           <Card
             sx={{
               borderRadius: 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              flex: 1,
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -481,8 +485,8 @@ const OrderManagement: React.FC = () => {
                 >
                   <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.avgOrderValue')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>

@@ -852,10 +852,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 border: '1px solid rgba(0,0,0,0.06)',
                 bgcolor: '#fff',
+                height: '100%',
               }}
             >
-              <CardContent sx={{ p: 2.5 }}>
-                <Box display="flex" alignItems="center" gap={2.5}>
+              <CardContent sx={{ p: 2.5, height: '100%' }}>
+                <Box display="flex" alignItems="center" gap={2.5} height="100%">
                   <Box
                     sx={{
                       width: 44,
@@ -872,8 +873,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     {React.cloneElement(metric.icon, { sx: { fontSize: 22 } })}
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                      <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#666',
+                          fontSize: '0.75rem',
+                          mb: 0.5,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
                         {metric.title}
                       </Typography>
                       <Typography

@@ -28,7 +28,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -89,6 +90,7 @@ import {
   AutoAwesome as SparkleIcon,
   Whatshot as FireIcon,
   Celebration as CelebrationIcon,
+  DragIndicator as DragIndicatorIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format, addDays, subDays, addWeeks, subWeeks, startOfWeek, eachDayOfInterval, endOfWeek, parseISO } from 'date-fns';
@@ -362,7 +364,12 @@ const calculateAppointmentLayout = (appointments: Appointment[]): AppointmentLay
 // 可拖拽的员工列组件
 interface SortableStaffColumnProps {
   staff: any;
-  children: React.ReactNode;
+  children: (dragHandleProps: {
+    attributes: any;
+    mergedListeners: any;
+    isDragging: boolean;
+    isLongPressing: boolean;
+  }) => React.ReactNode;
   minWidth: number;
   maxWidth: number;
 }
@@ -377,28 +384,79 @@ const SortableStaffColumn: React.FC<SortableStaffColumnProps> = ({ staff, childr
     isDragging,
   } = useSortable({ id: staff.id });
 
+  // 长按状态检测
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
+
+  const clearLongPressTimer = React.useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setIsLongPressing(false);
+  }, []);
+
+  // 合并后的事件处理器 - 同时触发长按检测和dnd-kit的事件
+  const mergedListeners = React.useMemo(() => {
+    const onPointerDown = (e: React.PointerEvent) => {
+      // 开始长按计时 - 400ms后显示视觉反馈
+      longPressTimer.current = setTimeout(() => {
+        setIsLongPressing(true);
+      }, 400);
+      // 调用dnd-kit的原始事件处理器
+      if (listeners?.onPointerDown) {
+        (listeners.onPointerDown as any)(e);
+      }
+    };
+
+    const onPointerUp = (e: React.PointerEvent) => {
+      clearLongPressTimer();
+      if (listeners?.onPointerUp) {
+        (listeners.onPointerUp as any)(e);
+      }
+    };
+
+    const onPointerCancel = (e: React.PointerEvent) => {
+      clearLongPressTimer();
+      if (listeners?.onPointerCancel) {
+        (listeners.onPointerCancel as any)(e);
+      }
+    };
+
+    return {
+      ...listeners,
+      onPointerDown,
+      onPointerUp,
+      onPointerCancel,
+      onPointerLeave: clearLongPressTimer,
+    };
+  }, [listeners, clearLongPressTimer]);
+
+  // 当拖拽结束时也要清除状态
+  React.useEffect(() => {
+    if (!isDragging) {
+      clearLongPressTimer();
+    }
+  }, [isDragging, clearLongPressTimer]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
   };
 
   return (
     <Box
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       sx={{
         position: 'relative',
         flex: 1,
         minWidth,
         maxWidth,
-        touchAction: 'none', // 禁用触摸滚动以支持拖拽
       }}
     >
-      {children}
+      {children({ attributes, mergedListeners, isDragging, isLongPressing })}
     </Box>
   );
 };
@@ -520,10 +578,17 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const [staffOrder, setStaffOrder] = useState<number[]>([]);
 
   // 拖拽传感器配置
+  // 使用MouseSensor而不是PointerSensor，因为PointerSensor会捕获触摸事件，绕过TouchSensor的延迟
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // 移动8px后才激活拖拽，避免误触
+        distance: 8, // 鼠标移动8px后才激活拖拽，避免误触
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 500, // 触摸设备需要长按0.5秒才能激活拖拽
+        tolerance: 5, // 长按期间允许的移动容差
       },
     }),
     useSensor(KeyboardSensor, {
@@ -2612,6 +2677,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                             minWidth={staffColumnWidth.min}
                             maxWidth={staffColumnWidth.max}
                           >
+                            {({ attributes, mergedListeners, isDragging, isLongPressing }) => (
                             <Box
                               sx={{
                                 position: 'relative',
@@ -2641,6 +2707,25 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                             }}
                           />
                         )}
+                        {/* 拖拽包裹层 - 长按1秒激活拖拽，短按触发onClick */}
+                        <Box
+                          {...attributes}
+                          {...mergedListeners}
+                          sx={{
+                            touchAction: 'none', // 只在员工卡片区域禁用触摸滚动
+                            cursor: (isDragging || isLongPressing) ? 'grabbing' : 'default',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease',
+                            borderRadius: 1,
+                            position: 'relative',
+                            // 长按或拖拽时 - 变虚+浮动
+                            ...((isLongPressing || isDragging) && {
+                              opacity: 0.6,
+                              transform: 'scale(1.03) translateY(-4px)',
+                              boxShadow: '0 12px 28px rgba(0,0,0,0.2)',
+                              zIndex: 1000,
+                            }),
+                          }}
+                        >
                         <StaffInfoCard
                           staff={staff}
                           appointmentCount={appointmentCount}
@@ -2781,6 +2866,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           rating={4.5 + Math.random() * 0.5} // 示例评分，实际应从后端获取
                           compact={isCompactMode}
                         />
+                        </Box>
 
                         <Box sx={{
                           position: 'relative',
@@ -2808,13 +2894,18 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                   height: hourHeight,
                                   borderBottom: '1px solid',
                                   borderColor: '#F3F4F6',
-                                  bgcolor: isUnavailable ? undefined : '#FFFFFF',
-                                  backgroundImage: isUnavailable
-                                    ? isCompactMode
-                                      ? 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 4px, #e8eaed 4px, #e8eaed 8px)'
-                                      : 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 10px, #e8eaed 10px, #e8eaed 20px)'
-                                    : undefined,
+                                  // 不可用时使用和已过去时间一样的灰色背景，保持一致性
+                                  bgcolor: (isPast || isUnavailable)
+                                    ? 'rgba(243, 244, 246, 0.6)'
+                                    : '#FFFFFF',
+                                  // 斜纹样式备份 - 如需恢复可取消注释
+                                  // backgroundImage: isUnavailable
+                                  //   ? isCompactMode
+                                  //     ? 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 4px, #e8eaed 4px, #e8eaed 8px)'
+                                  //     : 'repeating-linear-gradient(-45deg, #fafbfc 0px, #fafbfc 10px, #e8eaed 10px, #e8eaed 20px)'
+                                  //   : undefined,
                                   cursor: isPast || isUnavailable ? 'not-allowed' : 'pointer',
+                                  pointerEvents: isPast ? 'none' : 'auto',
                                   position: 'relative',
                                   transition: 'background-color 0.15s ease',
                                   '&:hover': {
@@ -2885,6 +2976,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                           })}
                         </Box>
                             </Box>
+                            )}
                           </SortableStaffColumn>
                         );
                       })}

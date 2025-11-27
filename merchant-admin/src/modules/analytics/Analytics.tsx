@@ -603,6 +603,7 @@ const Analytics: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -622,8 +623,8 @@ const Analytics: React.FC = () => {
                 >
                   <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.totalRevenue')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -642,6 +643,7 @@ const Analytics: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -661,8 +663,8 @@ const Analytics: React.FC = () => {
                 >
                   <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.packagePurchaseTotal')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
@@ -681,6 +683,7 @@ const Analytics: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -700,12 +703,12 @@ const Analytics: React.FC = () => {
                 >
                   <OrdersIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
-                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem' }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box display="flex" alignItems="center" gap={0.5} mb={0.5} flexWrap="wrap">
+                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                       {t('analytics.orderSalesTotal')}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem' }}>
+                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem', whiteSpace: 'nowrap' }}>
                       ({t('analytics.includesTipsAndTax')})
                     </Typography>
                   </Box>
@@ -725,6 +728,7 @@ const Analytics: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 2.5 }}>
@@ -744,8 +748,8 @@ const Analytics: React.FC = () => {
                 >
                   <MoneyIcon sx={{ fontSize: 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.totalTips')}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
