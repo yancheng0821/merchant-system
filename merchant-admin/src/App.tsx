@@ -524,8 +524,10 @@ const MainAppContent: React.FC = () => {
 
         {/* 公司信息 */}
         <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)', textAlign: 'center' }}>
-          <Typography sx={{ fontSize: '0.6875rem', color: '#bbb' }}>
-            Powered by <span style={{ color: '#999', fontWeight: 500 }}>SwiftmindSystems</span>
+          <Typography sx={{ fontSize: '0.6875rem', color: '#bbb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+            Powered by
+            <Box component="img" src="/s-logo.png" alt="Swiftmind" sx={{ width: 12, height: 12, objectFit: 'contain', opacity: 0.7 }} />
+            <span style={{ color: '#999', fontWeight: 500 }}>Swiftmind</span>
           </Typography>
         </Box>
       </Box>

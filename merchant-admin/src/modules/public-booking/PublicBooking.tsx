@@ -1191,6 +1191,34 @@ const PublicBooking: React.FC = () => {
             )}
           </Box>
         </Box>
+
+        {/* 底部 powered by */}
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: isMobile ? 2 : 3,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: isMobile ? 11 : 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              color: '#aaa',
+            }}
+          >
+            Powered by
+            <Box
+              component="img"
+              src="/s-logo.png"
+              alt="Swiftmind"
+              sx={{ width: isMobile ? 14 : 16, height: isMobile ? 14 : 16, objectFit: 'contain', opacity: 0.7 }}
+            />
+            <span style={{ fontWeight: 500, color: '#888' }}>Swiftmind</span>
+          </Typography>
+        </Box>
       </Box>
     );
   }
@@ -2401,14 +2429,34 @@ const PublicBooking: React.FC = () => {
       {/* 移动端底部栏 */}
       {isMobile && activeStep < 4 && renderMobileBottomBar()}
 
-      {/* 底部 powered by */}
-      {activeStep === 4 && (
-        <Box sx={{ textAlign: 'center', py: 3, color: '#999' }}>
-          <Typography sx={{ fontSize: 12 }}>
-            Powered by SwiftmindSystems
-          </Typography>
-        </Box>
-      )}
+      {/* 底部 powered by - 所有页面显示 */}
+      <Box
+        sx={{
+          textAlign: 'center',
+          py: isMobile ? 2 : 3,
+          pb: isMobile && activeStep < 4 ? 12 : (isMobile ? 2 : 3),
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: isMobile ? 11 : 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            color: '#aaa',
+          }}
+        >
+          Powered by
+          <Box
+            component="img"
+            src="/s-logo.png"
+            alt="Swiftmind"
+            sx={{ width: isMobile ? 14 : 16, height: isMobile ? 14 : 16, objectFit: 'contain', opacity: 0.7 }}
+          />
+          <span style={{ fontWeight: 500, color: '#888' }}>Swiftmind</span>
+        </Typography>
+      </Box>
     </Box>
   );
 };

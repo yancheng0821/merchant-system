@@ -1422,8 +1422,10 @@ const LoginPage: React.FC = () => {
 
         {/* 页面底部版权信息 */}
         <Box sx={{ mt: 6, textAlign: 'center' }}>
-          <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em' }}>
-            © {new Date().getFullYear()} SwiftmindSystems
+          <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+            © {new Date().getFullYear()}
+            <Box component="img" src="/s-logo.png" alt="Swiftmind" sx={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.7 }} />
+            Swiftmind
           </Typography>
         </Box>
       </Container>
