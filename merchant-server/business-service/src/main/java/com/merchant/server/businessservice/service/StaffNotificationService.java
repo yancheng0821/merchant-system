@@ -72,10 +72,13 @@ public class StaffNotificationService {
     /**
      * 发送员工预约完成通知（异步）
      * 在预约支付完成后调用
+     * @param appointment 预约信息
+     * @param order 订单信息（直接传入，避免事务未提交时查询不到）
      */
     @Async
-    public void sendAppointmentCompletionNotification(Appointment appointment) {
-        log.info("Sending staff completion notification for appointment: {}", appointment.getId());
+    public void sendAppointmentCompletionNotification(Appointment appointment, Order order) {
+        log.info("Sending staff completion notification for appointment: {}, order: {}",
+            appointment.getId(), order != null ? order.getId() : "null");
 
         try {
             // 1. 获取员工信息（从 appointment_resources）
@@ -92,8 +95,7 @@ public class StaffNotificationService {
                 return;
             }
 
-            // 3. 获取订单信息（用于金额）
-            Order order = orderMapper.selectByAppointmentId(appointment.getId());
+            // 3. 订单信息已通过参数传入，不再从数据库查询
 
             // 4. 获取服务信息
             List<com.merchant.server.businessservice.entity.AppointmentService> services =

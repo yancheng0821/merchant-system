@@ -175,13 +175,15 @@ public class AppointmentServiceImpl implements AppointmentService {
             // 注意：这个方法是旧的API，新的预约应该使用createAppointmentWithServices
             // 这里不创建资源关联，因为没有传入资源信息
 
-            // 发送预约确认通知
-            try {
-                notificationService.sendConfirmationNotification(appointment);
-            } catch (Exception e) {
-                log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
+            // 发送预约确认通知（只有已确认状态才发送）
+            if (appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
+                try {
+                    notificationService.sendConfirmationNotification(appointment);
+                } catch (Exception e) {
+                    log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
+                }
             }
-            
+
             return appointment;
         } catch (Exception e) {
             log.error("Error creating appointment: ", e);
@@ -192,6 +194,12 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO) {
+        return createAppointmentWithServices(appointmentDTO, false);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO, boolean skipNotification) {
         // 创建预约实体
         Appointment appointment = new Appointment();
         appointment.setTenantId(appointmentDTO.getTenantId());
@@ -204,6 +212,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setNotes(appointmentDTO.getNotes());
         appointment.setRating(appointmentDTO.getRating());
         appointment.setReview(appointmentDTO.getReview());
+        appointment.setBookingSource(appointmentDTO.getBookingSource() != null ? appointmentDTO.getBookingSource() : "ADMIN");
         appointment.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
         appointment.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
         
@@ -294,11 +303,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                 log.error("Failed to load customer for appointment: {}", appointment.getId(), e);
             }
 
-            // 5. 发送预约确认通知
-            try {
-                notificationService.sendConfirmationNotification(appointment);
-            } catch (Exception e) {
-                log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
+            // 5. 发送预约确认通知（只有已确认状态才发送，待确认状态需要商家确认后再发）
+            if (!skipNotification && appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
+                try {
+                    notificationService.sendConfirmationNotification(appointment);
+                } catch (Exception e) {
+                    log.error("Failed to send confirmation notification for appointment: {}", appointment.getId(), e);
+                }
+            } else if (skipNotification) {
+                log.info("Skipping notification for appointment {} (skipNotification=true)", appointment.getId());
+            } else {
+                log.info("Skipping confirmation notification for appointment {} with status {}",
+                    appointment.getId(), appointment.getStatus());
             }
 
             return appointment;
@@ -333,7 +349,11 @@ public class AppointmentServiceImpl implements AppointmentService {
             
             // 根据状态变化发送通知
             try {
-                if (newStatus == Appointment.AppointmentStatus.CANCELLED && oldStatus != Appointment.AppointmentStatus.CANCELLED) {
+                if (newStatus == Appointment.AppointmentStatus.CONFIRMED && oldStatus == Appointment.AppointmentStatus.PENDING_CONFIRMATION) {
+                    // 待确认 -> 已确认：发送预约确认通知给客户
+                    notificationService.sendConfirmationNotification(appointment);
+                    log.info("Sent confirmation notification for appointment {} (status changed from PENDING_CONFIRMATION to CONFIRMED)", id);
+                } else if (newStatus == Appointment.AppointmentStatus.CANCELLED && oldStatus != Appointment.AppointmentStatus.CANCELLED) {
                     notificationService.sendCancellationNotification(appointment);
                 } else if (newStatus == Appointment.AppointmentStatus.COMPLETED && oldStatus != Appointment.AppointmentStatus.COMPLETED) {
                     notificationService.sendCompletionNotification(appointment);
@@ -569,7 +589,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // Create order record - must succeed or transaction rolls back
         // For single service scenario, pass null for servicePayments
-        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount,
+        com.merchant.server.businessservice.entity.Order createdOrder = createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount,
                 tipPaymentMethod, notes, null, giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount, "single");
 
         // Update customer statistics (total spent, points, last visit)
@@ -589,8 +609,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         // 发送员工完成通知（异步，不阻塞支付流程）
+        // 直接传递订单对象，避免事务未提交时异步线程查询不到
         try {
-            staffNotificationService.sendAppointmentCompletionNotification(appointment);
+            staffNotificationService.sendAppointmentCompletionNotification(appointment, createdOrder);
         } catch (Exception e) {
             log.error("Failed to send staff notification for appointment {}: {}",
                 appointmentId, e.getMessage());
@@ -669,7 +690,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         // Create order record - must succeed or transaction rolls back
         // For multi-service scenario, pass servicePayments to record each service's payment method
-        createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount,
+        com.merchant.server.businessservice.entity.Order createdOrder = createOrderFromAppointment(appointment, paymentMethod, taxRate, taxAmount, tipAmount, tipPercentage, subtotal, totalAmount,
                 tipPaymentMethod, notes, servicePayments, giftCardAmount, giftCardNumber, additionalPaymentMethod, additionalPaymentAmount, paymentMode);
 
         // Update customer statistics (total spent, points, last visit)
@@ -690,8 +711,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         // 发送员工完成通知（异步，不阻塞支付流程）
+        // 直接传递订单对象，避免事务未提交时异步线程查询不到
         try {
-            staffNotificationService.sendAppointmentCompletionNotification(appointment);
+            staffNotificationService.sendAppointmentCompletionNotification(appointment, createdOrder);
         } catch (Exception e) {
             log.error("Failed to send staff notification for appointment {}: {}",
                 appointmentId, e.getMessage());
@@ -756,8 +778,9 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     /**
      * Create order from appointment
+     * @return 创建的订单实体
      */
-    private void createOrderFromAppointment(Appointment appointment, String paymentMethod,
+    private com.merchant.server.businessservice.entity.Order createOrderFromAppointment(Appointment appointment, String paymentMethod,
             Double taxRate, Double taxAmount, Double tipAmount, Double tipPercentage, Double subtotal, Double totalAmount, String tipPaymentMethod, String notes,
             List<Map<String, Object>> servicePayments,
             Double giftCardAmount, String giftCardNumber, String additionalPaymentMethod, Double additionalPaymentAmount, String paymentMode) {
@@ -908,5 +931,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             order.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
             orderMapper.updateById(order);
         }
+
+        return order;
     }
 }

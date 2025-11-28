@@ -368,6 +368,7 @@ const SystemNotificationManagement: React.FC = () => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage={t('common.rowsPerPage')}
           sx={{
             borderTop: '1px solid rgba(0,0,0,0.06)',
             backgroundColor: '#fafafa',

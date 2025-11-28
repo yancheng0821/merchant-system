@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.GoogleBookingSyncMapper">
+
+    <resultMap id="GoogleBookingSyncResultMap" type="com.merchant.server.businessservice.entity.GoogleBookingSyncEntity">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="appointmentId" column="appointment_id"/>
+        <result property="googleBookingId" column="google_booking_id"/>
+        <result property="idempotencyToken" column="idempotency_token"/>
+        <result property="syncStatus" column="sync_status"/>
+        <result property="lastSyncAt" column="last_sync_at"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO google_booking_sync (
+            tenant_id, appointment_id, google_booking_id, idempotency_token,
+            sync_status, last_sync_at, error_message, created_at, updated_at
+        ) VALUES (
+            #{tenantId}, #{appointmentId}, #{googleBookingId}, #{idempotencyToken},
+            #{syncStatus}, #{lastSyncAt}, #{errorMessage}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE google_booking_sync
+        SET sync_status = #{syncStatus},
+            last_sync_at = #{lastSyncAt},
+            error_message = #{errorMessage},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="GoogleBookingSyncResultMap">
+        SELECT * FROM google_booking_sync WHERE id = #{id}
+    </select>
+
+    <select id="findByGoogleBookingId" resultMap="GoogleBookingSyncResultMap">
+        SELECT * FROM google_booking_sync WHERE google_booking_id = #{googleBookingId}
+    </select>
+
+    <select id="findByAppointmentId" resultMap="GoogleBookingSyncResultMap">
+        SELECT * FROM google_booking_sync WHERE appointment_id = #{appointmentId}
+    </select>
+
+    <select id="findByIdempotencyToken" resultMap="GoogleBookingSyncResultMap">
+        SELECT * FROM google_booking_sync WHERE idempotency_token = #{idempotencyToken}
+    </select>
+
+    <select id="findByTenantId" resultMap="GoogleBookingSyncResultMap">
+        SELECT * FROM google_booking_sync WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findBySyncStatus" resultMap="GoogleBookingSyncResultMap">
+        SELECT * FROM google_booking_sync WHERE sync_status = #{syncStatus}
+        ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM google_booking_sync WHERE id = #{id}
+    </delete>
+
+</mapper>

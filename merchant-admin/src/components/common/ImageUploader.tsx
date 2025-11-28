@@ -26,7 +26,7 @@ interface ImageUploaderProps {
     acceptedTypes?: string[]; // 接受的文件类型
     placeholder?: string; // 占位符文本
     disabled?: boolean;
-    uploadType?: 'avatar' | 'room-icon'; // 上传类型
+    uploadType?: 'avatar' | 'room-icon' | 'logo' | 'staff-avatar'; // 上传类型
     themeColor?: string; // 主题色
 }
 
@@ -88,13 +88,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
             // 根据上传类型选择对应的API
             if (uploadType === 'avatar') {
-                // 头像上传使用 userApi
+                // 当前用户头像上传使用 userApi（会同时更新用户信息）
                 const { userApi } = await import('../../services/api');
                 const response = await userApi.uploadAvatar(file);
                 if (response.success && response.data) {
                     return response.data.avatarUrl;
                 }
                 throw new Error(response.message || 'Upload failed');
+            } else if (uploadType === 'staff-avatar') {
+                // 员工头像上传（仅上传文件，不会更新当前用户信息）
+                const { fileUploadApi } = await import('../../services/api');
+                return await fileUploadApi.uploadStaffAvatar(file, tenantId);
+            } else if (uploadType === 'logo') {
+                // 商户Logo上传
+                const { fileUploadApi } = await import('../../services/api');
+                return await fileUploadApi.uploadLogo(file, tenantId);
             } else {
                 // 房间图标上传使用 fileUploadApi
                 const { fileUploadApi } = await import('../../services/api');

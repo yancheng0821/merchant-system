@@ -47,6 +47,16 @@ public class OnlineBookingConfig {
 
     private String bookingWidgetColor = "#000000"; // 预订组件主色调
 
+    // Google Business 集成相关
+    private Boolean googleBusinessEnabled = false;  // 是否启用Google Business集成
+    private String googlePlaceId;  // Google Place ID
+    private String googleMerchantId;  // Google Merchant Center ID
+    private String bookingPageSlug;  // 预约页面短链接slug (如: spa123)
+    private String welcomeMessage;  // 欢迎语
+    private String cancellationPolicy;  // 取消政策说明
+    private String logoUrl;  // Logo URL
+    private Boolean enabled = false;  // 是否启用在线预约
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 

@@ -21,6 +21,7 @@ export interface User {
   phone?: string;
   avatar?: string;
   tenantId: number;
+  tenantCode?: string;
   tenantName?: string;
   timezone?: string;
   roles?: string[];
@@ -76,6 +77,7 @@ const mapApiUserToUser = (apiUser: LoginResponse): User => {
     email: apiUser.email!,
     avatar: apiUser.avatar,
     tenantId: apiUser.tenantId,
+    tenantCode: apiUser.tenantCode,
     tenantName: apiUser.tenantName,
     timezone: apiUser.timezone,
     roles: apiUser.roles,

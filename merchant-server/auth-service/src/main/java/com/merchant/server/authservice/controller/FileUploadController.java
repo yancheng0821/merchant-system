@@ -46,8 +46,16 @@ public class FileUploadController {
     public ResponseEntity<Map<String, String>> uploadRoomIcon(
             @RequestParam("file") MultipartFile file,
             @RequestParam("tenantId") Long tenantId) {
-        
+
         return uploadFile(file, tenantId, "room-icons");
+    }
+
+    @PostMapping("/upload/logo")
+    public ResponseEntity<Map<String, String>> uploadLogo(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("tenantId") Long tenantId) {
+
+        return uploadFile(file, tenantId, "logos");
     }
 
     private ResponseEntity<Map<String, String>> uploadFile(MultipartFile file, Long tenantId, String subDir) {

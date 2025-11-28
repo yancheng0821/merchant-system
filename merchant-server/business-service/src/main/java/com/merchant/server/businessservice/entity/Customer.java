@@ -54,7 +54,7 @@ public class Customer {
     
     private String allergies;
     
-    private CommunicationPreference communicationPreference = CommunicationPreference.SMS;
+    private CommunicationPreference communicationPreference;
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastVisitDate;

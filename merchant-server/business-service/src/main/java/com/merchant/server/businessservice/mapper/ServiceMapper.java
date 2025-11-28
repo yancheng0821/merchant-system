@@ -18,6 +18,16 @@ public interface ServiceMapper {
      * 根据租户ID和状态查询服务
      */
     List<Service> selectByTenantIdAndStatus(@Param("tenantId") Long tenantId, @Param("status") String status);
+
+    /**
+     * 根据租户ID和状态查询服务 (别名方法)
+     */
+    List<Service> findByTenantIdAndStatus(@Param("tenantId") Long tenantId, @Param("status") String status);
+
+    /**
+     * 根据ID查询服务 (别名方法)
+     */
+    Service findById(@Param("id") Long id);
     
     /**
      * 根据租户ID和分类ID查询服务

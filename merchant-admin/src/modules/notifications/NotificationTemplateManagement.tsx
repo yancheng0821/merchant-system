@@ -252,95 +252,91 @@ const NotificationTemplateManagement: React.FC = () => {
   const handlePreview = () => {
     // 替换模板变量为示例数据
     const sampleData = {
-      customerName: '张三',
+      customerName: 'John Smith',
       appointmentDate: '2024-01-15',
       appointmentTime: '14:30',
-      serviceName: '理发服务',
-      merchantName: '美发沙龙',
-      amount: '¥188.00',
-      orderNumber: 'ORD20240115001',
+      serviceName: 'Haircut Service',
+      staffName: 'Sarah',
+      duration: '60',
+      totalAmount: '$88.00',
+      businessName: 'Beauty Salon',
+      businessAddress: '123 Main Street',
+      businessPhone: '(604) 123-4567',
+      confirmationCode: 'ABC12345',
+      googleCalendarUrl: '#',
+      outlookUrl: '#',
+      cancelUrl: '#',
     };
 
     let processedContent = formData.content;
 
-    // 替换所有变量
+    // 替换所有变量（支持 ${var} 和 {var} 两种格式）
     Object.entries(sampleData).forEach(([key, value]) => {
-      const regex = new RegExp(`\\{${key}\\}`, 'g');
-      processedContent = processedContent.replace(regex, value);
+      const regex1 = new RegExp(`\\$\\{${key}\\}`, 'g');
+      const regex2 = new RegExp(`\\{${key}\\}`, 'g');
+      processedContent = processedContent.replace(regex1, value);
+      processedContent = processedContent.replace(regex2, value);
     });
 
-    // 如果是 EMAIL 类型，包装成 HTML
+    // 如果是 EMAIL 类型
     if (formData.type === 'EMAIL') {
-      const html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                background-color: #f5f5f5;
-                margin: 0;
-                padding: 20px;
-              }
-              .email-container {
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #ffffff;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                overflow: hidden;
-              }
-              .email-header {
-                background: linear-gradient(135deg, #F97316, #EA580C);
-                color: white;
-                padding: 30px 20px;
-                text-align: center;
-              }
-              .email-header h1 {
-                margin: 0;
-                font-size: 24px;
-                font-weight: 600;
-              }
-              .email-body {
-                padding: 30px 20px;
-              }
-              .email-body p {
-                margin: 0 0 15px 0;
-              }
-              .email-footer {
-                background-color: #f8f9fa;
-                padding: 20px;
-                text-align: center;
-                color: #6c757d;
-                font-size: 14px;
-                border-top: 1px solid #e9ecef;
-              }
-              .highlight {
-                color: #F97316;
-                font-weight: 600;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="email-container">
-              <div class="email-header">
-                <h1>${formData.subject || '邮件主题'}</h1>
+      // 检查内容是否已经包含完整的HTML结构
+      const hasHtmlStructure = processedContent.toLowerCase().includes('<html') ||
+                               processedContent.toLowerCase().includes('<!doctype');
+
+      if (hasHtmlStructure) {
+        // 模板已经包含完整HTML，直接使用
+        setPreviewHtml(processedContent);
+      } else {
+        // 简单的文本内容，包装成简洁的HTML
+        const html = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+                  background-color: #f5f5f5;
+                  margin: 0;
+                  padding: 20px;
+                }
+                .email-container {
+                  max-width: 600px;
+                  margin: 0 auto;
+                  background-color: #ffffff;
+                  border-radius: 8px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  padding: 30px;
+                }
+                .email-subject {
+                  font-size: 18px;
+                  font-weight: 600;
+                  color: #1a1a1a;
+                  margin-bottom: 20px;
+                  padding-bottom: 15px;
+                  border-bottom: 1px solid #eee;
+                }
+                .email-body p {
+                  margin: 0 0 15px 0;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="email-container">
+                <div class="email-subject">${formData.subject || 'Email Subject'}</div>
+                <div class="email-body">
+                  ${processedContent.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('')}
+                </div>
               </div>
-              <div class="email-body">
-                ${processedContent.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('')}
-              </div>
-              <div class="email-footer">
-                <p>此邮件由系统自动发送，请勿直接回复</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `;
-      setPreviewHtml(html);
+            </body>
+          </html>
+        `;
+        setPreviewHtml(html);
+      }
     } else {
       // SMS 类型，简单显示
       setPreviewHtml(processedContent);

@@ -1252,6 +1252,7 @@ const CustomerManagement: React.FC = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          labelRowsPerPage={t('common.rowsPerPage')}
           sx={{
             borderTop: '1px solid rgba(0,0,0,0.08)',
             backgroundColor: '#fafafa',

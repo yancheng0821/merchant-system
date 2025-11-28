@@ -698,16 +698,16 @@ public class CustomerImportServiceImpl implements CustomerImportService {
             dto.setTotalSpent(BigDecimal.ZERO);
         }
 
-        // 处理沟通偏好（如果CSV中有值则使用，否则使用默认值SMS）
+        // 处理沟通偏好（如果CSV中有值则使用，否则使用默认值BOTH）
         String communicationPreference = (String) data.get("communicationPreference");
         if (communicationPreference != null && !communicationPreference.isEmpty()) {
             try {
                 dto.setCommunicationPreference(Customer.CommunicationPreference.valueOf(communicationPreference.toUpperCase()));
             } catch (IllegalArgumentException e) {
-                dto.setCommunicationPreference(Customer.CommunicationPreference.SMS);
+                dto.setCommunicationPreference(Customer.CommunicationPreference.BOTH);
             }
         } else {
-            dto.setCommunicationPreference(Customer.CommunicationPreference.SMS);
+            dto.setCommunicationPreference(Customer.CommunicationPreference.BOTH);
         }
 
         // 设置状态默认值

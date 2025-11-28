@@ -104,6 +104,7 @@ import AdjustAvailabilityDialog from './components/AdjustAvailabilityDialog';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useWebSocket } from '../../../contexts/WebSocketContext';
 import { usePermission } from '../../../hooks/usePermission';
 import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi, staffAttendanceApi } from '../../../services/api';
 import type { Resource, Service as ApiService, Customer, StaffAttendance } from '../../../services/api';
@@ -155,13 +156,14 @@ interface Appointment {
   startTime: string;
   endTime: string;
   date: string;
-  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'CANCELED' | 'NO_SHOW';
+  status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'CANCELED' | 'NO_SHOW';
   price: number;
   notes?: string;
   isNewPatient?: boolean;
   paid?: boolean;
   paidTime?: string;
   paymentMethod?: string;
+  bookingSource?: 'ADMIN' | 'ONLINE' | 'GOOGLE' | string; // 预约来源
 }
 
 interface Service {
@@ -474,6 +476,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const { hasPermission, userPermissions } = usePermission();
   const { isDrawerOpen, setDrawerOpen } = useNavigation();
   const { themeMode } = useTheme();
+  const { newAppointment, clearNewAppointment, cancelledAppointment, clearCancelledAppointment, isConnected } = useWebSocket();
   const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
 
   // 根据主题模式动态设置主题色
@@ -563,6 +566,9 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const calendarContainerRef = React.useRef<HTMLDivElement>(null);
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
+
+  // 待确认预约通知面板状态
+  const [pendingPanelExpanded, setPendingPanelExpanded] = useState(false);
 
   // 真实数据状态
   const [realStaff, setRealStaff] = useState<Resource[]>([]);
@@ -673,14 +679,15 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   }, [user?.tenantId]);
 
   // 加载预约数据
-  const loadAppointments = React.useCallback(async () => {
+  const loadAppointments = React.useCallback(async (silent: boolean = false) => {
     if (!user?.tenantId) {
-      setAppointmentsLoading(false);
+      if (!silent) setAppointmentsLoading(false);
       return;
     }
 
     try {
-      setAppointmentsLoading(true);
+      // 静默模式不显示加载状态，避免界面闪烁
+      if (!silent) setAppointmentsLoading(true);
       const appointmentsData = await api.getAllAppointments(user.tenantId);
 
       // Transform API data to local Appointment format using the helper function
@@ -690,7 +697,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     } catch (error) {
       console.error('Failed to load appointments:', error);
     } finally {
-      setAppointmentsLoading(false);
+      if (!silent) setAppointmentsLoading(false);
     }
   }, [user?.tenantId]);
 
@@ -749,12 +756,61 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       price: apt.totalAmount,
       notes: apt.notes,
       paid: apt.status === 'COMPLETED',
+      bookingSource: apt.bookingSource,
     };
   };
 
   useEffect(() => {
     loadAppointments();
   }, [loadAppointments]);
+
+  // WebSocket 实时通知：收到新的在线预约时自动刷新
+  useEffect(() => {
+    if (newAppointment) {
+      // 显示通知
+      setSnackbar({
+        open: true,
+        message: t('schedule.newOnlineAppointment', {
+          customerName: newAppointment.customerName,
+          date: newAppointment.date,
+          time: newAppointment.time?.substring(0, 5),
+          defaultValue: `New online booking: ${newAppointment.customerName} on ${newAppointment.date} at ${newAppointment.time?.substring(0, 5)}`
+        }),
+        severity: 'info',
+      });
+
+      // 静默刷新预约列表，不显示 loading 状态，避免界面闪烁
+      loadAppointments(true);
+
+      // 清除通知状态
+      clearNewAppointment();
+    }
+  }, [newAppointment, loadAppointments, clearNewAppointment, t]);
+
+  // WebSocket 实时通知：收到预约取消通知时更新界面
+  useEffect(() => {
+    if (cancelledAppointment) {
+      // 显示通知
+      setSnackbar({
+        open: true,
+        message: t('schedule.appointmentCancelled', {
+          customerName: cancelledAppointment.customerName,
+          date: cancelledAppointment.date,
+          time: cancelledAppointment.time?.substring(0, 5),
+          defaultValue: `Appointment cancelled: ${cancelledAppointment.customerName} on ${cancelledAppointment.date} at ${cancelledAppointment.time?.substring(0, 5)}`
+        }),
+        severity: 'warning',
+      });
+
+      // 从本地状态中移除被取消的预约，无需重新加载
+      setAllAppointments(prevAppointments =>
+        prevAppointments.filter(apt => apt.id !== cancelledAppointment.appointmentId)
+      );
+
+      // 清除通知状态
+      clearCancelledAppointment();
+    }
+  }, [cancelledAppointment, clearCancelledAppointment, t]);
 
   // 加载当天的签到签退记录
   useEffect(() => {
@@ -964,6 +1020,11 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     // 只返回选中员工有专长的服务
     return services.filter(service => selectedResourceServiceIds.has(service.id));
   }, [selectedStaffIds, realServices, dataLoading, resourceServices]);
+
+  // 待确认的预约列表
+  const pendingConfirmationAppointments = useMemo(() => {
+    return allAppointments.filter(apt => apt.status === 'PENDING_CONFIRMATION');
+  }, [allAppointments]);
 
   const getStaffAppointments = (staffId: number, date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -1823,6 +1884,55 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         open: true,
         message: errorMessage,
         severity: 'error'
+      });
+    }
+  };
+
+  // 处理待确认预约的确认操作
+  const handleConfirmAppointment = async (appointmentId: number) => {
+    // 检查更新权限
+    if (!hasPermission('schedule:update')) {
+      setSnackbar({
+        open: true,
+        message: t('permissions.noUpdatePermission', 'You do not have permission to update appointments'),
+        severity: 'warning',
+      });
+      return;
+    }
+
+    try {
+      // Update appointment status to CONFIRMED (会触发发送确认通知给客户)
+      await api.updateAppointmentStatus(appointmentId, 'CONFIRMED');
+
+      // Update local state
+      setAllAppointments(prevAppointments =>
+        prevAppointments.map(apt =>
+          apt.id === appointmentId
+            ? { ...apt, status: 'CONFIRMED' as const }
+            : apt
+        )
+      );
+
+      // Update selected appointment
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment({
+          ...selectedAppointment,
+          status: 'CONFIRMED' as const,
+        });
+      }
+
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: t('appointments.confirmSuccess', 'Appointment confirmed successfully'),
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to confirm appointment:', error);
+      setSnackbar({
+        open: true,
+        message: t('appointments.confirmFailed', 'Failed to confirm appointment'),
+        severity: 'error',
       });
     }
   };
@@ -2961,6 +3071,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                     status: layout.status,
                                     resourceName: staff.name,
                                     notes: layout.notes,
+                                    bookingSource: layout.bookingSource,
                                   }}
                                   onClick={() => handleAppointmentClick(layout)}
                                   onEdit={hasPermission('schedule:update') ? (e) => {
@@ -3089,6 +3200,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                                     paid: layout.paid,
                                     status: layout.status,
                                     notes: layout.notes,
+                                    bookingSource: layout.bookingSource,
                                   }}
                                   onClick={() => handleAppointmentClick(layout)}
                                   onEdit={hasPermission('schedule:update') ? (e) => {
@@ -3374,6 +3486,41 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                         },
                       }}
                     />
+                  ) : selectedAppointment.status === 'PENDING_CONFIRMATION' ? (
+                    <Chip
+                      icon={<CheckCircleOutlineIcon />}
+                      label={t('appointments.confirmBooking', 'Confirm Booking')}
+                      size="small"
+                      onClick={() => handleConfirmAppointment(selectedAppointment.id)}
+                      disabled={!hasPermission('schedule:update')}
+                      sx={{
+                        height: 24,
+                        bgcolor: 'transparent',
+                        border: `1px solid ${isMonochrome ? '#666' : '#3B82F6'}`,
+                        color: isMonochrome ? '#666' : '#3B82F6',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        borderRadius: 1.5,
+                        cursor: 'pointer',
+                        '& .MuiChip-icon': {
+                          fontSize: 16,
+                          color: isMonochrome ? '#666' : '#3B82F6',
+                        },
+                        '& .MuiChip-label': {
+                          px: 1,
+                        },
+                        '&:hover': {
+                          bgcolor: alpha(isMonochrome ? '#666' : '#3B82F6', 0.08),
+                        },
+                        '&.Mui-disabled': {
+                          borderColor: '#cbd5e1',
+                          color: '#94a3b8',
+                          '& .MuiChip-icon': {
+                            color: '#94a3b8',
+                          },
+                        },
+                      }}
+                    />
                   ) : (
                     <Chip
                       icon={<CheckCircleOutlineIcon />}
@@ -3421,6 +3568,34 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
                   <Box display="flex" alignItems="center" gap={1} mt={0.5}>
                     <EmailIcon fontSize="small" color="action" />
                     <Typography variant="body2">{selectedAppointment.customerEmail}</Typography>
+                  </Box>
+                )}
+                {/* 预约来源 */}
+                {selectedAppointment.bookingSource && (
+                  <Box display="flex" alignItems="center" gap={1} mt={1}>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                      {t('appointments.bookingSource')}:
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={
+                        selectedAppointment.bookingSource === 'ONLINE' ? t('appointments.sourceOnline') :
+                        selectedAppointment.bookingSource === 'GOOGLE' ? t('appointments.sourceGoogle') :
+                        t('appointments.sourceAdmin')
+                      }
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 500,
+                        bgcolor: selectedAppointment.bookingSource === 'ONLINE' ? alpha('#3B82F6', 0.1) :
+                                 selectedAppointment.bookingSource === 'GOOGLE' ? alpha('#EA4335', 0.1) :
+                                 alpha('#6B7280', 0.1),
+                        color: selectedAppointment.bookingSource === 'ONLINE' ? '#3B82F6' :
+                               selectedAppointment.bookingSource === 'GOOGLE' ? '#EA4335' :
+                               '#6B7280',
+                        '& .MuiChip-label': { px: 1 },
+                      }}
+                    />
                   </Box>
                 )}
               </Box>
@@ -3791,27 +3966,153 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         />
       )}
 
-      {/* 通知组件 - 使用Portal渲染到document.body确保不被遮挡 */}
-      <Portal>
+      {/* 待确认预约浮动通知面板 - 简约设计 */}
+      {pendingConfirmationAppointments.length > 0 && (
+        <Portal container={isFullscreen ? calendarContainerRef.current : undefined}>
+          <Box
+            sx={{
+              position: 'fixed',
+              bottom: 20,
+              right: 20,
+              zIndex: isFullscreen ? 99999 : 1400,
+              maxWidth: 340,
+              maxHeight: pendingPanelExpanded ? 360 : 'auto',
+              bgcolor: '#fff',
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+              overflow: 'hidden',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {/* 标题栏 - 始终可见 */}
+            <Box
+              onClick={() => setPendingPanelExpanded(!pendingPanelExpanded)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 2,
+                py: 1.25,
+                cursor: 'pointer',
+                borderBottom: pendingPanelExpanded ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    bgcolor: isMonochrome ? '#1a1a1a' : '#8B5CF6',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  {pendingConfirmationAppointments.length}
+                </Box>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1a1a1a' }}>
+                  {t('schedule.pendingConfirmations', 'Pending Confirmations')}
+                </Typography>
+              </Box>
+              <ChevronLeftIcon
+                sx={{
+                  fontSize: 18,
+                  color: '#999',
+                  transform: pendingPanelExpanded ? 'rotate(-90deg)' : 'rotate(90deg)',
+                  transition: 'transform 0.2s ease',
+                }}
+              />
+            </Box>
+
+            {/* 预约列表 - 展开时显示 */}
+            {pendingPanelExpanded && (
+              <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
+                {pendingConfirmationAppointments.map((apt, index) => {
+                  const staffName = realStaff.find(s => s.id === apt.resourceId)?.name || '-';
+                  return (
+                    <Box
+                      key={apt.id}
+                      onClick={() => {
+                        setSelectedAppointment(apt);
+                        setDetailsDrawerOpen(true);
+                      }}
+                      sx={{
+                        px: 2,
+                        py: 1.5,
+                        borderBottom: index < pendingConfirmationAppointments.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 2,
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                      }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1a1a1a', mb: 0.25 }} noWrap>
+                          {apt.customerName}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: '#888' }} noWrap>
+                          {format(parseISO(apt.date), 'M/d')} · {apt.startTime.substring(0, 5)} · {staffName}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleConfirmAppointment(apt.id);
+                        }}
+                        disabled={!hasPermission('schedule:update')}
+                        sx={{
+                          minWidth: 56,
+                          height: 28,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          color: isMonochrome ? '#1a1a1a' : '#3B82F6',
+                          border: `1px solid ${isMonochrome ? '#ddd' : alpha('#3B82F6', 0.3)}`,
+                          borderRadius: 1.5,
+                          bgcolor: 'transparent',
+                          '&:hover': {
+                            bgcolor: isMonochrome ? 'rgba(0,0,0,0.04)' : alpha('#3B82F6', 0.08),
+                            borderColor: isMonochrome ? '#ccc' : '#3B82F6',
+                          },
+                        }}
+                      >
+                        {t('common.confirm', 'Confirm')}
+                      </Button>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </Box>
+        </Portal>
+      )}
+
+      {/* 通知组件 */}
+      <Portal container={isFullscreen ? calendarContainerRef.current : undefined}>
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={3000}
+          autoHideDuration={8000}
           onClose={(event, reason) => {
-            // 只允许用户手动关闭或超时关闭，忽略其他原因
             if (reason === 'timeout' || reason === 'escapeKeyDown') {
               setSnackbar({ ...snackbar, open: false });
             }
           }}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          sx={{ zIndex: '100000 !important' }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{ zIndex: isFullscreen ? 99999 : 100000 }}
           disableWindowBlurListener
         >
           <Alert
-            onClose={() => {
-              setSnackbar({ ...snackbar, open: false });
-            }}
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            sx={{ borderRadius: 2 }}
           >
             {snackbar.message}
           </Alert>

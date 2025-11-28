@@ -16,6 +16,7 @@ public class LoginResponse {
     private String email;
     private String avatar;
     private Long tenantId;
+    private String tenantCode;
     private String tenantName;
     private String timezone;
     private List<String> roles;

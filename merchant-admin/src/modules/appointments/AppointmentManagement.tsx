@@ -83,6 +83,7 @@ const AppointmentManagement: React.FC = () => {
   const [stats, setStats] = useState<AppointmentStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -195,6 +196,11 @@ const AppointmentManagement: React.FC = () => {
       filtered = filtered.filter(apt => apt.status.toLowerCase() === statusFilter.toLowerCase());
     }
 
+    // 来源筛选
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter(apt => (apt.bookingSource || 'ADMIN').toUpperCase() === sourceFilter.toUpperCase());
+    }
+
     // 日期筛选
     if (dateFilter !== 'all') {
       const todayStr = getMerchantToday();
@@ -234,20 +240,21 @@ const AppointmentManagement: React.FC = () => {
     });
 
     return filtered;
-  }, [appointments, searchTerm, statusFilter, dateFilter]);
+  }, [appointments, searchTerm, statusFilter, sourceFilter, dateFilter]);
 
   // 当筛选条件改变时，重置页码
   useEffect(() => {
     setPage(0);
-  }, [searchTerm, statusFilter, dateFilter]);
+  }, [searchTerm, statusFilter, sourceFilter, dateFilter]);
 
   const getStatusChip = (status: string) => {
     const statusConfig = {
+      PENDING_CONFIRMATION: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('appointments.appointmentStatuses.pending-confirmation') },
       CONFIRMED: { color: '#3B82F6', bg: alpha('#3B82F6', 0.1), label: t('appointments.appointmentStatuses.confirmed') },
       CHECKED_IN: { color: '#F59E0B', bg: alpha('#F59E0B', 0.1), label: t('appointments.appointmentStatuses.checked-in') },
       COMPLETED: { color: '#10B981', bg: alpha('#10B981', 0.1), label: t('appointments.appointmentStatuses.completed') },
       CANCELLED: { color: '#EF4444', bg: alpha('#EF4444', 0.1), label: t('appointments.appointmentStatuses.cancelled') },
-      NO_SHOW: { color: '#8B5CF6', bg: alpha('#8B5CF6', 0.1), label: t('appointments.appointmentStatuses.no-show') },
+      NO_SHOW: { color: '#6B7280', bg: alpha('#6B7280', 0.1), label: t('appointments.appointmentStatuses.no-show') },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.CONFIRMED;
@@ -545,6 +552,7 @@ const AppointmentManagement: React.FC = () => {
                   }}
                 >
                   <MenuItem value="all" sx={{ fontSize: '0.8125rem' }}>{t('appointments.allStatuses')}</MenuItem>
+                  <MenuItem value="pending_confirmation" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.pending-confirmation')}</MenuItem>
                   <MenuItem value="confirmed" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
                   <MenuItem value="checked_in" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
                   <MenuItem value="completed" sx={{ fontSize: '0.8125rem' }}>{t('appointments.appointmentStatuses.completed')}</MenuItem>
@@ -554,7 +562,36 @@ const AppointmentManagement: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: '#666', fontSize: '0.8125rem' }}>{t('appointments.sourceFilter')}</InputLabel>
+                <Select
+                  value={sourceFilter}
+                  label={t('appointments.sourceFilter')}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  sx={{
+                    borderRadius: 1.5,
+                    fontSize: '0.8125rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  }}
+                >
+                  <MenuItem value="all" sx={{ fontSize: '0.8125rem' }}>{t('appointments.allSources')}</MenuItem>
+                  <MenuItem value="ONLINE" sx={{ fontSize: '0.8125rem' }}>{t('appointments.sourceOnline')}</MenuItem>
+                  <MenuItem value="GOOGLE" sx={{ fontSize: '0.8125rem' }}>{t('appointments.sourceGoogle')}</MenuItem>
+                  <MenuItem value="ADMIN" sx={{ fontSize: '0.8125rem' }}>{t('appointments.sourceAdmin')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
                 <InputLabel sx={{ color: '#666', fontSize: '0.8125rem' }}>{t('appointments.dateFilter')}</InputLabel>
                 <Select
@@ -630,6 +667,7 @@ const AppointmentManagement: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.staff')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.amount')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.status')}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.source')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.rating')}</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>{t('appointments.tableHeaders.actions')}</TableCell>
               </TableRow>
@@ -637,13 +675,13 @@ const AppointmentManagement: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <CircularProgress sx={{ color: THEME_COLOR }} size={32} />
                   </TableCell>
                 </TableRow>
               ) : filteredAppointments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                     <Typography sx={{ color: '#888', fontSize: '0.8125rem' }}>
                       {t('appointments.noAppointments')}
                     </Typography>
@@ -769,6 +807,30 @@ const AppointmentManagement: React.FC = () => {
                         {getStatusChip(appointment.status)}
                       </TableCell>
                       <TableCell>
+                        <Chip
+                          size="small"
+                          label={
+                            appointment.bookingSource === 'ONLINE' ? t('appointments.sourceOnline') :
+                            appointment.bookingSource === 'GOOGLE' ? t('appointments.sourceGoogle') :
+                            t('appointments.sourceAdmin')
+                          }
+                          sx={{
+                            height: 22,
+                            fontSize: '0.7rem',
+                            fontWeight: 500,
+                            bgcolor: isMonochrome ? alpha('#6B7280', 0.1) :
+                                     appointment.bookingSource === 'ONLINE' ? alpha('#3B82F6', 0.1) :
+                                     appointment.bookingSource === 'GOOGLE' ? alpha('#EA4335', 0.1) :
+                                     alpha('#6B7280', 0.1),
+                            color: isMonochrome ? '#6B7280' :
+                                   appointment.bookingSource === 'ONLINE' ? '#3B82F6' :
+                                   appointment.bookingSource === 'GOOGLE' ? '#EA4335' :
+                                   '#6B7280',
+                            '& .MuiChip-label': { px: 1 },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
                         {appointment.rating ? (
                           <Box display="flex" alignItems="center" gap={1}>
                             <Box display="flex">
@@ -831,6 +893,7 @@ const AppointmentManagement: React.FC = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          labelRowsPerPage={t('common.rowsPerPage')}
           sx={{
             borderTop: '1px solid rgba(0,0,0,0.06)',
             backgroundColor: '#fafafa',
@@ -1074,9 +1137,36 @@ const AppointmentManagement: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">{t('appointments.unassigned')}</Typography>
                   </Box>
                 )}
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box display="flex" alignItems="center" gap={1} mb={1}>
                   <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
                     {t('appointments.status')}: {getStatusChip(selectedAppointment.status)}
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {t('appointments.bookingSource')}:
+                    <Chip
+                      size="small"
+                      label={
+                        selectedAppointment.bookingSource === 'ONLINE' ? t('appointments.sourceOnline') :
+                        selectedAppointment.bookingSource === 'GOOGLE' ? t('appointments.sourceGoogle') :
+                        t('appointments.sourceAdmin')
+                      }
+                      sx={{
+                        height: 24,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        bgcolor: isMonochrome ? alpha('#6B7280', 0.1) :
+                                 selectedAppointment.bookingSource === 'ONLINE' ? alpha('#3B82F6', 0.1) :
+                                 selectedAppointment.bookingSource === 'GOOGLE' ? alpha('#EA4335', 0.1) :
+                                 alpha('#6B7280', 0.1),
+                        color: isMonochrome ? '#6B7280' :
+                               selectedAppointment.bookingSource === 'ONLINE' ? '#3B82F6' :
+                               selectedAppointment.bookingSource === 'GOOGLE' ? '#EA4335' :
+                               '#6B7280',
+                        '& .MuiChip-label': { px: 2 },
+                      }}
+                    />
                   </Typography>
                 </Box>
               </Grid>

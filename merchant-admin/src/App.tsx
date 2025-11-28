@@ -30,7 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
-import { BrowserRouter as Router, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, useLocation, useNavigate, useSearchParams, Routes, Route } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { TaxProvider } from './contexts/TaxContext';
 import { SessionProvider } from './contexts/SessionContext';
@@ -54,6 +54,7 @@ import NotificationManagement from './modules/notifications/NotificationManageme
 import ScheduleManagement from './modules/schedule/components/ShiftManagement';
 import { RBACManagement } from './modules/rbac';
 import { TenantActivation } from './modules/admin';
+import { PublicBooking } from './modules/public-booking';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
 import { getFullImageUrl, subscriptionApi, TenantSubscription } from './services/api';
@@ -331,27 +332,15 @@ const MainAppContent: React.FC = () => {
         >
           {/* Logo */}
           <Box
+            component="img"
+            src="/favicon.svg"
+            alt="VA"
             sx={{
               width: 32,
               height: 32,
               borderRadius: 1.5,
-              bgcolor: '#1a1a1a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
-          >
-            <Typography
-              sx={{
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                color: '#fff',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              VA
-            </Typography>
-          </Box>
+          />
 
           {/* System Name */}
           <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
@@ -784,12 +773,24 @@ const MainAppContent: React.FC = () => {
       );
 };
 
+// 公开预约页面包装器 - 不需要认证
+const PublicBookingWrapper: React.FC = () => {
+  return <PublicBooking />;
+};
+
 const MainApp: React.FC = () => {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <NavigationProvider>
-        <MainAppContent />
-      </NavigationProvider>
+      <Routes>
+        {/* 公开预约页面 - 不需要登录 */}
+        <Route path="/booking/:slug" element={<PublicBookingWrapper />} />
+        {/* 其他所有路由走主应用 */}
+        <Route path="*" element={
+          <NavigationProvider>
+            <MainAppContent />
+          </NavigationProvider>
+        } />
+      </Routes>
     </Router>
   );
 };

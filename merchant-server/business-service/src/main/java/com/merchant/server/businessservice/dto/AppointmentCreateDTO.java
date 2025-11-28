@@ -30,6 +30,7 @@ public class AppointmentCreateDTO {
     private String notes;
     private Integer rating;
     private String review;
+    private String bookingSource;  // MANUAL, ONLINE, GOOGLE
     
     // 服务信息
     private List<AppointmentServiceDTO> services;

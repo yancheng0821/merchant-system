@@ -321,7 +321,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 2.5 }}>
+      <DialogContent sx={{ p: 2.5, '&.MuiDialogContent-root': { pt: 2.5 } }}>
         {/* 基本信息 */}
         <Box sx={{ mb: 3 }}>
           <Box display="flex" alignItems="center" gap={1} mb={2}>

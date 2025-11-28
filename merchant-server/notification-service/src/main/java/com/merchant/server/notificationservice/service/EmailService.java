@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -330,7 +331,7 @@ public class EmailService {
     public boolean sendHtmlEmail(String to, String subject, String htmlContent) {
         return sendEmail(to, subject, htmlContent);
     }
-    
+
     /**
      * 发送邮件给多个收件人
      */

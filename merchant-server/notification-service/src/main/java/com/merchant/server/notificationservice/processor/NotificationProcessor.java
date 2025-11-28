@@ -94,7 +94,7 @@ public class NotificationProcessor {
             notificationLog.setSubject(subject);
             notificationLog.setContent(content);
 
-            // 发送邮件
+            // 发送邮件（日历按钮链接已嵌入邮件模板中，无需附件）
             boolean sent = emailService.sendEmail(request.getRecipient().getEmail(), subject, content);
 
             // 更新状态

@@ -850,7 +850,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 2.5, flex: 1, overflow: 'auto' }}>
+      <DialogContent sx={{ p: 2.5, flex: 1, overflow: 'auto', '&.MuiDialogContent-root': { pt: 2.5 } }}>
           {/* 客户信息 */}
           <Box sx={{ mb: 3 }}>
             <Box display="flex" alignItems="center" gap={1} mb={2}>

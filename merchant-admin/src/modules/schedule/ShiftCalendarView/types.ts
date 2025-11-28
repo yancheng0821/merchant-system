@@ -49,6 +49,7 @@ export interface Appointment {
   paid?: boolean;
   paidTime?: string;
   paymentMethod?: string;
+  bookingSource?: 'ADMIN' | 'ONLINE' | 'GOOGLE' | string; // 预约来源
 }
 
 export interface Service {

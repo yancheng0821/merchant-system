@@ -426,7 +426,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                         variant="avatar"
                                         size={80}
                                         placeholder={t('staff.avatarPlaceholder')}
-                                        uploadType="avatar"
+                                        uploadType="staff-avatar"
                                         themeColor={THEME_COLOR}
                                     />
                                 </Box>

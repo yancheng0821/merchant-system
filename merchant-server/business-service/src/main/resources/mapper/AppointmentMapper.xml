@@ -15,6 +15,7 @@
         <result property="notes" column="notes"/>
         <result property="rating" column="rating"/>
         <result property="review" column="review"/>
+        <result property="bookingSource" column="booking_source"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -32,6 +33,7 @@
         <result property="notes" column="notes"/>
         <result property="rating" column="rating"/>
         <result property="review" column="review"/>
+        <result property="bookingSource" column="booking_source"/>
         <result property="reminder24hSent" column="reminder_24h_sent"/>
         <result property="reminder30minSent" column="reminder_30min_sent"/>
         <result property="createdAt" column="created_at"/>
@@ -71,14 +73,14 @@
     <!-- 基础查询SQL -->
     <sql id="Base_Column_List">
         id, tenant_id, customer_id, appointment_date, appointment_time,
-        duration, total_amount, status, notes, rating, review, created_at, updated_at
+        duration, total_amount, status, notes, rating, review, booking_source, created_at, updated_at
     </sql>
 
     <!-- 根据ID查询预约 -->
     <select id="findById" resultMap="AppointmentWithDetailsResultMap">
         SELECT
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
-            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.booking_source, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
             c.email as customer_email, c.country_code as customer_country_code,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
@@ -101,7 +103,7 @@
     <select id="findByTenantId" resultMap="AppointmentWithDetailsResultMap">
         SELECT
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
-            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
+            a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.booking_source, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
             c.email as customer_email, c.country_code as customer_country_code,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
@@ -195,10 +197,10 @@
     <insert id="insert" parameterType="com.merchant.server.businessservice.entity.Appointment" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO appointments (
             tenant_id, customer_id, appointment_date, appointment_time,
-            duration, total_amount, status, notes, rating, review, created_at, updated_at
+            duration, total_amount, status, notes, rating, review, booking_source, created_at, updated_at
         ) VALUES (
             #{tenantId}, #{customerId}, #{appointmentDate}, #{appointmentTime},
-            #{duration}, #{totalAmount}, #{status}, #{notes}, #{rating}, #{review}, #{createdAt}, #{updatedAt}
+            #{duration}, #{totalAmount}, #{status}, #{notes}, #{rating}, #{review}, #{bookingSource}, #{createdAt}, #{updatedAt}
         )
     </insert>
 
@@ -216,6 +218,7 @@
             <if test="notes != null">notes = #{notes},</if>
             <if test="rating != null">rating = #{rating},</if>
             <if test="review != null">review = #{review},</if>
+            <if test="bookingSource != null">booking_source = #{bookingSource},</if>
             <if test="reminder24hSent != null">reminder_24h_sent = #{reminder24hSent},</if>
             <if test="reminder30minSent != null">reminder_30min_sent = #{reminder30minSent},</if>
             <if test="updatedAt != null">updated_at = #{updatedAt}</if>

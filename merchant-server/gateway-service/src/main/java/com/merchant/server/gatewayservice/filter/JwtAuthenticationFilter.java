@@ -46,7 +46,25 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/merchant/webhooks/",  // Stripe webhook - 不需要JWT认证
         "/api/test/",
         "/actuator/",
-        "/static/uploads/"
+        "/static/uploads/",
+        "/api/public/"  // 公开预约API - 不需要JWT认证
+    );
+
+    /**
+     * 需要来源验证的路径（防止滥用）
+     */
+    private static final List<String> ORIGIN_RESTRICTED_PATHS = Arrays.asList(
+        "/api/public/places/"  // Google Places API - 需要验证来源
+    );
+
+    /**
+     * 允许的请求来源
+     */
+    private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
+        "https://vamerchant.app",
+        "https://www.vamerchant.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
     );
 
     @Override
@@ -55,6 +73,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getPath().value();
 
         log.debug("Processing request: {}", path);
+
+        // 检查是否需要来源验证
+        if (isOriginRestrictedPath(path)) {
+            if (!isValidOrigin(request)) {
+                log.warn("Rejected request from unauthorized origin: path={}", path);
+                return forbiddenResponse(exchange, "Access denied: invalid origin");
+            }
+        }
 
         // 检查是否是公开路径
         if (isPublicPath(path)) {
@@ -107,6 +133,42 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     /**
+     * 检查是否是需要来源验证的路径
+     */
+    private boolean isOriginRestrictedPath(String path) {
+        return ORIGIN_RESTRICTED_PATHS.stream().anyMatch(path::startsWith);
+    }
+
+    /**
+     * 验证请求来源是否合法
+     */
+    private boolean isValidOrigin(ServerHttpRequest request) {
+        String origin = request.getHeaders().getFirst("Origin");
+        String referer = request.getHeaders().getFirst("Referer");
+
+        // 检查 Origin header
+        if (origin != null) {
+            for (String allowed : ALLOWED_ORIGINS) {
+                if (origin.equals(allowed) || origin.startsWith(allowed)) {
+                    return true;
+                }
+            }
+        }
+
+        // 如果没有 Origin，检查 Referer header
+        if (referer != null) {
+            for (String allowed : ALLOWED_ORIGINS) {
+                if (referer.startsWith(allowed)) {
+                    return true;
+                }
+            }
+        }
+
+        log.debug("Origin validation failed: origin={}, referer={}", origin, referer);
+        return false;
+    }
+
+    /**
      * 从请求中提取JWT token
      */
     private String extractToken(ServerHttpRequest request) {
@@ -126,6 +188,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         response.getHeaders().add("Content-Type", "application/json");
 
         String body = String.format("{\"success\":false,\"message\":\"%s\",\"error\":\"UNAUTHORIZED\"}", message);
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
+    }
+
+    /**
+     * 返回403禁止访问响应
+     */
+    private Mono<Void> forbiddenResponse(ServerWebExchange exchange, String message) {
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.FORBIDDEN);
+        response.getHeaders().add("Content-Type", "application/json");
+
+        String body = String.format("{\"success\":false,\"message\":\"%s\",\"error\":\"FORBIDDEN\"}", message);
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
     }
 

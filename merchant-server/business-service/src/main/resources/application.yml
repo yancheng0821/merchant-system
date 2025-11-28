@@ -85,9 +85,12 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+    registry-fetch-interval-seconds: 5  # 更频繁地获取注册表
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 10  # 更频繁的心跳
+    lease-expiration-duration-in-seconds: 30  # 更短的过期时间
 
 # 通知服务配置
 notification:
@@ -111,6 +114,10 @@ business:
   address: 北京市朝阳区三里屯路123号
   phone: 400-123-4567
 
+# 前端地址配置
+frontend:
+  base-url: http://localhost:3000  # 本地开发环境
+
 # POS支付配置
 pos:
   client:
@@ -120,6 +127,14 @@ pos:
     enabled: false         # 是否启用mock模式
     success-rate: 95       # mock模式下的成功率（百分比）
     processing-delay: 3    # mock处理延迟（秒）
+
+# Google Places API配置
+# 本地开发：通过 .env.local 文件设置 GOOGLE_PLACES_API_KEY
+# 生产环境：通过 Docker 环境变量设置
+google:
+  places:
+    api-key: ${GOOGLE_PLACES_API_KEY:}
+    timeout: 10000
 
 # Stripe Connect配置
 stripe:

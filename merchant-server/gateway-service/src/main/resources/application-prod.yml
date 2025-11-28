@@ -6,6 +6,9 @@ spring:
   application:
     name: gateway-service
   cloud:
+    loadbalancer:
+      cache:
+        ttl: 5s  # 缩短负载均衡器缓存时间，加快服务发现
     gateway:
       discovery:
         locator:
@@ -24,6 +27,7 @@ spring:
               - POST
               - PUT
               - DELETE
+              - PATCH
               - OPTIONS
             allowedHeaders:
               - Authorization
@@ -56,6 +60,11 @@ spring:
           uri: lb://analytics-service
           predicates:
             - Path=/api/analytics/**
+        # 公开预约API - 无需认证
+        - id: public-booking-api
+          uri: lb://business-service
+          predicates:
+            - Path=/api/public/**
         - id: static-resources
           uri: lb://auth-service
           predicates:

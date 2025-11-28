@@ -17,7 +17,11 @@ public interface ResourceMapper {
     List<Resource> findByTenantId(@Param("tenantId") Long tenantId);
     
     List<Resource> findByTenantIdAndType(@Param("tenantId") Long tenantId, @Param("type") String type);
-    
+
+    List<Resource> findByTenantIdAndTypeAndStatus(@Param("tenantId") Long tenantId,
+                                                   @Param("type") String type,
+                                                   @Param("status") String status);
+
     Resource findById(@Param("id") Long id);
     
     Resource findActiveById(@Param("id") Long id);

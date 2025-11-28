@@ -11,6 +11,13 @@ NC='\033[0m' # No Color
 BASE_DIR="/Users/aisenyc/merchant-system/merchant-server"
 LOG_DIR="${BASE_DIR}/logs"
 PID_DIR="${BASE_DIR}/pids"
+ENV_FILE="${BASE_DIR}/.env.local"
+
+# Load local environment variables if exists
+if [ -f "${ENV_FILE}" ]; then
+    echo -e "${BLUE}Loading local environment variables from ${ENV_FILE}${NC}"
+    source "${ENV_FILE}"
+fi
 
 # Create necessary directories
 mkdir -p "${LOG_DIR}"

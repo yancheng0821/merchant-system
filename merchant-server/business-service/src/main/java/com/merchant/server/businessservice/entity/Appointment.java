@@ -53,6 +53,9 @@ public class Appointment {
     // 提醒发送标记
     private Boolean reminder24hSent = false;  // 24小时提醒是否已发送
     private Boolean reminder30minSent = false; // 30分钟提醒是否已发送
+
+    // 预约来源: MANUAL(手动), ONLINE(在线预约), GOOGLE(Google预约)
+    private String bookingSource;
     
     // 关联对象（如果需要的话）
     private Customer customer;
@@ -83,6 +86,11 @@ public class Appointment {
     
     // 枚举定义
     public enum AppointmentStatus {
-        CONFIRMED, CHECKED_IN, COMPLETED, CANCELLED, NO_SHOW
+        PENDING_CONFIRMATION,  // 待确认（需要商家手动确认）
+        CONFIRMED,             // 已确认
+        CHECKED_IN,            // 已签到
+        COMPLETED,             // 已完成
+        CANCELLED,             // 已取消
+        NO_SHOW                // 未到店
     }
 }

@@ -769,6 +769,7 @@ const OrderManagement: React.FC = () => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
+          labelRowsPerPage={t('common.rowsPerPage')}
           sx={{
             borderTop: '1px solid',
             borderColor: 'divider',

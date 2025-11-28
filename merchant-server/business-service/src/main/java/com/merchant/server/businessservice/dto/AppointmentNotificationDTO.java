@@ -40,4 +40,11 @@ public class AppointmentNotificationDTO {
     private String businessName;
     private String businessAddress;
     private String businessPhone;
+
+    // 预约确认相关
+    private String confirmationCode;   // 预约确认码
+    private String cancelUrl;          // 取消预约链接
+    private String googleCalendarUrl;  // Google Calendar 添加链接
+    private String outlookUrl;         // Outlook 添加链接
+    private String timezone;           // 商户时区
 }

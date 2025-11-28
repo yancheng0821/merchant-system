@@ -502,6 +502,7 @@ const AppointmentHistory: React.FC<{
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[5, 10, 25]}
+              labelRowsPerPage={t('common.rowsPerPage')}
               sx={{
                 borderTop: '1px solid rgba(0,0,0,0.08)',
                 backgroundColor: '#fafafa',

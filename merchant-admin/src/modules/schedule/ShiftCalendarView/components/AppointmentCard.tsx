@@ -1,17 +1,10 @@
 import React from 'react';
-import { Box, Typography, Chip, Avatar, Stack, IconButton } from '@mui/material';
+import { Box, Typography, Chip, IconButton } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
   AccessTime as TimeIcon,
-  Person as PersonIcon,
-  LocalOffer as PriceIcon,
   CheckCircle as CheckIcon,
   Schedule as PendingIcon,
-  AttachMoney as MoneyIcon,
-  Circle as DotIcon,
-  Edit as EditIcon,
-  MoreHoriz as MoreIcon,
-  EventAvailable as EventAvailableIcon,
   EditCalendar as EditCalendarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -26,10 +19,11 @@ interface AppointmentCardProps {
     serviceName: string;
     price: number;
     paid?: boolean;
-    status?: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | string;
+    status?: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | string;
     resourceName?: string;
     avatar?: string;
     notes?: string;
+    bookingSource?: 'ADMIN' | 'ONLINE' | 'GOOGLE' | string;
   };
   color?: string;
   onClick?: () => void;
@@ -69,47 +63,63 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   };
 
   // 状态配置 - 使用系统统一的配色方案（支持主题切换）
-  // 极简模式下使用不同的视觉样式区分状态：
-  // - COMPLETED: 深色 + 实线边框
-  // - CHECKED_IN: 中灰 + 虚线边框（更明显区分）
-  // - CONFIRMED: 浅灰 + 正常边框
+  // 彩色模式：通过不同颜色背景区分状态
+  // 极简模式：通过不同边框样式区分状态（从深到浅，从完成到未开始）：
+  // - COMPLETED: 最深色 #1a1a1a + 实线粗边框
+  // - CHECKED_IN: 深灰 #444 + 虚线边框
+  // - PENDING_CONFIRMATION: 中灰 #888 + 点线边框
+  // - CONFIRMED: 浅灰 #aaa + 细实线边框
   const getStatusConfig = () => {
     if (appointment.status === 'COMPLETED' || appointment.paid) {
-      // 完成状态 - 绿色系（柔和背景）
+      // 完成状态 - 最深色，表示已完成
       const statusColor = isMonochrome ? '#1a1a1a' : '#4CAF50';
       return {
         label: t('customers.appointmentStatus.completed'),
         color: statusColor,
         lightColor: isMonochrome ? '#333' : '#66BB6A',
-        bgColor: isMonochrome ? 'rgba(26,26,26,0.08)' : alpha(statusColor, 0.09),
-        borderColor: alpha(statusColor, 0.3),
+        bgColor: isMonochrome ? 'rgba(26,26,26,0.1)' : alpha(statusColor, 0.09),
+        borderColor: isMonochrome ? 'rgba(26,26,26,0.4)' : alpha(statusColor, 0.3),
         borderStyle: 'solid',
-        borderWidth: '1px',
+        borderWidth: isMonochrome ? '2px' : '1px',
         icon: <CheckIcon sx={{ fontSize: 14 }} />,
       };
     }
     if (appointment.status === 'CHECKED_IN') {
-      // 进行中状态 - 橙色系（柔和背景）
-      const statusColor = isMonochrome ? '#555' : '#FF9800';
+      // 已签到状态 - 深灰色，极简模式用虚线边框表示进行中
+      const statusColor = isMonochrome ? '#444' : '#FF9800';
       return {
         label: t('customers.appointmentStatus.checked_in'),
         color: statusColor,
-        lightColor: isMonochrome ? '#666' : '#FFB74D',
-        bgColor: isMonochrome ? 'rgba(85,85,85,0.12)' : alpha(statusColor, 0.09),
-        borderColor: isMonochrome ? 'rgba(85,85,85,0.5)' : alpha(statusColor, 0.35),
-        borderStyle: isMonochrome ? 'dashed' : 'solid', // 极简模式用虚线边框区分
-        borderWidth: isMonochrome ? '2px' : '1px', // 极简模式下加粗虚线
+        lightColor: isMonochrome ? '#555' : '#FFB74D',
+        bgColor: isMonochrome ? 'rgba(68,68,68,0.08)' : alpha(statusColor, 0.09),
+        borderColor: isMonochrome ? 'rgba(68,68,68,0.6)' : alpha(statusColor, 0.35),
+        borderStyle: isMonochrome ? 'dashed' : 'solid',
+        borderWidth: isMonochrome ? '2px' : '1px',
         icon: <PendingIcon sx={{ fontSize: 14 }} />,
       };
     }
-    // 已预约状态 - 蓝色系（柔和背景）
-    const statusColor = isMonochrome ? '#999' : THEME_COLOR;
+    if (appointment.status === 'PENDING_CONFIRMATION') {
+      // 待确认状态 - 中灰色，极简模式用点线边框表示等待确认
+      const statusColor = isMonochrome ? '#888' : '#8B5CF6';
+      return {
+        label: t('customers.appointmentStatus.pending_confirmation'),
+        color: statusColor,
+        lightColor: isMonochrome ? '#999' : '#A78BFA',
+        bgColor: isMonochrome ? 'rgba(136,136,136,0.06)' : alpha(statusColor, 0.12),
+        borderColor: isMonochrome ? 'rgba(136,136,136,0.5)' : alpha(statusColor, 0.3),
+        borderStyle: isMonochrome ? 'dotted' : 'solid',
+        borderWidth: isMonochrome ? '2px' : '1px',
+        icon: <PendingIcon sx={{ fontSize: 14 }} />,
+      };
+    }
+    // 已确认状态 - 浅灰色 + 细实线边框，表示已确认等待服务
+    const statusColor = isMonochrome ? '#aaa' : THEME_COLOR;
     return {
       label: t('customers.appointmentStatus.confirmed'),
       color: statusColor,
-      lightColor: isMonochrome ? '#aaa' : '#42A5F5',
-      bgColor: isMonochrome ? 'rgba(153,153,153,0.06)' : alpha(statusColor, 0.08),
-      borderColor: alpha(statusColor, 0.2),
+      lightColor: isMonochrome ? '#bbb' : '#42A5F5',
+      bgColor: isMonochrome ? 'rgba(170,170,170,0.04)' : alpha(statusColor, 0.08),
+      borderColor: isMonochrome ? 'rgba(170,170,170,0.3)' : alpha(statusColor, 0.2),
       borderStyle: 'solid',
       borderWidth: '1px',
       icon: <TimeIcon sx={{ fontSize: 14 }} />,
@@ -219,8 +229,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 onEdit(e);
               }}
               sx={{
-                width: cardHeight < 45 ? 16 : 20,
-                height: cardHeight < 45 ? 16 : 20,
+                width: 20,
+                height: 20,
                 p: 0,
                 color: '#94a3b8',
                 bgcolor: 'transparent',
@@ -233,7 +243,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 },
               }}
             >
-              <EditCalendarIcon sx={{ fontSize: cardHeight < 45 ? 12 : 14 }} />
+              <EditCalendarIcon sx={{ fontSize: 14 }} />
             </IconButton>
           )}
         </Box>
@@ -339,9 +349,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </Box>
 
           {/* 右侧：编辑按钮和状态标签 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: compact ? '4px' : (isTiny ? '2px' : '6px'), flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {/* 编辑按钮 - 仅在CONFIRMED状态下显示 */}
-            {onEdit && appointment.status === 'CONFIRMED' && !isTiny && (
+            {onEdit && appointment.status === 'CONFIRMED' && (
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -349,8 +359,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   onEdit(e);
                 }}
                 sx={{
-                  width: compact || isShort || isMedium ? 20 : 24,
-                  height: compact || isShort || isMedium ? 20 : 24,
+                  width: 22,
+                  height: 22,
                   p: 0,
                   color: '#94a3b8',
                   bgcolor: 'transparent',
@@ -362,46 +372,36 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   },
                 }}
               >
-                <EditCalendarIcon sx={{ fontSize: compact || isShort || isMedium ? 14 : 16 }} />
+                <EditCalendarIcon sx={{ fontSize: 14 }} />
               </IconButton>
             )}
 
             {/* 状态标签 - 缩放模式下不显示 */}
             {!compact && (
-              isTiny ? (
-                // 极短卡片只显示状态点
-                <DotIcon
-                  sx={{
-                    fontSize: 8,
+              <Chip
+                icon={statusConfig.icon}
+                label={statusConfig.label}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  bgcolor: alpha(statusConfig.color, 0.1),
+                  color: statusConfig.color,
+                  border: 'none',
+                  borderRadius: 1.5,
+                  '& .MuiChip-label': {
+                    px: '6px',
+                    py: 0,
+                  },
+                  '& .MuiChip-icon': {
+                    fontSize: 14,
                     color: statusConfig.color,
-                  }}
-                />
-              ) : (
-                <Chip
-                  icon={!isShort && !isMedium ? statusConfig.icon : undefined}
-                  label={statusConfig.label}
-                  size="small"
-                  sx={{
-                    height: isShort || isMedium ? 18 : 22,
-                    fontSize: isShort || isMedium ? '0.625rem' : '0.6875rem',
-                    fontWeight: 600,
-                    bgcolor: alpha(statusConfig.color, 0.1),
-                    color: statusConfig.color,
-                    border: 'none',
-                    borderRadius: 1.5,
-                    '& .MuiChip-label': {
-                      px: isShort || isMedium ? '6px' : '8px',
-                      py: 0,
-                    },
-                    '& .MuiChip-icon': {
-                      fontSize: 14,
-                      color: statusConfig.color,
-                      marginLeft: '6px',
-                      marginRight: '-4px',
-                    },
-                  }}
-                />
-              )
+                    marginLeft: '6px',
+                    marginRight: '-4px',
+                  },
+                }}
+              />
             )}
           </Box>
         </Box>
@@ -410,7 +410,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         {!compact && (
           <Typography
             sx={{
-              fontSize: isShort || isMedium ? '0.875rem' : '0.9375rem',
+              fontSize: '0.9375rem',
               fontWeight: 600,
               color: '#0f172a',
               lineHeight: 1.2,

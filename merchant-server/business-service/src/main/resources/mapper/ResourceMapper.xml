@@ -48,8 +48,15 @@
 
     <!-- 根据租户ID和类型查询资源 -->
     <select id="findByTenantIdAndType" resultMap="ResourceResultMap">
-        SELECT * FROM resource 
+        SELECT * FROM resource
         WHERE tenant_id = #{tenantId} AND type = #{type} AND status != 'DELETED'
+        ORDER BY created_at DESC, name
+    </select>
+
+    <!-- 根据租户ID、类型和状态查询资源 -->
+    <select id="findByTenantIdAndTypeAndStatus" resultMap="ResourceResultMap">
+        SELECT * FROM resource
+        WHERE tenant_id = #{tenantId} AND type = #{type} AND status = #{status}
         ORDER BY created_at DESC, name
     </select>
 

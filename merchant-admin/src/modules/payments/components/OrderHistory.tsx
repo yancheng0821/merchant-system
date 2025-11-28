@@ -821,6 +821,7 @@ const OrderHistory: React.FC = () => {
                     onPageChange={handlePageChange}
                     rowsPerPage={rowsPerPage}
                     onRowsPerPageChange={handleRowsPerPageChange}
+                    labelRowsPerPage={t('common.rowsPerPage')}
                     sx={{
                         borderTop: '1px solid rgba(0,0,0,0.06)',
                         backgroundColor: '#f8fafc',

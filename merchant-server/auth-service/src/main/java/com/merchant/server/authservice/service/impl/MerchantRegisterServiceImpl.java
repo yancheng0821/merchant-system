@@ -182,7 +182,7 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
             }
 
             // 11. 生成JWT令牌
-            String accessToken = jwtUtil.generateAccessToken(adminUser.getId(), adminUser.getUsername());
+            String accessToken = jwtUtil.generateAccessToken(adminUser.getId(), adminUser.getUsername(), adminUser.getTenantId());
             String refreshToken = jwtUtil.generateRefreshToken(adminUser.getId());
 
             // 12. 发送欢迎邮件（异步，失败不影响注册）

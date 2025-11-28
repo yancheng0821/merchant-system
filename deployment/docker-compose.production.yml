@@ -226,6 +226,7 @@ services:
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_VHOST=${RABBITMQ_VHOST:-merchant_vhost}
       - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY}
       - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:

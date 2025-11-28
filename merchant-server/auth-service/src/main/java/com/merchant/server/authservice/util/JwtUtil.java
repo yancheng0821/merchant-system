@@ -46,13 +46,20 @@ public class JwtUtil {
         return createToken(claims, user.getUsername(), refreshExpiration);
     }
     
-    // 新增方法
-    public String generateAccessToken(Long userId, String username) {
+    // 新增方法 - 包含 tenantId
+    public String generateAccessToken(Long userId, String username, Long tenantId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
-        
+        claims.put("tenantId", tenantId);
+
         return createToken(claims, username, expiration);
+    }
+
+    // 兼容旧调用（不推荐使用）
+    @Deprecated
+    public String generateAccessToken(Long userId, String username) {
+        return generateAccessToken(userId, username, null);
     }
     
     public String generateRefreshToken(Long userId) {

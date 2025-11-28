@@ -50,6 +50,7 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- WebSocket 使用 WebFlux 自带的响应式 WebSocket，不需要额外依赖 -->
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

@@ -45,8 +45,17 @@ import {
   Palette as PaletteIcon,
   ColorLens as ColorfulIcon,
   Contrast as MonochromeIcon,
+  AccessTime as AccessTimeIcon,
+  ContentCopy as CopyIcon,
+  InfoOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { format, parse } from 'date-fns';
+import zhCNLocale from 'date-fns/locale/zh-CN';
+import enUSLocale from 'date-fns/locale/en-US';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTax } from '../../contexts/TaxContext';
 import { useSession } from '../../contexts/SessionContext';
@@ -55,7 +64,25 @@ import { useTheme, ThemeMode } from '../../contexts/ThemeContext';
 import { merchantConfigApi } from '../../services/api';
 import StripeConnectTab from './StripeConnectTab';
 import BillingTab from './BillingTab';
+import OnlineBookingTab from './OnlineBookingTab';
 import { COUNTRIES, getProvincesByCountry } from '../../data/countries';
+import { CalendarMonth as OnlineBookingIcon } from '@mui/icons-material';
+
+// 时间字符串转Date对象 (如 "09:00" -> Date)
+const timeStringToDate = (timeStr: string): Date | null => {
+  if (!timeStr) return null;
+  try {
+    return parse(timeStr, 'HH:mm', new Date());
+  } catch {
+    return null;
+  }
+};
+
+// Date对象转时间字符串 (如 Date -> "09:00")
+const dateToTimeString = (date: Date | null): string => {
+  if (!date) return '';
+  return format(date, 'HH:mm');
+};
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -99,12 +126,29 @@ interface SystemSettings {
   sessionTimeout: number;
 }
 
+interface DaySchedule {
+  start: string;
+  end: string;
+  closed: boolean;
+}
+
+interface BusinessHours {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
 interface SettingsProps {
   initialTab?: string | null;
 }
 
 const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
   const { user } = useAuth();
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
@@ -122,16 +166,16 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       permission: 'settings:update_merchant' as const,
     },
     {
-      key: 'tax',
-      label: t('settings.tabs.tax'),
-      icon: <TaxIcon />,
+      key: 'operations',
+      label: t('settings.tabs.operations'),
+      icon: <TuneIcon />,
       color: '#F59E0B',
-      permission: 'settings:update_tax' as const,
+      permission: 'settings:update_merchant' as const,
     },
     {
       key: 'system',
       label: t('settings.tabs.system'),
-      icon: <TuneIcon />,
+      icon: <PaletteIcon />,
       color: '#8B5CF6',
       permission: 'settings:update_system' as const,
     },
@@ -141,6 +185,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       icon: <ReceiptIcon />,
       color: '#10B981',
       permission: 'billing:view' as const,
+    },
+    {
+      key: 'onlineBooking',
+      label: t('settings.tabs.onlineBooking'),
+      icon: <OnlineBookingIcon />,
+      color: '#3B82F6',
+      permission: 'settings:update_merchant' as const,
     },
     // {
     //   key: 'payment',
@@ -241,6 +292,19 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   // 资源类型配置
   const [resourceTypes, setResourceTypes] = useState<string[]>(['STAFF']);
 
+  // 营业时间配置
+  const defaultBusinessHours: BusinessHours = {
+    monday: { start: '09:00', end: '18:00', closed: false },
+    tuesday: { start: '09:00', end: '18:00', closed: false },
+    wednesday: { start: '09:00', end: '18:00', closed: false },
+    thursday: { start: '09:00', end: '18:00', closed: false },
+    friday: { start: '09:00', end: '18:00', closed: false },
+    saturday: { start: '10:00', end: '17:00', closed: false },
+    sunday: { start: '10:00', end: '17:00', closed: true },
+  };
+  const [businessHours, setBusinessHours] = useState<BusinessHours>(defaultBusinessHours);
+  const [isDefaultBusinessHours, setIsDefaultBusinessHours] = useState(true); // 是否使用默认营业时间
+
   // 输入框显示值状态（用于处理空值显示）
   const [sessionTimeoutDisplay, setSessionTimeoutDisplay] = useState<string>('');
   const [gstRateDisplay, setGstRateDisplay] = useState<string>('');
@@ -340,6 +404,20 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
             }
           } else {
             setResourceTypes(['STAFF']);
+          }
+
+          // 解析营业时间配置
+          const businessHoursConfig = configResponse.find((config: any) => config.configKey === 'business_hours');
+          if (businessHoursConfig && businessHoursConfig.configValue) {
+            try {
+              const hours = JSON.parse(businessHoursConfig.configValue);
+              if (hours && typeof hours === 'object') {
+                setBusinessHours(hours);
+                setIsDefaultBusinessHours(false); // 已从服务器加载配置
+              }
+            } catch (e) {
+              console.error('Failed to parse business hours:', e);
+            }
           }
         }
       } catch (error) {
@@ -522,6 +600,10 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
       // 保存资源类型配置
       await merchantConfigApi.updateConfig(user.tenantId, 'resource_types', JSON.stringify(resourceTypes), '资源类型配置');
+
+      // 保存营业时间配置
+      await merchantConfigApi.updateConfig(user.tenantId, 'business_hours', JSON.stringify(businessHours), '营业时间配置');
+      setIsDefaultBusinessHours(false); // 保存成功后服务器有配置了，隐藏提示
 
       // 刷新Context中的设置
       await refreshTaxSettings();
@@ -971,142 +1053,18 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                   </CardContent>
                 </Card>
               </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card
-                  sx={{
-                    borderRadius: 2,
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    boxShadow: 'none',
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box display="flex" alignItems="center" mb={3}>
-                      <Box
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 2,
-                          bgcolor: '#f5f5f5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mr: 2,
-                        }}
-                      >
-                        <TuneIcon sx={{ fontSize: 18, color: '#666' }} />
-                      </Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
-                        {t('settings.businessOperations')}
-                      </Typography>
-                    </Box>
-
-                    <Grid container spacing={3}>
-                      <Grid item xs={12}>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: 'text.secondary' }}>
-                            {t('settings.resourceTypes.title')}
-                          </Typography>
-                          <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'text.secondary' }}>
-                            {t('settings.resourceTypes.description')}
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={resourceTypes.includes('STAFF')}
-                                  disabled
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setResourceTypes(prev => [...prev.filter(t => t !== 'STAFF'), 'STAFF']);
-                                    } else {
-                                      // 至少要有一个资源类型
-                                      if (resourceTypes.length > 1) {
-                                        setResourceTypes(prev => prev.filter(t => t !== 'STAFF'));
-                                      }
-                                    }
-                                  }}
-                                  icon={<CheckBoxBlankIcon />}
-                                  checkedIcon={<CheckBoxIcon />}
-                                  sx={{
-                                    color: '#bbb',
-                                    '&.Mui-checked': {
-                                      color: '#1a1a1a',
-                                    },
-                                  }}
-                                />
-                              }
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <GroupIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                                  <Typography variant="body2">{t('settings.resourceTypes.staff')}</Typography>
-                                </Box>
-                              }
-                            />
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={resourceTypes.includes('ROOM')}
-                                  disabled
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setResourceTypes(prev => [...prev.filter(t => t !== 'ROOM'), 'ROOM']);
-                                    } else {
-                                      // 至少要有一个资源类型
-                                      if (resourceTypes.length > 1) {
-                                        setResourceTypes(prev => prev.filter(t => t !== 'ROOM'));
-                                      }
-                                    }
-                                  }}
-                                  icon={<CheckBoxBlankIcon />}
-                                  checkedIcon={<CheckBoxIcon />}
-                                  sx={{
-                                    color: '#bbb',
-                                    '&.Mui-checked': {
-                                      color: '#1a1a1a',
-                                    },
-                                  }}
-                                />
-                              }
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <RoomIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                                  <Typography variant="body2">{t('settings.resourceTypes.room')}</Typography>
-                                </Box>
-                              }
-                            />
-                          </Box>
-                          {resourceTypes.length === 0 && (
-                            <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
-                              {t('settings.resourceTypes.atLeastOne')}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Grid>
-                      
-                      {/* 预留空间给营业时间配置 */}
-                      <Grid item xs={12}>
-                        <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2, mt: 1 }}>
-                          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                            {t('settings.moreSettingsComingSoon')}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
             </Grid>
           )}
           </Box>
         </Fade>
         )}
 
-        {/* 税务设置 */}
-        {currentTabKey === 'tax' && (
-        <Fade in={currentTabKey === 'tax'} timeout={300}>
+        {/* 业务运营设置 (Operations) */}
+        {currentTabKey === 'operations' && (
+        <Fade in={currentTabKey === 'operations'} timeout={300}>
           <Box sx={{ p: 3 }}>
           <Grid container spacing={4}>
+            {/* 左侧：营业时间 */}
             <Grid item xs={12} md={6}>
               <Card
                 sx={{
@@ -1129,93 +1087,465 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                         mr: 2,
                       }}
                     >
-                      <TaxIcon sx={{ fontSize: 18, color: '#666' }} />
+                      <AccessTimeIcon sx={{ fontSize: 18, color: '#666' }} />
                     </Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
-                      {t('settings.taxSettings')}
+                      {t('settings.businessHoursSection.title')}
                     </Typography>
                   </Box>
+                  <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'text.secondary' }}>
+                    {t('settings.businessHoursSection.description')}
+                  </Typography>
 
-                  <Grid container spacing={3}>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label={t('settings.gstRate')}
-                        variant="outlined"
-                        value={gstRateDisplay}
-                        onChange={(e) => handleTaxSettingsChange('gstRate', e.target.value)}
-                        error={!!taxErrors.gstRate}
-                        helperText={taxErrors.gstRate || t('settings.taxRateHelp')}
-                        inputProps={{
-                          min: 0,
-                          max: 20,
-                          step: 0.1,
-                          inputMode: 'decimal'
-                        }}
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Typography variant="body2" color="text.secondary">
-                                %
-                              </Typography>
-                            </InputAdornment>
-                          ),
-                        }}
+                  {/* 默认数据提示 */}
+                  {isDefaultBusinessHours && (
+                    <Box
+                      sx={{
+                        mb: 2,
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        bgcolor: '#f5f5f5',
+                        border: '1px solid #e0e0e0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                      }}
+                    >
+                      <InfoOutlined sx={{ fontSize: 16, color: '#666' }} />
+                      <Typography sx={{ fontSize: '0.8rem', color: '#666' }}>
+                        {t('settings.businessHoursSection.defaultDataHint')}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* 复制到所有工作日按钮 */}
+                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      size="small"
+                      startIcon={<CopyIcon sx={{ fontSize: 14 }} />}
+                      onClick={() => {
+                        const mondaySchedule = businessHours.monday;
+                        setBusinessHours(prev => ({
+                          ...prev,
+                          tuesday: { ...mondaySchedule },
+                          wednesday: { ...mondaySchedule },
+                          thursday: { ...mondaySchedule },
+                          friday: { ...mondaySchedule },
+                        }));
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        color: '#666',
+                        '&:hover': { bgcolor: '#f5f5f5' },
+                      }}
+                    >
+                      {t('settings.businessHoursSection.copyToAll')}
+                    </Button>
+                  </Box>
+
+                  {/* 营业时间列表 */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => (
+                      <Box
+                        key={day}
                         sx={{
-                          ...inputFieldStyles,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: primaryColor,
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: primaryColor,
-                            },
-                          },
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
+                          p: 1.5,
+                          borderRadius: 1.5,
+                          bgcolor: businessHours[day].closed ? '#fafafa' : '#fff',
+                          border: '1px solid',
+                          borderColor: businessHours[day].closed ? '#f0f0f0' : '#e0e0e0',
+                          transition: 'all 0.2s ease',
                         }}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label={t('settings.pstRate')}
-                        variant="outlined"
-                        value={pstRateDisplay}
-                        onChange={(e) => handleTaxSettingsChange('pstRate', e.target.value)}
-                        error={!!taxErrors.pstRate}
-                        helperText={taxErrors.pstRate || t('settings.taxRateHelp')}
-                        inputProps={{
-                          min: 0,
-                          max: 20,
-                          step: 0.1,
-                          inputMode: 'decimal'
-                        }}
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Typography variant="body2" color="text.secondary">
-                                %
-                              </Typography>
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{
-                          ...inputFieldStyles,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: primaryColor,
+                      >
+                        {/* 星期名称 */}
+                        <Typography
+                          sx={{
+                            width: 60,
+                            fontWeight: 500,
+                            fontSize: '0.85rem',
+                            color: businessHours[day].closed ? '#999' : '#333',
+                          }}
+                        >
+                          {t(`settings.businessHoursSection.days.${day}`)}
+                        </Typography>
+
+                        {/* 开/休按钮 */}
+                        <Box
+                          onClick={() => {
+                            setBusinessHours(prev => ({
+                              ...prev,
+                              [day]: { ...prev[day], closed: !prev[day].closed },
+                            }));
+                          }}
+                          sx={{
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            bgcolor: businessHours[day].closed ? '#f5f5f5' : '#e8f5e9',
+                            color: businessHours[day].closed ? '#999' : '#2e7d32',
+                            border: '1px solid',
+                            borderColor: businessHours[day].closed ? '#e0e0e0' : '#c8e6c9',
+                            '&:hover': {
+                              bgcolor: businessHours[day].closed ? '#eee' : '#c8e6c9',
                             },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: primaryColor,
-                            },
-                          },
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
+                          }}
+                        >
+                          {businessHours[day].closed
+                            ? t('settings.businessHoursSection.closed')
+                            : t('settings.businessHoursSection.open')}
+                        </Box>
+
+                        {/* 时间选择器 */}
+                        {!businessHours[day].closed && (
+                          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={locale}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1 }}>
+                              <TimePicker
+                                value={timeStringToDate(businessHours[day].start)}
+                                onChange={(newValue) => {
+                                  setBusinessHours(prev => ({
+                                    ...prev,
+                                    [day]: { ...prev[day], start: dateToTimeString(newValue) },
+                                  }));
+                                }}
+                                minutesStep={15}
+                                ampm={false}
+                                slotProps={{
+                                  textField: {
+                                    size: 'small',
+                                    sx: {
+                                      width: 95,
+                                      '& .MuiOutlinedInput-root': {
+                                        borderRadius: 1,
+                                        bgcolor: '#fafafa',
+                                        height: 32,
+                                        '& fieldset': { borderColor: 'rgba(0,0,0,0.1)' },
+                                        '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.2)' },
+                                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                                        '&.Mui-focused': { bgcolor: '#fff' },
+                                      },
+                                      '& .MuiOutlinedInput-input': {
+                                        py: 0.5,
+                                        px: 1,
+                                        fontSize: '0.8rem',
+                                      },
+                                    },
+                                  },
+                                  openPickerIcon: {
+                                    sx: { fontSize: 16 },
+                                  },
+                                  popper: {
+                                    sx: {
+                                      '& .MuiPaper-root': {
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                      },
+                                      '& .MuiPickersLayout-root': {
+                                        minWidth: 'auto',
+                                      },
+                                      '& .MuiPickersLayout-contentWrapper': {
+                                        minWidth: 'auto',
+                                      },
+                                      '& .MuiMultiSectionDigitalClock-root': {
+                                        minWidth: 'auto',
+                                      },
+                                      '& .MuiMultiSectionDigitalClockSection-root': {
+                                        width: 52,
+                                        minWidth: 52,
+                                      },
+                                      '& .MuiMultiSectionDigitalClockSection-item': {
+                                        fontSize: '0.75rem',
+                                        minHeight: 28,
+                                        px: 1,
+                                      },
+                                    },
+                                  },
+                                }}
+                              />
+                              <Typography sx={{ color: '#999', fontSize: '0.8rem' }}>-</Typography>
+                              <TimePicker
+                                value={timeStringToDate(businessHours[day].end)}
+                                onChange={(newValue) => {
+                                  setBusinessHours(prev => ({
+                                    ...prev,
+                                    [day]: { ...prev[day], end: dateToTimeString(newValue) },
+                                  }));
+                                }}
+                                minutesStep={15}
+                                ampm={false}
+                                slotProps={{
+                                  textField: {
+                                    size: 'small',
+                                    sx: {
+                                      width: 95,
+                                      '& .MuiOutlinedInput-root': {
+                                        borderRadius: 1,
+                                        bgcolor: '#fafafa',
+                                        height: 32,
+                                        '& fieldset': { borderColor: 'rgba(0,0,0,0.1)' },
+                                        '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.2)' },
+                                        '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
+                                        '&.Mui-focused': { bgcolor: '#fff' },
+                                      },
+                                      '& .MuiOutlinedInput-input': {
+                                        py: 0.5,
+                                        px: 1,
+                                        fontSize: '0.8rem',
+                                      },
+                                    },
+                                  },
+                                  openPickerIcon: {
+                                    sx: { fontSize: 16 },
+                                  },
+                                  popper: {
+                                    sx: {
+                                      '& .MuiPaper-root': {
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                      },
+                                      '& .MuiPickersLayout-root': {
+                                        minWidth: 'auto',
+                                      },
+                                      '& .MuiPickersLayout-contentWrapper': {
+                                        minWidth: 'auto',
+                                      },
+                                      '& .MuiMultiSectionDigitalClock-root': {
+                                        minWidth: 'auto',
+                                      },
+                                      '& .MuiMultiSectionDigitalClockSection-root': {
+                                        width: 52,
+                                        minWidth: 52,
+                                      },
+                                      '& .MuiMultiSectionDigitalClockSection-item': {
+                                        fontSize: '0.75rem',
+                                        minHeight: 28,
+                                        px: 1,
+                                      },
+                                    },
+                                  },
+                                }}
+                              />
+                            </Box>
+                          </LocalizationProvider>
+                        )}
+
+                        {/* 休息日占位 */}
+                        {businessHours[day].closed && (
+                          <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ color: '#bbb', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                              {t('settings.businessHoursSection.closed')}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
                 </CardContent>
               </Card>
+            </Grid>
+
+            {/* 右侧：资源类型 + 税务设置 */}
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* 资源类型 */}
+                <Card
+                  sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: 'none',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" mb={3}>
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 2,
+                          bgcolor: '#f5f5f5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2,
+                        }}
+                      >
+                        <GroupIcon sx={{ fontSize: 18, color: '#666' }} />
+                      </Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                        {t('settings.resourceTypes.title')}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2 }}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={resourceTypes.includes('STAFF')}
+                            disabled
+                            icon={<CheckBoxBlankIcon />}
+                            checkedIcon={<CheckBoxIcon />}
+                            sx={{
+                              color: '#bbb',
+                              '&.Mui-checked': {
+                                color: '#1a1a1a',
+                              },
+                            }}
+                          />
+                        }
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <GroupIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                            <Typography variant="body2">{t('settings.resourceTypes.staff')}</Typography>
+                          </Box>
+                        }
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={resourceTypes.includes('ROOM')}
+                            disabled
+                            icon={<CheckBoxBlankIcon />}
+                            checkedIcon={<CheckBoxIcon />}
+                            sx={{
+                              color: '#bbb',
+                              '&.Mui-checked': {
+                                color: '#1a1a1a',
+                              },
+                            }}
+                          />
+                        }
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <RoomIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                            <Typography variant="body2">{t('settings.resourceTypes.room')}</Typography>
+                          </Box>
+                        }
+                      />
+                    </Box>
+                    {resourceTypes.length === 0 && (
+                      <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
+                        {t('settings.resourceTypes.atLeastOne')}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* 税务设置 */}
+                <Card
+                  sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: 'none',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" mb={3}>
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 2,
+                          bgcolor: '#f5f5f5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mr: 2,
+                        }}
+                      >
+                        <TaxIcon sx={{ fontSize: 18, color: '#666' }} />
+                      </Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                        {t('settings.taxSettings')}
+                      </Typography>
+                    </Box>
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label={t('settings.gstRate')}
+                          variant="outlined"
+                          size="small"
+                          value={gstRateDisplay}
+                          onChange={(e) => handleTaxSettingsChange('gstRate', e.target.value)}
+                          error={!!taxErrors.gstRate}
+                          helperText={taxErrors.gstRate || t('settings.taxRateHelp')}
+                          inputProps={{
+                            min: 0,
+                            max: 20,
+                            step: 0.1,
+                            inputMode: 'decimal'
+                          }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Typography variant="body2" color="text.secondary">
+                                  %
+                                </Typography>
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            ...inputFieldStyles,
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                            },
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label={t('settings.pstRate')}
+                          variant="outlined"
+                          size="small"
+                          value={pstRateDisplay}
+                          onChange={(e) => handleTaxSettingsChange('pstRate', e.target.value)}
+                          error={!!taxErrors.pstRate}
+                          helperText={taxErrors.pstRate || t('settings.taxRateHelp')}
+                          inputProps={{
+                            min: 0,
+                            max: 20,
+                            step: 0.1,
+                            inputMode: 'decimal'
+                          }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Typography variant="body2" color="text.secondary">
+                                  %
+                                </Typography>
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            ...inputFieldStyles,
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: primaryColor,
+                              },
+                            },
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Box>
             </Grid>
           </Grid>
           </Box>
@@ -1497,6 +1827,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         </Fade>
         )}
 
+        {/* Online Booking Tab */}
+        {currentTabKey === 'onlineBooking' && (
+        <Fade in={currentTabKey === 'onlineBooking'} timeout={300}>
+          <Box sx={{ p: 3 }}>
+            <OnlineBookingTab />
+          </Box>
+        </Fade>
+        )}
+
         {/* Payment Settings - Stripe Connect */}
         {/* {currentTabKey === 'payment' && (
         <Fade in={currentTabKey === 'payment'} timeout={300}>
@@ -1507,8 +1846,8 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         )} */}
       </Card>
 
-      {/* 保存按钮 - 仅在非支付设置页和非账单页显示 */}
-      {currentTabKey !== 'payment' && currentTabKey !== 'billing' && (
+      {/* 保存按钮 - 仅在非支付设置页、非账单页、非在线预约页显示 */}
+      {currentTabKey !== 'payment' && currentTabKey !== 'billing' && currentTabKey !== 'onlineBooking' && (
       <Box mt={4} display="flex" justifyContent="flex-end">
         <Button
           variant="contained"

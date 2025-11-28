@@ -277,9 +277,9 @@ public class CustomerServiceImpl implements CustomerService {
             customer.setStatus(dto.getStatus() != null ? dto.getStatus() : Customer.CustomerStatus.ACTIVE);
             customer.setMembershipTierId(dto.getMembershipTierId());
             
-            // 设置通信偏好默认值（如果为空）
+            // 设置通信偏好默认值（如果为空）- 默认同时发送邮件和短信
             if (customer.getCommunicationPreference() == null) {
-                customer.setCommunicationPreference(Customer.CommunicationPreference.SMS);
+                customer.setCommunicationPreference(Customer.CommunicationPreference.BOTH);
             }
         } catch (Exception e) {
             System.err.println("Error converting DTO to entity: " + e.getMessage());
@@ -336,7 +336,7 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         walkInDTO.setStatus(Customer.CustomerStatus.ACTIVE);
-        walkInDTO.setCommunicationPreference(Customer.CommunicationPreference.SMS); // 默认使用SMS
+        walkInDTO.setCommunicationPreference(Customer.CommunicationPreference.BOTH); // 默认同时发送邮件和短信
         walkInDTO.setPoints(0);
         walkInDTO.setTotalSpent(BigDecimal.ZERO);
         walkInDTO.setNotes("Default walk-in customer created during merchant registration");

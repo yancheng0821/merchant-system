@@ -145,7 +145,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 生成JWT令牌
         logger.debug("生成JWT令牌");
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         // 查询用户角色
@@ -187,6 +187,7 @@ public class AuthServiceImpl implements AuthService {
         response.setRoles(roleCodes);
         response.setPermissions(permissionCodes);
         response.setTenantName(tenant.getTenantName());
+        response.setTenantCode(tenant.getTenantCode());
 
         // 获取商户时区信息
         try {
@@ -311,7 +312,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 生成JWT令牌
         logger.debug("生成JWT令牌");
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         LoginResponse response = new LoginResponse(accessToken, refreshToken, user);
@@ -353,7 +354,7 @@ public class AuthServiceImpl implements AuthService {
         logger.debug("找到用户: userId={}, username={}", user.getId(), user.getUsername());
         
         // 生成新的访问令牌
-        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
+        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         LoginResponse response = new LoginResponse(newAccessToken, newRefreshToken, user);

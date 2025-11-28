@@ -46,6 +46,50 @@ export const fileUploadApi = {
         const result = await response.json();
         return result.url; // 返回文件访问URL
     },
+
+    // 上传商户Logo
+    uploadLogo: async (file: File, tenantId: number): Promise<string> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('tenantId', tenantId.toString());
+
+        const response = await fetch(`${API_BASE_URL}/api/auth/files/upload/logo`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Upload failed');
+        }
+
+        const result = await response.json();
+        return result.url; // 返回文件访问URL
+    },
+
+    // 上传员工头像（不会更新当前登录用户的头像）
+    uploadStaffAvatar: async (file: File, tenantId: number): Promise<string> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('tenantId', tenantId.toString());
+
+        const response = await fetch(`${API_BASE_URL}/api/auth/files/upload/avatar`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Upload failed');
+        }
+
+        const result = await response.json();
+        return result.url; // 返回文件访问URL
+    },
 };
 
 // 商户配置相关API
@@ -500,6 +544,7 @@ export interface LoginResponse {
   email?: string;
   avatar?: string;
   tenantId: number;
+  tenantCode?: string;
   tenantName?: string;
   timezone?: string;
   roles?: string[];
@@ -519,6 +564,7 @@ export interface User {
   email: string;
   avatar?: string;
   tenantId: number;
+  tenantCode?: string;
   tenantName?: string;
   roles?: string[];
   permissions?: string[];
@@ -1329,7 +1375,8 @@ export interface Appointment {
   appointmentTime: string;
   duration: number;
   totalAmount: number;
-  status: 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'CANCELED' | 'NO_SHOW';
+  status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'CANCELED' | 'NO_SHOW';
+  bookingSource?: 'ADMIN' | 'ONLINE' | 'GOOGLE' | string;
   notes?: string;
   rating?: number;
   review?: string;
@@ -3427,6 +3474,55 @@ export const paymentApi = {
   getInvoice: async (invoiceId: number): Promise<ApiResponse<Invoice>> => {
     return createRequest(`/api/merchant/subscription-payment/invoice/${invoiceId}`, {
       method: 'GET',
+    });
+  },
+};
+
+// 在线预约配置 API
+export const onlineBookingApi = {
+  // 获取在线预约配置
+  getConfig: async (tenantId: number): Promise<any> => {
+    const response = await createRequest(`/api/business/online-booking/config?tenantId=${tenantId}`, {
+      method: 'GET',
+    });
+    // 后端直接返回配置对象，不是包在 data 里
+    return response;
+  },
+
+  // 更新在线预约配置
+  updateConfig: async (tenantId: number, config: any): Promise<any> => {
+    return createRequest(`/api/business/online-booking/config?tenantId=${tenantId}`, {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
+  },
+
+  // 生成预约页面 slug
+  generateSlug: async (tenantId: number): Promise<string> => {
+    const response = await createRequest(`/api/business/online-booking/generate-slug?tenantId=${tenantId}`, {
+      method: 'POST',
+    });
+    return response?.slug;
+  },
+
+  // 检查 slug 是否可用
+  checkSlugAvailability: async (slug: string): Promise<boolean> => {
+    const response = await createRequest(`/api/business/online-booking/check-slug?slug=${slug}`, {
+      method: 'GET',
+    });
+    return response?.available;
+  },
+
+  // 自动查询 Google Place ID
+  lookupPlaceId: async (tenantId: number): Promise<{
+    success: boolean;
+    results?: Array<{ placeId: string; name: string; formattedAddress: string }>;
+    searchQuery?: string;
+    error?: string;
+    message?: string;
+  }> => {
+    return createRequest(`/api/business/online-booking/lookup-place-id?tenantId=${tenantId}`, {
+      method: 'POST',
     });
   },
 };

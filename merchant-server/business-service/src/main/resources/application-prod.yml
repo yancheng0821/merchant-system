@@ -51,12 +51,13 @@ eureka:
       defaultZone: http://${EUREKA_HOST:eureka-server}:${EUREKA_PORT:8761}/eureka/
     register-with-eureka: true
     fetch-registry: true
+    registry-fetch-interval-seconds: 5  # 更频繁地获取注册表
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
     appname: ${spring.application.name}
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+    lease-renewal-interval-in-seconds: 10  # 更频繁的心跳
+    lease-expiration-duration-in-seconds: 30  # 更短的过期时间
 
 # HTTP客户端配置
 http:
@@ -68,6 +69,10 @@ http:
 notification:
   service:
     url: lb://notification-service
+
+# 前端地址配置
+frontend:
+  base-url: https://vamerchant.app  # 生产环境
 
 # Actuator配置
 management:
@@ -133,3 +138,9 @@ stripe:
     location:
       id: ${STRIPE_TERMINAL_LOCATION_ID:}  # Stripe Terminal Location ID（可选）
     use-simulator: ${STRIPE_TERMINAL_USE_SIMULATOR:true}  # 在测试模式下使用模拟器
+
+# Google Places API配置
+google:
+  places:
+    api-key: ${GOOGLE_PLACES_API_KEY:}
+    timeout: 10000

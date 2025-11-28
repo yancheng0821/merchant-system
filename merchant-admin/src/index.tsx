@@ -6,6 +6,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './contexts/AuthContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 import { AppThemeProvider } from './contexts/ThemeContext';
 import './i18n/config';
 
@@ -92,12 +93,14 @@ root.render(
       }}
     >
       <AuthProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <AppThemeProvider>
-            <App />
-          </AppThemeProvider>
-        </ThemeProvider>
+        <WebSocketProvider>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <AppThemeProvider>
+              <App />
+            </AppThemeProvider>
+          </ThemeProvider>
+        </WebSocketProvider>
       </AuthProvider>
     </SnackbarProvider>
   </React.StrictMode>

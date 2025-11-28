@@ -1,27 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { TextField, InputAdornment, CircularProgress } from '@mui/material';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  TextField,
+  InputAdornment,
+  CircularProgress,
+  Paper,
+  Popper,
+  ClickAwayListener,
+  Box,
+  Typography,
+} from '@mui/material';
 import { LocationOn as LocationIcon } from '@mui/icons-material';
-
-/**
- * IMPORTANT: Google Maps API Key Configuration
- *
- * To use this component, you need a Google Maps API key with the Places API enabled.
- *
- * Steps to enable Places API:
- * 1. Go to Google Cloud Console (https://console.cloud.google.com/)
- * 2. Select your project (or create a new one)
- * 3. Navigate to "APIs & Services" > "Library"
- * 4. Search for "Places API" and click on it
- * 5. Click "Enable" button
- * 6. Also enable "Geocoding API" if you need geocoding features
- * 7. Go to "APIs & Services" > "Credentials" to get your API key
- * 8. Add the API key to your .env file as REACT_APP_GOOGLE_MAPS_API_KEY
- *
- * Note: Google recommends using the newer PlaceAutocompleteElement API.
- * The current Autocomplete API will continue to receive bug fixes but
- * new features will only be added to PlaceAutocompleteElement.
- */
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+import { API_BASE_URL } from '../../config/environment';
 
 export interface ParsedAddress {
   fullAddress: string;
@@ -30,6 +19,13 @@ export interface ParsedAddress {
   province: string;
   country: string;
   postalCode: string;
+}
+
+interface AutocompletePrediction {
+  placeId: string;
+  description: string;
+  mainText: string;
+  secondaryText: string;
 }
 
 interface AddressAutocompleteProps {
@@ -44,14 +40,7 @@ interface AddressAutocompleteProps {
   error?: boolean;
   disabled?: boolean;
   required?: boolean;
-  sx?: any; // Allow custom sx styles to be passed
-}
-
-// Extend the Window interface to include google
-declare global {
-  interface Window {
-    google: any;
-  }
+  sx?: any;
 }
 
 const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
@@ -60,7 +49,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   label,
   helperText,
   placeholder,
-  value = '', // Default to empty string to ensure controlled component
+  value = '',
   onChange,
   fullWidth = false,
   error = false,
@@ -68,247 +57,286 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   required = false,
   sx,
 }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const autocompleteRef = useRef<any>(null);
+  const [predictions, setPredictions] = useState<AutocompletePrediction[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [inputValue, setInputValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load Google Maps Script
+  // Sync inputValue with external value
   useEffect(() => {
-    if (window.google?.maps?.places) {
-      setIsLoaded(true);
+    setInputValue(value);
+  }, [value]);
+
+  // Debounced autocomplete API call
+  const fetchAutocomplete = useCallback(async (input: string) => {
+    if (!input || input.length < 3) {
+      setPredictions([]);
+      setShowDropdown(false);
       return;
     }
 
-    // Check if script already exists
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => setIsLoaded(true));
-      return;
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({ input });
+      if (defaultCountry) {
+        params.append('country', defaultCountry.toLowerCase());
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/public/places/autocomplete?${params}`);
+      const data = await response.json();
+
+      if (data.success && data.predictions) {
+        setPredictions(data.predictions);
+        setShowDropdown(data.predictions.length > 0);
+      } else {
+        setPredictions([]);
+        setShowDropdown(false);
+      }
+    } catch (err) {
+      console.error('Autocomplete error:', err);
+      setPredictions([]);
+      setShowDropdown(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [defaultCountry]);
+
+  // Handle input change with debounce
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+
+    // Call parent onChange if provided
+    if (onChange) {
+      onChange(e);
     }
 
-    const script = document.createElement('script');
-    // Use weekly version for latest features
-    // Note: We use script async/defer attributes instead of loading=async parameter
-    // because loading=async changes initialization behavior
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&callback=initGoogleMaps`;
-    script.async = true;
-    script.defer = true;
-
-    // Define callback function
-    (window as any).initGoogleMaps = () => {
-      setIsLoaded(true);
-    };
-
-    script.onerror = () => {
-      setLoadError(true);
-    };
-
-    document.head.appendChild(script);
-  }, []);
-
-  // Initialize Autocomplete
-  useEffect(() => {
-    if (!isLoaded || !inputRef.current || autocompleteRef.current || disabled) {
-      return;
+    // Debounce API calls
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
+
+    debounceRef.current = setTimeout(() => {
+      fetchAutocomplete(newValue);
+    }, 300);
+  };
+
+  // Handle prediction selection
+  const handleSelectPrediction = async (prediction: AutocompletePrediction) => {
+    setShowDropdown(false);
+    setIsLoading(true);
 
     try {
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        fields: ['address_components', 'formatted_address', 'name'],
-        componentRestrictions: defaultCountry ? { country: defaultCountry.toLowerCase() } : undefined,
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/public/places/details?placeId=${encodeURIComponent(prediction.placeId)}`
+      );
+      const data = await response.json();
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-
-        // If place doesn't have address_components, it means user might have just selected
-        // from dropdown but details haven't loaded yet. We need to fetch details.
-        if (!place.address_components && place.place_id) {
-          const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-          service.getDetails(
-            {
-              placeId: place.place_id,
-              fields: ['address_components', 'formatted_address', 'name']
-            },
-            (detailedPlace: any, status: any) => {
-              if (status === window.google.maps.places.PlacesServiceStatus.OK && detailedPlace) {
-                processPlace(detailedPlace);
-              }
-            }
-          );
-        } else if (place.address_components) {
-          processPlace(place);
-        }
-      });
-
-      // Process place data and trigger callback
-      const processPlace = (place: any) => {
+      if (data.success && data.result) {
+        const details = data.result;
         const parsed: ParsedAddress = {
-          fullAddress: place.formatted_address || '',
-          streetAddress: '',
+          fullAddress: details.formattedAddress || prediction.description,
+          streetAddress: details.streetAddress || '',
+          city: details.city || '',
+          province: details.province || '',
+          country: details.country || '',
+          postalCode: details.postalCode || '',
+        };
+
+        // Update input to show street address
+        setInputValue(parsed.streetAddress);
+
+        // Notify parent
+        onAddressSelect(parsed);
+      } else {
+        // Fallback: use prediction description
+        setInputValue(prediction.mainText);
+        onAddressSelect({
+          fullAddress: prediction.description,
+          streetAddress: prediction.mainText,
           city: '',
           province: '',
           country: '',
           postalCode: '',
-        };
-
-        // Parse address components
-        place.address_components.forEach((component: any) => {
-          const types = component.types;
-
-          if (types.includes('street_number')) {
-            parsed.streetAddress = component.long_name;
-          }
-
-          if (types.includes('route')) {
-            parsed.streetAddress += (parsed.streetAddress ? ' ' : '') + component.long_name;
-          }
-
-          if (types.includes('locality')) {
-            parsed.city = component.long_name;
-          } else if (types.includes('sublocality_level_1') && !parsed.city) {
-            parsed.city = component.long_name;
-          } else if (types.includes('administrative_area_level_2') && !parsed.city) {
-            parsed.city = component.long_name;
-          }
-
-          if (types.includes('administrative_area_level_1')) {
-            parsed.province = component.long_name;
-          }
-
-          if (types.includes('country')) {
-            parsed.country = component.long_name;
-          }
-
-          if (types.includes('postal_code')) {
-            parsed.postalCode = component.long_name;
-          }
         });
-
-        if (!parsed.streetAddress && place.name) {
-          parsed.streetAddress = place.name;
-        }
-
-        // Trigger the parent's address select callback
-        // This will update all fields including address, city, province, country, postCode
-        onAddressSelect(parsed);
-
-        // Close the dropdown
-        // Use requestAnimationFrame to ensure this happens after Google's internal updates
-        requestAnimationFrame(() => {
-          if (inputRef.current) {
-            inputRef.current.blur();
-          }
-
-          // Hide the Google autocomplete dropdown
-          const pacContainers = document.querySelectorAll('.pac-container');
-          pacContainers.forEach(container => {
-            (container as HTMLElement).style.display = 'none';
-          });
-
-          // Force hide again after a short delay to handle any re-renders
-          setTimeout(() => {
-            const pacContainers = document.querySelectorAll('.pac-container');
-            pacContainers.forEach(container => {
-              (container as HTMLElement).style.display = 'none';
-            });
-          }, 100);
-        });
-      };
-
-      autocompleteRef.current = autocomplete;
-    } catch (error) {
-      console.error('Error initializing Google Places Autocomplete:', error);
-      setLoadError(true);
-    }
-
-    return () => {
-      if (autocompleteRef.current) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
       }
-    };
-  }, [isLoaded, defaultCountry, onAddressSelect, disabled]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (onChange) {
-      onChange(e);
+    } catch (err) {
+      console.error('Place details error:', err);
+      // Fallback
+      setInputValue(prediction.mainText);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loadError) {
-    return (
-      <TextField
-        fullWidth={fullWidth}
-        label={label}
-        value={value}
-        onChange={handleInputChange}
-        error={true}
-        helperText="Error loading Google Maps"
-        disabled
-        required={required}
-        sx={sx}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <LocationIcon />
-            </InputAdornment>
-          ),
-        }}
-      />
-    );
-  }
+  // Handle click away
+  const handleClickAway = () => {
+    setShowDropdown(false);
+  };
 
-  if (!isLoaded) {
-    return (
-      <TextField
-        fullWidth={fullWidth}
-        label={label}
-        value={value}
-        onChange={handleInputChange}
-        helperText="Loading Google Maps..."
-        disabled
-        required={required}
-        sx={sx}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <LocationIcon />
-            </InputAdornment>
-          ),
-          endAdornment: (
-            <InputAdornment position="end">
-              <CircularProgress size={20} />
-            </InputAdornment>
-          ),
-        }}
-      />
-    );
-  }
+  // Handle focus
+  const handleFocus = () => {
+    if (predictions.length > 0) {
+      setShowDropdown(true);
+    }
+  };
 
   return (
-    <TextField
-      fullWidth={fullWidth}
-      label={label}
-      value={value}
-      onChange={handleInputChange}
-      placeholder={placeholder}
-      error={error}
-      helperText={helperText}
-      disabled={disabled}
-      required={required}
-      inputRef={inputRef}
-      sx={sx}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <LocationIcon sx={{ color: '#bbb' }} />
-          </InputAdornment>
-        ),
-      }}
-    />
+    <ClickAwayListener onClickAway={handleClickAway}>
+      <Box sx={{ position: 'relative', width: fullWidth ? '100%' : 'auto' }}>
+        <TextField
+          fullWidth={fullWidth}
+          label={label}
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          placeholder={placeholder}
+          error={error}
+          helperText={helperText}
+          disabled={disabled}
+          required={required}
+          inputRef={inputRef}
+          autoComplete="off"
+          sx={sx}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <LocationIcon sx={{ color: '#bbb' }} />
+              </InputAdornment>
+            ),
+            endAdornment: isLoading ? (
+              <InputAdornment position="end">
+                <CircularProgress size={20} />
+              </InputAdornment>
+            ) : null,
+          }}
+        />
+
+        {/* Predictions dropdown */}
+        <Popper
+          open={showDropdown && predictions.length > 0}
+          anchorEl={inputRef.current}
+          placement="bottom-start"
+          style={{ zIndex: 1300, width: inputRef.current?.offsetWidth }}
+        >
+          <Paper
+            elevation={2}
+            sx={{
+              mt: 0.5,
+              maxHeight: 320,
+              overflow: 'hidden',
+              borderRadius: 1.5,
+              border: '1px solid #e8e8e8',
+            }}
+          >
+            <Box sx={{ maxHeight: 260, overflowY: 'auto' }}>
+              {predictions.map((prediction, index) => (
+                <Box
+                  key={prediction.placeId || index}
+                  onClick={() => handleSelectPrediction(prediction)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    py: 1.25,
+                    px: 2,
+                    cursor: 'pointer',
+                    transition: 'background-color 0.15s',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5',
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      backgroundColor: '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <LocationIcon sx={{ color: '#888', fontSize: 16 }} />
+                  </Box>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        color: '#333',
+                        lineHeight: 1.4,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {prediction.mainText}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '0.75rem',
+                        color: '#999',
+                        lineHeight: 1.3,
+                        mt: 0.25,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {prediction.secondaryText}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+            {/* Powered by Google */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                px: 2,
+                py: 0.75,
+                borderTop: '1px solid #f0f0f0',
+                backgroundColor: '#fafafa',
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: '0.7rem',
+                  color: '#999',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                powered by
+                <Box
+                  component="span"
+                  sx={{
+                    fontWeight: 500,
+                    color: '#666',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  <Box component="span" sx={{ color: '#4285F4' }}>G</Box>
+                  <Box component="span" sx={{ color: '#EA4335' }}>o</Box>
+                  <Box component="span" sx={{ color: '#FBBC05' }}>o</Box>
+                  <Box component="span" sx={{ color: '#4285F4' }}>g</Box>
+                  <Box component="span" sx={{ color: '#34A853' }}>l</Box>
+                  <Box component="span" sx={{ color: '#EA4335' }}>e</Box>
+                </Box>
+              </Typography>
+            </Box>
+          </Paper>
+        </Popper>
+      </Box>
+    </ClickAwayListener>
   );
 };
 

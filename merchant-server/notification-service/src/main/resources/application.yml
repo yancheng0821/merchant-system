@@ -52,7 +52,7 @@ eureka:
 notification:
   # Mock模式配置 - 本地开发环境使用
   mock:
-    enabled: true # 本地开发环境使用mock模式，不调用真实AWS/阿里云服务
+    enabled: true # 开启mock模式，不发送真实通知
     sms:
       simulateDelay: true # 模拟发送延迟
       delayMs: 1000 # 模拟延迟时间（毫秒）
@@ -78,15 +78,15 @@ notification:
     auth: true
   aws:
     region: ca-central-1  # 使用加拿大中部区域
-    useLocalCredentials: false # 使用配置的凭证而不是AWS CLI
+    useLocalCredentials: false # 使用本地AWS CLI配置的凭证
     maxRetries: 3 # 最大重试次数
     retryDelayMs: 1000 # 重试间隔（毫秒）
     # 配置你的AWS凭证
     accessKeyId: ${AWS_ACCESS_KEY_ID:your-access-key-id}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY:your-secret-access-key}
     ses:
-      fromEmail: yancheng0723@gmail.com
-      fromName: 美容院预约系统
+      fromEmail: noreply@vamerchant.app
+      fromName: VA Merchant
       # configurationSetName: your-configuration-set # 可选
     sns:
       defaultSenderId: YourApp # 可选，短信发送者ID

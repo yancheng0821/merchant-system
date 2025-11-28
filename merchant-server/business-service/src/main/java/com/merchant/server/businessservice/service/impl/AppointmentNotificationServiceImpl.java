@@ -12,14 +12,22 @@ import com.merchant.server.businessservice.mapper.CustomerMapper;
 import com.merchant.server.businessservice.mapper.OrderMapper;
 import com.merchant.server.businessservice.mapper.ResourceMapper;
 import com.merchant.server.businessservice.mapper.AppointmentMapper;
+import com.merchant.server.businessservice.mapper.OnlineBookingConfigMapper;
+import com.merchant.server.businessservice.entity.OnlineBookingConfig;
 import com.merchant.server.businessservice.service.AppointmentNotificationService;
+import com.merchant.server.businessservice.util.CancelTokenUtil;
 import com.merchant.server.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,6 +42,8 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     private final AppointmentMapper appointmentMapper;
     private final OrderMapper orderMapper;
     private final MerchantServiceClient merchantServiceClient;
+    private final OnlineBookingConfigMapper onlineBookingConfigMapper;
+    private final CancelTokenUtil cancelTokenUtil;
 
     // 缓存商户信息，key: tenantId, value: MerchantInfo
     private final Map<Long, MerchantInfo> merchantInfoCache = new ConcurrentHashMap<>();
@@ -52,13 +62,20 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         String name;
         String address;
         String phone;
+        String timezone;
+        String merchantCode;
 
-        MerchantInfo(String name, String address, String phone) {
+        MerchantInfo(String name, String address, String phone, String timezone, String merchantCode) {
             this.name = name;
             this.address = address;
             this.phone = phone;
+            this.timezone = timezone != null ? timezone : "America/Vancouver";
+            this.merchantCode = merchantCode;
         }
     }
+
+    @Value("${frontend.base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
     
     @Value("${notification.enabled:true}")
     private boolean notificationEnabled;
@@ -105,8 +122,12 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
     private AppointmentNotificationDTO buildNotificationDTO(Appointment appointment) {
         try {
-            // 获取客户信息
-            Customer customer = customerMapper.selectById(appointment.getCustomerId());
+            // 获取客户信息 - 优先使用已加载的 customer 对象（避免事务未提交时查不到新客户）
+            Customer customer = appointment.getCustomer();
+            if (customer == null) {
+                // 如果 appointment 没有预加载 customer，则从数据库查询
+                customer = customerMapper.selectById(appointment.getCustomerId());
+            }
             if (customer == null) {
                 log.warn("Customer not found for appointment: {}", appointment.getId());
                 return null;
@@ -201,6 +222,53 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
             notification.setBusinessName(merchantInfo.name);
             notification.setBusinessAddress(merchantInfo.address);
             notification.setBusinessPhone(merchantInfo.phone);
+            notification.setTimezone(merchantInfo.timezone);
+
+            // 生成取消预约链接（使用安全token）
+            try {
+                OnlineBookingConfig bookingConfig = onlineBookingConfigMapper.findByTenantId(appointment.getTenantId());
+                if (bookingConfig != null && bookingConfig.getBookingPageSlug() != null) {
+                    // 生成安全的取消 token
+                    String cancelToken = cancelTokenUtil.generateToken(appointment.getId(), customer.getId());
+                    String cancelUrl = String.format("%s/booking/%s?cancel=%s",
+                        frontendBaseUrl, bookingConfig.getBookingPageSlug(), cancelToken);
+                    notification.setCancelUrl(cancelUrl);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to generate cancel URL for appointment: {}", appointment.getId(), e);
+            }
+
+            // 生成日历链接
+            try {
+                LocalDateTime startDateTime = LocalDateTime.of(appointment.getAppointmentDate(), appointment.getAppointmentTime());
+                LocalDateTime endDateTime = startDateTime.plusMinutes(appointment.getDuration());
+
+                String eventTitle = serviceName + " at " + merchantInfo.name;
+                String eventDescription = String.format(
+                    "Appointment Details:\\n" +
+                    "Service: %s\\n" +
+                    "Staff: %s\\n" +
+                    "Duration: %d minutes\\n\\n" +
+                    "Contact: %s",
+                    serviceName,
+                    notification.getResourceName() != null ? notification.getResourceName() : "Staff",
+                    appointment.getDuration(),
+                    merchantInfo.phone
+                );
+
+                // Google Calendar URL
+                notification.setGoogleCalendarUrl(generateGoogleCalendarUrl(
+                    eventTitle, eventDescription, merchantInfo.address,
+                    startDateTime, endDateTime, merchantInfo.timezone));
+
+                // Outlook URL
+                notification.setOutlookUrl(generateOutlookUrl(
+                    eventTitle, eventDescription, merchantInfo.address,
+                    startDateTime, endDateTime, merchantInfo.timezone));
+
+            } catch (Exception e) {
+                log.warn("Failed to generate calendar URLs for appointment: {}", appointment.getId(), e);
+            }
 
             return notification;
             
@@ -229,12 +297,14 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 String name = data.get("merchantName") != null ? data.get("merchantName").toString() : defaultBusinessName;
                 String address = data.get("address") != null ? data.get("address").toString() : defaultBusinessAddress;
                 String phone = data.get("contactPhone") != null ? data.get("contactPhone").toString() : defaultBusinessPhone;
+                String timezone = data.get("timezone") != null ? data.get("timezone").toString() : "America/Vancouver";
+                String merchantCode = data.get("merchantCode") != null ? data.get("merchantCode").toString() : null;
 
-                merchantInfo = new MerchantInfo(name, address, phone);
+                merchantInfo = new MerchantInfo(name, address, phone, timezone, merchantCode);
                 // 存入缓存
                 merchantInfoCache.put(tenantId, merchantInfo);
-                log.info("Retrieved and cached merchant info for tenantId {}: name={}, address={}, phone={}",
-                    tenantId, name, address, phone);
+                log.info("Retrieved and cached merchant info for tenantId {}: name={}, address={}, phone={}, timezone={}, merchantCode={}",
+                    tenantId, name, address, phone, timezone, merchantCode);
                 return merchantInfo;
             }
         } catch (Exception e) {
@@ -243,7 +313,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
         // 如果获取失败，使用默认值
         log.info("Using default business info for tenantId {}", tenantId);
-        return new MerchantInfo(defaultBusinessName, defaultBusinessAddress, defaultBusinessPhone);
+        return new MerchantInfo(defaultBusinessName, defaultBusinessAddress, defaultBusinessPhone, "America/Vancouver", null);
     }
 
     /**
@@ -304,7 +374,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
             return "SMS";
         } else {
             log.warn("Customer has no valid contact information: {}", customer.getFullName());
-            return "SMS"; // 默认返回SMS
+            return "BOTH"; // 默认返回BOTH，尝试所有渠道
         }
     }
 
@@ -313,6 +383,80 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         if (tenantId != null) {
             merchantInfoCache.remove(tenantId);
             log.info("Cleared merchant info cache for tenantId: {}", tenantId);
+        }
+    }
+
+    /**
+     * 生成 Google Calendar 添加链接
+     */
+    private String generateGoogleCalendarUrl(String title, String description, String location,
+                                              LocalDateTime startTime, LocalDateTime endTime, String timezone) {
+        try {
+            // 转换为UTC时间
+            ZoneId zoneId = ZoneId.of(timezone);
+            LocalDateTime startUtc = startTime.atZone(zoneId).withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
+            LocalDateTime endUtc = endTime.atZone(zoneId).withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
+
+            StringBuilder url = new StringBuilder("https://calendar.google.com/calendar/render?action=TEMPLATE");
+            url.append("&text=").append(urlEncode(title));
+            url.append("&dates=").append(startUtc.format(formatter)).append("/").append(endUtc.format(formatter));
+            if (description != null && !description.isEmpty()) {
+                url.append("&details=").append(urlEncode(description.replace("\\n", "\n")));
+            }
+            if (location != null && !location.isEmpty()) {
+                url.append("&location=").append(urlEncode(location));
+            }
+            url.append("&ctz=").append(urlEncode(timezone));
+
+            return url.toString();
+        } catch (Exception e) {
+            log.warn("Failed to generate Google Calendar URL", e);
+            return null;
+        }
+    }
+
+    /**
+     * 生成 Outlook 添加链接
+     */
+    private String generateOutlookUrl(String title, String description, String location,
+                                       LocalDateTime startTime, LocalDateTime endTime, String timezone) {
+        try {
+            // 转换为UTC时间
+            ZoneId zoneId = ZoneId.of(timezone);
+            LocalDateTime startUtc = startTime.atZone(zoneId).withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
+            LocalDateTime endUtc = endTime.atZone(zoneId).withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+            StringBuilder url = new StringBuilder("https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent");
+            url.append("&subject=").append(urlEncode(title));
+            url.append("&startdt=").append(startUtc.format(formatter));
+            url.append("&enddt=").append(endUtc.format(formatter));
+            if (description != null && !description.isEmpty()) {
+                url.append("&body=").append(urlEncode(description.replace("\\n", "\n")));
+            }
+            if (location != null && !location.isEmpty()) {
+                url.append("&location=").append(urlEncode(location));
+            }
+
+            return url.toString();
+        } catch (Exception e) {
+            log.warn("Failed to generate Outlook URL", e);
+            return null;
+        }
+    }
+
+    /**
+     * URL编码
+     */
+    private String urlEncode(String text) {
+        if (text == null) return "";
+        try {
+            return URLEncoder.encode(text, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            return text;
         }
     }
 }

@@ -20,6 +20,14 @@
         <result column="show_technician_photos" property="showTechnicianPhotos"/>
         <result column="show_technician_ratings" property="showTechnicianRatings"/>
         <result column="booking_widget_color" property="bookingWidgetColor"/>
+        <result column="google_business_enabled" property="googleBusinessEnabled"/>
+        <result column="google_place_id" property="googlePlaceId"/>
+        <result column="google_merchant_id" property="googleMerchantId"/>
+        <result column="booking_page_slug" property="bookingPageSlug"/>
+        <result column="welcome_message" property="welcomeMessage"/>
+        <result column="cancellation_policy" property="cancellationPolicy"/>
+        <result column="logo_url" property="logoUrl"/>
+        <result column="enabled" property="enabled"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -28,19 +36,38 @@
         SELECT * FROM online_booking_config WHERE tenant_id = #{tenantId}
     </select>
 
+    <select id="findByBookingPageSlug" resultMap="OnlineBookingConfigResultMap">
+        SELECT * FROM online_booking_config WHERE booking_page_slug = #{slug}
+    </select>
+
+    <select id="findAllGoogleEnabled" resultMap="OnlineBookingConfigResultMap">
+        SELECT * FROM online_booking_config
+        WHERE enabled = TRUE AND google_business_enabled = TRUE
+    </select>
+
+    <select id="findAllEnabled" resultMap="OnlineBookingConfigResultMap">
+        SELECT * FROM online_booking_config WHERE enabled = TRUE
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO online_booking_config (
             tenant_id, booking_url, advance_booking_days, min_advance_hours,
             allow_customer_cancel, cancel_deadline_hours, allow_customer_reschedule,
             reschedule_deadline_hours, auto_confirm_booking, require_deposit,
             deposit_type, deposit_amount, enable_waitlist, show_technician_photos,
-            show_technician_ratings, booking_widget_color, created_at, updated_at
+            show_technician_ratings, booking_widget_color,
+            google_business_enabled, google_place_id, google_merchant_id,
+            booking_page_slug, welcome_message, cancellation_policy, logo_url, enabled,
+            created_at, updated_at
         ) VALUES (
             #{tenantId}, #{bookingUrl}, #{advanceBookingDays}, #{minAdvanceHours},
             #{allowCustomerCancel}, #{cancelDeadlineHours}, #{allowCustomerReschedule},
             #{rescheduleDeadlineHours}, #{autoConfirmBooking}, #{requireDeposit},
             #{depositType}, #{depositAmount}, #{enableWaitlist}, #{showTechnicianPhotos},
-            #{showTechnicianRatings}, #{bookingWidgetColor}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+            #{showTechnicianRatings}, #{bookingWidgetColor},
+            #{googleBusinessEnabled}, #{googlePlaceId}, #{googleMerchantId},
+            #{bookingPageSlug}, #{welcomeMessage}, #{cancellationPolicy}, #{logoUrl}, #{enabled},
+            UTC_TIMESTAMP(), UTC_TIMESTAMP()
         )
     </insert>
 
@@ -61,6 +88,14 @@
             show_technician_photos = #{showTechnicianPhotos},
             show_technician_ratings = #{showTechnicianRatings},
             booking_widget_color = #{bookingWidgetColor},
+            google_business_enabled = #{googleBusinessEnabled},
+            google_place_id = #{googlePlaceId},
+            google_merchant_id = #{googleMerchantId},
+            booking_page_slug = #{bookingPageSlug},
+            welcome_message = #{welcomeMessage},
+            cancellation_policy = #{cancellationPolicy},
+            logo_url = #{logoUrl},
+            enabled = #{enabled},
             updated_at = UTC_TIMESTAMP()
         WHERE tenant_id = #{tenantId}
     </update>

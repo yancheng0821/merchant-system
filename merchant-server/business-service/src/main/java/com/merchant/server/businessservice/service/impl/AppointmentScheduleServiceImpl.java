@@ -116,8 +116,8 @@ public class AppointmentScheduleServiceImpl implements AppointmentScheduleServic
     /**
      * 每10分钟执行一次，发送预约提醒
      * - 24小时提醒：预约时间前24小时发送
-     * - 30分钟提醒：预约时间前30分钟发送
      *
+     * 注意：30分钟提醒已移除，改为通过ICS日历文件在客户设备上本地提醒
      * 注意：数据库中的预约时间是商户本地时间，需要转换为UTC后比较
      */
     @Scheduled(fixedRate = 600000) // 10分钟 = 600,000毫秒
@@ -134,7 +134,6 @@ public class AppointmentScheduleServiceImpl implements AppointmentScheduleServic
             log.debug("找到 {} 个待确认的预约", confirmedAppointments.size());
 
             int reminder24hCount = 0;
-            int reminder30minCount = 0;
 
             for (Appointment appointment : confirmedAppointments) {
                 try {
@@ -179,35 +178,14 @@ public class AppointmentScheduleServiceImpl implements AppointmentScheduleServic
                             log.debug("跳过已发送的24小时提醒 - 预约ID: {}", appointment.getId());
                         }
                     }
-                    // 30分钟提醒：在预约前20到40分钟之间发送
-                    else if (minutesUntilAppointment >= 20 && minutesUntilAppointment <= 40) {
-                        // 检查是否已发送30分钟提醒
-                        if (appointment.getReminder30minSent() == null || !appointment.getReminder30minSent()) {
-                            log.info("发送30分钟提醒 - 预约ID: {}, 客户ID: {}, 商户时区: {}, 预约本地时间: {}",
-                                appointment.getId(), appointment.getCustomerId(), merchantTimezone, appointmentLocalDateTime);
-                            try {
-                                appointmentNotificationService.sendReminderNotification(appointment);
-                                // 标记为已发送
-                                appointment.setReminder30minSent(true);
-                                appointment.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
-                                appointmentMapper.update(appointment);
-                                reminder30minCount++;
-                                log.info("30分钟提醒已发送并标记 - 预约ID: {}", appointment.getId());
-                            } catch (Exception e) {
-                                log.error("发送30分钟提醒失败 - 预约ID: {}, 错误: {}", appointment.getId(), e.getMessage());
-                            }
-                        } else {
-                            log.debug("跳过已发送的30分钟提醒 - 预约ID: {}", appointment.getId());
-                        }
-                    }
+                    // 注意：30分钟提醒已移除，改为通过ICS日历文件在客户设备上本地提醒
                 } catch (Exception e) {
                     log.error("处理预约提醒时发生错误 - 预约ID: {}, 错误: {}", appointment.getId(), e.getMessage(), e);
                 }
             }
 
-            if (reminder24hCount > 0 || reminder30minCount > 0) {
-                log.info("预约提醒发送完成 - 24小时提醒: {} 个, 30分钟提醒: {} 个",
-                    reminder24hCount, reminder30minCount);
+            if (reminder24hCount > 0) {
+                log.info("预约提醒发送完成 - 24小时提醒: {} 个", reminder24hCount);
             }
 
         } catch (Exception e) {

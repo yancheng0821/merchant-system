@@ -34,6 +34,12 @@ public interface AppointmentService {
     Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO);
 
     /**
+     * 创建预约（包含服务信息），可选择跳过通知
+     * @param skipNotification 是否跳过发送通知（用于在线预约等需要手动控制通知时机的场景）
+     */
+    Appointment createAppointmentWithServices(AppointmentCreateDTO appointmentDTO, boolean skipNotification);
+
+    /**
      * 更新预约状态
      */
     Appointment updateAppointmentStatus(Long id, String status);
