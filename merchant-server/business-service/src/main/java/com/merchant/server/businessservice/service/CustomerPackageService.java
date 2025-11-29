@@ -565,6 +565,7 @@ public class CustomerPackageService {
             String fullPhoneNumber = buildFullPhoneNumber(customer.getCountryCode(), customer.getPhone());
 
             // 构建 NotificationRequest
+            // 套餐购买成功邮件使用商户名称作为发件人显示名称
             com.merchant.server.common.dto.NotificationRequest request =
                     com.merchant.server.common.dto.NotificationRequest.builder()
                             .scene("package.purchase.success")
@@ -577,6 +578,7 @@ public class CustomerPackageService {
                             .channel("EMAIL")
                             .variables(variables)
                             .businessId(customerPackage.getId().toString())
+                            .fromName(merchantName)
                             .build();
 
             // 构建 NotificationMessage payload
@@ -587,6 +589,7 @@ public class CustomerPackageService {
             payload.put("channel", request.getChannel());
             payload.put("variables", request.getVariables());
             payload.put("businessId", request.getBusinessId());
+            payload.put("fromName", request.getFromName());
 
             // 创建通知消息
             com.merchant.server.common.dto.NotificationMessage message =

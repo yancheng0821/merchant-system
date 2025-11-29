@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(docker cp:*)",
+      "Bash(../mvnw clean install:*)",
+      "Bash(/Users/aisenyc/merchant-system/deployment/docker-compose.production.yml )",
+      "Bash(/Users/aisenyc/merchant-system/merchant-server/notification-service/src/main/resources/application-local.yml )",
+      "Bash(/Users/aisenyc/merchant-system/merchant-server/notification-service/src/main/resources/application.yml )",
+      "Bash(/Users/aisenyc/merchant-system/merchant-server/notification-service/src/main/resources/application-prod.yml)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []

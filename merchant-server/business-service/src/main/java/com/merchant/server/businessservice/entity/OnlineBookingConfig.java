@@ -56,6 +56,7 @@ public class OnlineBookingConfig {
     private String cancellationPolicy;  // 取消政策说明
     private String logoUrl;  // Logo URL
     private Boolean enabled = false;  // 是否启用在线预约
+    private Boolean showPopularServices = true;  // 是否显示热门服务标签
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

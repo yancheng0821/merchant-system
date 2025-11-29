@@ -23,4 +23,6 @@ public class PublicResourceDTO {
     private String description;
     private List<String> specialties;
     private List<Long> serviceIds;  // 该员工可提供的服务ID列表
+    private Boolean isSenior;  // 是否资深技师（有EXPERT/MASTER级别技能）
+    private Integer expertServiceCount;  // 擅长的服务数量
 }

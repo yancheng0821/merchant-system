@@ -297,37 +297,29 @@ const ResourceManagement: React.FC = () => {
                 <Box>
                     {/* 条件显示Tab栏 - 总是显示Tab栏以包含可用性视图 */}
                     {(hasMultipleTypes || hasStaff || hasRoom) && (
-                        <Card
-                            sx={{
-                                mb: 3,
-                                borderRadius: 2.5,
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                                border: '1px solid rgba(0,0,0,0.06)',
-                                overflow: 'hidden',
-                            }}
-                        >
+                        <Box mb={3}>
                             <Tabs
                                 value={tabValue}
                                 onChange={handleTabChange}
                                 variant="scrollable"
                                 scrollButtons="auto"
                                 sx={{
-                                    backgroundColor: '#fafafa',
+                                    borderBottom: '2px solid',
+                                    borderColor: 'divider',
                                     '& .MuiTab-root': {
-                                        color: '#666',
                                         fontWeight: 500,
-                                        fontSize: '0.875rem',
+                                        fontSize: '0.9rem',
                                         textTransform: 'none',
-                                        py: 1.5,
-                                        minWidth: 120,
+                                        minHeight: 56,
                                         '&.Mui-selected': {
-                                            color: themeColor,
                                             fontWeight: 600,
+                                            color: themeColor,
                                         }
                                     },
                                     '& .MuiTabs-indicator': {
-                                        backgroundColor: themeColor,
                                         height: 3,
+                                        borderRadius: '3px 3px 0 0',
+                                        backgroundColor: themeColor,
                                     }
                                 }}
                             >
@@ -362,7 +354,7 @@ const ResourceManagement: React.FC = () => {
                                     />
                                 )} */}
                             </Tabs>
-                        </Card>
+                        </Box>
                     )}
 
                     {/* 内容区域 - 统一使用TabPanel结构 */}

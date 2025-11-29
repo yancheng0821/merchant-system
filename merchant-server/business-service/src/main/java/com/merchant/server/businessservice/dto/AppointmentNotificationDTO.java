@@ -47,4 +47,12 @@ public class AppointmentNotificationDTO {
     private String googleCalendarUrl;  // Google Calendar 添加链接
     private String outlookUrl;         // Outlook 添加链接
     private String timezone;           // 商户时区
+
+    // JSON-LD Event schema fields for Gmail calendar integration
+    private String startDateTimeIso;   // ISO 8601 format: 2025-11-28T10:00:00-08:00
+    private String endDateTimeIso;     // ISO 8601 format: 2025-11-28T11:00:00-08:00
+    private String eventId;            // Unique event ID for calendar (appointment ID based)
+    private String eventTitle;         // Event title for calendar
+    private String eventDescription;   // Event description for calendar
+    private String businessEmail;      // Business email for organizer
 }

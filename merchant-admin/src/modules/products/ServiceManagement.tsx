@@ -549,33 +549,26 @@ const ServiceManagement: React.FC = () => {
 
       {/* Tab Navigation */}
       {tabsConfig.length > 0 && (
-        <Card
-          sx={{
-            mb: 3,
-            borderRadius: 2.5,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            overflow: 'hidden',
-          }}
-        >
+        <Box mb={3}>
           <Tabs
             value={selectedTab}
             onChange={(e, v) => setSelectedTab(v)}
             sx={{
-              backgroundColor: '#fafafa',
+              borderBottom: '2px solid',
+              borderColor: 'divider',
               '& .MuiTab-root': {
-                color: '#666',
                 fontWeight: 500,
-                fontSize: '0.875rem',
+                fontSize: '0.9rem',
                 textTransform: 'none',
-                py: 1.5,
+                minHeight: 56,
                 '&.Mui-selected': {
-                  color: THEME_COLOR,
                   fontWeight: 600,
+                  color: THEME_COLOR,
                 },
               },
               '& .MuiTabs-indicator': {
                 height: 3,
+                borderRadius: '3px 3px 0 0',
                 backgroundColor: THEME_COLOR,
               },
             }}
@@ -584,7 +577,7 @@ const ServiceManagement: React.FC = () => {
               <Tab key={tab.key} label={tab.label} />
             ))}
           </Tabs>
-        </Card>
+        </Box>
       )}
 
       {/* Services Tab Content */}
@@ -609,11 +602,17 @@ const ServiceManagement: React.FC = () => {
                 minWidth: 280,
                 flex: 1,
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
-                  '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
-                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 },
               }}
               InputProps={{
@@ -625,44 +624,56 @@ const ServiceManagement: React.FC = () => {
               }}
             />
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>{t('products.category')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('products.category')}</InputLabel>
               <Select
                 value={categoryFilter}
                 label={t('products.category')}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="">{t('products.allCategories')}</MenuItem>
+                <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('products.allCategories')}</MenuItem>
                 {categories.map((category) => (
-                  <MenuItem key={category.id} value={category.id.toString()}>
+                  <MenuItem key={category.id} value={category.id.toString()} sx={{ fontSize: '0.875rem' }}>
                     {category.name}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>{t('products.status')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('products.status')}</InputLabel>
               <Select
                 value={statusFilter}
                 label={t('products.status')}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="">{t('products.allStatuses')}</MenuItem>
-                <MenuItem value="ACTIVE">{t('products.active')}</MenuItem>
-                <MenuItem value="INACTIVE">{t('products.inactive')}</MenuItem>
+                <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('products.allStatuses')}</MenuItem>
+                <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('products.active')}</MenuItem>
+                <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('products.inactive')}</MenuItem>
               </Select>
             </FormControl>
             <PermissionButton
@@ -678,7 +689,7 @@ const ServiceManagement: React.FC = () => {
                 borderRadius: 1.5,
                 height: 40,
                 px: 2,
-                fontSize: '0.8125rem',
+                fontSize: '0.875rem',
                 fontWeight: 500,
                 bgcolor: THEME_COLOR,
                 boxShadow: 'none',
@@ -736,13 +747,13 @@ const ServiceManagement: React.FC = () => {
               <Table>
                 <TableHead sx={{ backgroundColor: '#fafafa' }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.category')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.price')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.duration')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.resourceType')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.status')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('products.actions')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.service')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.category')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.price')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.duration')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.resourceType')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.status')}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -752,12 +763,12 @@ const ServiceManagement: React.FC = () => {
                       hover
                       sx={{
                         '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                        '& td': { py: 1.5, fontSize: '0.8125rem' },
+                        '& td': { py: 1.5, fontSize: '0.875rem' },
                       }}
                     >
                       <TableCell>
                         <Box>
-                          <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                          <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a' }}>
                             {service.name}
                           </Typography>
                           <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
@@ -781,18 +792,18 @@ const ServiceManagement: React.FC = () => {
                           >
                             {getCategoryIcon(service.categoryId)}
                           </Box>
-                          <Typography sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                          <Typography sx={{ fontSize: '0.875rem', color: '#1a1a1a' }}>
                             {service.categoryName || categories.find(c => c.id === service.categoryId)?.name}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
                           {CurrencyUtils.formatAmount(service.price)}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
                           {service.duration} {t('products.minutes')}
                         </Typography>
                       </TableCell>
@@ -883,7 +894,7 @@ const ServiceManagement: React.FC = () => {
               setMenuAnchorEl(null);
             }}
             sx={{
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               py: 1,
               '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
             }}
@@ -898,7 +909,7 @@ const ServiceManagement: React.FC = () => {
             setMenuAnchorEl(null);
           }}
           sx={{
-            fontSize: '0.8125rem',
+            fontSize: '0.875rem',
             py: 1,
             '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' }
           }}
@@ -913,7 +924,7 @@ const ServiceManagement: React.FC = () => {
               setMenuAnchorEl(null);
             }}
             sx={{
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               py: 1,
               '&:hover': { backgroundColor: alpha('#EF4444', 0.08) }
             }}
@@ -972,7 +983,7 @@ const ServiceManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               color: '#666',
               textTransform: 'none',
@@ -988,7 +999,7 @@ const ServiceManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: '#EF4444',
               boxShadow: 'none',
@@ -1152,11 +1163,17 @@ const ServiceManagement: React.FC = () => {
                 minWidth: 280,
                 flex: 1,
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
-                  '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.15)' },
-                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 },
               }}
               InputProps={{
@@ -1168,42 +1185,54 @@ const ServiceManagement: React.FC = () => {
               }}
             />
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>{t('packages.statusFilter')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('packages.statusFilter')}</InputLabel>
               <Select
                 value={packageStatusFilter}
                 onChange={(e) => setPackageStatusFilter(e.target.value)}
                 label={t('packages.statusFilter')}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="">{t('common.all')}</MenuItem>
-                <MenuItem value="ACTIVE">{t('packages.active')}</MenuItem>
-                <MenuItem value="INACTIVE">{t('packages.inactive')}</MenuItem>
+                <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('common.all')}</MenuItem>
+                <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('packages.active')}</MenuItem>
+                <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('packages.inactive')}</MenuItem>
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>{t('packages.sortBy')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('packages.sortBy')}</InputLabel>
               <Select
                 value={packageSortBy}
                 onChange={(e) => setPackageSortBy(e.target.value as any)}
                 label={t('packages.sortBy')}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fafafa',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.15)' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: 1 },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="created">{t('packages.sortByCreated')}</MenuItem>
-                <MenuItem value="name">{t('packages.sortByName')}</MenuItem>
-                <MenuItem value="price">{t('packages.sortByPrice')}</MenuItem>
-                <MenuItem value="discount">{t('packages.sortByDiscount')}</MenuItem>
+                <MenuItem value="created" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByCreated')}</MenuItem>
+                <MenuItem value="name" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByName')}</MenuItem>
+                <MenuItem value="price" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByPrice')}</MenuItem>
+                <MenuItem value="discount" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByDiscount')}</MenuItem>
               </Select>
             </FormControl>
             {hasPermission('packages:create') && (
@@ -1219,7 +1248,7 @@ const ServiceManagement: React.FC = () => {
                   borderRadius: 1.5,
                   height: 40,
                   px: 2,
-                  fontSize: '0.8125rem',
+                  fontSize: '0.875rem',
                   fontWeight: 500,
                   bgcolor: THEME_COLOR,
                   boxShadow: 'none',
@@ -1305,7 +1334,7 @@ const ServiceManagement: React.FC = () => {
                   borderRadius: 1.5,
                   px: 2.5,
                   py: 0.75,
-                  fontSize: '0.8125rem',
+                  fontSize: '0.875rem',
                   fontWeight: 500,
                   color: '#666',
                   textTransform: 'none',
@@ -1321,7 +1350,7 @@ const ServiceManagement: React.FC = () => {
                   borderRadius: 1.5,
                   px: 2.5,
                   py: 0.75,
-                  fontSize: '0.8125rem',
+                  fontSize: '0.875rem',
                   fontWeight: 500,
                   bgcolor: '#EF4444',
                   boxShadow: 'none',

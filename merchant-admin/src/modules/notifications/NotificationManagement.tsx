@@ -110,34 +110,27 @@ const NotificationManagement: React.FC = () => {
         </Box>
       </Box>
 
-      <Paper
-        sx={{
-          mb: 3,
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          overflow: 'hidden',
-        }}
-      >
+      <Box mb={3}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
           sx={{
-            backgroundColor: '#fafafa',
+            borderBottom: '2px solid',
+            borderColor: 'divider',
             '& .MuiTab-root': {
-              color: '#666',
               fontWeight: 500,
-              fontSize: '0.875rem',
+              fontSize: '0.9rem',
               textTransform: 'none',
-              py: 1.5,
+              minHeight: 56,
               '&.Mui-selected': {
-                color: THEME_COLOR,
                 fontWeight: 600,
+                color: THEME_COLOR,
               }
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: THEME_COLOR,
               height: 3,
+              borderRadius: '3px 3px 0 0',
+              backgroundColor: THEME_COLOR,
             }
           }}
         >
@@ -145,7 +138,7 @@ const NotificationManagement: React.FC = () => {
             <Tab key={index} label={tab.label} />
           ))}
         </Tabs>
-      </Paper>
+      </Box>
 
       {/* Template Management */}
       {currentTabKey === 'templates' && (

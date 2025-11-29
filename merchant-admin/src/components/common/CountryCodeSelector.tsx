@@ -216,9 +216,14 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
           container: container,
           disablePortal: false,
           PaperProps: {
-            style: {
+            sx: {
               maxHeight: 300,
+              minWidth: 180,
+              maxWidth: 280,
               zIndex: 10001,
+              borderRadius: 2,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              mt: 0.5,
             },
           },
           anchorOrigin: {
@@ -232,6 +237,7 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
           style: {
             zIndex: 10001,
           },
+          autoFocus: false,
         },
         renderValue: (selected) => {
           const country = countryCodes.find(c => c.dialCode === selected);
@@ -267,23 +273,30 @@ const CountryCodeSelector: React.FC<CountryCodeSelectorProps> = ({
       }}
     >
       {countryCodes.map((country) => (
-        <MenuItem key={country.code} value={country.dialCode}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ fontSize: '1.2rem', lineHeight: 1 }}>
+        <MenuItem
+          key={country.code}
+          value={country.dialCode}
+          sx={{
+            py: 1.25,
+            px: 2,
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+            '&.Mui-selected': {
+              bgcolor: 'rgba(26, 26, 26, 0.08) !important',
+              '&:hover': { bgcolor: 'rgba(26, 26, 26, 0.12) !important' },
+            },
+            '&.Mui-focusVisible': {
+              bgcolor: 'rgba(0,0,0,0.04)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box component="span" sx={{ fontSize: '1.1rem', lineHeight: 1 }}>
               {country.flag}
             </Box>
-            <Box sx={{
-              fontWeight: 500,
-              fontSize: '0.875rem',
-              color: 'text.secondary',
-              minWidth: 45,
-            }}>
+            <Box component="span" sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#666', minWidth: 40 }}>
               {getDisplayDialCode(country.dialCode)}
             </Box>
-            <Box sx={{
-              fontSize: '0.875rem',
-              color: 'text.primary',
-            }}>
+            <Box component="span" sx={{ fontSize: '0.8125rem', color: '#333' }}>
               {isZh ? (country.nameZh || country.name) : country.name}
             </Box>
           </Box>

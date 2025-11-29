@@ -49,6 +49,12 @@ public class NotificationRequest {
     private String templateCode;
 
     /**
+     * 发件人名称（可选，用于邮件的显示名称）
+     * 如果不指定，使用系统默认配置
+     */
+    private String fromName;
+
+    /**
      * 接收者信息
      */
     @Data

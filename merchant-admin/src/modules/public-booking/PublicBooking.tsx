@@ -14,6 +14,9 @@ import {
   Divider,
   InputAdornment,
   Chip,
+  MenuItem,
+  Dialog,
+  DialogContent,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -28,6 +31,7 @@ import {
   Search as SearchIcon,
   Close as CloseIcon,
   HourglassEmpty as HourglassEmptyIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { format, addDays, addHours, isBefore, startOfWeek, startOfDay, addWeeks, isSameDay, isAfter, getDay } from 'date-fns';
@@ -61,6 +65,7 @@ interface MerchantInfo {
   depositAmount?: number;
   widgetColor: string;
   showTechnicianPhotos?: boolean;  // 是否显示技师头像
+  showPopularServices?: boolean;   // 是否显示热门服务标签
 }
 
 interface ServiceItem {
@@ -70,6 +75,8 @@ interface ServiceItem {
   duration: number;
   price: number;
   categoryName?: string;
+  bookingCount?: number;
+  isPopular?: boolean;
 }
 
 interface StaffMember {
@@ -81,6 +88,8 @@ interface StaffMember {
   rating?: number;
   specialties?: string[];
   serviceIds?: number[];  // 该员工可提供的服务ID列表
+  isSenior?: boolean;  // 是否资深技师
+  expertServiceCount?: number;  // 擅长的服务数量
 }
 
 interface TimeSlot {
@@ -184,6 +193,15 @@ const PublicBooking: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
+  // 服务分类tab
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // 预约备注
+  const [bookingNote, setBookingNote] = useState<string>('');
+
+  // 时间偏好
+  const [timePreference, setTimePreference] = useState<'any' | 'morning' | 'afternoon' | 'evening'>('any');
+
   // 周视图
   const [weekStart, setWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 0 }));
   // 周可用性数据 - 用于判断某天是否有可用时间段
@@ -216,6 +234,7 @@ const PublicBooking: React.FC = () => {
 
   // UI 状态
   const [mobileCartExpanded, setMobileCartExpanded] = useState(false);
+  const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
 
   // 倒计时状态（秒）
   const [countdownSeconds, setCountdownSeconds] = useState<number>(0);
@@ -653,6 +672,7 @@ const PublicBooking: React.FC = () => {
       customerPhone: customerInfo.phone,  // 纯电话号码（不含国家代码）
       customerCountryCode: countryCode,   // 国家码（如 "+1-CA"）
       customerEmail: customerInfo.email,
+      notes: bookingNote || undefined,  // 预约备注
     };
 
     try {
@@ -1136,45 +1156,44 @@ const PublicBooking: React.FC = () => {
                 </Box>
 
                 {/* 操作按钮 */}
-                <Box sx={{ p: 3, pt: 1, display: 'flex', gap: 2 }}>
+                <Box sx={{ p: 3, pt: 1 }}>
                   {canCancelBooking ? (
-                    <>
-                      <Button
-                        variant="outlined"
-                        fullWidth
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography
                         onClick={() => window.history.back()}
                         sx={{
-                          py: 1.5,
-                          borderRadius: 2,
-                          borderColor: '#ddd',
-                          color: '#666',
-                          textTransform: 'none',
-                          '&:hover': { borderColor: '#999', bgcolor: '#fafafa' },
+                          fontSize: '0.8125rem',
+                          color: '#999',
+                          cursor: 'pointer',
+                          '&:hover': { color: '#666' },
                         }}
                       >
                         {t('publicBooking.goBack')}
-                      </Button>
+                      </Typography>
                       <Button
                         variant="contained"
-                        fullWidth
                         onClick={handleCancelBooking}
                         disabled={cancelLoading}
                         sx={{
-                          py: 1.5,
-                          borderRadius: 2,
+                          py: 1,
+                          px: 3,
+                          borderRadius: 1.5,
                           bgcolor: '#d32f2f',
+                          fontSize: '0.8125rem',
+                          fontWeight: 500,
                           textTransform: 'none',
-                          '&:hover': { bgcolor: '#b71c1c' },
+                          boxShadow: 'none',
+                          '&:hover': { bgcolor: '#b71c1c', boxShadow: 'none' },
                           '&:disabled': { bgcolor: '#e57373' },
                         }}
                       >
                         {cancelLoading ? (
-                          <CircularProgress size={20} sx={{ color: '#fff' }} />
+                          <CircularProgress size={16} sx={{ color: '#fff' }} />
                         ) : (
                           t('publicBooking.confirmCancel')
                         )}
                       </Button>
-                    </>
+                    </Box>
                   ) : (
                     <Alert severity="warning" sx={{ width: '100%' }}>
                       {cancelBookingInfo.status === 'CANCELLED'
@@ -1403,6 +1422,27 @@ const PublicBooking: React.FC = () => {
                   t('publicBooking.next')
                 )}
               </Button>
+
+              {/* 取消/改期政策提示 - 仅在结账步骤显示 */}
+              {activeStep === 3 && (merchantInfo?.allowCustomerCancel || merchantInfo?.allowCustomerReschedule) && (
+                <Box
+                  onClick={() => setPolicyDialogOpen(true)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.5,
+                    mt: 1.5,
+                    cursor: 'pointer',
+                    '&:hover': { opacity: 0.7 },
+                  }}
+                >
+                  <InfoIcon sx={{ fontSize: 14, color: '#999' }} />
+                  <Typography sx={{ fontSize: 12, color: '#999' }}>
+                    {t('publicBooking.viewCancelPolicy')}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </>
         )}
@@ -1468,9 +1508,7 @@ const PublicBooking: React.FC = () => {
             )}
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a' }}>
-                {selectedServices.length > 1
-                  ? `${selectedServices[0].name} +${selectedServices.length - 1}`
-                  : selectedServices[0].name}
+                {t('publicBooking.selectedServices', { count: selectedServices.length })}
               </Typography>
               <Typography sx={{ fontSize: 13, color: '#666' }}>
                 {formatPrice(totalPrice)} · {formatDuration(totalDuration, t)}
@@ -1514,64 +1552,217 @@ const PublicBooking: React.FC = () => {
             )}
           </Button>
         </Box>
+
+        {/* 取消/改期政策提示 - 仅在结账步骤显示 */}
+        {activeStep === 3 && (merchantInfo?.allowCustomerCancel || merchantInfo?.allowCustomerReschedule) && (
+          <Box
+            onClick={() => setPolicyDialogOpen(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              pb: 2,
+              cursor: 'pointer',
+              '&:hover': { opacity: 0.7 },
+            }}
+          >
+            <InfoIcon sx={{ fontSize: 14, color: '#999' }} />
+            <Typography sx={{ fontSize: 12, color: '#999' }}>
+              {t('publicBooking.viewCancelPolicy')}
+            </Typography>
+          </Box>
+        )}
       </Box>
     );
   };
 
   // ==================== 服务选择页面 ====================
-  const renderServiceSelection = () => (
-    <Box>
-      {/* 标题 */}
-      <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a', mb: 3 }}>
-        {selectedServices.length > 0
-          ? t('publicBooking.addMoreServices')
-          : t('publicBooking.selectService')}
-      </Typography>
+  const renderServiceSelection = () => {
+    // 获取所有分类
+    const categories = ['all', ...Array.from(new Set(services.map(s => s.categoryName).filter(Boolean))) as string[]];
 
-      {/* 服务列表 */}
-      {services.map((service, index) => {
-        const isSelected = selectedServices.some(s => s.id === service.id);
-        return (
-          <Box
-            key={service.id}
-            onClick={() => toggleService(service)}
-            sx={{
-              py: 2.5,
-              px: 2,
-              mx: -2,
-              cursor: 'pointer',
-              borderBottom: index < services.length - 1 ? '1px solid #e5e5e5' : 'none',
-              borderRadius: 2,
-              transition: 'background-color 0.2s',
-              '&:hover': {
-                bgcolor: 'rgba(0,0,0,0.04)',
-              },
-            }}
-          >
-            <Typography sx={{ fontSize: 16, fontWeight: 500, color: '#1a1a1a', mb: 0.5 }}>
-              {service.name}
-            </Typography>
-            {service.description && (
-              <Typography sx={{ fontSize: 14, color: '#666', mb: 0.5 }}>
-                {service.description}
-              </Typography>
-            )}
-            <Typography sx={{ fontSize: 14, color: '#666', mb: isSelected ? 1 : 0 }}>
-              {formatPrice(service.price)} · {formatDuration(service.duration, t)}
-            </Typography>
-            {isSelected && (
-              <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
-                <CheckIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                <Typography sx={{ fontSize: 13, fontWeight: 500 }}>
-                  {t('publicBooking.added')}
-                </Typography>
+    // 根据选中分类过滤服务
+    const filteredServices = selectedCategory === 'all'
+      ? services
+      : services.filter(s => s.categoryName === selectedCategory);
+
+    return (
+      <Box>
+        {/* 标题 */}
+        <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a', mb: 2 }}>
+          {t('publicBooking.selectService')}
+        </Typography>
+
+        {/* 分类Tabs - 移动端用下拉选择，桌面端用Chips */}
+        {categories.length >= 2 && (
+          isMobile ? (
+            <Box sx={{ mb: 3 }}>
+              <TextField
+                select
+                fullWidth
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    '& fieldset': { borderColor: 'transparent' },
+                    '&:hover fieldset': { borderColor: '#ddd' },
+                    '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: 1 },
+                  },
+                  '& .MuiSelect-select': {
+                    py: 1.5,
+                    fontSize: 14,
+                    fontWeight: 500,
+                  },
+                }}
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      sx: {
+                        borderRadius: 2,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                        mt: 0.5,
+                        maxHeight: 280,
+                      }
+                    }
+                  }
+                }}
+              >
+                {categories.map((cat) => (
+                  <MenuItem
+                    key={cat}
+                    value={cat}
+                    sx={{
+                      py: 1.25,
+                      px: 2,
+                      fontSize: 14,
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                      '&.Mui-selected': {
+                        bgcolor: 'rgba(26, 26, 26, 0.08) !important',
+                        '&:hover': { bgcolor: 'rgba(26, 26, 26, 0.12) !important' },
+                      },
+                      '&.Mui-focusVisible': {
+                        bgcolor: 'rgba(0,0,0,0.04)',
+                      },
+                    }}
+                  >
+                    {cat === 'all' ? t('publicBooking.allServices') : cat}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          ) : (
+            <Box sx={{
+              display: 'flex',
+              gap: 1,
+              mb: 3,
+              flexWrap: 'wrap',
+            }}>
+              {categories.map((cat) => (
+                <Chip
+                  key={cat}
+                  label={cat === 'all' ? t('publicBooking.allServices') : cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  sx={{
+                    px: 1,
+                    borderRadius: '20px',
+                    bgcolor: selectedCategory === cat ? '#1a1a1a' : '#f5f5f5',
+                    color: selectedCategory === cat ? '#fff' : '#666',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: 'none',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: selectedCategory === cat ? '#333' : '#e8e8e8',
+                    },
+                  }}
+                />
+              ))}
+            </Box>
+          )
+        )}
+
+        {/* 服务列表 */}
+        {filteredServices.map((service, index) => {
+          const isSelected = selectedServices.some(s => s.id === service.id);
+          const isPopular = service.isPopular === true;
+          return (
+            <Box
+              key={service.id}
+              onClick={() => toggleService(service)}
+              sx={{
+                py: 2.5,
+                px: 2,
+                mx: -2,
+                cursor: 'pointer',
+                borderBottom: index < filteredServices.length - 1 ? '1px solid #e5e5e5' : 'none',
+                borderRadius: 2,
+                transition: 'all 0.2s ease',
+                bgcolor: isSelected ? 'rgba(26, 26, 26, 0.03)' : 'transparent',
+                '&:hover': {
+                  bgcolor: isSelected ? 'rgba(26, 26, 26, 0.05)' : 'rgba(0,0,0,0.03)',
+                  transform: 'translateX(4px)',
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 500, color: '#1a1a1a' }}>
+                      {service.name}
+                    </Typography>
+                    {isPopular && merchantInfo?.showPopularServices !== false && (
+                      <Chip
+                        label={t('publicBooking.popular')}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          background: 'linear-gradient(135deg, #ff4757 0%, #ff6b35 100%)',
+                          color: '#fff',
+                          '& .MuiChip-label': { px: 1 },
+                        }}
+                      />
+                    )}
+                  </Box>
+                  {service.description && (
+                    <Typography sx={{ fontSize: 13, color: '#888', mb: 0.5, lineHeight: 1.4 }}>
+                      {service.description}
+                    </Typography>
+                  )}
+                  <Typography sx={{ fontSize: 14, color: '#666', fontWeight: 500 }}>
+                    {formatPrice(service.price)} · {formatDuration(service.duration, t)}
+                  </Typography>
+                </Box>
+                {/* 选中状态指示器 */}
+                <Box
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    border: isSelected ? 'none' : '2px solid #ddd',
+                    bgcolor: isSelected ? '#1a1a1a' : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    mt: 0.5,
+                  }}
+                >
+                  {isSelected && <CheckIcon sx={{ fontSize: 14, color: '#fff' }} />}
+                </Box>
               </Box>
-            )}
-          </Box>
-        );
-      })}
-    </Box>
-  );
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  };
 
   // ==================== 员工选择页面 ====================
   const renderStaffSelection = () => (
@@ -1584,119 +1775,124 @@ const PublicBooking: React.FC = () => {
       )}
 
       {/* 标题 */}
-      <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a', mb: 3 }}>
+      <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
         {t('publicBooking.selectStaff')}
       </Typography>
+      <Typography sx={{ fontSize: 14, color: '#666', mb: 3 }}>
+        {t('publicBooking.selectStaffSubtitle')}
+      </Typography>
 
-      {/* 员工列表 */}
-      <Box>
+      {/* 员工卡片网格 */}
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: 2,
+      }}>
         {/* 任意员工选项 */}
         <Box
           onClick={() => setSelectedStaff(null)}
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            py: 2,
-            px: 2,
-            mx: -2,
+            p: 2.5,
             cursor: 'pointer',
-            borderBottom: '1px solid #e5e5e5',
-            borderRadius: 2,
-            transition: 'background-color 0.2s',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+            borderRadius: 3,
+            border: selectedStaff === null ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
+            bgcolor: selectedStaff === null ? 'rgba(26, 26, 26, 0.02)' : '#fff',
+            transition: 'all 0.25s ease',
+            '&:hover': {
+              borderColor: '#999',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            },
           }}
         >
-          <Avatar
-            sx={{
-              width: 48,
-              height: 48,
-              bgcolor: '#f5f5f5',
-              color: '#666',
-              mr: 2,
-            }}
-          >
-            <PeopleIcon />
-          </Avatar>
-          <Typography sx={{ fontSize: 16, fontWeight: 500, color: '#1a1a1a', flex: 1 }}>
-            {t('publicBooking.anyStaff')}
-          </Typography>
-          <Box
-            sx={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              border: selectedStaff === null ? '2px solid #1a1a1a' : '2px solid #ccc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              sx={{
+                width: 56,
+                height: 56,
+                bgcolor: '#f0f0f0',
+                color: '#666',
+              }}
+            >
+              <PeopleIcon sx={{ fontSize: 28 }} />
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', mb: 0.5 }}>
+                {t('publicBooking.anyStaff')}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: '#888' }}>
+                {t('publicBooking.anyStaffDesc')}
+              </Typography>
+            </Box>
             {selectedStaff === null && (
-              <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#1a1a1a' }} />
+              <CheckCircleIcon sx={{ color: '#1a1a1a', fontSize: 24 }} />
             )}
           </Box>
         </Box>
 
-        {/* 具体员工 - 根据选中的服务过滤 */}
-        {filteredStaff.map((member, index) => (
+        {/* 具体员工卡片 */}
+        {filteredStaff.map((member) => (
           <Box
             key={member.id}
             onClick={() => setSelectedStaff(member)}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              py: 2,
-              px: 2,
-              mx: -2,
+              p: 2.5,
               cursor: 'pointer',
-              borderBottom: index < filteredStaff.length - 1 ? '1px solid #e5e5e5' : 'none',
-              borderRadius: 2,
-              transition: 'background-color 0.2s',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+              borderRadius: 3,
+              border: selectedStaff?.id === member.id ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
+              bgcolor: selectedStaff?.id === member.id ? 'rgba(26, 26, 26, 0.02)' : '#fff',
+              transition: 'all 0.25s ease',
+              '&:hover': {
+                borderColor: '#999',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              },
             }}
           >
-            <Avatar
-              src={merchantInfo?.showTechnicianPhotos !== false ? getAvatarUrl(member.avatar) : undefined}
-              sx={{
-                width: 48,
-                height: 48,
-                mr: 2,
-                fontSize: 16,
-                fontWeight: 600,
-                bgcolor: '#e0e0e0',
-                '& img': {
-                  transition: 'opacity 0.3s ease-in-out',
-                },
-              }}
-              imgProps={{
-                loading: 'eager',
-              }}
-            >
-              {getInitials(member.name)}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: 16, fontWeight: 500, color: '#1a1a1a' }}>
-                {member.name}
-              </Typography>
-              {member.position && (
-                <Typography sx={{ fontSize: 13, color: '#666' }}>
-                  {member.position}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+              <Avatar
+                src={merchantInfo?.showTechnicianPhotos !== false ? getAvatarUrl(member.avatar) : undefined}
+                sx={{
+                  width: 56,
+                  height: 56,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  bgcolor: '#e8e8e8',
+                  '& img': { transition: 'opacity 0.3s ease-in-out' },
+                }}
+                imgProps={{ loading: 'eager' }}
+              >
+                {getInitials(member.name)}
+              </Avatar>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', mb: 0.25 }}>
+                  {member.name}
                 </Typography>
-              )}
-            </Box>
-            <Box
-              sx={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                border: selectedStaff?.id === member.id ? '2px solid #1a1a1a' : '2px solid #ccc',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+                {member.position && (
+                  <Typography sx={{ fontSize: 13, color: '#666', mb: 1 }}>
+                    {member.position}
+                  </Typography>
+                )}
+                {/* 资深标签 - 有EXPERT/MASTER级别技能的员工显示 */}
+                {member.isSenior && (
+                  <Box sx={{ mt: 0.5 }}>
+                    <Chip
+                      label={t('publicBooking.seniorStaff')}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: 10,
+                        bgcolor: '#fff3e0',
+                        color: '#e65100',
+                        fontWeight: 600,
+                        '& .MuiChip-label': { px: 0.75 },
+                      }}
+                    />
+                  </Box>
+                )}
+              </Box>
               {selectedStaff?.id === member.id && (
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#1a1a1a' }} />
+                <CheckCircleIcon sx={{ color: '#1a1a1a', fontSize: 24, flexShrink: 0 }} />
               )}
             </Box>
           </Box>
@@ -1748,6 +1944,10 @@ const PublicBooking: React.FC = () => {
           {weekDays.map((day) => {
             const isDisabled = isDateDisabled(day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const dateStr = format(day, 'yyyy-MM-dd');
+            const daySlots = weekAvailability[dateStr] || [];
+            const slotsCount = daySlots.length;
+            const isLimitedAvailability = slotsCount > 0 && slotsCount <= 3;
 
             return (
               <Box
@@ -1763,9 +1963,11 @@ const PublicBooking: React.FC = () => {
                   bgcolor: isSelected ? '#1a1a1a' : 'transparent',
                   border: isSelected ? 'none' : '1px solid transparent',
                   opacity: isDisabled ? 0.3 : 1,
-                  transition: 'background-color 0.2s',
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
                   '&:hover': {
                     bgcolor: isDisabled ? 'transparent' : isSelected ? '#1a1a1a' : '#f5f5f5',
+                    transform: isDisabled ? 'none' : 'scale(1.05)',
                   },
                 }}
               >
@@ -1775,6 +1977,40 @@ const PublicBooking: React.FC = () => {
                 <Typography sx={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#fff' : '#1a1a1a' }}>
                   {format(day, 'd')}
                 </Typography>
+                {/* 可用性提示 */}
+                {!isDisabled && slotsCount > 0 && (
+                  <Box sx={{
+                    mt: 0.5,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 0.25,
+                  }}>
+                    {isLimitedAvailability ? (
+                      <Typography sx={{
+                        fontSize: 9,
+                        color: isSelected ? 'rgba(255,255,255,0.8)' : '#f59e0b',
+                        fontWeight: 600,
+                      }}>
+                        {t('publicBooking.limitedSlots', { count: slotsCount })}
+                      </Typography>
+                    ) : (
+                      <>
+                        {[...Array(Math.min(3, Math.ceil(slotsCount / 4)))].map((_, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              width: 4,
+                              height: 4,
+                              borderRadius: '50%',
+                              bgcolor: isSelected ? 'rgba(255,255,255,0.6)' : '#22c55e',
+                            }}
+                          />
+                        ))}
+                      </>
+                    )}
+                  </Box>
+                )}
               </Box>
             );
           })}
@@ -1801,6 +2037,43 @@ const PublicBooking: React.FC = () => {
               {format(selectedDate, isZh ? 'yyyy年M月d日 EEEE' : 'EEEE, MMMM d, yyyy', { locale })}
             </Typography>
 
+            {/* 时间偏好快捷选项 */}
+            {Array.isArray(timeSlots) && timeSlots.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography sx={{ fontSize: 13, color: '#888', mb: 1.5 }}>
+                  {t('publicBooking.timePreference')}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'any', label: t('publicBooking.anyTime'), icon: '⏰' },
+                    { key: 'morning', label: t('publicBooking.preferMorning'), icon: '🌅' },
+                    { key: 'afternoon', label: t('publicBooking.preferAfternoon'), icon: '☀️' },
+                    { key: 'evening', label: t('publicBooking.preferEvening'), icon: '🌙' },
+                  ].map((pref) => (
+                    <Chip
+                      key={pref.key}
+                      label={`${pref.icon} ${pref.label}`}
+                      onClick={() => setTimePreference(pref.key as typeof timePreference)}
+                      sx={{
+                        px: 1,
+                        py: 2,
+                        borderRadius: '20px',
+                        bgcolor: timePreference === pref.key ? '#1a1a1a' : '#f5f5f5',
+                        color: timePreference === pref.key ? '#fff' : '#666',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        border: 'none',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: timePreference === pref.key ? '#333' : '#e8e8e8',
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
+
             {/* 时间段 */}
             {!Array.isArray(timeSlots) || timeSlots.length === 0 ? (
               <Typography sx={{ color: '#666', py: 2 }}>
@@ -1808,102 +2081,107 @@ const PublicBooking: React.FC = () => {
               </Typography>
             ) : (
               <>
-                {/* 上午 */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#666', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {t('publicBooking.morning')}
-                  </Typography>
-                  {morning.length === 0 ? (
-                    <Typography sx={{ fontSize: 14, color: '#999' }}>{t('publicBooking.noAvailability')}</Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {morning.map((slot) => {
-                        const available = isSlotAvailable(slot);
-                        const timeStr = String(slot.startTime);
-                        return (
-                          <Button
-                            key={timeStr}
-                            onClick={() => available && setSelectedTime(timeStr)}
-                            disabled={!available}
-                            sx={{
-                              minWidth: 100,
-                              py: 1.25,
-                              borderRadius: 2,
-                              border: selectedTime === timeStr ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
-                              bgcolor: selectedTime === timeStr ? '#f5f5f5' : '#fff',
-                              color: '#1a1a1a',
-                              fontSize: 14,
-                              fontWeight: 500,
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: '#f5f5f5', borderColor: '#ccc' },
-                              '&:disabled': { bgcolor: '#fafafa', color: '#ccc', borderColor: '#eee' },
-                            }}
-                          >
-                            {formatTimeDisplay(timeStr)}
-                          </Button>
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
+                {/* 上午 - 根据时间偏好显示/隐藏 */}
+                {(timePreference === 'any' || timePreference === 'morning') && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#666', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('publicBooking.morning')}
+                    </Typography>
+                    {morning.length === 0 ? (
+                      <Typography sx={{ fontSize: 14, color: '#999' }}>{t('publicBooking.noAvailability')}</Typography>
+                    ) : (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {morning.map((slot) => {
+                          const available = isSlotAvailable(slot);
+                          const timeStr = String(slot.startTime);
+                          return (
+                            <Button
+                              key={timeStr}
+                              onClick={() => available && setSelectedTime(timeStr)}
+                              disabled={!available}
+                              sx={{
+                                minWidth: 100,
+                                py: 1.25,
+                                borderRadius: 2,
+                                border: selectedTime === timeStr ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
+                                bgcolor: selectedTime === timeStr ? '#f5f5f5' : '#fff',
+                                color: '#1a1a1a',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#f5f5f5', borderColor: '#ccc' },
+                                '&:disabled': { bgcolor: '#fafafa', color: '#ccc', borderColor: '#eee' },
+                              }}
+                            >
+                              {formatTimeDisplay(timeStr)}
+                            </Button>
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </Box>
+                )}
 
-                {/* 下午 */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#666', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {t('publicBooking.afternoon')}
-                  </Typography>
-                  {afternoon.length === 0 ? (
-                    <Typography sx={{ fontSize: 14, color: '#999' }}>{t('publicBooking.noAvailability')}</Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {afternoon.map((slot) => {
-                        const available = isSlotAvailable(slot);
-                        const timeStr = String(slot.startTime);
-                        return (
-                          <Button
-                            key={timeStr}
-                            onClick={() => available && setSelectedTime(timeStr)}
-                            disabled={!available}
-                            sx={{
-                              minWidth: 100,
-                              py: 1.25,
-                              borderRadius: 2,
-                              border: selectedTime === timeStr ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
-                              bgcolor: selectedTime === timeStr ? '#f5f5f5' : '#fff',
-                              color: '#1a1a1a',
-                              fontSize: 14,
-                              fontWeight: 500,
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: '#f5f5f5', borderColor: '#ccc' },
-                              '&:disabled': { bgcolor: '#fafafa', color: '#ccc', borderColor: '#eee' },
-                            }}
-                          >
-                            {formatTimeDisplay(timeStr)}
-                          </Button>
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
+                {/* 下午 - 根据时间偏好显示/隐藏 */}
+                {(timePreference === 'any' || timePreference === 'afternoon') && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#666', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('publicBooking.afternoon')}
+                    </Typography>
+                    {afternoon.length === 0 ? (
+                      <Typography sx={{ fontSize: 14, color: '#999' }}>{t('publicBooking.noAvailability')}</Typography>
+                    ) : (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {afternoon.map((slot) => {
+                          const available = isSlotAvailable(slot);
+                          const timeStr = String(slot.startTime);
+                          return (
+                            <Button
+                              key={timeStr}
+                              onClick={() => available && setSelectedTime(timeStr)}
+                              disabled={!available}
+                              sx={{
+                                minWidth: 100,
+                                py: 1.25,
+                                borderRadius: 2,
+                                border: selectedTime === timeStr ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
+                                bgcolor: selectedTime === timeStr ? '#f5f5f5' : '#fff',
+                                color: '#1a1a1a',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#f5f5f5', borderColor: '#ccc' },
+                                '&:disabled': { bgcolor: '#fafafa', color: '#ccc', borderColor: '#eee' },
+                              }}
+                            >
+                              {formatTimeDisplay(timeStr)}
+                            </Button>
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </Box>
+                )}
 
-                {/* 晚上 */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#666', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {t('publicBooking.evening')}
-                  </Typography>
-                  {evening.length === 0 ? (
-                    <Typography sx={{ fontSize: 14, color: '#999' }}>{t('publicBooking.noAvailability')}</Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {evening.map((slot) => {
-                        const available = isSlotAvailable(slot);
-                        const timeStr = String(slot.startTime);
-                        return (
-                          <Button
-                            key={timeStr}
-                            onClick={() => available && setSelectedTime(timeStr)}
-                            disabled={!available}
-                            sx={{
+                {/* 晚上 - 根据时间偏好显示/隐藏 */}
+                {(timePreference === 'any' || timePreference === 'evening') && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#666', mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {t('publicBooking.evening')}
+                    </Typography>
+                    {evening.length === 0 ? (
+                      <Typography sx={{ fontSize: 14, color: '#999' }}>{t('publicBooking.noAvailability')}</Typography>
+                    ) : (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {evening.map((slot) => {
+                          const available = isSlotAvailable(slot);
+                          const timeStr = String(slot.startTime);
+                          return (
+                            <Button
+                              key={timeStr}
+                              onClick={() => available && setSelectedTime(timeStr)}
+                              disabled={!available}
+                              sx={{
                               minWidth: 100,
                               py: 1.25,
                               borderRadius: 2,
@@ -1924,6 +2202,7 @@ const PublicBooking: React.FC = () => {
                     </Box>
                   )}
                 </Box>
+                )}
               </>
             )}
           </>
@@ -1942,34 +2221,11 @@ const PublicBooking: React.FC = () => {
         </IconButton>
       )}
 
-      {/* 标题和倒计时 */}
+      {/* 标题 */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a', mb: 2 }}>
+        <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a' }}>
           {t('publicBooking.checkout')}
         </Typography>
-        {/* 极简倒计时显示 */}
-        <Box sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 1.5,
-        }}>
-          <Typography sx={{
-            fontSize: 28,
-            fontWeight: 300,
-            color: countdownSeconds < 120 ? '#DC2626' : '#1a1a1a',
-            fontFamily: 'SF Mono, Monaco, Consolas, monospace',
-            letterSpacing: '-0.5px',
-          }}>
-            {formatCountdown(countdownSeconds)}
-          </Typography>
-          <Typography sx={{
-            fontSize: 13,
-            color: '#999',
-            letterSpacing: '0.3px',
-          }}>
-            {t('publicBooking.held')}
-          </Typography>
-        </Box>
       </Box>
 
       {/* 移动端预约摘要 */}
@@ -2160,66 +2416,33 @@ const PublicBooking: React.FC = () => {
         )}
       </Box>
 
-      {/* 地点选择 */}
-      <Box>
+      {/* 预约备注 (可选) */}
+      <Box sx={{ mb: 4 }}>
         <Typography sx={{ fontSize: 16, fontWeight: 500, color: '#1a1a1a', mb: 2 }}>
-          {t('publicBooking.appointmentLocation')}
+          {t('publicBooking.specialRequests')}
+          <Typography component="span" sx={{ fontSize: 14, color: '#999', fontWeight: 400, ml: 1 }}>
+            ({t('publicBooking.optional')})
+          </Typography>
         </Typography>
-
-        <Box
+        <TextField
+          fullWidth
+          multiline
+          rows={2}
+          placeholder={t('publicBooking.specialRequestsPlaceholder')}
+          value={bookingNote}
+          onChange={(e) => setBookingNote(e.target.value)}
+          inputProps={{ maxLength: 500 }}
           sx={{
-            p: 2,
-            border: '1px solid #e5e5e5',
-            borderRadius: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            transition: 'border-color 0.2s',
-            '&:hover': { borderColor: '#ccc' },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              '& fieldset': { borderColor: '#e5e5e5' },
+              '&:hover fieldset': { borderColor: '#ccc' },
+              '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: 1 },
+            },
           }}
-        >
-          <Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a' }}>
-              {merchantInfo?.merchantName}
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: '#666' }}>
-              {merchantInfo?.address}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              bgcolor: '#1a1a1a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#fff' }} />
-          </Box>
-        </Box>
+        />
       </Box>
 
-      {/* 取消/改期政策提示 */}
-      {(merchantInfo?.allowCustomerCancel || merchantInfo?.allowCustomerReschedule) && (
-        <Box sx={{ mt: 3, p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid #f0f0f0' }}>
-          <Typography sx={{ fontSize: 12, color: '#666', lineHeight: 1.6 }}>
-            {merchantInfo?.allowCustomerCancel && merchantInfo?.cancelDeadlineHours && (
-              <>
-                {t('publicBooking.cancelPolicyNotice', { hours: merchantInfo.cancelDeadlineHours })}
-              </>
-            )}
-            {merchantInfo?.allowCustomerCancel && merchantInfo?.allowCustomerReschedule && ' · '}
-            {merchantInfo?.allowCustomerReschedule && merchantInfo?.rescheduleDeadlineHours && (
-              <>
-                {t('publicBooking.reschedulePolicyNotice', { hours: merchantInfo.rescheduleDeadlineHours })}
-              </>
-            )}
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 
@@ -2311,6 +2534,29 @@ const PublicBooking: React.FC = () => {
         </Box>
       </Box>
 
+      {/* 继续预约按钮 */}
+      <Box sx={{ mt: 4, textAlign: 'center' }}>
+        <Button
+          variant="contained"
+          onClick={() => window.location.reload()}
+          sx={{
+            borderRadius: 2,
+            bgcolor: '#1a1a1a',
+            color: '#fff',
+            textTransform: 'none',
+            px: 4,
+            py: 1.25,
+            fontSize: 14,
+            fontWeight: 500,
+            '&:hover': {
+              bgcolor: '#333',
+            },
+          }}
+        >
+          {t('publicBooking.bookAnother')}
+        </Button>
+      </Box>
+
       {/* 倒计时提示 */}
       <Typography sx={{ fontSize: 13, color: '#999', mt: 4 }}>
         {t('publicBooking.pageRefreshIn', { seconds: confirmationCountdown })}
@@ -2321,8 +2567,17 @@ const PublicBooking: React.FC = () => {
 
   // ==================== 主渲染 ====================
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
-      {/* 顶部导航栏 */}
+    <Box sx={{
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg, #fafbfc 0%, #ffffff 20%, #ffffff 80%, #f8f9fa 100%)',
+      position: 'relative',
+      // 禁用移动端点击蓝色高亮
+      WebkitTapHighlightColor: 'transparent',
+      '& *': {
+        WebkitTapHighlightColor: 'transparent',
+      },
+    }}>
+      {/* 顶部导航栏 - 玻璃态效果 */}
       <Box
         sx={{
           px: 3,
@@ -2330,8 +2585,13 @@ const PublicBooking: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: '#fafafa',
+          borderBottom: '1px solid rgba(0,0,0,0.05)',
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
         }}
       >
         <Box
@@ -2457,6 +2717,76 @@ const PublicBooking: React.FC = () => {
           <span style={{ fontWeight: 500, color: '#888' }}>Swiftmind</span>
         </Typography>
       </Box>
+
+      {/* 取消/改期政策弹窗 */}
+      <Dialog
+        open={policyDialogOpen}
+        onClose={() => setPolicyDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            mx: 2,
+          },
+        }}
+      >
+        <Box sx={{ position: 'relative' }}>
+          <IconButton
+            onClick={() => setPolicyDialogOpen(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: '#999',
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+          <DialogContent sx={{ pt: 4, pb: 3, px: 3 }}>
+            <Typography sx={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', mb: 2, textAlign: 'center' }}>
+              {t('publicBooking.policyTitle')}
+            </Typography>
+
+            {/* 取消政策 */}
+            {merchantInfo?.allowCustomerCancel && (
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', mb: 0.5 }}>
+                  {t('publicBooking.cancelPolicyTitle')}
+                </Typography>
+                <Typography sx={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
+                  {merchantInfo?.cancelDeadlineHours
+                    ? t('publicBooking.cancelPolicyDetail', { hours: merchantInfo.cancelDeadlineHours })
+                    : t('publicBooking.cancelPolicyNoDeadline')
+                  }
+                </Typography>
+              </Box>
+            )}
+
+            {/* 改期政策 */}
+            {merchantInfo?.allowCustomerReschedule && (
+              <Box>
+                <Typography sx={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', mb: 0.5 }}>
+                  {t('publicBooking.reschedulePolicyTitle')}
+                </Typography>
+                <Typography sx={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
+                  {merchantInfo?.rescheduleDeadlineHours
+                    ? t('publicBooking.reschedulePolicyDetail', { hours: merchantInfo.rescheduleDeadlineHours })
+                    : t('publicBooking.reschedulePolicyNoDeadline')
+                  }
+                </Typography>
+              </Box>
+            )}
+
+            {/* 如果都不允许 */}
+            {!merchantInfo?.allowCustomerCancel && !merchantInfo?.allowCustomerReschedule && (
+              <Typography sx={{ fontSize: 13, color: '#666', textAlign: 'center' }}>
+                {t('publicBooking.noCancelReschedule')}
+              </Typography>
+            )}
+          </DialogContent>
+        </Box>
+      </Dialog>
     </Box>
   );
 };

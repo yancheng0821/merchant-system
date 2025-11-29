@@ -95,7 +95,8 @@ public class NotificationProcessor {
             notificationLog.setContent(content);
 
             // 发送邮件（日历按钮链接已嵌入邮件模板中，无需附件）
-            boolean sent = emailService.sendEmail(request.getRecipient().getEmail(), subject, content);
+            // 如果请求中指定了fromName（如商户名称），使用它；否则使用系统默认
+            boolean sent = emailService.sendEmail(request.getRecipient().getEmail(), subject, content, request.getFromName());
 
             // 更新状态
             if (sent) {

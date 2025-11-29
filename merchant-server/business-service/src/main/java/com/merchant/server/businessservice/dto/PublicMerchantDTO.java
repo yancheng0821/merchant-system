@@ -35,6 +35,7 @@ public class PublicMerchantDTO {
     private Boolean onlineBookingEnabled;
     private String brandColor;
     private Boolean showTechnicianPhotos;
+    private Boolean showPopularServices;
     private String welcomeMessage;
     private Integer minAdvanceHours;
     private Integer maxAdvanceDays;

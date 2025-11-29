@@ -45,6 +45,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
+import { useTheme } from '../../contexts/ThemeContext';
 import AddOrderDialog from './components/AddOrderDialog';
 import OrderDetailsDialog from './components/OrderDetailsDialog';
 import PaymentDialog from './components/PaymentDialog';
@@ -95,6 +96,11 @@ export interface OrderService {
 const OrderManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
+  const { themeMode } = useTheme();
+
+  // 根据主题模式设置主题色
+  const isMonochrome = themeMode === 'monochrome';
+  const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#3B82F6';
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -523,79 +529,92 @@ const OrderManagement: React.FC = () => {
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
+                size="small"
                 placeholder={t('orders.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#10B981',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#10B981',
+                      borderColor: THEME_COLOR,
                     },
                   },
                 }}
               />
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                                    <InputLabel sx={{ color: 'text.secondary' }}>{t('filters.orderStatus')}</InputLabel>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('filters.orderStatus')}</InputLabel>
                 <Select
                   value={statusFilter}
-                                      label={t('filters.orderStatus')}
+                  label={t('filters.orderStatus')}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#10B981',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#10B981',
+                      borderColor: THEME_COLOR,
                     },
                   }}
                 >
-                                      <MenuItem value="all">{t('filters.allStatuses')}</MenuItem>
-                    <MenuItem value="draft">{t('status.draft')}</MenuItem>
-                    <MenuItem value="confirmed">{t('status.confirmed')}</MenuItem>
-                    <MenuItem value="in_progress">{t('status.inProgress')}</MenuItem>
-                    <MenuItem value="completed">{t('status.completed')}</MenuItem>
-                    <MenuItem value="cancelled">{t('status.cancelled')}</MenuItem>
+                  <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('filters.allStatuses')}</MenuItem>
+                  <MenuItem value="draft" sx={{ fontSize: '0.875rem' }}>{t('status.draft')}</MenuItem>
+                  <MenuItem value="confirmed" sx={{ fontSize: '0.875rem' }}>{t('status.confirmed')}</MenuItem>
+                  <MenuItem value="in_progress" sx={{ fontSize: '0.875rem' }}>{t('status.inProgress')}</MenuItem>
+                  <MenuItem value="completed" sx={{ fontSize: '0.875rem' }}>{t('status.completed')}</MenuItem>
+                  <MenuItem value="cancelled" sx={{ fontSize: '0.875rem' }}>{t('status.cancelled')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                                    <InputLabel sx={{ color: 'text.secondary' }}>{t('filters.paymentStatus')}</InputLabel>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('filters.paymentStatus')}</InputLabel>
                 <Select
                   value={paymentFilter}
-                                      label={t('filters.paymentStatus')}
+                  label={t('filters.paymentStatus')}
                   onChange={(e) => setPaymentFilter(e.target.value)}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#10B981',
+                      borderColor: THEME_COLOR,
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#10B981',
+                      borderColor: THEME_COLOR,
                     },
                   }}
                 >
-                                      <MenuItem value="all">{t('filters.allStatuses')}</MenuItem>
-                    <MenuItem value="pending">{t('status.pending')}</MenuItem>
-                    <MenuItem value="paid">{t('status.paid')}</MenuItem>
-                    <MenuItem value="refunded">{t('status.refunded')}</MenuItem>
-                    <MenuItem value="failed">{t('status.failed')}</MenuItem>
+                  <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('filters.allStatuses')}</MenuItem>
+                  <MenuItem value="pending" sx={{ fontSize: '0.875rem' }}>{t('status.pending')}</MenuItem>
+                  <MenuItem value="paid" sx={{ fontSize: '0.875rem' }}>{t('status.paid')}</MenuItem>
+                  <MenuItem value="refunded" sx={{ fontSize: '0.875rem' }}>{t('status.refunded')}</MenuItem>
+                  <MenuItem value="failed" sx={{ fontSize: '0.875rem' }}>{t('status.failed')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

@@ -218,6 +218,8 @@ public class StaffNotificationService {
             .build();
 
         // 构建NotificationRequest
+        // 员工结账邮件使用商户名称作为发件人显示名称
+        String fromName = variables.get("businessName") != null ? variables.get("businessName").toString() : null;
         NotificationRequest request = NotificationRequest.builder()
             .scene("appointment.checkout.staff")
             .tenantId(tenantId)
@@ -225,6 +227,7 @@ public class StaffNotificationService {
             .channel("EMAIL")
             .variables(variables)
             .businessId(String.valueOf(appointmentId))
+            .fromName(fromName)
             .build();
 
         // 转换为payload
@@ -238,6 +241,7 @@ public class StaffNotificationService {
         payload.put("channel", request.getChannel());
         payload.put("variables", variables);
         payload.put("businessId", String.valueOf(appointmentId));
+        payload.put("fromName", fromName);
 
         // 构建NotificationMessage
         NotificationMessage message = NotificationMessage.builder()
@@ -657,6 +661,7 @@ public class StaffNotificationService {
             notificationVariables.put("totalHours", String.format("%.1f", totalHours));
 
             // 构建 NotificationRequest
+            // 员工每日汇总邮件使用商户名称作为发件人显示名称
             NotificationRequest request = NotificationRequest.builder()
                     .scene("staff.daily.summary")
                     .tenantId(staff.getTenantId())
@@ -667,6 +672,7 @@ public class StaffNotificationService {
                     .channel("EMAIL")
                     .variables(notificationVariables)
                     .businessId(String.valueOf(staff.getId()))
+                    .fromName(merchantName)
                     .build();
 
             // 构建 NotificationMessage payload
@@ -677,6 +683,7 @@ public class StaffNotificationService {
             payload.put("channel", request.getChannel());
             payload.put("variables", request.getVariables());
             payload.put("businessId", request.getBusinessId());
+            payload.put("fromName", request.getFromName());
 
             // 创建通知消息
             NotificationMessage message = NotificationMessage.builder()

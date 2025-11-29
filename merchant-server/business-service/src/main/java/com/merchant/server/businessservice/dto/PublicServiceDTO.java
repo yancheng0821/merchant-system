@@ -26,4 +26,6 @@ public class PublicServiceDTO {
     private String imageUrl;
     private Boolean availableOnline;  // 是否支持在线预约
     private Integer sortOrder;
+    private Integer bookingCount;  // 预约次数（用于判断热门）
+    private Boolean isPopular;  // 是否热门服务
 }

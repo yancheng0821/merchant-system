@@ -296,14 +296,17 @@ const MaterialPurchaseManagement: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: THEME_COLOR,
                     },
@@ -327,7 +330,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                       borderRadius: 1.5,
                       height: 36,
                       px: 2,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       fontWeight: 500,
                       bgcolor: THEME_COLOR,
                       boxShadow: 'none',
@@ -360,31 +363,31 @@ const MaterialPurchaseManagement: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.materials.materialName')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.materials.category')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('costs.materials.quantity')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('costs.materials.unitPrice')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('costs.materials.totalAmount')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.materials.supplier')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.materials.purchaseDate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.materials.statusLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('common.actions')}
                 </TableCell>
               </TableRow>
@@ -418,7 +421,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                     }}
                   >
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8125rem' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
                         {material.materialName}
                       </Typography>
                     </TableCell>
@@ -436,27 +439,27 @@ const MaterialPurchaseManagement: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                         {material.quantity ?? 0} {units.find(u => u.value === material.unit)?.label || material.unit}
                       </Typography>
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
                         {CurrencyUtils.formatAmountWithCommas(Number(material.unitPrice ?? 0))}
                       </Typography>
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem', color: THEME_COLOR }}>
                         {CurrencyUtils.formatAmountWithCommas(Number(material.totalAmount ?? 0))}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
                         {material.supplier || '-'}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                         {material.purchaseDate ? format(new Date(material.purchaseDate), 'yyyy-MM-dd') : '-'}
                       </Typography>
                     </TableCell>
@@ -515,7 +518,7 @@ const MaterialPurchaseManagement: React.FC = () => {
           <MenuItem
             onClick={handleEditFromMenu}
             sx={{
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               py: 1,
               '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) },
             }}
@@ -528,7 +531,7 @@ const MaterialPurchaseManagement: React.FC = () => {
           <MenuItem
             onClick={handleDeleteFromMenu}
             sx={{
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               py: 1,
               '&:hover': { backgroundColor: alpha('#EF4444', 0.08) },
             }}
@@ -605,12 +608,12 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -626,17 +629,17 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {categories.map((cat) => (
-                    <MenuItem key={cat.value} value={cat.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={cat.value} value={cat.value} sx={{ fontSize: '0.875rem' }}>
                       {cat.label}
                     </MenuItem>
                   ))}
@@ -654,12 +657,12 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -676,12 +679,12 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -698,14 +701,14 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       bgcolor: alpha(THEME_COLOR, 0.04),
                     },
                     '& .MuiInputBase-input': {
                       fontWeight: 600,
                       color: THEME_COLOR,
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiFormHelperText-root': { fontSize: '0.7rem' },
                   }}
                 />
@@ -720,12 +723,12 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -742,12 +745,12 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -763,17 +766,17 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {statusOptions.map((status) => (
-                    <MenuItem key={status.value} value={status.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={status.value} value={status.value} sx={{ fontSize: '0.875rem' }}>
                       {status.label}
                     </MenuItem>
                   ))}
@@ -790,17 +793,17 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {units.map((unit) => (
-                    <MenuItem key={unit.value} value={unit.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={unit.value} value={unit.value} sx={{ fontSize: '0.875rem' }}>
                       {unit.label}
                     </MenuItem>
                   ))}
@@ -818,12 +821,12 @@ const MaterialPurchaseManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -838,7 +841,7 @@ const MaterialPurchaseManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               color: '#666',
               textTransform: 'none',
             }}
@@ -852,7 +855,7 @@ const MaterialPurchaseManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               bgcolor: THEME_COLOR,
               textTransform: 'none',
               boxShadow: 'none',
@@ -894,7 +897,7 @@ const MaterialPurchaseManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               color: '#666',
               textTransform: 'none',
             }}
@@ -910,7 +913,7 @@ const MaterialPurchaseManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               textTransform: 'none',
               boxShadow: 'none',
               backgroundColor: '#EF4444',

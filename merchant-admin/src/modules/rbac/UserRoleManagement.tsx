@@ -270,9 +270,16 @@ const UserRoleManagement: React.FC = () => {
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1.5,
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                fontSize: '0.875rem',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(0,0,0,0.12)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: THEME_COLOR,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: THEME_COLOR,
+                },
               },
             }}
           />
@@ -305,22 +312,22 @@ const UserRoleManagement: React.FC = () => {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                       {t('rbac.username')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                       {t('rbac.email')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                       {t('rbac.phone')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                       {t('rbac.status')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                       {t('rbac.currentRoles')}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                       {t('rbac.actions')}
                     </TableCell>
                   </TableRow>
@@ -332,7 +339,7 @@ const UserRoleManagement: React.FC = () => {
                       hover
                       sx={{
                         '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                        '& td': { py: 1.5, fontSize: '0.8125rem' }
+                        '& td': { py: 1.5, fontSize: '0.875rem' }
                       }}
                     >
                       <TableCell>
@@ -351,7 +358,7 @@ const UserRoleManagement: React.FC = () => {
                             {!user.avatarUrl && user.username?.charAt(0).toUpperCase()}
                           </Avatar>
                           <Box>
-                            <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
                               {user.username}
                             </Typography>
                             <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
@@ -361,12 +368,12 @@ const UserRoleManagement: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
                           {user.email}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
                           {user.phone || '-'}
                         </Typography>
                       </TableCell>
@@ -388,7 +395,7 @@ const UserRoleManagement: React.FC = () => {
                               />
                             ))
                           ) : (
-                            <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
+                            <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
                               -
                             </Typography>
                           )}
@@ -450,7 +457,7 @@ const UserRoleManagement: React.FC = () => {
             sx={{
               py: 1,
               px: 1.5,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
               '&.Mui-disabled': { opacity: 0.5 }
             }}
@@ -474,7 +481,7 @@ const UserRoleManagement: React.FC = () => {
             sx={{
               py: 1,
               px: 1.5,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
               '&.Mui-disabled': { opacity: 0.5 }
             }}
@@ -557,7 +564,7 @@ const UserRoleManagement: React.FC = () => {
             sx={{
               textTransform: 'none',
               color: '#666',
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
             }}
           >
             {t('rbac.cancel')}
@@ -571,7 +578,7 @@ const UserRoleManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: THEME_COLOR,
               boxShadow: 'none',

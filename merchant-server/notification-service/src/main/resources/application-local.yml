@@ -33,7 +33,7 @@ notification:
 
     # SES配置
     ses:
-      fromEmail: noreply@vamerchant.app
+      fromEmail: notifications@vamerchant.app
       fromName: VA Merchant System
       configurationSetName:  # 可选，留空即可
 

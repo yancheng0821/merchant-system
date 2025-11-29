@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -16,9 +16,12 @@ import {
   IconButton,
   Chip,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
-  Save as SaveIcon,
   ContentCopy as CopyIcon,
   OpenInNew as OpenInNewIcon,
   CalendarMonth as CalendarIcon,
@@ -29,6 +32,7 @@ import {
   Public as GoogleIcon,
   Storefront as StorefrontIcon,
   Search as SearchIcon,
+  Check as CheckIcon,
 } from '@mui/icons-material';
 import ImageUploader from '../../components/common/ImageUploader';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +56,7 @@ interface OnlineBookingConfig {
   enableWaitlist: boolean;
   showTechnicianPhotos: boolean;
   showTechnicianRatings: boolean;
+  showPopularServices: boolean;
   bookingWidgetColor: string;
   welcomeMessage: string;
   cancellationPolicy: string;
@@ -77,6 +82,7 @@ const defaultConfig: OnlineBookingConfig = {
   enableWaitlist: true,
   showTechnicianPhotos: true,
   showTechnicianRatings: true,
+  showPopularServices: true,
   bookingWidgetColor: '#1a1a1a',
   welcomeMessage: '',
   cancellationPolicy: '', // 将在loadConfig中根据语言设置
@@ -169,13 +175,21 @@ const OnlineBookingTab: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<OnlineBookingConfig>(defaultConfig);
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
     severity: 'success' | 'error' | 'info';
   }>({ open: false, message: '', severity: 'success' });
+
+  // 自动保存相关状态
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const initialConfigRef = useRef<OnlineBookingConfig | null>(null);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializedRef = useRef(false);
+
+  // 重新生成链接确认弹框状态
+  const [openRegenerateDialog, setOpenRegenerateDialog] = useState(false);
 
   // Place ID 搜索状态
   const [searchingPlaceId, setSearchingPlaceId] = useState(false);
@@ -199,11 +213,14 @@ const OnlineBookingTab: React.FC = () => {
         for (let i = 0; i < 16; i++) {
           randomSlug += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-        setConfig({
+        const newConfig = {
           ...defaultConfig,
           bookingPageSlug: randomSlug,
           cancellationPolicy: t('settings.onlineBooking.defaultCancellationPolicy'),
-        });
+        };
+        setConfig(newConfig);
+        initialConfigRef.current = newConfig;
+        isInitializedRef.current = true;
         return;
       }
 
@@ -224,7 +241,20 @@ const OnlineBookingTab: React.FC = () => {
           mergedConfig.cancellationPolicy === defaultPolicyEn) {
         mergedConfig.cancellationPolicy = t('settings.onlineBooking.defaultCancellationPolicy');
       }
+
+      // 如果 bookingPageSlug 为空，生成16位随机slug
+      if (!mergedConfig.bookingPageSlug || mergedConfig.bookingPageSlug.trim() === '') {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let randomSlug = '';
+        for (let i = 0; i < 16; i++) {
+          randomSlug += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        mergedConfig.bookingPageSlug = randomSlug;
+      }
+
       setConfig(mergedConfig);
+      initialConfigRef.current = mergedConfig;
+      isInitializedRef.current = true;
     } catch (error) {
       console.error('Failed to load online booking config:', error);
     } finally {
@@ -235,6 +265,74 @@ const OnlineBookingTab: React.FC = () => {
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
+
+  // 自动保存逻辑
+  useEffect(() => {
+    // 未初始化时不触发自动保存
+    if (!isInitializedRef.current || !initialConfigRef.current || !user?.tenantId) {
+      return;
+    }
+
+    // 比较配置是否有变化
+    const hasChanges = JSON.stringify(config) !== JSON.stringify(initialConfigRef.current);
+    if (!hasChanges) {
+      return;
+    }
+
+    // 清除之前的定时器
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // 设置防抖定时器（1.5秒后自动保存）
+    autoSaveTimerRef.current = setTimeout(async () => {
+      // 验证必填字段
+      const errors: string[] = [];
+      if (!config.advanceBookingDays || config.advanceBookingDays === 0) {
+        errors.push(t('settings.onlineBooking.advanceBookingDays'));
+      }
+      if (config.minAdvanceHours === undefined || config.minAdvanceHours === null) {
+        errors.push(t('settings.onlineBooking.minAdvanceHours'));
+      }
+      if (config.allowCustomerCancel && (!config.cancelDeadlineHours || config.cancelDeadlineHours === 0)) {
+        errors.push(t('settings.onlineBooking.cancelDeadlineHours', '取消截止时间'));
+      }
+      if (config.allowCustomerReschedule && (!config.rescheduleDeadlineHours || config.rescheduleDeadlineHours === 0)) {
+        errors.push(t('settings.onlineBooking.rescheduleDeadlineHours', '改期截止时间'));
+      }
+      if (config.requireDeposit && (!config.depositAmount || config.depositAmount === 0)) {
+        errors.push(t('settings.onlineBooking.depositAmount'));
+      }
+
+      if (errors.length > 0) {
+        setAutoSaveStatus('error');
+        // 5秒后恢复idle状态
+        setTimeout(() => setAutoSaveStatus('idle'), 5000);
+        return;
+      }
+
+      setAutoSaveStatus('saving');
+      try {
+        await onlineBookingApi.updateConfig(user.tenantId, config);
+        initialConfigRef.current = config;
+        setAutoSaveStatus('saved');
+        // 3秒后恢复idle状态
+        setTimeout(() => setAutoSaveStatus('idle'), 3000);
+      } catch (error) {
+        console.error('Auto save failed:', error);
+        setAutoSaveStatus('error');
+        // 5秒后恢复idle状态
+        setTimeout(() => setAutoSaveStatus('idle'), 5000);
+      }
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, user?.tenantId]);
 
   // 语言切换时，如果是默认取消政策则更新为当前语言
   useEffect(() => {
@@ -251,63 +349,7 @@ const OnlineBookingTab: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
-  const handleSave = async () => {
-    if (!user?.tenantId) return;
-
-    // 验证必填字段
-    const errors: string[] = [];
-
-    if (!config.advanceBookingDays || config.advanceBookingDays === 0) {
-      errors.push(t('settings.onlineBooking.advanceBookingDays'));
-    }
-
-    // minAdvanceHours 可以为0（不需要提前预约），所以只检查 undefined/null
-    if (config.minAdvanceHours === undefined || config.minAdvanceHours === null) {
-      errors.push(t('settings.onlineBooking.minAdvanceHours'));
-    }
-
-    if (config.allowCustomerCancel && (!config.cancelDeadlineHours || config.cancelDeadlineHours === 0)) {
-      errors.push(t('settings.onlineBooking.cancelDeadlineHours', '取消截止时间'));
-    }
-
-    if (config.allowCustomerReschedule && (!config.rescheduleDeadlineHours || config.rescheduleDeadlineHours === 0)) {
-      errors.push(t('settings.onlineBooking.rescheduleDeadlineHours', '改期截止时间'));
-    }
-
-    if (config.requireDeposit && (!config.depositAmount || config.depositAmount === 0)) {
-      errors.push(t('settings.onlineBooking.depositAmount'));
-    }
-
-    if (errors.length > 0) {
-      setNotification({
-        open: true,
-        message: t('common.pleaseComplete') + ': ' + errors.join(', '),
-        severity: 'error',
-      });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await onlineBookingApi.updateConfig(user.tenantId, config);
-      setNotification({
-        open: true,
-        message: t('settings.onlineBooking.saveSuccess'),
-        severity: 'success',
-      });
-    } catch (error) {
-      console.error('Failed to save online booking config:', error);
-      setNotification({
-        open: true,
-        message: t('settings.onlineBooking.saveFailed'),
-        severity: 'error',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const bookingUrl = `${window.location.origin}/booking/${config.bookingPageSlug || user?.tenantCode || user?.tenantId}`;
+  const bookingUrl = `${window.location.origin}/booking/${config.bookingPageSlug}`;
 
   const copyBookingUrl = () => {
     navigator.clipboard.writeText(bookingUrl);
@@ -476,11 +518,12 @@ const OnlineBookingTab: React.FC = () => {
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={generateSlug}
+                    onClick={() => setOpenRegenerateDialog(true)}
                     sx={{
                       textTransform: 'none',
                       minWidth: 'auto',
                       px: 1.5,
+                      whiteSpace: 'nowrap',
                       borderColor: '#ddd',
                       color: '#666',
                       '&:hover': { borderColor: '#999', bgcolor: '#f5f5f5' }
@@ -718,6 +761,18 @@ const OnlineBookingTab: React.FC = () => {
                     sx={switchSx}
                   />
                 }
+              />
+
+              <SettingRow
+                label={t('settings.onlineBooking.showPopularServices')}
+                description={t('settings.onlineBooking.showPopularServicesDesc')}
+                control={
+                  <Switch
+                    checked={config.showPopularServices}
+                    onChange={(e) => setConfig({ ...config, showPopularServices: e.target.checked })}
+                    sx={switchSx}
+                  />
+                }
                 noBorder
               />
             </CardContent>
@@ -893,27 +948,64 @@ const OnlineBookingTab: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 保存按钮 */}
-      <Box display="flex" justifyContent="flex-end">
-        <Button
-          variant="contained"
-          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
-          onClick={handleSave}
-          disabled={saving}
-          sx={{
-            px: 3,
-            py: 1,
-            textTransform: 'none',
-            fontWeight: 500,
-            bgcolor: '#1a1a1a',
-            boxShadow: 'none',
-            '&:hover': { bgcolor: '#333', boxShadow: 'none' },
-            '&:disabled': { bgcolor: '#e5e5e5', color: '#999' },
-          }}
-        >
-          {saving ? t('common.saving') : t('common.save')}
-        </Button>
-      </Box>
+      {/* 重新生成链接确认弹框 */}
+      <Dialog
+        open={openRegenerateDialog}
+        onClose={() => setOpenRegenerateDialog(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2.5,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            maxWidth: 360,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, pt: 2.5, fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+          {t('settings.onlineBooking.regenerateConfirmTitle')}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: '#666' }}>
+            {t('settings.onlineBooking.regenerateConfirmMessage')}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button
+            size="small"
+            onClick={() => setOpenRegenerateDialog(false)}
+            sx={{
+              borderRadius: 1.5,
+              px: 2,
+              fontSize: '0.8125rem',
+              color: '#666',
+              textTransform: 'none',
+            }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            size="small"
+            onClick={() => {
+              generateSlug();
+              setOpenRegenerateDialog(false);
+            }}
+            variant="contained"
+            sx={{
+              borderRadius: 1.5,
+              px: 2,
+              fontSize: '0.8125rem',
+              textTransform: 'none',
+              boxShadow: 'none',
+              backgroundColor: '#1a1a1a',
+              '&:hover': {
+                backgroundColor: '#333',
+                boxShadow: 'none',
+              },
+            }}
+          >
+            {t('common.confirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 通知 */}
       <Snackbar

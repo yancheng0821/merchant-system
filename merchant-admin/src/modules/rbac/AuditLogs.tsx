@@ -488,51 +488,26 @@ const AuditLogs: React.FC = () => {
 
       return (
         <Box>
-          {/* 高亮显示变更字段 */}
-          {changedFields.size > 0 && (
-            <Box mb={3}>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                {t('audit.changedFields')}
-              </Typography>
-              <Box display="flex" gap={1} flexWrap="wrap">
-                {Array.from(changedFields).map(field => (
-                  <Chip
-                    key={field}
-                    label={field}
-                    size="small"
-                    sx={{
-                      backgroundColor: alpha('#F59E0B', 0.1),
-                      color: '#F59E0B',
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Box>
-            </Box>
-          )}
-
-          {/* 左右对比视图 - 同步滚动 */}
+          {/* 左右对比视图 */}
           <Grid container spacing={2}>
             {oldData && (
               <Grid item xs={12} md={newData ? 6 : 12}>
                 <Box
                   sx={{
-                    border: '2px solid',
-                    borderColor: alpha('#EF4444', 0.3),
+                    border: '1px solid rgba(0,0,0,0.08)',
                     borderRadius: 2,
                     overflow: 'hidden',
                   }}
                 >
                   <Box
                     sx={{
-                      backgroundColor: alpha('#EF4444', 0.1),
-                      borderBottom: '1px solid',
-                      borderColor: alpha('#EF4444', 0.2),
-                      px: 1.5,
-                      py: 0.75,
+                      backgroundColor: '#fef2f2',
+                      px: 2,
+                      py: 1,
+                      borderBottom: '1px solid rgba(0,0,0,0.06)',
                     }}
                   >
-                    <Typography variant="subtitle2" color="error.main" fontWeight={600} fontSize="0.875rem">
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#dc2626' }}>
                       {t('audit.oldValue')}
                     </Typography>
                   </Box>
@@ -540,10 +515,10 @@ const AuditLogs: React.FC = () => {
                     ref={oldValueScrollRef}
                     onScroll={handleScroll('old')}
                     sx={{
-                      backgroundColor: '#FFFFFF',
-                      px: 1.5,
-                      py: 1,
-                      maxHeight: 400,
+                      backgroundColor: '#fff',
+                      px: 2,
+                      py: 1.5,
+                      maxHeight: 320,
                       overflow: 'auto',
                     }}
                   >
@@ -554,34 +529,27 @@ const AuditLogs: React.FC = () => {
                           key={key}
                           sx={{
                             display: 'flex',
-                            alignItems: 'baseline',
-                            gap: 1,
                             py: 0.5,
-                            px: 0.75,
-                            borderRadius: 0.5,
-                            backgroundColor: isChanged ? alpha('#EF4444', 0.08) : 'transparent',
-                            borderLeft: isChanged ? `3px solid ${alpha('#EF4444', 0.5)}` : 'none',
-                            pl: isChanged ? 1 : 0.75,
+                            backgroundColor: isChanged ? '#fef2f2' : 'transparent',
+                            borderRadius: 1,
+                            px: 1,
+                            mx: -1,
                           }}
                         >
                           <Typography
-                            component="span"
                             sx={{
-                              fontWeight: 600,
-                              color: isChanged ? '#EF4444' : 'text.secondary',
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem',
-                              minWidth: 'fit-content',
+                              fontWeight: 500,
+                              color: '#666',
+                              fontSize: '0.8125rem',
+                              minWidth: 120,
                             }}
                           >
-                            {key}:
+                            {key}
                           </Typography>
                           <Typography
-                            component="span"
                             sx={{
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem',
-                              color: isChanged ? '#DC2626' : 'text.primary',
+                              fontSize: '0.8125rem',
+                              color: isChanged ? '#dc2626' : '#1a1a1a',
                               wordBreak: 'break-word',
                               flex: 1,
                             }}
@@ -601,22 +569,20 @@ const AuditLogs: React.FC = () => {
               <Grid item xs={12} md={oldData ? 6 : 12}>
                 <Box
                   sx={{
-                    border: '2px solid',
-                    borderColor: alpha('#10B981', 0.3),
+                    border: '1px solid rgba(0,0,0,0.08)',
                     borderRadius: 2,
                     overflow: 'hidden',
                   }}
                 >
                   <Box
                     sx={{
-                      backgroundColor: alpha('#10B981', 0.1),
-                      borderBottom: '1px solid',
-                      borderColor: alpha('#10B981', 0.2),
-                      px: 1.5,
-                      py: 0.75,
+                      backgroundColor: '#f0fdf4',
+                      px: 2,
+                      py: 1,
+                      borderBottom: '1px solid rgba(0,0,0,0.06)',
                     }}
                   >
-                    <Typography variant="subtitle2" color="success.main" fontWeight={600} fontSize="0.875rem">
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#16a34a' }}>
                       {t('audit.newValue')}
                     </Typography>
                   </Box>
@@ -624,10 +590,10 @@ const AuditLogs: React.FC = () => {
                     ref={newValueScrollRef}
                     onScroll={handleScroll('new')}
                     sx={{
-                      backgroundColor: '#FFFFFF',
-                      px: 1.5,
-                      py: 1,
-                      maxHeight: 400,
+                      backgroundColor: '#fff',
+                      px: 2,
+                      py: 1.5,
+                      maxHeight: 320,
                       overflow: 'auto',
                     }}
                   >
@@ -638,34 +604,27 @@ const AuditLogs: React.FC = () => {
                           key={key}
                           sx={{
                             display: 'flex',
-                            alignItems: 'baseline',
-                            gap: 1,
                             py: 0.5,
-                            px: 0.75,
-                            borderRadius: 0.5,
-                            backgroundColor: isChanged ? alpha('#10B981', 0.08) : 'transparent',
-                            borderLeft: isChanged ? `3px solid ${alpha('#10B981', 0.5)}` : 'none',
-                            pl: isChanged ? 1 : 0.75,
+                            backgroundColor: isChanged ? '#f0fdf4' : 'transparent',
+                            borderRadius: 1,
+                            px: 1,
+                            mx: -1,
                           }}
                         >
                           <Typography
-                            component="span"
                             sx={{
-                              fontWeight: 600,
-                              color: isChanged ? '#10B981' : 'text.secondary',
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem',
-                              minWidth: 'fit-content',
+                              fontWeight: 500,
+                              color: '#666',
+                              fontSize: '0.8125rem',
+                              minWidth: 120,
                             }}
                           >
-                            {key}:
+                            {key}
                           </Typography>
                           <Typography
-                            component="span"
                             sx={{
-                              fontFamily: 'monospace',
-                              fontSize: '0.75rem',
-                              color: isChanged ? '#059669' : 'text.primary',
+                              fontSize: '0.8125rem',
+                              color: isChanged ? '#16a34a' : '#1a1a1a',
                               wordBreak: 'break-word',
                               flex: 1,
                             }}
@@ -737,9 +696,16 @@ const AuditLogs: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
                     },
                   }}
                 />
@@ -754,18 +720,26 @@ const AuditLogs: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
+                      fontSize: '0.875rem',
                       cursor: 'pointer',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
                     },
+                    '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                   InputProps={{
                     readOnly: true,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <EventIcon sx={{ fontSize: 18, color: '#999' }} />
+                        <EventIcon sx={{ fontSize: 20, color: '#999' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -781,18 +755,26 @@ const AuditLogs: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
+                      fontSize: '0.875rem',
                       cursor: 'pointer',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
                     },
+                    '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                   InputProps={{
                     readOnly: true,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <EventIcon sx={{ fontSize: 18, color: '#999' }} />
+                        <EventIcon sx={{ fontSize: 20, color: '#999' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -800,7 +782,7 @@ const AuditLogs: React.FC = () => {
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.resourceLabel')}
                 </InputLabel>
                 <Select
@@ -809,9 +791,16 @@ const AuditLogs: React.FC = () => {
                   onChange={(e) => setResourceFilter(e.target.value)}
                   sx={{
                     borderRadius: 1.5,
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
                   }}
                 >
                   <MenuItem value="all">{t('audit.all')}</MenuItem>
@@ -845,7 +834,7 @@ const AuditLogs: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.actionLabel')}
                 </InputLabel>
                 <Select
@@ -854,9 +843,16 @@ const AuditLogs: React.FC = () => {
                   onChange={(e) => setActionFilter(e.target.value)}
                   sx={{
                     borderRadius: 1.5,
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
                   }}
                 >
                   <MenuItem value="all">{t('audit.all')}</MenuItem>
@@ -878,7 +874,7 @@ const AuditLogs: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel sx={{ '&.Mui-focused': { color: THEME_COLOR } }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.statusLabel')}
                 </InputLabel>
                 <Select
@@ -887,9 +883,16 @@ const AuditLogs: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   sx={{
                     borderRadius: 1.5,
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
                   }}
                 >
                   <MenuItem value="all">{t('audit.all')}</MenuItem>
@@ -1105,46 +1108,38 @@ const AuditLogs: React.FC = () => {
       <Dialog
         open={changeDialogOpen}
         onClose={() => setChangeDialogOpen(false)}
-        maxWidth="lg"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
           },
         }}
       >
-        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <HistoryIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
-            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
-              {t('audit.changeHistory')}
-            </Typography>
-          </Box>
+        <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            {t('audit.changeHistory')}
+          </Typography>
           {selectedLog && (
-            <Box mt={1}>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
-                {getResourceLabel(selectedLog.resource)} - {getActionLabel(selectedLog.action)}
-                {selectedLog.resourceId && ` #${selectedLog.resourceId}`}
-              </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                {formatDate(selectedLog.createdAt)} • {selectedLog.username || `User #${selectedLog.userId}`}
-              </Typography>
-            </Box>
+            <Typography sx={{ fontSize: '0.875rem', color: '#666', mt: 0.5 }}>
+              {getResourceLabel(selectedLog.resource)} · {getActionLabel(selectedLog.action)}
+              {selectedLog.resourceId && ` · #${selectedLog.resourceId}`}
+            </Typography>
           )}
         </Box>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           {selectedLog && renderChanges(selectedLog)}
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
           <Button
             size="small"
             onClick={() => setChangeDialogOpen(false)}
             sx={{
               textTransform: 'none',
-              color: THEME_COLOR,
-              fontSize: '0.8125rem',
-              '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.1) },
+              color: '#666',
+              fontSize: '0.875rem',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
             }}
           >
             {t('common.close')}

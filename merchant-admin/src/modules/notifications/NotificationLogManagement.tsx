@@ -374,13 +374,17 @@ const NotificationLogManagement: React.FC = () => {
             {/* 第一行 */}
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>{t('notifications.notificationType')}</InputLabel>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.notificationType')}</InputLabel>
                 <Select
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
                   label={t('notifications.notificationType')}
                   sx={{
                     borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -389,21 +393,25 @@ const NotificationLogManagement: React.FC = () => {
                     },
                   }}
                 >
-                  <MenuItem value="">{t('notifications.all')}</MenuItem>
-                  <MenuItem value="SMS">{t('notifications.sms')}</MenuItem>
-                  <MenuItem value="EMAIL">{t('notifications.email')}</MenuItem>
+                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
+                  <MenuItem value="SMS" sx={{ fontSize: '0.875rem' }}>{t('notifications.sms')}</MenuItem>
+                  <MenuItem value="EMAIL" sx={{ fontSize: '0.875rem' }}>{t('notifications.email')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>{t('notifications.status')}</InputLabel>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.status')}</InputLabel>
                 <Select
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
                   label={t('notifications.status')}
                   sx={{
                     borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -412,22 +420,26 @@ const NotificationLogManagement: React.FC = () => {
                     },
                   }}
                 >
-                  <MenuItem value="">{t('notifications.all')}</MenuItem>
-                  <MenuItem value="SENT">{t('notifications.sent')}</MenuItem>
-                  <MenuItem value="FAILED">{t('notifications.failed')}</MenuItem>
-                  <MenuItem value="PENDING">{t('notifications.pending')}</MenuItem>
+                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
+                  <MenuItem value="SENT" sx={{ fontSize: '0.875rem' }}>{t('notifications.sent')}</MenuItem>
+                  <MenuItem value="FAILED" sx={{ fontSize: '0.875rem' }}>{t('notifications.failed')}</MenuItem>
+                  <MenuItem value="PENDING" sx={{ fontSize: '0.875rem' }}>{t('notifications.pending')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>{t('notifications.businessType', 'Business Type')}</InputLabel>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.businessType', 'Business Type')}</InputLabel>
                 <Select
                   value={filters.businessType}
                   onChange={(e) => handleFilterChange('businessType', e.target.value)}
                   label={t('notifications.businessType', 'Business Type')}
                   sx={{
                     borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -436,9 +448,9 @@ const NotificationLogManagement: React.FC = () => {
                     },
                   }}
                 >
-                  <MenuItem value="">{t('notifications.all')}</MenuItem>
+                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
                   {businessTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
+                    <MenuItem key={type.value} value={type.value} sx={{ fontSize: '0.875rem' }}>
                       {type.label}
                     </MenuItem>
                   ))}
@@ -455,6 +467,10 @@ const NotificationLogManagement: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -462,6 +478,7 @@ const NotificationLogManagement: React.FC = () => {
                       borderColor: themeColor,
                     },
                   },
+                  '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
                 }}
               />
             </Grid>
@@ -475,6 +492,10 @@ const NotificationLogManagement: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: themeColor,
                     },
@@ -482,6 +503,7 @@ const NotificationLogManagement: React.FC = () => {
                       borderColor: themeColor,
                     },
                   },
+                  '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
                 }}
               />
             </Grid>
@@ -502,28 +524,28 @@ const NotificationLogManagement: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('notifications.notificationType')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.recipient')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.status')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.businessType', 'Business Type')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.businessId')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.createdAt')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.sentAt')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
                   {t('notifications.actions')}
                 </TableCell>
               </TableRow>
@@ -602,7 +624,7 @@ const NotificationLogManagement: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                           {formatUtcToMerchantTime(log.createdAt, 'yyyy-MM-dd')}
                         </Typography>
                         <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
@@ -613,7 +635,7 @@ const NotificationLogManagement: React.FC = () => {
                     <TableCell>
                       {log.sentAt ? (
                         <Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                             {formatUtcToMerchantTime(log.sentAt, 'yyyy-MM-dd')}
                           </Typography>
                           <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
@@ -697,7 +719,7 @@ const NotificationLogManagement: React.FC = () => {
             borderTop: '1px solid rgba(0,0,0,0.06)',
             backgroundColor: '#fafafa',
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               color: '#666',
             },
           }}
@@ -1218,7 +1240,7 @@ const NotificationLogManagement: React.FC = () => {
               px: 2.5,
               textTransform: 'none',
               fontWeight: 500,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               bgcolor: themeColor,
               boxShadow: 'none',
               '&:hover': {

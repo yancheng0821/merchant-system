@@ -800,11 +800,17 @@ const CustomerManagement: React.FC = () => {
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: '#fff',
-                  '& fieldset': { borderColor: '#d0d0d0' },
-                  '&:hover fieldset': { borderColor: '#bbb' },
-                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 },
               }}
             />
@@ -812,7 +818,7 @@ const CustomerManagement: React.FC = () => {
 
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: THEME_COLOR } }}>{t('customers.membershipFilter')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('customers.membershipFilter')}</InputLabel>
               <Select
                 value={membershipFilter}
                 label={t('customers.membershipFilter')}
@@ -823,16 +829,22 @@ const CustomerManagement: React.FC = () => {
                   }
                 }}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fff',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="all">{t('customers.allLevels')}</MenuItem>
+                <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('customers.allLevels')}</MenuItem>
                 {membershipTiers.map((tier) => (
-                  <MenuItem key={tier.id} value={tier.code}>
+                  <MenuItem key={tier.id} value={tier.code} sx={{ fontSize: '0.875rem' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {getTierIcon(tier.icon, tier.color)}
                       <span style={{ color: tier.color || '#6B7280', fontWeight: 500 }}>{tier.name}</span>
@@ -845,7 +857,7 @@ const CustomerManagement: React.FC = () => {
 
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: THEME_COLOR } }}>{t('customers.statusFilter')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('customers.statusFilter')}</InputLabel>
               <Select
                 value={statusFilter}
                 label={t('customers.statusFilter')}
@@ -856,23 +868,29 @@ const CustomerManagement: React.FC = () => {
                   }
                 }}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fff',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="all">{t('customers.allStatuses')}</MenuItem>
-                <MenuItem value="active">{t('customers.customerStatuses.active')}</MenuItem>
-                <MenuItem value="inactive">{t('customers.customerStatuses.inactive')}</MenuItem>
+                <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('customers.allStatuses')}</MenuItem>
+                <MenuItem value="active" sx={{ fontSize: '0.875rem' }}>{t('customers.customerStatuses.active')}</MenuItem>
+                <MenuItem value="inactive" sx={{ fontSize: '0.875rem' }}>{t('customers.customerStatuses.inactive')}</MenuItem>
               </Select>
             </FormControl>
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: THEME_COLOR } }}>{t('customers.sortBy')}</InputLabel>
+              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('customers.sortBy')}</InputLabel>
               <Select
                 value={sortBy}
                 label={t('customers.sortBy')}
@@ -883,20 +901,26 @@ const CustomerManagement: React.FC = () => {
                   }
                 }}
                 sx={{
-                  borderRadius: 2,
-                  bgcolor: '#fff',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 }}
               >
-                <MenuItem value="createdAt">{t('customers.sortOptions.createdAt')}</MenuItem>
-                <MenuItem value="updatedAt">{t('customers.sortOptions.updatedAt')}</MenuItem>
-                <MenuItem value="firstName">{t('customers.sortOptions.name')}</MenuItem>
-                <MenuItem value="lastVisitDate">{t('customers.sortOptions.lastVisit')}</MenuItem>
-                <MenuItem value="totalSpent">{t('customers.sortOptions.totalSpent')}</MenuItem>
-                <MenuItem value="points">{t('customers.sortOptions.points')}</MenuItem>
-                <MenuItem value="membershipTier">{t('customers.sortOptions.membershipLevel')}</MenuItem>
+                <MenuItem value="createdAt" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.createdAt')}</MenuItem>
+                <MenuItem value="updatedAt" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.updatedAt')}</MenuItem>
+                <MenuItem value="firstName" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.name')}</MenuItem>
+                <MenuItem value="lastVisitDate" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.lastVisit')}</MenuItem>
+                <MenuItem value="totalSpent" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.totalSpent')}</MenuItem>
+                <MenuItem value="points" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.points')}</MenuItem>
+                <MenuItem value="membershipTier" sx={{ fontSize: '0.875rem' }}>{t('customers.sortOptions.membershipLevel')}</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -916,7 +940,7 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 1.5,
                     py: 0.75,
                     px: 2,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     fontWeight: 500,
                     bgcolor: THEME_COLOR,
                     boxShadow: 'none',
@@ -941,7 +965,7 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 1.5,
                     py: 0.75,
                     px: 1.5,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     fontWeight: 500,
                     color: '#666',
                     textTransform: 'none',
@@ -965,7 +989,7 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 1.5,
                     py: 0.75,
                     px: 1.5,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     fontWeight: 500,
                     color: '#666',
                     textTransform: 'none',
@@ -989,7 +1013,7 @@ const CustomerManagement: React.FC = () => {
                     borderRadius: 1.5,
                     py: 0.75,
                     px: 1.5,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     fontWeight: 500,
                     color: '#666',
                     textTransform: 'none',
@@ -1020,15 +1044,15 @@ const CustomerManagement: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.customer')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.contact')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.membership')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.packages')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.points')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.totalSpent')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.lastVisit')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.status')}</TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.tableHeaders.actions')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.customer')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.contact')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.membership')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.packages')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.points')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.totalSpent')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.lastVisit')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.status')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('customers.tableHeaders.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -1281,7 +1305,7 @@ const CustomerManagement: React.FC = () => {
               setAppointmentHistoryOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
+            sx={{ fontSize: '0.875rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
             <VisibilityIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('customers.viewAppointments')}
@@ -1293,7 +1317,7 @@ const CustomerManagement: React.FC = () => {
               setPackagePurchaseDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
+            sx={{ fontSize: '0.875rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
             <AddIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('customers.purchasePackage')}
@@ -1305,7 +1329,7 @@ const CustomerManagement: React.FC = () => {
               setCustomerDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
+            sx={{ fontSize: '0.875rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
             <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('customers.editCustomer')}
@@ -1345,7 +1369,7 @@ const CustomerManagement: React.FC = () => {
               setDeleteDialogOpen(true);
               setMenuAnchorEl(null);
             }}
-            sx={{ fontSize: '0.8125rem', py: 1, color: '#EF4444', '&:hover': { backgroundColor: alpha('#EF4444', 0.05) } }}
+            sx={{ fontSize: '0.875rem', py: 1, color: '#EF4444', '&:hover': { backgroundColor: alpha('#EF4444', 0.05) } }}
           >
             <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />
             {t('customers.deleteCustomer')}
@@ -1439,7 +1463,7 @@ const CustomerManagement: React.FC = () => {
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 3 }}>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#666', mb: 2.5 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#666', mb: 2.5 }}>
             {t('customers.templateDialog.description')}
           </Typography>
 
@@ -1453,7 +1477,7 @@ const CustomerManagement: React.FC = () => {
                 <Box key={field} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                   <CheckCircleIcon sx={{ fontSize: 16, color: '#10B981', mt: 0.25 }} />
                   <Box>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
                     <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                       {t(`customers.templateDialog.fieldDescriptions.${field}`)}
                     </Typography>
@@ -1473,7 +1497,7 @@ const CustomerManagement: React.FC = () => {
                 <Box key={field} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                   <WarningIcon sx={{ fontSize: 16, color: '#F59E0B', mt: 0.25 }} />
                   <Box>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
                     <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                       {t(`customers.templateDialog.fieldDescriptions.${field}`)} - {t(`customers.templateDialog.fieldPurposes.${field}`)}
                     </Typography>
@@ -1494,7 +1518,7 @@ const CustomerManagement: React.FC = () => {
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                     <InfoOutlined sx={{ fontSize: 16, color: '#999', mt: 0.25 }} />
                     <Box>
-                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
+                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>{field}</Typography>
                       <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
                         {t(`customers.templateDialog.fieldDescriptions.${field}`)}
                       </Typography>
@@ -1513,7 +1537,7 @@ const CustomerManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               color: '#666',
               textTransform: 'none',
@@ -1533,7 +1557,7 @@ const CustomerManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: '#1a1a1a',
               boxShadow: 'none',
@@ -1583,7 +1607,7 @@ const CustomerManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               color: '#666',
               textTransform: 'none',
@@ -1601,7 +1625,7 @@ const CustomerManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: '#EF4444',
               boxShadow: 'none',

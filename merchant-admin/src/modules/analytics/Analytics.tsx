@@ -762,7 +762,45 @@ const Analytics: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* 现代化标签页 */}
+      {/* Tab 导航 */}
+      <Box mb={3}>
+        <Tabs
+          value={selectedTab}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            borderBottom: '2px solid',
+            borderColor: 'divider',
+            '& .MuiTab-root': {
+              fontWeight: 500,
+              fontSize: '0.9rem',
+              textTransform: 'none',
+              minHeight: 56,
+              '&.Mui-selected': {
+                fontWeight: 600,
+                color: THEME_COLOR,
+              },
+            },
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+              backgroundColor: THEME_COLOR,
+            },
+          }}
+        >
+          {tabsConfig.map((tab, index) => (
+            <Tab
+              key={index}
+              icon={tab.icon}
+              iconPosition="start"
+              label={tab.label}
+            />
+          ))}
+        </Tabs>
+      </Box>
+
+      {/* Tab 内容 */}
       <Card
         sx={{
           borderRadius: 2.5,
@@ -770,52 +808,6 @@ const Analytics: React.FC = () => {
           border: '1px solid rgba(0,0,0,0.06)',
         }}
       >
-        <Box sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: '#fafafa',
-        }}>
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              minHeight: 40,
-              '& .MuiTab-root': {
-                minWidth: 'auto',
-                minHeight: 40,
-                fontWeight: 500,
-                textTransform: 'none',
-                fontSize: '0.8125rem',
-                py: 1,
-                px: 2,
-                color: '#666',
-                '&:hover': {
-                  color: THEME_COLOR,
-                },
-                '&.Mui-selected': {
-                  fontWeight: 600,
-                  color: THEME_COLOR,
-                },
-              },
-              '& .MuiTabs-indicator': {
-                height: 2,
-                borderRadius: 1,
-                bgcolor: THEME_COLOR,
-              },
-            }}
-          >
-            {tabsConfig.map((tab, index) => (
-              <Tab
-                key={index}
-                icon={tab.icon}
-                iconPosition="start"
-                label={tab.label}
-              />
-            ))}
-          </Tabs>
-        </Box>
 
         {/* 收入趋势 */}
         {currentTabKey === 'revenue' && (

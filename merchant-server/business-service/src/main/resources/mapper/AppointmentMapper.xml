@@ -431,4 +431,15 @@
         ORDER BY tenant_id
     </select>
 
+    <!-- 统计租户各服务的预约次数（用于热门服务判断） -->
+    <select id="countBookingsByServiceForTenant" resultType="map">
+        SELECT aps.service_id as serviceId, COUNT(*) as bookingCount
+        FROM appointment_services aps
+        INNER JOIN appointments a ON aps.appointment_id = a.id
+        WHERE a.tenant_id = #{tenantId}
+          AND a.status IN ('CONFIRMED', 'COMPLETED', 'IN_PROGRESS')
+        GROUP BY aps.service_id
+        ORDER BY bookingCount DESC
+    </select>
+
 </mapper>

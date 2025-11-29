@@ -254,7 +254,7 @@ const CertificateManagement: React.FC = () => {
           mb: 3,
         }}
       >
-        <CardContent sx={{ py: 2, px: 2.5 }}>
+        <CardContent sx={{ p: 2.5 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
               <TextField
@@ -273,9 +273,16 @@ const CertificateManagement: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
                   },
                 }}
               />
@@ -293,7 +300,7 @@ const CertificateManagement: React.FC = () => {
                       borderRadius: 1.5,
                       px: 2,
                       py: 0.75,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       fontWeight: 500,
                       bgcolor: THEME_COLOR,
                       boxShadow: 'none',
@@ -326,22 +333,22 @@ const CertificateManagement: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.certificateName')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.certificateType')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.certificateNumber')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.expiryDate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
                   {t('costs.certificates.statusLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }} align="right">
                   {t('common.actions')}
                 </TableCell>
               </TableRow>
@@ -370,11 +377,11 @@ const CertificateManagement: React.FC = () => {
                     hover
                     sx={{
                       '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                      '& td': { py: 1.5, fontSize: '0.8125rem' }
+                      '& td': { py: 1.5, fontSize: '0.875rem' }
                     }}
                   >
                     <TableCell>
-                      <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
                         {cert.certificateName}
                       </Typography>
                     </TableCell>
@@ -392,12 +399,12 @@ const CertificateManagement: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
                         {cert.certificateNumber}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
                         {cert.expiryDate ? format(new Date(cert.expiryDate), 'yyyy-MM-dd') : '-'}
                       </Typography>
                     </TableCell>
@@ -453,7 +460,7 @@ const CertificateManagement: React.FC = () => {
         {hasPermission('costs:update_certificate') && (
           <MenuItem
             onClick={handleEditFromMenu}
-            sx={{ py: 1, px: 1.5, fontSize: '0.8125rem', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
+            sx={{ py: 1, px: 1.5, fontSize: '0.875rem', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
           >
             <EditIcon sx={{ mr: 1, fontSize: 16, color: THEME_COLOR }} />
             {t('common.edit', 'Edit')}
@@ -462,7 +469,7 @@ const CertificateManagement: React.FC = () => {
         {hasPermission('costs:delete_certificate') && (
           <MenuItem
             onClick={handleDeleteFromMenu}
-            sx={{ py: 1, px: 1.5, fontSize: '0.8125rem', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
+            sx={{ py: 1, px: 1.5, fontSize: '0.875rem', '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' } }}
           >
             <DeleteIcon sx={{ mr: 1, fontSize: 16, color: '#EF4444' }} />
             {t('common.delete', 'Delete')}
@@ -695,7 +702,7 @@ const CertificateManagement: React.FC = () => {
           <Button
             size="small"
             onClick={handleCloseDialog}
-            sx={{ textTransform: 'none', color: '#666', fontSize: '0.8125rem' }}
+            sx={{ textTransform: 'none', color: '#666', fontSize: '0.875rem' }}
           >
             {t('common.cancel')}
           </Button>
@@ -707,7 +714,7 @@ const CertificateManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: THEME_COLOR,
               boxShadow: 'none',
@@ -746,7 +753,7 @@ const CertificateManagement: React.FC = () => {
             size="small"
             onClick={() => setOpenDeleteDialog(false)}
             disabled={loading}
-            sx={{ textTransform: 'none', color: '#666', fontSize: '0.8125rem' }}
+            sx={{ textTransform: 'none', color: '#666', fontSize: '0.875rem' }}
           >
             {t('common.cancel')}
           </Button>
@@ -759,7 +766,7 @@ const CertificateManagement: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: '#EF4444',
               boxShadow: 'none',

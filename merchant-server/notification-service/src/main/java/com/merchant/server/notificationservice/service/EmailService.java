@@ -93,42 +93,53 @@ public class EmailService {
     }
     
     /**
-     * 发送邮件
+     * 发送邮件（使用默认发件人名称）
      */
     public boolean sendEmail(String to, String subject, String content) {
+        return sendEmail(to, subject, content, null);
+    }
+
+    /**
+     * 发送邮件（支持自定义发件人名称）
+     * @param to 收件人邮箱
+     * @param subject 邮件主题
+     * @param content 邮件内容
+     * @param customFromName 自定义发件人名称（如果为null，使用系统默认配置）
+     */
+    public boolean sendEmail(String to, String subject, String content, String customFromName) {
         if (!notificationConfig.getEmail().isEnabled()) {
             log.info("邮件服务已禁用，跳过发送");
             return true;
         }
-        
+
         // 如果启用了Mock模式，直接使用Mock发送
         if (notificationConfig.getMock().isEnabled()) {
-            return sendEmailViaMock(to, subject, content);
+            return sendEmailViaMock(to, subject, content, customFromName);
         }
-        
+
         String provider = notificationConfig.getEmail().getProvider();
-        
+
         switch (provider.toLowerCase()) {
             case "aws":
-                return sendEmailViaAwsWithRetry(to, subject, content);
+                return sendEmailViaAwsWithRetry(to, subject, content, customFromName);
             case "smtp":
                 return sendEmailViaSmtpWithRetry(to, subject, content);
             case "mock":
-                return sendEmailViaMock(to, subject, content);
+                return sendEmailViaMock(to, subject, content, customFromName);
             default:
                 log.warn("未知的邮件服务提供商：{}，使用Mock模式", provider);
-                return sendEmailViaMock(to, subject, content);
+                return sendEmailViaMock(to, subject, content, customFromName);
         }
     }
     
     /**
      * 带重试机制的AWS邮件发送
      */
-    private boolean sendEmailViaAwsWithRetry(String to, String subject, String content) {
+    private boolean sendEmailViaAwsWithRetry(String to, String subject, String content, String customFromName) {
         NotificationConfig.Aws awsConfig = notificationConfig.getAws();
-        
+
         return RetryUtil.executeWithRetryBoolean(
-            () -> sendEmailViaAws(to, subject, content),
+            () -> sendEmailViaAws(to, subject, content, customFromName),
             awsConfig.getMaxRetries(),
             awsConfig.getRetryDelayMs(),
             "AWS SES邮件发送"
@@ -149,49 +160,52 @@ public class EmailService {
         );
     }
     
-    private boolean sendEmailViaAws(String to, String subject, String content) {
+    private boolean sendEmailViaAws(String to, String subject, String content, String customFromName) {
         try {
             // 验证输入参数
             if (to == null || to.trim().isEmpty()) {
                 log.error("收件人邮箱不能为空");
                 return false;
             }
-            
+
             if (subject == null || subject.trim().isEmpty()) {
                 log.error("邮件主题不能为空");
                 return false;
             }
-            
+
             if (content == null || content.trim().isEmpty()) {
                 log.error("邮件内容不能为空");
                 return false;
             }
-            
+
             // 验证邮箱格式
             if (!isValidEmail(to)) {
                 log.error("无效的邮箱格式：{}", to);
                 return false;
             }
-            
+
             NotificationConfig.Aws.Ses sesConfig = notificationConfig.getAws().getSes();
             String fromEmail = sesConfig.getFromEmail() != null ? sesConfig.getFromEmail() : notificationConfig.getEmail().getFrom();
-            String fromName = sesConfig.getFromName() != null ? sesConfig.getFromName() : notificationConfig.getEmail().getFromName();
-            
+            // 如果提供了自定义发件人名称，使用它；否则使用系统配置
+            String fromName = customFromName != null && !customFromName.trim().isEmpty()
+                ? customFromName
+                : (sesConfig.getFromName() != null ? sesConfig.getFromName() : notificationConfig.getEmail().getFromName());
+
             if (fromEmail == null || fromEmail.trim().isEmpty()) {
                 log.error("发件人邮箱未配置");
                 return false;
             }
-            
+
             // 验证发件人邮箱格式
             if (!isValidEmail(fromEmail)) {
                 log.error("发件人邮箱格式无效：{}", fromEmail);
                 return false;
             }
-            
+
             String fromAddress = fromName != null && !fromName.trim().isEmpty() ?
                 fromName + " <" + fromEmail + ">" : fromEmail;
 
-            log.info("📧 发送邮件 - 收件人: {}, 主题: {}", to, subject);
+            log.info("📧 发送邮件 - 收件人: {}, 主题: {}, 发件人: {}", to, subject, fromAddress);
 
             Destination destination = Destination.builder()
                 .toAddresses(to)
@@ -345,7 +359,7 @@ public class EmailService {
             // Mock模式下模拟发送给多个收件人
             boolean allSuccess = true;
             for (String to : toAddresses) {
-                if (!sendEmailViaMock(to, subject, content)) {
+                if (!sendEmailViaMock(to, subject, content, null)) {
                     allSuccess = false;
                 }
             }
@@ -537,9 +551,9 @@ public class EmailService {
         }
     }
     
-    private boolean sendEmailViaMock(String to, String subject, String content) {
+    private boolean sendEmailViaMock(String to, String subject, String content, String customFromName) {
         NotificationConfig.Mock.MockEmail mockConfig = notificationConfig.getMock().getEmail();
-        
+
         // 模拟发送延迟
         if (mockConfig.isSimulateDelay()) {
             try {
@@ -549,18 +563,19 @@ public class EmailService {
                 log.warn("Mock邮件发送延迟被中断");
             }
         }
-        
+
         // 模拟成功率
         double random = Math.random();
         boolean success = random < mockConfig.getSuccessRate();
-        
+
+        String fromName = customFromName != null ? customFromName : "系统默认";
         if (success) {
-            log.info("✅ Mock邮件发送成功 - 收件人：{}，主题：{}，内容长度：{}", to, subject, content.length());
+            log.info("✅ Mock邮件发送成功 - 收件人：{}，主题：{}，发件人：{}，内容长度：{}", to, subject, fromName, content.length());
             log.debug("Mock邮件内容：{}", content);
         } else {
             log.error("❌ Mock邮件发送失败 - 收件人：{}，主题：{}（模拟失败）", to, subject);
         }
-        
+
         return success;
     }
 }

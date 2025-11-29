@@ -374,11 +374,17 @@ const MembershipTiers: React.FC = () => {
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: '#fff',
-                  '& fieldset': { borderColor: '#d0d0d0' },
-                  '&:hover fieldset': { borderColor: '#bbb' },
-                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  borderRadius: 1.5,
+                  fontSize: '0.875rem',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: THEME_COLOR,
+                  },
                 },
               }}
             />
@@ -396,7 +402,7 @@ const MembershipTiers: React.FC = () => {
                     borderRadius: 1.5,
                     py: 0.75,
                     px: 2,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
                     fontWeight: 500,
                     bgcolor: THEME_COLOR,
                     boxShadow: 'none',
@@ -428,22 +434,22 @@ const MembershipTiers: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('membershipTiers.name', 'Name')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('membershipTiers.code', 'Code')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('membershipTiers.requiredPoints', 'Required Points')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('membershipTiers.discountRate', 'Discount Rate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('membershipTiers.status', 'Status')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('common.actions', 'Actions')}
                 </TableCell>
               </TableRow>
@@ -492,7 +498,7 @@ const MembershipTiers: React.FC = () => {
                         >
                           {getTierIcon(tier.icon || 'star')}
                         </Box>
-                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>{tier.name}</Typography>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>{tier.name}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -510,14 +516,14 @@ const MembershipTiers: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
+                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>
                         {tier.requiredPoints.toLocaleString()}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography
                         sx={{
-                          fontSize: '0.8125rem',
+                          fontSize: '0.875rem',
                           fontWeight: 500,
                           color: tier.discountRate < 100 ? DISCOUNT_COLOR : '#999',
                         }}
@@ -579,7 +585,7 @@ const MembershipTiers: React.FC = () => {
         {hasPermission('membership_tiers:update') && (
           <MenuItem
             onClick={handleEditFromMenu}
-            sx={{ fontSize: '0.8125rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
+            sx={{ fontSize: '0.875rem', py: 1, '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) } }}
           >
             <EditIcon sx={{ mr: 1.5, fontSize: 16, color: THEME_COLOR }} />
             {t('membershipTiers.actions.edit', 'Edit')}
@@ -588,7 +594,7 @@ const MembershipTiers: React.FC = () => {
         {hasPermission('membership_tiers:delete') && (
           <MenuItem
             onClick={handleDeleteFromMenu}
-            sx={{ fontSize: '0.8125rem', py: 1, color: '#EF4444', '&:hover': { backgroundColor: alpha('#EF4444', 0.05) } }}
+            sx={{ fontSize: '0.875rem', py: 1, color: '#EF4444', '&:hover': { backgroundColor: alpha('#EF4444', 0.05) } }}
           >
             <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />
             {t('membershipTiers.actions.delete', 'Delete')}
@@ -641,7 +647,7 @@ const MembershipTiers: React.FC = () => {
                   ? t('membershipTiers.editTier', 'Edit Membership Level')
                   : t('membershipTiers.addTier', 'Add Membership Level')}
               </Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
+              <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
                 {selectedTier
                   ? t('membershipTiers.editTierSubtitle', 'Update level information and settings')
                   : t('membershipTiers.addTierSubtitle', 'Create new membership level')}
@@ -769,7 +775,7 @@ const MembershipTiers: React.FC = () => {
 
             {/* Row 3: Icon Selector */}
             <Grid item xs={12}>
-              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
                 {t('membershipTiers.icon', 'Icon')}
               </Typography>
               <Box
@@ -816,7 +822,7 @@ const MembershipTiers: React.FC = () => {
 
             {/* Row 4: Color Selector */}
             <Grid item xs={12}>
-              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a', mb: 1 }}>
                 {t('membershipTiers.color', 'Color')}
               </Typography>
               <Box
@@ -898,7 +904,7 @@ const MembershipTiers: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               color: '#666',
               textTransform: 'none',
@@ -914,7 +920,7 @@ const MembershipTiers: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: THEME_COLOR,
               boxShadow: 'none',
@@ -959,7 +965,7 @@ const MembershipTiers: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               color: '#666',
               textTransform: 'none',
@@ -977,7 +983,7 @@ const MembershipTiers: React.FC = () => {
               borderRadius: 1.5,
               px: 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
               bgcolor: '#EF4444',
               boxShadow: 'none',

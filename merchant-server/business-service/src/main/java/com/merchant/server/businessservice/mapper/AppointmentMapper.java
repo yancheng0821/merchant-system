@@ -153,4 +153,9 @@ public interface AppointmentMapper {
      * 查询所有有预约的租户ID列表（用于多时区定时任务）
      */
     List<Long> findAllTenantIdsWithAppointments();
+
+    /**
+     * 统计租户各服务的预约次数（用于热门服务判断）
+     */
+    List<java.util.Map<String, Object>> countBookingsByServiceForTenant(@Param("tenantId") Long tenantId);
 }

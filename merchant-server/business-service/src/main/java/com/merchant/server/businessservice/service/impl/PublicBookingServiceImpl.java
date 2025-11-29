@@ -31,6 +31,7 @@ public class PublicBookingServiceImpl implements PublicBookingService {
     private final GatewayWebSocketClient gatewayWebSocketClient;
     private final OnlineBookingConfigMapper onlineBookingConfigMapper;
     private final ServiceMapper serviceMapper;
+    private final ServiceCategoryMapper serviceCategoryMapper;
     private final ResourceMapper resourceMapper;
     private final ResourceServiceExpertiseMapper resourceServiceExpertiseMapper;
     private final AppointmentMapper appointmentMapper;
@@ -88,6 +89,7 @@ public class PublicBookingServiceImpl implements PublicBookingService {
             dto.setOnlineBookingEnabled(bookingConfig.getEnabled());
             dto.setBrandColor(bookingConfig.getBookingWidgetColor());
             dto.setShowTechnicianPhotos(bookingConfig.getShowTechnicianPhotos());
+            dto.setShowPopularServices(bookingConfig.getShowPopularServices());
             dto.setWelcomeMessage(bookingConfig.getWelcomeMessage());
             dto.setMinAdvanceHours(bookingConfig.getMinAdvanceHours());
             dto.setMaxAdvanceDays(bookingConfig.getAdvanceBookingDays());
@@ -130,6 +132,30 @@ public class PublicBookingServiceImpl implements PublicBookingService {
         List<com.merchant.server.businessservice.entity.Service> services =
             serviceMapper.findByTenantIdAndStatus(tenantId, "ACTIVE");
 
+        // 获取所有分类，用于填充categoryName
+        List<ServiceCategory> categories = serviceCategoryMapper.selectByTenantId(tenantId);
+        Map<Long, String> categoryNameMap = categories.stream()
+            .collect(Collectors.toMap(ServiceCategory::getId, ServiceCategory::getName));
+
+        // 获取各服务的预约次数
+        List<Map<String, Object>> bookingCounts = appointmentMapper.countBookingsByServiceForTenant(tenantId);
+        Map<Long, Integer> serviceBookingCountMap = new HashMap<>();
+        for (Map<String, Object> row : bookingCounts) {
+            Long serviceId = ((Number) row.get("serviceId")).longValue();
+            Integer count = ((Number) row.get("bookingCount")).intValue();
+            serviceBookingCountMap.put(serviceId, count);
+        }
+
+        // 根据服务总数按比例计算热门服务数量（约15%，最少1个，最多5个）
+        int totalServices = services.size();
+        int popularCount = Math.max(1, Math.min(5, (int) Math.ceil(totalServices * 0.15)));
+
+        // 找出预约次数最多的服务作为热门服务
+        Set<Long> popularServiceIds = bookingCounts.stream()
+            .limit(popularCount)
+            .map(row -> ((Number) row.get("serviceId")).longValue())
+            .collect(Collectors.toSet());
+
         return services.stream()
             .map(service -> PublicServiceDTO.builder()
                 .id(service.getId())
@@ -138,7 +164,10 @@ public class PublicBookingServiceImpl implements PublicBookingService {
                 .duration(service.getDuration())
                 .price(service.getPrice())
                 .categoryId(service.getCategoryId())
+                .categoryName(service.getCategoryId() != null ? categoryNameMap.get(service.getCategoryId()) : null)
                 .availableOnline(true)  // TODO: 从服务配置中读取
+                .bookingCount(serviceBookingCountMap.getOrDefault(service.getId(), 0))
+                .isPopular(popularServiceIds.contains(service.getId()))
                 .build())
             .collect(Collectors.toList());
     }
@@ -161,6 +190,15 @@ public class PublicBookingServiceImpl implements PublicBookingService {
         List<Resource> resources = resourceMapper.findByTenantIdAndTypeAndStatus(
             tenantId, "STAFF", "ACTIVE");
 
+        // 获取所有服务用于查找服务名称
+        List<com.merchant.server.businessservice.entity.Service> allServices =
+            serviceMapper.findByTenantIdAndStatus(tenantId, "ACTIVE");
+        Map<Long, String> serviceNameMap = allServices.stream()
+            .collect(Collectors.toMap(
+                com.merchant.server.businessservice.entity.Service::getId,
+                com.merchant.server.businessservice.entity.Service::getName
+            ));
+
         return resources.stream()
             .map(resource -> {
                 // 获取员工的服务专长
@@ -170,16 +208,22 @@ public class PublicBookingServiceImpl implements PublicBookingService {
                     .map(ResourceServiceExpertise::getServiceId)
                     .collect(Collectors.toList());
 
-                // 解析专长
-                List<String> specialties = new ArrayList<>();
-                if (resource.getSpecialties() != null) {
-                    try {
-                        // 假设 specialties 是 JSON 数组格式
-                        specialties = Arrays.asList(resource.getSpecialties().split(","));
-                    } catch (Exception e) {
-                        log.warn("Failed to parse specialties for resource {}", resource.getId());
-                    }
-                }
+                // 统计高级专长（EXPERT或MASTER级别）数量
+                List<ResourceServiceExpertise> seniorExpertise = expertise.stream()
+                    .filter(e -> e.getSkillLevel() == ResourceServiceExpertise.SkillLevel.EXPERT
+                              || e.getSkillLevel() == ResourceServiceExpertise.SkillLevel.MASTER)
+                    .collect(Collectors.toList());
+
+                int expertCount = seniorExpertise.size();
+                boolean isSenior = expertCount > 0;
+
+                // 保留specialties列表供其他用途，但前端主要使用isSenior标识
+                List<String> specialties = seniorExpertise.stream()
+                    .sorted((a, b) -> b.getSkillScore().compareTo(a.getSkillScore()))
+                    .limit(2)
+                    .map(e -> serviceNameMap.getOrDefault(e.getServiceId(), ""))
+                    .filter(name -> !name.isEmpty())
+                    .collect(Collectors.toList());
 
                 return PublicResourceDTO.builder()
                     .id(resource.getId())
@@ -189,6 +233,8 @@ public class PublicBookingServiceImpl implements PublicBookingService {
                     .description(resource.getDescription())
                     .specialties(specialties)
                     .serviceIds(serviceIds)
+                    .isSenior(isSenior)
+                    .expertServiceCount(expertCount)
                     .build();
             })
             .collect(Collectors.toList());

@@ -85,7 +85,7 @@ notification:
     accessKeyId: ${AWS_ACCESS_KEY_ID:your-access-key-id}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY:your-secret-access-key}
     ses:
-      fromEmail: noreply@vamerchant.app
+      fromEmail: notifications@vamerchant.app
       fromName: VA Merchant
       # configurationSetName: your-configuration-set # 可选
     sns:

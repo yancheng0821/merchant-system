@@ -260,6 +260,9 @@ public class NotificationMQService {
         }
 
         // 构建NotificationRequest
+        // 商户相关邮件使用商户名称作为发件人显示名称
+        String fromName = notification.getBusinessName();
+
         com.merchant.server.common.dto.NotificationRequest request =
             com.merchant.server.common.dto.NotificationRequest.builder()
                 .scene(scene)
@@ -268,6 +271,7 @@ public class NotificationMQService {
                 .channel(channel)
                 .variables(variables)
                 .businessId(String.valueOf(notification.getAppointmentId()))
+                .fromName(fromName)
                 .build();
 
         // 将NotificationRequest作为payload

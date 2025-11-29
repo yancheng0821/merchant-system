@@ -62,13 +62,15 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         String name;
         String address;
         String phone;
+        String email;
         String timezone;
         String merchantCode;
 
-        MerchantInfo(String name, String address, String phone, String timezone, String merchantCode) {
+        MerchantInfo(String name, String address, String phone, String email, String timezone, String merchantCode) {
             this.name = name;
             this.address = address;
             this.phone = phone;
+            this.email = email;
             this.timezone = timezone != null ? timezone : "America/Vancouver";
             this.merchantCode = merchantCode;
         }
@@ -238,7 +240,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 log.warn("Failed to generate cancel URL for appointment: {}", appointment.getId(), e);
             }
 
-            // 生成日历链接
+            // 生成日历链接和JSON-LD Event数据
             try {
                 LocalDateTime startDateTime = LocalDateTime.of(appointment.getAppointmentDate(), appointment.getAppointmentTime());
                 LocalDateTime endDateTime = startDateTime.plusMinutes(appointment.getDuration());
@@ -265,6 +267,17 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 notification.setOutlookUrl(generateOutlookUrl(
                     eventTitle, eventDescription, merchantInfo.address,
                     startDateTime, endDateTime, merchantInfo.timezone));
+
+                // JSON-LD Event fields for Gmail calendar integration
+                ZoneId zoneId = ZoneId.of(merchantInfo.timezone);
+                DateTimeFormatter isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+
+                notification.setStartDateTimeIso(startDateTime.atZone(zoneId).format(isoFormatter));
+                notification.setEndDateTimeIso(endDateTime.atZone(zoneId).format(isoFormatter));
+                notification.setEventId("apt-" + appointment.getId() + "-" + appointment.getTenantId());
+                notification.setEventTitle(eventTitle);
+                notification.setEventDescription(eventDescription.replace("\\n", " | "));
+                notification.setBusinessEmail(merchantInfo.email);
 
             } catch (Exception e) {
                 log.warn("Failed to generate calendar URLs for appointment: {}", appointment.getId(), e);
@@ -297,14 +310,15 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 String name = data.get("merchantName") != null ? data.get("merchantName").toString() : defaultBusinessName;
                 String address = data.get("address") != null ? data.get("address").toString() : defaultBusinessAddress;
                 String phone = data.get("contactPhone") != null ? data.get("contactPhone").toString() : defaultBusinessPhone;
+                String email = data.get("contactEmail") != null ? data.get("contactEmail").toString() : null;
                 String timezone = data.get("timezone") != null ? data.get("timezone").toString() : "America/Vancouver";
                 String merchantCode = data.get("merchantCode") != null ? data.get("merchantCode").toString() : null;
 
-                merchantInfo = new MerchantInfo(name, address, phone, timezone, merchantCode);
+                merchantInfo = new MerchantInfo(name, address, phone, email, timezone, merchantCode);
                 // 存入缓存
                 merchantInfoCache.put(tenantId, merchantInfo);
-                log.info("Retrieved and cached merchant info for tenantId {}: name={}, address={}, phone={}, timezone={}, merchantCode={}",
-                    tenantId, name, address, phone, timezone, merchantCode);
+                log.info("Retrieved and cached merchant info for tenantId {}: name={}, address={}, phone={}, email={}, timezone={}, merchantCode={}",
+                    tenantId, name, address, phone, email, timezone, merchantCode);
                 return merchantInfo;
             }
         } catch (Exception e) {
@@ -313,7 +327,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
         // 如果获取失败，使用默认值
         log.info("Using default business info for tenantId {}", tenantId);
-        return new MerchantInfo(defaultBusinessName, defaultBusinessAddress, defaultBusinessPhone, "America/Vancouver", null);
+        return new MerchantInfo(defaultBusinessName, defaultBusinessAddress, defaultBusinessPhone, null, "America/Vancouver", null);
     }
 
     /**

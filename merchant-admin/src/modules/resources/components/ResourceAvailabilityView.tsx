@@ -920,21 +920,24 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         InputProps={{
-                            startAdornment: <SearchIcon sx={{ color: '#999', fontSize: 20, mr: 1 }} />,
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
                         }}
                         sx={{
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 1.5,
-                                bgcolor: '#fafafa',
-                                '& fieldset': {
-                                    borderColor: 'rgba(0,0,0,0.08)',
+                                fontSize: '0.875rem',
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: 'rgba(0,0,0,0.12)',
                                 },
-                                '&:hover fieldset': {
-                                    borderColor: 'rgba(0,0,0,0.15)',
-                                },
-                                '&.Mui-focused fieldset': {
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
                                     borderColor: themeColor,
-                                    borderWidth: 1,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: themeColor,
                                 },
                             },
                         }}

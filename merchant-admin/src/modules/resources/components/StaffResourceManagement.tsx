@@ -549,34 +549,46 @@ const StaffResourceManagement: React.FC = () => {
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    bgcolor: '#fff',
-                                    '& fieldset': { borderColor: '#d0d0d0' },
-                                    '&:hover fieldset': { borderColor: '#bbb' },
-                                    '&.Mui-focused fieldset': { borderColor: themeColor, borderWidth: '1px' },
+                                    borderRadius: 1.5,
+                                    fontSize: '0.875rem',
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'rgba(0,0,0,0.12)',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: themeColor,
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: themeColor,
+                                    },
                                 },
                             }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                         <FormControl fullWidth size="small">
-                            <InputLabel sx={{ color: '#999', '&.Mui-focused': { color: themeColor } }}>{t('staff.status')}</InputLabel>
+                            <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('staff.status')}</InputLabel>
                             <Select
                                 value={statusFilter}
                                 label={t('staff.status')}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 sx={{
-                                    borderRadius: 2,
-                                    bgcolor: '#fff',
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: themeColor, borderWidth: '1px' },
+                                    borderRadius: 1.5,
+                                    fontSize: '0.875rem',
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: 'rgba(0,0,0,0.12)',
+                                    },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: themeColor,
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: themeColor,
+                                    },
                                 }}
                             >
-                                <MenuItem value="all">{t('staff.allStatuses')}</MenuItem>
-                                <MenuItem value="ACTIVE">{t('staff.statusOptions.active')}</MenuItem>
-                                <MenuItem value="INACTIVE">{t('staff.statusOptions.inactive')}</MenuItem>
-                                <MenuItem value="VACATION">{t('staff.statusOptions.vacation')}</MenuItem>
+                                <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('staff.allStatuses')}</MenuItem>
+                                <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.active')}</MenuItem>
+                                <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.inactive')}</MenuItem>
+                                <MenuItem value="VACATION" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.vacation')}</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
@@ -594,7 +606,7 @@ const StaffResourceManagement: React.FC = () => {
                                     borderRadius: 1.5,
                                     py: 0.75,
                                     px: 2,
-                                    fontSize: '0.8125rem',
+                                    fontSize: '0.875rem',
                                     fontWeight: 500,
                                     bgcolor: themeColor,
                                     boxShadow: 'none',
@@ -639,14 +651,14 @@ const StaffResourceManagement: React.FC = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.staff')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.contact')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.position')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.staff')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.contact')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.position')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                                     {t('staff.serviceExpertise', 'Service Expertise')}
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.status')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('staff.actions')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.status')}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.actions')}</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -673,7 +685,7 @@ const StaffResourceManagement: React.FC = () => {
                                             hover
                                             sx={{
                                                 '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                                                '& td': { py: 1.5, fontSize: '0.8125rem' },
+                                                '& td': { py: 1.5, fontSize: '0.875rem' },
                                             }}
                                         >
                                             <TableCell>
@@ -873,7 +885,7 @@ const StaffResourceManagement: React.FC = () => {
                     sx={{
                         borderTop: '1px solid rgba(0,0,0,0.08)',
                         '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                            fontSize: '0.8125rem',
+                            fontSize: '0.875rem',
                             color: '#666',
                         },
                     }}
@@ -904,7 +916,7 @@ const StaffResourceManagement: React.FC = () => {
                             setMenuAnchorEl(null);
                         }}
                         sx={{
-                            fontSize: '0.8125rem',
+                            fontSize: '0.875rem',
                             py: 1,
                             '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
                         }}
@@ -920,7 +932,7 @@ const StaffResourceManagement: React.FC = () => {
                             setMenuAnchorEl(null);
                         }}
                         sx={{
-                            fontSize: '0.8125rem',
+                            fontSize: '0.875rem',
                             py: 1,
                             '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
                         }}
@@ -936,7 +948,7 @@ const StaffResourceManagement: React.FC = () => {
                             setMenuAnchorEl(null);
                         }}
                         sx={{
-                            fontSize: '0.8125rem',
+                            fontSize: '0.875rem',
                             py: 1,
                             '&:hover': { backgroundColor: alpha('#EF4444', 0.08) },
                         }}
@@ -981,7 +993,7 @@ const StaffResourceManagement: React.FC = () => {
                     <Button
                         onClick={() => setDeleteDialogOpen(false)}
                         size="small"
-                        sx={{ color: '#666', borderRadius: 1.5, textTransform: 'none', fontSize: '0.8125rem' }}
+                        sx={{ color: '#666', borderRadius: 1.5, textTransform: 'none', fontSize: '0.875rem' }}
                     >
                         {t('common.cancel')}
                     </Button>
@@ -992,7 +1004,7 @@ const StaffResourceManagement: React.FC = () => {
                         sx={{
                             borderRadius: 1.5,
                             textTransform: 'none',
-                            fontSize: '0.8125rem',
+                            fontSize: '0.875rem',
                             bgcolor: '#EF4444',
                             boxShadow: 'none',
                             '&:hover': {

@@ -28,6 +28,7 @@
         <result column="cancellation_policy" property="cancellationPolicy"/>
         <result column="logo_url" property="logoUrl"/>
         <result column="enabled" property="enabled"/>
+        <result column="show_popular_services" property="showPopularServices"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -58,7 +59,7 @@
             show_technician_ratings, booking_widget_color,
             google_business_enabled, google_place_id, google_merchant_id,
             booking_page_slug, welcome_message, cancellation_policy, logo_url, enabled,
-            created_at, updated_at
+            show_popular_services, created_at, updated_at
         ) VALUES (
             #{tenantId}, #{bookingUrl}, #{advanceBookingDays}, #{minAdvanceHours},
             #{allowCustomerCancel}, #{cancelDeadlineHours}, #{allowCustomerReschedule},
@@ -67,7 +68,7 @@
             #{showTechnicianRatings}, #{bookingWidgetColor},
             #{googleBusinessEnabled}, #{googlePlaceId}, #{googleMerchantId},
             #{bookingPageSlug}, #{welcomeMessage}, #{cancellationPolicy}, #{logoUrl}, #{enabled},
-            UTC_TIMESTAMP(), UTC_TIMESTAMP()
+            #{showPopularServices}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
         )
     </insert>
 
@@ -96,6 +97,7 @@
             cancellation_policy = #{cancellationPolicy},
             logo_url = #{logoUrl},
             enabled = #{enabled},
+            show_popular_services = #{showPopularServices},
             updated_at = UTC_TIMESTAMP()
         WHERE tenant_id = #{tenantId}
     </update>

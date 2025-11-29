@@ -285,14 +285,17 @@ const FixedCostManagement: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
-                    fontSize: '0.8125rem',
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: THEME_COLOR,
                     },
@@ -316,7 +319,7 @@ const FixedCostManagement: React.FC = () => {
                       borderRadius: 1.5,
                       height: 36,
                       px: 2,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       fontWeight: 500,
                       bgcolor: THEME_COLOR,
                       boxShadow: 'none',
@@ -349,28 +352,28 @@ const FixedCostManagement: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.fixedCosts.costName')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.fixedCosts.costType')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('costs.fixedCosts.amount')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.fixedCosts.billingCycleLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.fixedCosts.paymentDate')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.fixedCosts.paymentMethod')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
                   {t('costs.fixedCosts.statusLabel')}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.8125rem', py: 1.5 }} align="right">
+                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
                   {t('common.actions')}
                 </TableCell>
               </TableRow>
@@ -404,7 +407,7 @@ const FixedCostManagement: React.FC = () => {
                     }}
                   >
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8125rem' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
                         {cost.costName}
                       </Typography>
                     </TableCell>
@@ -422,22 +425,22 @@ const FixedCostManagement: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: THEME_COLOR }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem', color: THEME_COLOR }}>
                         {CurrencyUtils.formatAmountWithCommas(Number(cost.amount ?? 0))}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
                         {billingCycles.find(b => b.value === cost.billingCycle)?.label}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                         {cost.paymentDate ? format(new Date(cost.paymentDate), 'yyyy-MM-dd') : '-'}
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
                         {paymentMethods.find(p => p.value === cost.paymentMethod)?.label || '-'}
                       </Typography>
                     </TableCell>
@@ -496,7 +499,7 @@ const FixedCostManagement: React.FC = () => {
           <MenuItem
             onClick={handleEditFromMenu}
             sx={{
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               py: 1,
               '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.08) },
             }}
@@ -509,7 +512,7 @@ const FixedCostManagement: React.FC = () => {
           <MenuItem
             onClick={handleDeleteFromMenu}
             sx={{
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               py: 1,
               '&:hover': { backgroundColor: alpha('#EF4444', 0.08) },
             }}
@@ -586,12 +589,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -607,17 +610,17 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {costTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={type.value} value={type.value} sx={{ fontSize: '0.875rem' }}>
                       {type.label}
                     </MenuItem>
                   ))}
@@ -635,12 +638,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -656,17 +659,17 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {billingCycles.map((cycle) => (
-                    <MenuItem key={cycle.value} value={cycle.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={cycle.value} value={cycle.value} sx={{ fontSize: '0.875rem' }}>
                       {cycle.label}
                     </MenuItem>
                   ))}
@@ -684,12 +687,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -704,12 +707,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -726,12 +729,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -748,12 +751,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -769,17 +772,17 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {statusOptions.map((status) => (
-                    <MenuItem key={status.value} value={status.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={status.value} value={status.value} sx={{ fontSize: '0.875rem' }}>
                       {status.label}
                     </MenuItem>
                   ))}
@@ -796,17 +799,17 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 >
                   {paymentMethods.map((method) => (
-                    <MenuItem key={method.value} value={method.value} sx={{ fontSize: '0.8125rem' }}>
+                    <MenuItem key={method.value} value={method.value} sx={{ fontSize: '0.875rem' }}>
                       {method.label}
                     </MenuItem>
                   ))}
@@ -824,12 +827,12 @@ const FixedCostManagement: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.875rem',
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                 />
@@ -844,7 +847,7 @@ const FixedCostManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               color: '#666',
               textTransform: 'none',
             }}
@@ -858,7 +861,7 @@ const FixedCostManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               bgcolor: THEME_COLOR,
               textTransform: 'none',
               boxShadow: 'none',
@@ -900,7 +903,7 @@ const FixedCostManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               color: '#666',
               textTransform: 'none',
             }}
@@ -916,7 +919,7 @@ const FixedCostManagement: React.FC = () => {
             sx={{
               borderRadius: 1.5,
               px: 2,
-              fontSize: '0.8125rem',
+              fontSize: '0.875rem',
               textTransform: 'none',
               boxShadow: 'none',
               backgroundColor: '#EF4444',
