@@ -8,7 +8,8 @@
       "Bash(/Users/aisenyc/merchant-system/merchant-server/notification-service/src/main/resources/application-local.yml )",
       "Bash(/Users/aisenyc/merchant-system/merchant-server/notification-service/src/main/resources/application.yml )",
       "Bash(/Users/aisenyc/merchant-system/merchant-server/notification-service/src/main/resources/application-prod.yml)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(aws ec2 describe-instances:*)"
     ],
     "deny": [],
     "ask": []
