@@ -333,7 +333,7 @@ const MainAppContent: React.FC = () => {
           {/* Logo */}
           <Box
             component="img"
-            src="/favicon.svg"
+            src="/va.png"
             alt="VA"
             sx={{
               width: 32,

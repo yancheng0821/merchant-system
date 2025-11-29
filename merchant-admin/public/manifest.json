@@ -1,25 +1,25 @@
 {
   "short_name": "VA Merchant",
-  "name": "VA Merchant System - 商户管理平台",
+  "name": "VA Merchant",
   "description": "VA Merchant System - 专业的商户管理平台，提供客户管理、预约管理等功能",
   "icons": [
-    {
-      "src": "favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "apple-touch-icon.png",
