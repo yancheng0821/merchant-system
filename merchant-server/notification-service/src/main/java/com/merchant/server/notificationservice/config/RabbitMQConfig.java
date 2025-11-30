@@ -263,6 +263,21 @@ public class RabbitMQConfig {
                 .with(MQConstants.ROUTING_KEY_PACKAGE_PURCHASE);
     }
 
+    /**
+     * 营销通知队列
+     */
+    @Bean
+    public Queue marketingQueue() {
+        return createQueueWithDLX(MQConstants.QUEUE_MARKETING);
+    }
+
+    @Bean
+    public Binding marketingBinding() {
+        return BindingBuilder.bind(marketingQueue())
+                .to(notificationExchange())
+                .with(MQConstants.ROUTING_KEY_MARKETING);
+    }
+
     // ==================== 辅助方法 ====================
 
     /**

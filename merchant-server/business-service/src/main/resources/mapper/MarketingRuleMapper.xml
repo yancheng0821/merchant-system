@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.MarketingRuleMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.businessservice.entity.MarketingRule">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="name" property="name"/>
+        <result column="enabled" property="enabled"/>
+        <result column="trigger_type" property="triggerType"/>
+        <result column="trigger_days" property="triggerDays"/>
+        <result column="customer_filter" property="customerFilter"/>
+        <result column="notification_type" property="notificationType"/>
+        <result column="template_id" property="templateId"/>
+        <result column="custom_subject" property="customSubject"/>
+        <result column="custom_content" property="customContent"/>
+        <result column="schedule_type" property="scheduleType"/>
+        <result column="schedule_time" property="scheduleTime"/>
+        <result column="schedule_day_of_week" property="scheduleDayOfWeek"/>
+        <result column="cooldown_days" property="cooldownDays"/>
+        <result column="last_run_at" property="lastRunAt"/>
+        <result column="total_sent_count" property="totalSentCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, tenant_id, name, enabled, trigger_type, trigger_days, customer_filter,
+        notification_type, template_id, custom_subject, custom_content,
+        schedule_type, schedule_time, schedule_day_of_week, cooldown_days,
+        last_run_at, total_sent_count, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_rules
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByTenantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_rules
+        WHERE tenant_id = #{tenantId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectEnabledByTenantId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_rules
+        WHERE tenant_id = #{tenantId} AND enabled = 1
+        ORDER BY created_at DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO marketing_rules (
+            tenant_id, name, enabled, trigger_type, trigger_days, customer_filter,
+            notification_type, template_id, custom_subject, custom_content,
+            schedule_type, schedule_time, schedule_day_of_week, cooldown_days,
+            created_by
+        ) VALUES (
+            #{tenantId}, #{name}, #{enabled}, #{triggerType}, #{triggerDays}, #{customerFilter},
+            #{notificationType}, #{templateId}, #{customSubject}, #{customContent},
+            #{scheduleType}, #{scheduleTime}, #{scheduleDayOfWeek}, #{cooldownDays},
+            #{createdBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE marketing_rules
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="triggerType != null">trigger_type = #{triggerType},</if>
+            <if test="triggerDays != null">trigger_days = #{triggerDays},</if>
+            <if test="customerFilter != null">customer_filter = #{customerFilter},</if>
+            <if test="notificationType != null">notification_type = #{notificationType},</if>
+            <if test="templateId != null">template_id = #{templateId},</if>
+            <if test="customSubject != null">custom_subject = #{customSubject},</if>
+            <if test="customContent != null">custom_content = #{customContent},</if>
+            <if test="scheduleType != null">schedule_type = #{scheduleType},</if>
+            <if test="scheduleTime != null">schedule_time = #{scheduleTime},</if>
+            <if test="scheduleDayOfWeek != null">schedule_day_of_week = #{scheduleDayOfWeek},</if>
+            <if test="cooldownDays != null">cooldown_days = #{cooldownDays},</if>
+            updated_at = UTC_TIMESTAMP(),
+            <if test="updatedBy != null">updated_by = #{updatedBy},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM marketing_rules WHERE id = #{id}
+    </delete>
+
+    <update id="updateEnabled">
+        UPDATE marketing_rules SET enabled = #{enabled} WHERE id = #{id}
+    </update>
+
+    <update id="updateStats">
+        UPDATE marketing_rules
+        SET last_run_at = UTC_TIMESTAMP(), total_sent_count = total_sent_count + #{sentCount}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLastRunAt">
+        UPDATE marketing_rules SET last_run_at = UTC_TIMESTAMP() WHERE id = #{id}
+    </update>
+
+    <update id="incrementSentCount">
+        UPDATE marketing_rules SET total_sent_count = COALESCE(total_sent_count, 0) + #{count} WHERE id = #{id}
+    </update>
+
+    <select id="selectAllEnabledAutoRules" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM marketing_rules
+        WHERE enabled = 1
+          AND schedule_type != 'MANUAL'
+          AND schedule_time IS NOT NULL
+        ORDER BY tenant_id, id
+    </select>
+
+</mapper>

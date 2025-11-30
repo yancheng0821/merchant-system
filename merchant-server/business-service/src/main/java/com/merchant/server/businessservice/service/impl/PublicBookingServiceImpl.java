@@ -190,6 +190,10 @@ public class PublicBookingServiceImpl implements PublicBookingService {
         List<Resource> resources = resourceMapper.findByTenantIdAndTypeAndStatus(
             tenantId, "STAFF", "ACTIVE");
 
+        if (resources.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         // 获取所有服务用于查找服务名称
         List<com.merchant.server.businessservice.entity.Service> allServices =
             serviceMapper.findByTenantIdAndStatus(tenantId, "ACTIVE");
@@ -199,11 +203,22 @@ public class PublicBookingServiceImpl implements PublicBookingService {
                 com.merchant.server.businessservice.entity.Service::getName
             ));
 
+        // 批量查询所有员工的专长数据（解决N+1查询问题）
+        List<Long> resourceIds = resources.stream()
+            .map(Resource::getId)
+            .collect(Collectors.toList());
+        List<ResourceServiceExpertise> allExpertise =
+            resourceServiceExpertiseMapper.findByResourceIds(resourceIds);
+
+        // 按员工ID分组专长数据
+        Map<Long, List<ResourceServiceExpertise>> expertiseByResourceId = allExpertise.stream()
+            .collect(Collectors.groupingBy(ResourceServiceExpertise::getResourceId));
+
         return resources.stream()
             .map(resource -> {
-                // 获取员工的服务专长
+                // 从预加载的数据中获取员工专长
                 List<ResourceServiceExpertise> expertise =
-                    resourceServiceExpertiseMapper.findByResourceId(resource.getId());
+                    expertiseByResourceId.getOrDefault(resource.getId(), Collections.emptyList());
                 List<Long> serviceIds = expertise.stream()
                     .map(ResourceServiceExpertise::getServiceId)
                     .collect(Collectors.toList());

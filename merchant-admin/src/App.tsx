@@ -51,6 +51,7 @@ import {
   ResourceManagement
 } from './modules';
 import NotificationManagement from './modules/notifications/NotificationManagement';
+import MarketingManagement from './modules/marketing/MarketingManagement';
 import ScheduleManagement from './modules/schedule/components/ShiftManagement';
 import { RBACManagement } from './modules/rbac';
 import { TenantActivation } from './modules/admin';
@@ -557,127 +558,113 @@ const MainAppContent: React.FC = () => {
         <Box sx={{ display: 'flex', bgcolor: '#f8fafc' }}>
           <CssBaseline />
 
-          {/* 现代化 AppBar */}
+          {/* 简约 AppBar */}
           <AppBar
             position="fixed"
             sx={{
               width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
               ml: { sm: isDrawerOpen ? `${drawerWidth}px` : 0 },
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 1px 20px rgba(0,0,0,0.08)',
-              borderBottom: '1px solid rgba(0,0,0,0.08)',
+              bgcolor: '#fff',
+              boxShadow: 'none',
+              borderBottom: '1px solid rgba(0,0,0,0.06)',
               transition: 'width 0.3s ease, margin 0.3s ease',
             }}
           >
-            <Toolbar sx={{ justifyContent: 'space-between' }}>
+            <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 56 } }}>
               {/* 左侧：菜单按钮 + 通知栏 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
                 {/* 移动端菜单按钮 */}
                 <IconButton
-                  color="inherit"
                   edge="start"
                   onClick={handleDrawerToggle}
-                  sx={{ display: { sm: 'none' }, color: 'text.primary' }}
+                  sx={{
+                    display: { sm: 'none' },
+                    color: '#666',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                  }}
                 >
-                  <MenuIcon />
+                  <MenuIcon sx={{ fontSize: 22 }} />
                 </IconButton>
 
                 {/* 桌面端显示导航栏按钮（仅在导航栏隐藏时显示） */}
                 {!isDrawerOpen && (
                   <IconButton
-                    color="inherit"
                     edge="start"
                     onClick={() => setDrawerOpen(true)}
                     sx={{
                       display: { xs: 'none', sm: 'flex' },
-                      color: 'text.primary',
-                      bgcolor: alpha('#3B82F6', 0.1),
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        bgcolor: alpha('#3B82F6', 0.2),
-                        transform: 'scale(1.1)',
-                      }
+                      color: '#666',
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                     }}
                   >
-                    <MenuIcon />
+                    <MenuIcon sx={{ fontSize: 22 }} />
                   </IconButton>
                 )}
 
                 {/* 通知栏 */}
-                <Box sx={{ display: { xs: 'none', md: 'block' }, flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: { xs: 'none', md: 'flex' }, flex: 1, minWidth: 0, alignItems: 'center' }}>
                   <NotificationBar />
                 </Box>
               </Box>
 
-              {/* 右侧：语言切换、欢迎文字、用户头像、退出按钮 */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                {/* 语言切换组件 */}
+              {/* 右侧：语言切换、用户信息 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* 语言切换 */}
                 <LanguageSwitcher variant="default" size="medium" />
 
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#64748B',
-                    fontWeight: 400,
-                    fontSize: '0.9rem',
-                    letterSpacing: '0.01em',
-                    display: { xs: 'none', md: 'block' },
-                    '& span': {
-                      color: '#475569',
-                      fontWeight: 600,
-                      marginLeft: '4px',
-                    }
-                  }}
-                >
-                  {t('auth.welcome')}, <span>{user?.realName || user?.username}</span>
-                </Typography>
-
-                {/* 直接点击进入用户资料页 */}
-                <IconButton
+                {/* 用户信息区域 - 点击进入资料页 */}
+                <Box
                   onClick={navigateToProfile}
                   sx={{
-                    p: 0,
-                    '&:hover': {
-                      transform: 'scale(1.05)',
-                    },
-                    transition: 'transform 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    py: 0.5,
+                    px: 1,
+                    borderRadius: 1.5,
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                   }}
                 >
                   <Avatar
                     src={getFullImageUrl(user?.avatar)}
                     sx={{
-                      width: 40,
-                      height: 40,
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      cursor: 'pointer',
+                      width: 32,
+                      height: 32,
+                      fontSize: '0.875rem',
+                      bgcolor: '#e5e7eb',
+                      color: '#666',
                     }}
                   >
                     {user?.username?.charAt(0).toUpperCase()}
                   </Avatar>
-                </IconButton>
+                  <Typography
+                    sx={{
+                      color: '#333',
+                      fontWeight: 500,
+                      fontSize: '0.875rem',
+                      display: { xs: 'none', md: 'block' },
+                    }}
+                  >
+                    {user?.realName || user?.username}
+                  </Typography>
+                </Box>
 
-                {/* 退出按钮 - 简洁图标风格 */}
+                {/* 退出按钮 */}
                 <IconButton
                   onClick={handleLogout}
                   sx={{
-                    color: '#94A3B8',
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    color: '#999',
+                    width: 32,
+                    height: 32,
                     '&:hover': {
-                      color: '#64748B',
-                      backgroundColor: alpha('#94A3B8', 0.1),
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 2px 8px rgba(148, 163, 184, 0.2)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0)',
+                      color: '#666',
+                      bgcolor: 'rgba(0,0,0,0.04)',
                     },
                   }}
                 >
-                  <LogoutIcon sx={{ fontSize: 20 }} />
+                  <LogoutIcon sx={{ fontSize: 18 }} />
                 </IconButton>
               </Box>
             </Toolbar>
@@ -751,6 +738,7 @@ const MainAppContent: React.FC = () => {
               {selectedItem === 'resources' && <ResourceManagement />}
               {selectedItem === 'schedule' && <ScheduleManagement />}
               {selectedItem === 'notifications' && <NotificationManagement />}
+              {selectedItem === 'marketing' && <MarketingManagement />}
               {selectedItem === 'analytics' && <Analytics />}
               {selectedItem === 'costs' && <CostManagement />}
               {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}

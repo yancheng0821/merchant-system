@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.businessservice.mapper.MarketingSendLogMapper">
+
+    <resultMap id="MarketingSendLogResultMap" type="com.merchant.server.businessservice.entity.MarketingSendLog">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="rule_name" property="ruleName"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="customer_email" property="customerEmail"/>
+        <result column="customer_phone" property="customerPhone"/>
+        <result column="notification_type" property="notificationType"/>
+        <result column="subject" property="subject"/>
+        <result column="content" property="content"/>
+        <result column="status" property="status"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="sent_at" property="sentAt"/>
+    </resultMap>
+
+    <resultMap id="CustomerLastSentInfoResultMap" type="com.merchant.server.businessservice.mapper.MarketingSendLogMapper$CustomerLastSentInfo">
+        <result column="customer_id" property="customerId"/>
+        <result column="last_sent_at" property="lastSentAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO marketing_send_logs (
+            tenant_id, rule_id, rule_name, customer_id, customer_name,
+            customer_email, customer_phone, notification_type, subject,
+            content, status, error_message, sent_at
+        ) VALUES (
+            #{tenantId}, #{ruleId}, #{ruleName}, #{customerId}, #{customerName},
+            #{customerEmail}, #{customerPhone}, #{notificationType}, #{subject},
+            #{content}, #{status}, #{errorMessage}, #{sentAt}
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO marketing_send_logs (
+            tenant_id, rule_id, rule_name, customer_id, customer_name,
+            customer_email, customer_phone, notification_type, subject,
+            content, status, error_message, sent_at
+        ) VALUES
+        <foreach collection="logs" item="log" separator=",">
+            (
+                #{log.tenantId}, #{log.ruleId}, #{log.ruleName}, #{log.customerId}, #{log.customerName},
+                #{log.customerEmail}, #{log.customerPhone}, #{log.notificationType}, #{log.subject},
+                #{log.content}, #{log.status}, #{log.errorMessage}, #{log.sentAt}
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectById" resultMap="MarketingSendLogResultMap">
+        SELECT * FROM marketing_send_logs WHERE id = #{id}
+    </select>
+
+    <select id="selectByTenantId" resultMap="MarketingSendLogResultMap">
+        SELECT * FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+        ORDER BY sent_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectByRuleId" resultMap="MarketingSendLogResultMap">
+        SELECT * FROM marketing_send_logs
+        WHERE rule_id = #{ruleId}
+        ORDER BY sent_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByTenantId" resultType="int">
+        SELECT COUNT(*) FROM marketing_send_logs WHERE tenant_id = #{tenantId}
+    </select>
+
+    <select id="selectByTenantIdAndStatus" resultMap="MarketingSendLogResultMap">
+        SELECT * FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+          AND status = #{status}
+        ORDER BY sent_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByTenantIdAndStatus" resultType="int">
+        SELECT COUNT(*) FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+          AND status = #{status}
+    </select>
+
+    <select id="selectByTenantIdWithFilters" resultMap="MarketingSendLogResultMap">
+        SELECT * FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+        <if test="status != null and status != ''">
+          AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+          AND (customer_name LIKE CONCAT('%', #{keyword}, '%')
+            OR customer_email LIKE CONCAT('%', #{keyword}, '%')
+            OR customer_phone LIKE CONCAT('%', #{keyword}, '%')
+            OR rule_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY sent_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByTenantIdWithFilters" resultType="int">
+        SELECT COUNT(*) FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+        <if test="status != null and status != ''">
+          AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+          AND (customer_name LIKE CONCAT('%', #{keyword}, '%')
+            OR customer_email LIKE CONCAT('%', #{keyword}, '%')
+            OR customer_phone LIKE CONCAT('%', #{keyword}, '%')
+            OR rule_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <select id="countByRuleId" resultType="int">
+        SELECT COUNT(*) FROM marketing_send_logs WHERE rule_id = #{ruleId}
+    </select>
+
+    <select id="selectLastSentTime" resultType="java.time.LocalDateTime">
+        SELECT MAX(sent_at) FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+          AND rule_id = #{ruleId}
+          AND customer_id = #{customerId}
+          AND status = 'SENT'
+    </select>
+
+    <select id="selectLastSentTimeByCustomerIds" resultMap="CustomerLastSentInfoResultMap">
+        SELECT customer_id, MAX(sent_at) as last_sent_at
+        FROM marketing_send_logs
+        WHERE tenant_id = #{tenantId}
+          AND rule_id = #{ruleId}
+          AND customer_id IN
+          <foreach collection="customerIds" item="customerId" open="(" separator="," close=")">
+              #{customerId}
+          </foreach>
+          AND status = 'SENT'
+        GROUP BY customer_id
+    </select>
+
+    <update id="updateStatus">
+        UPDATE marketing_send_logs
+        SET status = #{status}, error_message = #{errorMessage}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

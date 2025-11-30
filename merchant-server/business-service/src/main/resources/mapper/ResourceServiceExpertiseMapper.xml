@@ -83,4 +83,13 @@
         DELETE FROM resource_service_expertise WHERE resource_id = #{resourceId}
     </delete>
 
+    <select id="findByResourceIds" resultMap="ResourceServiceExpertiseResultMap">
+        SELECT * FROM resource_service_expertise
+        WHERE resource_id IN
+        <foreach collection="resourceIds" item="resourceId" open="(" separator="," close=")">
+            #{resourceId}
+        </foreach>
+        ORDER BY resource_id, skill_level DESC, service_id
+    </select>
+
 </mapper>

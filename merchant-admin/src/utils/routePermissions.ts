@@ -32,6 +32,7 @@ export const ROUTE_PERMISSIONS: RoutePermissionConfig[] = [
   { path: 'resources', permissions: ['staff:view', 'room:view'] },
   { path: 'schedule', permissions: ['schedule:view'] },
   { path: 'notifications', permissions: ['notifications:view_logs', 'notifications:manage_template'] },
+  { path: 'marketing', permissions: ['marketing:view_rules', 'marketing:view_logs'] },
   { path: 'analytics', permissions: ['analytics:view_order_stats'] },
   { path: 'costs', permissions: ['costs:view_certificates', 'costs:view_fixed_costs', 'costs:view_materials'] },
   { path: 'settings', permissions: ['settings:update_merchant', 'settings:update_tax', 'settings:update_system'] },

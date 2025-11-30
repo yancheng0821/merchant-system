@@ -71,24 +71,38 @@ public class NotificationProcessor {
                     ? request.getTemplateCode()
                     : scene.getDefaultTemplateCode();
 
-            if (templateCode == null) {
-                throw new RuntimeException("场景 " + scene.getCode() + " 未配置模板代码");
-            }
-
             // 创建日志记录
             notificationLog = createNotificationLog(request, scene, NotificationTemplate.NotificationType.EMAIL,
-                    effectiveTenantId, templateCode);
+                    effectiveTenantId, templateCode != null ? templateCode : scene.name());
 
-            // 获取并渲染模板
-            NotificationTemplate template = templateService.getTemplate(
-                    effectiveTenantId, templateCode, NotificationTemplate.NotificationType.EMAIL);
+            String subject;
+            String content;
 
-            if (template == null) {
-                throw new RuntimeException("模板不存在: " + templateCode + " (tenantId=" + effectiveTenantId + ")");
+            // 营销通知场景：直接使用 variables 中的 subject 和 content（用户自定义内容）
+            if (scene == NotificationScene.MARKETING_REMINDER) {
+                subject = (String) request.getVariables().get("subject");
+                content = (String) request.getVariables().get("content");
+
+                if (subject == null || content == null) {
+                    throw new RuntimeException("营销通知缺少 subject 或 content");
+                }
+            } else {
+                // 其他场景：使用模板系统
+                if (templateCode == null) {
+                    throw new RuntimeException("场景 " + scene.getCode() + " 未配置模板代码");
+                }
+
+                // 获取并渲染模板
+                NotificationTemplate template = templateService.getTemplate(
+                        effectiveTenantId, templateCode, NotificationTemplate.NotificationType.EMAIL);
+
+                if (template == null) {
+                    throw new RuntimeException("模板不存在: " + templateCode + " (tenantId=" + effectiveTenantId + ")");
+                }
+
+                subject = templateService.renderTemplate(template.getSubject(), request.getVariables());
+                content = templateService.renderTemplate(template.getContent(), request.getVariables());
             }
-
-            String subject = templateService.renderTemplate(template.getSubject(), request.getVariables());
-            String content = templateService.renderTemplate(template.getContent(), request.getVariables());
 
             // 保存渲染后的内容
             notificationLog.setSubject(subject);
@@ -145,7 +159,7 @@ public class NotificationProcessor {
 
             // 创建日志记录
             notificationLog = createNotificationLog(request, scene, NotificationTemplate.NotificationType.SMS,
-                    effectiveTenantId, templateCode);
+                    effectiveTenantId, templateCode != null ? templateCode : scene.name());
 
             // 检查是否是 Walk-in Customer 的特殊号码，直接标记为成功
             if (isWalkInCustomerPhone(request.getRecipient().getPhone())) {
@@ -157,9 +171,17 @@ public class NotificationProcessor {
                 return;
             }
 
-            // 短信内容（从变量中获取或使用模板）
+            // 短信内容
             String message;
-            if (request.getVariables().containsKey("message")) {
+
+            // 营销通知场景：直接使用 variables 中的 content（用户自定义内容）
+            if (scene == NotificationScene.MARKETING_REMINDER) {
+                message = (String) request.getVariables().get("content");
+                if (message == null) {
+                    throw new RuntimeException("营销通知缺少 content");
+                }
+            } else if (request.getVariables().containsKey("message")) {
+                // 从变量中获取
                 message = (String) request.getVariables().get("message");
             } else if (scene.useTemplate()) {
                 // 如果场景使用模板，则渲染模板
@@ -184,7 +206,7 @@ public class NotificationProcessor {
             // 发送短信 - 使用带场景参数的方法
             boolean sent = smsService.sendSms(
                 request.getRecipient().getPhone(),
-                scene.getDefaultTemplateCode(),  // 场景标识
+                templateCode != null ? templateCode : scene.name(),  // 场景标识
                 variables                         // 模板变量（包含渲染后的message）
             );
 

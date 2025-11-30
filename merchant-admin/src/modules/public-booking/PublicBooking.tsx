@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -247,20 +247,28 @@ const PublicBooking: React.FC = () => {
   const [customerFound, setCustomerFound] = useState(false);
   const [existingCustomerId, setExistingCustomerId] = useState<number | null>(null);
 
-  // 计算总价和总时长
-  const totalPrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
-  const totalDuration = selectedServices.reduce((sum, s) => sum + s.duration, 0);
+  // 计算总价和总时长 (memoized for performance)
+  const totalPrice = useMemo(() =>
+    selectedServices.reduce((sum, s) => sum + s.price, 0),
+    [selectedServices]
+  );
+  const totalDuration = useMemo(() =>
+    selectedServices.reduce((sum, s) => sum + s.duration, 0),
+    [selectedServices]
+  );
 
-  // 根据选中的服务过滤可用员工
-  const filteredStaff = staff.filter(member => {
-    // 如果员工没有 serviceIds 信息，默认显示
-    if (!member.serviceIds || member.serviceIds.length === 0) {
-      return true;
-    }
-    // 检查员工是否能提供所有选中的服务
-    const selectedServiceIds = selectedServices.map(s => s.id);
-    return selectedServiceIds.every(serviceId => member.serviceIds!.includes(serviceId));
-  });
+  // 根据选中的服务过滤可用员工 (memoized for performance)
+  const filteredStaff = useMemo(() => {
+    return staff.filter(member => {
+      // 如果员工没有 serviceIds 信息，默认显示
+      if (!member.serviceIds || member.serviceIds.length === 0) {
+        return true;
+      }
+      // 检查员工是否能提供所有选中的服务
+      const selectedServiceIds = selectedServices.map(s => s.id);
+      return selectedServiceIds.every(serviceId => member.serviceIds!.includes(serviceId));
+    });
+  }, [staff, selectedServices]);
 
   // 当选中的服务变化时，验证已选员工是否仍然有效
   useEffect(() => {
@@ -714,8 +722,8 @@ const PublicBooking: React.FC = () => {
     }
   };
 
-  // 检查是否可以进入下一步
-  const canProceed = useCallback(() => {
+  // 检查是否可以进入下一步 (memoized for performance - avoid multiple function calls per render)
+  const canProceedNow = useMemo(() => {
     switch (activeStep) {
       case 0:
         return selectedServices.length > 0;
@@ -733,6 +741,20 @@ const PublicBooking: React.FC = () => {
     }
   }, [activeStep, selectedServices, selectedDate, selectedTime, customerInfo]);
 
+  // Keep canProceed function for backward compatibility (returns memoized value)
+  const canProceed = useCallback(() => canProceedNow, [canProceedNow]);
+
+  // Memoized service categories for performance
+  const serviceCategories = useMemo(() => {
+    return ['all', ...Array.from(new Set(services.map(s => s.categoryName).filter(Boolean))) as string[]];
+  }, [services]);
+
+  // Memoized filtered services based on selected category
+  const filteredServicesByCategory = useMemo(() => {
+    return selectedCategory === 'all'
+      ? services
+      : services.filter(s => s.categoryName === selectedCategory);
+  }, [services, selectedCategory]);
 
   // 日期限制
   // minDate: 根据最少提前小时数计算，取该时间点所在日期的开始
@@ -1398,10 +1420,10 @@ const PublicBooking: React.FC = () => {
             <Box sx={{ p: 2, pt: 0 }}>
               <Button
                 onClick={handleNext}
-                disabled={!canProceed() || submitting}
+                disabled={!canProceedNow || submitting}
                 fullWidth
                 sx={{
-                  bgcolor: canProceed() ? '#1a1a1a' : '#e5e5e5',
+                  bgcolor: canProceedNow ? '#1a1a1a' : '#e5e5e5',
                   color: '#fff',
                   borderRadius: 2,
                   py: 1.5,
@@ -1410,7 +1432,7 @@ const PublicBooking: React.FC = () => {
                   textTransform: 'none',
                   boxShadow: 'none',
                   '&:hover': {
-                    bgcolor: canProceed() ? '#333' : '#e5e5e5',
+                    bgcolor: canProceedNow ? '#333' : '#e5e5e5',
                     boxShadow: 'none',
                   },
                   '&:disabled': {
@@ -1526,9 +1548,9 @@ const PublicBooking: React.FC = () => {
 
           <Button
             onClick={handleNext}
-            disabled={!canProceed() || submitting}
+            disabled={!canProceedNow || submitting}
             sx={{
-              bgcolor: canProceed() ? '#1a1a1a' : '#e5e5e5',
+              bgcolor: canProceedNow ? '#1a1a1a' : '#e5e5e5',
               color: '#fff',
               borderRadius: 2,
               px: 3,
@@ -1539,7 +1561,7 @@ const PublicBooking: React.FC = () => {
               ml: 2,
               boxShadow: 'none',
               '&:hover': {
-                bgcolor: canProceed() ? '#333' : '#e5e5e5',
+                bgcolor: canProceedNow ? '#333' : '#e5e5e5',
                 boxShadow: 'none',
               },
               '&:disabled': {
@@ -1584,13 +1606,9 @@ const PublicBooking: React.FC = () => {
 
   // ==================== 服务选择页面 ====================
   const renderServiceSelection = () => {
-    // 获取所有分类
-    const categories = ['all', ...Array.from(new Set(services.map(s => s.categoryName).filter(Boolean))) as string[]];
-
-    // 根据选中分类过滤服务
-    const filteredServices = selectedCategory === 'all'
-      ? services
-      : services.filter(s => s.categoryName === selectedCategory);
+    // Use memoized values for performance
+    const categories = serviceCategories;
+    const filteredServices = filteredServicesByCategory;
 
     return (
       <Box>
@@ -1802,7 +1820,7 @@ const PublicBooking: React.FC = () => {
             borderRadius: 3,
             border: selectedStaff === null ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
             bgcolor: selectedStaff === null ? 'rgba(26, 26, 26, 0.02)' : '#fff',
-            transition: 'all 0.25s ease',
+            transition: 'border-color 0.2s, background-color 0.2s, transform 0.2s, box-shadow 0.2s',
             '&:hover': {
               borderColor: '#999',
               transform: 'translateY(-2px)',
@@ -1846,7 +1864,7 @@ const PublicBooking: React.FC = () => {
               borderRadius: 3,
               border: selectedStaff?.id === member.id ? '2px solid #1a1a1a' : '1px solid #e5e5e5',
               bgcolor: selectedStaff?.id === member.id ? 'rgba(26, 26, 26, 0.02)' : '#fff',
-              transition: 'all 0.25s ease',
+              transition: 'border-color 0.2s, background-color 0.2s, transform 0.2s, box-shadow 0.2s',
               '&:hover': {
                 borderColor: '#999',
                 transform: 'translateY(-2px)',
@@ -2710,7 +2728,6 @@ const PublicBooking: React.FC = () => {
           {activeStep === 3 && renderCheckout()}
           {activeStep === 4 && renderConfirmation()}
         </Box>
-
         {/* 右侧 Appointment Summary - 仅 PC 端 */}
         {!isMobile && activeStep < 4 && renderAppointmentSummary()}
       </Box>

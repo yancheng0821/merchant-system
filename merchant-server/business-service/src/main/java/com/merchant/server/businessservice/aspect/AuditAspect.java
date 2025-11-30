@@ -609,6 +609,11 @@ public class AuditAspect {
                     Method findByTenantId = onlineBookingConfigMapper.getClass().getMethod("findByTenantId", Long.class);
                     // 对于MERCHANT_SETTINGS，resourceId实际上是tenantId
                     return findByTenantId.invoke(onlineBookingConfigMapper, tenantId != null ? tenantId : resourceId);
+                } else if ("MARKETING".equals(resource)) {
+                    // 获取MarketingRuleService
+                    Object marketingRuleService = applicationContext.getBean("marketingRuleServiceImpl");
+                    Method getById = marketingRuleService.getClass().getMethod("getById", Long.class);
+                    return getById.invoke(marketingRuleService, resourceId);
                 }
                 // STAFF_ATTENDANCE 由 getOldValueForStaffAttendance 专门处理
                 // 可以添加其他资源类型的处理
@@ -795,6 +800,10 @@ public class AuditAspect {
                 // 成本管理 - 物料采购相关
                 "materialName", "materialCategory", "quantity", "unit", "unitPrice",
                 "totalAmount", "supplier", "purchaseDate",
+                // 营销规则相关
+                "triggerType", "triggerDays", "customerFilter", "notificationType",
+                "templateId", "customSubject", "customContent", "scheduleType",
+                "scheduleTime", "scheduleDayOfWeek", "cooldownDays", "lastRunAt", "totalSentCount",
                 // 在线预约设置相关
                 "enabled", "bookingPageSlug", "advanceBookingDays", "minAdvanceHours",
                 "allowCustomerCancel", "cancelDeadlineHours", "allowCustomerReschedule",

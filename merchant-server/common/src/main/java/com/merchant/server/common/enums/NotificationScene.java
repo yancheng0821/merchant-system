@@ -63,7 +63,12 @@ public enum NotificationScene {
     /**
      * 预约提醒 - 发送给客户
      */
-    APPOINTMENT_REMINDER("appointment.reminder", "APPOINTMENT_REMINDER", NotificationType.BOTH, TemplateScope.TENANT);
+    APPOINTMENT_REMINDER("appointment.reminder", "APPOINTMENT_REMINDER", NotificationType.BOTH, TemplateScope.TENANT),
+
+    /**
+     * 营销提醒 - 发送给客户（召回不活跃客户）
+     */
+    MARKETING_REMINDER("marketing.reminder", "MARKETING_REMINDER", NotificationType.BOTH, TemplateScope.TENANT);
 
     /**
      * 场景唯一标识

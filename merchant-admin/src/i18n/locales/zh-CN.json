@@ -62,7 +62,21 @@
     "generate": "生成",
     "or": "或",
     "openInNewTab": "新窗口打开",
-    "learnMore": "了解更多"
+    "learnMore": "了解更多",
+    "status": "状态",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "enable": "启用",
+    "disable": "禁用",
+    "weekdays": {
+      "1": "周一",
+      "2": "周二",
+      "3": "周三",
+      "4": "周四",
+      "5": "周五",
+      "6": "周六",
+      "7": "周日"
+    }
   },
   "auth": {
     "and": "和",
@@ -408,6 +422,8 @@
     "brandSubtitle": "专业的商户管理解决方案",
     "brandDescription": "为您的业务提供全面的管理工具和数据分析",
     "noMerchantAccount": "还没有商户账户？",
+    "freeTrialBadge": "· 免费试用14天",
+    "merchantRegisterFreeTrial": "注册商户账户",
     "forgotPassword": "忘记密码？",
     "forgotPasswordSubtitle": "输入您的商户代码和邮箱地址，我们将发送重置密码链接",
     "resetEmailSent": "重置密码邮件已发送，请查收您的邮箱",
@@ -460,6 +476,7 @@
     "roomManagement": "场地",
     "schedule": "日程",
     "notifications": "通知",
+    "marketing": "营销中心",
     "analytics": "数据分析",
     "costs": "成本管理",
     "settings": "设置",
@@ -949,8 +966,11 @@
       "APPOINTMENT_COMPLETION": "预约完成",
       "APPOINTMENT_CONFIRMATION": "预约确认",
       "APPOINTMENT_REMINDER": "预约提醒",
+      "APPOINTMENT_CHECKOUT_STAFF": "预约结账(员工)",
       "PACKAGE_VERIFICATION": "套餐验证",
-      "PACKAGE_PURCHASE_SUCCESS": "套餐购买成功"
+      "PACKAGE_PURCHASE_SUCCESS": "套餐购买成功",
+      "STAFF_DAILY_SUMMARY": "员工日报",
+      "MARKETING_REMINDER": "营销提醒"
     },
     "createTemplateSuccess": "模板创建成功",
     "updateTemplateSuccess": "模板更新成功",
@@ -2823,6 +2843,87 @@
     "delete": "删除",
     "confirmCancel": "确认取消"
   },
+  "marketing": {
+    "title": "营销中心",
+    "subtitle": "客户周期营销与自动化提醒",
+    "tabs": {
+      "rules": "营销规则",
+      "history": "发送记录"
+    },
+    "rulesDescription": "设置自动化营销规则，定期向符合条件的客户发送提醒",
+    "noRules": "暂无营销规则",
+    "createFirstRule": "创建第一个规则",
+    "addRule": "新建规则",
+    "editRule": "编辑规则",
+    "ruleFormDescription": "设置触发条件和通知内容",
+    "ruleNamePlaceholder": "例如：流失客户召回",
+    "subjectPlaceholder": "输入邮件主题",
+    "contentPlaceholder": "输入通知内容...",
+    "availableVariables": "可用变量",
+    "ruleDialogSubtitle": "配置自动化营销规则",
+    "deleteRuleConfirm": "确认删除规则",
+    "deleteRuleMessage": "确定要删除规则 \"{{name}}\" 吗？此操作无法撤销。",
+    "ruleName": "规则名称",
+    "triggerCondition": "触发条件",
+    "triggerType": "条件类型",
+    "triggerDays": "天数阈值",
+    "triggerTypes": {
+      "inactiveDays": "未活跃天数",
+      "lastVisitDays": "距上次访问",
+      "noBookingDays": "未预约天数"
+    },
+    "notificationSettings": "通知设置",
+    "notificationType": "发送方式",
+    "notificationTypes": {
+      "email": "邮件",
+      "sms": "短信",
+      "both": "邮件和短信"
+    },
+    "emailSubject": "邮件主题",
+    "emailContent": "邮件内容",
+    "contentPlaceholderHelp": "可用变量: {{customerName}}, {{merchantName}}, {{lastVisitDate}}",
+    "scheduleSettings": "调度设置",
+    "schedule": "调度方式",
+    "scheduleType": "执行方式",
+    "scheduleTime": "执行时间",
+    "scheduleDayOfWeek": "执行日期",
+    "scheduleTypes": {
+      "manual": "手动触发",
+      "daily": "每天",
+      "weekly": "每周"
+    },
+    "cooldownDays": "冷却天数",
+    "cooldownDaysHelp": "同一客户在此天数内不会重复发送",
+    "matchedCustomers": "符合客户",
+    "sendNow": "立即发送",
+    "status": {
+      "sent": "已发送",
+      "failed": "失败",
+      "pending": "待发送"
+    },
+    "messages": {
+      "ruleCreated": "规则创建成功",
+      "ruleUpdated": "规则更新成功",
+      "ruleDeleted": "规则删除成功",
+      "sendSuccess": "成功发送给 {{count}} 位客户"
+    },
+    "errors": {
+      "nameRequired": "请输入规则名称"
+    },
+    "noLogs": "暂无发送记录",
+    "searchPlaceholder": "搜索客户名称或邮箱",
+    "statusFilter": "状态筛选",
+    "sendTime": "发送时间",
+    "customer": "客户",
+    "contact": "联系方式",
+    "type": "类型",
+    "errorMessage": "错误信息",
+    "previewEmail": "预览邮件",
+    "emailPreview": "邮件预览",
+    "noSubject": "（未填写主题）",
+    "noContent": "（未填写内容）",
+    "noMatchedCustomers": "暂无符合条件的客户"
+  },
   "analytics": {
     "title": "数据统计",
     "subtitle": "AI驱动的综合业务数据分析与报表",
@@ -3707,7 +3808,11 @@
       "Delete Material": "删除物料采购",
       "View Billing": "查看账单",
       "View Online Booking Settings": "查看在线预约设置",
-      "Update Online Booking Settings": "修改在线预约设置"
+      "Update Online Booking Settings": "修改在线预约设置",
+      "View Marketing Rules": "查看营销规则",
+      "Manage Marketing Rules": "管理营销规则",
+      "Send Marketing Messages": "发送营销消息",
+      "View Marketing Logs": "查看发送记录"
     },
     "permissionDescriptions": {
       "View Dashboard": "查看仪表盘数据和统计图表",
@@ -3844,7 +3949,11 @@
       "Delete Material": "删除物料采购记录",
       "View Billing": "查看商户账单信息和历史记录",
       "View Online Booking Settings": "查看在线预约功能的设置和配置信息",
-      "Update Online Booking Settings": "修改在线预约设置（包括启用/禁用、预约规则、时间限制等）"
+      "Update Online Booking Settings": "修改在线预约设置（包括启用/禁用、预约规则、时间限制等）",
+      "View Marketing Rules": "查看客户营销自动化规则",
+      "Manage Marketing Rules": "创建、编辑、删除营销规则和活动",
+      "Send Marketing Messages": "手动触发向客户发送营销消息",
+      "View Marketing Logs": "查看营销消息发送历史和状态"
     },
     "permissionModules": {
       "dashboard": "仪表盘",
@@ -3877,6 +3986,9 @@
       "notifications.general": "通用权限",
       "notifications.notification_templates": "模板管理",
       "notifications.notification_logs": "通知日志",
+      "marketing": "营销中心",
+      "marketing.marketing_rules": "营销规则",
+      "marketing.marketing_logs": "发送记录",
       "access_control": "访问控制",
       "access_control.user_management": "用户管理",
       "access_control.role_management": "角色管理",
@@ -3975,7 +4087,8 @@
       "tenant": "商户管理",
       "staffAttendance": "员工考勤",
       "staffNotification": "员工通知",
-      "costManagement": "成本管理"
+      "costManagement": "成本管理",
+      "marketing": "营销"
     }
   },
   "admin": {

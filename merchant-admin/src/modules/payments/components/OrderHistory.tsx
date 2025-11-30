@@ -803,8 +803,15 @@ const OrderHistory: React.FC = () => {
                                             <IconButton
                                                 size="small"
                                                 onClick={(event) => handleMenuOpen(event, order)}
+                                                sx={{
+                                                    color: '#999',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(0,0,0,0.04)',
+                                                        color: '#666',
+                                                    },
+                                                }}
                                             >
-                                                <MoreVertIcon sx={{ color: '#6B7280' }} />
+                                                <MoreVertIcon sx={{ fontSize: 18 }} />
                                             </IconButton>
                                         </TableCell>
                                     </TableRow>

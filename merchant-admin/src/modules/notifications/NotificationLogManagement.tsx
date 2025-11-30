@@ -118,8 +118,11 @@ const NotificationLogManagement: React.FC = () => {
     { value: 'APPOINTMENT_COMPLETION', label: t('notifications.businessTypes.APPOINTMENT_COMPLETION', 'Appointment Completion') },
     { value: 'APPOINTMENT_CONFIRMATION', label: t('notifications.businessTypes.APPOINTMENT_CONFIRMATION', 'Appointment Confirmation') },
     { value: 'APPOINTMENT_REMINDER', label: t('notifications.businessTypes.APPOINTMENT_REMINDER', 'Appointment Reminder') },
+    { value: 'APPOINTMENT_CHECKOUT_STAFF', label: t('notifications.businessTypes.APPOINTMENT_CHECKOUT_STAFF', 'Appointment Checkout (Staff)') },
     { value: 'PACKAGE_VERIFICATION', label: t('notifications.businessTypes.PACKAGE_VERIFICATION', 'Package Verification') },
-    { value: 'PACKAGE_PURCHASE_SUCCESS', label: t('notifications.businessTypes.PACKAGE_PURCHASE_SUCCESS', 'Package Purchase Success') }
+    { value: 'PACKAGE_PURCHASE_SUCCESS', label: t('notifications.businessTypes.PACKAGE_PURCHASE_SUCCESS', 'Package Purchase Success') },
+    { value: 'STAFF_DAILY_SUMMARY', label: t('notifications.businessTypes.STAFF_DAILY_SUMMARY', 'Staff Daily Summary') },
+    { value: 'MARKETING_REMINDER', label: t('notifications.businessTypes.MARKETING_REMINDER', 'Marketing Reminder') }
   ];
 
   const fetchLogs = useCallback(async () => {

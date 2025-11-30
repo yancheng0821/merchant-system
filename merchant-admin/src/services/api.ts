@@ -851,6 +851,17 @@ export interface Customer {
   }[];
 }
 
+// 营销规则匹配的客户（包含发送状态）
+export interface MatchedCustomer {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  sent: boolean;
+  lastSentAt?: string;
+}
+
 export interface CustomerStats {
   totalCustomers: number;
   activeCustomers: number;
@@ -3524,5 +3535,160 @@ export const onlineBookingApi = {
     return createRequest(`/api/business/online-booking/lookup-place-id?tenantId=${tenantId}`, {
       method: 'POST',
     });
+  },
+};
+
+// 营销管理 API
+export interface MarketingRule {
+  id: number;
+  tenantId: number;
+  name: string;
+  enabled: boolean;
+  triggerType: 'INACTIVE_DAYS' | 'LAST_VISIT_DAYS' | 'NO_BOOKING_DAYS';
+  triggerDays: number;
+  notificationType: 'EMAIL' | 'SMS' | 'BOTH';
+  templateId?: number;
+  customSubject?: string;
+  customContent?: string;
+  scheduleType: 'MANUAL' | 'DAILY' | 'WEEKLY';
+  scheduleTime?: string;
+  scheduleDayOfWeek?: number;
+  cooldownDays: number;
+  lastRunAt?: string;
+  matchedCustomerCount?: number;
+  totalSentCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MarketingSendLog {
+  id: number;
+  tenantId: number;
+  ruleId: number;
+  ruleName: string;
+  customerId: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  notificationType: 'EMAIL' | 'SMS';
+  subject?: string;
+  content?: string;
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  errorMessage?: string;
+  sentAt: string;
+}
+
+export const marketingApi = {
+  // 获取营销规则列表
+  getRules: async (tenantId: number): Promise<MarketingRule[]> => {
+    const response = await createRequest(
+      `/api/business/marketing/rules?tenantId=${tenantId}`,
+      { method: 'GET' }
+    );
+    return response.data || [];
+  },
+
+  // 获取单个营销规则
+  getRuleById: async (ruleId: number): Promise<MarketingRule> => {
+    const response = await createRequest(
+      `/api/business/marketing/rules/${ruleId}`,
+      { method: 'GET' }
+    );
+    return response.data;
+  },
+
+  // 创建营销规则
+  createRule: async (rule: Partial<MarketingRule>): Promise<MarketingRule> => {
+    const response = await createRequest(
+      '/api/business/marketing/rules',
+      {
+        method: 'POST',
+        body: JSON.stringify(rule),
+      }
+    );
+    return response.data;
+  },
+
+  // 更新营销规则
+  updateRule: async (ruleId: number, rule: Partial<MarketingRule>): Promise<MarketingRule> => {
+    const response = await createRequest(
+      `/api/business/marketing/rules/${ruleId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(rule),
+      }
+    );
+    return response.data;
+  },
+
+  // 删除营销规则
+  deleteRule: async (ruleId: number): Promise<void> => {
+    await createRequest(
+      `/api/business/marketing/rules/${ruleId}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  // 切换规则启用状态
+  toggleRuleEnabled: async (ruleId: number, enabled: boolean): Promise<void> => {
+    await createRequest(
+      `/api/business/marketing/rules/${ruleId}/enabled?enabled=${enabled}`,
+      { method: 'PATCH' }
+    );
+  },
+
+  // 立即发送营销规则
+  sendNow: async (ruleId: number): Promise<{ sentCount: number }> => {
+    const response = await createRequest(
+      `/api/business/marketing/rules/${ruleId}/send`,
+      { method: 'POST' }
+    );
+    return response.data;
+  },
+
+  // 获取发送记录列表
+  getSendLogs: async (params: {
+    tenantId: number;
+    page?: number;
+    size?: number;
+    status?: string;
+    keyword?: string;
+  }): Promise<{ data: MarketingSendLog[]; total: number }> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('tenantId', params.tenantId.toString());
+    if (params.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params.size !== undefined) queryParams.append('size', params.size.toString());
+    if (params.status) queryParams.append('status', params.status);
+    if (params.keyword) queryParams.append('keyword', params.keyword);
+
+    const response = await createRequest(
+      `/api/business/marketing/logs?${queryParams.toString()}`,
+      { method: 'GET' }
+    );
+    return {
+      data: response.data || [],
+      total: response.total || 0,
+    };
+  },
+
+  // 获取规则的发送记录
+  getSendLogsByRuleId: async (ruleId: number, page: number = 0, size: number = 20): Promise<{ data: MarketingSendLog[]; total: number }> => {
+    const response = await createRequest(
+      `/api/business/marketing/logs/rule/${ruleId}?page=${page}&size=${size}`,
+      { method: 'GET' }
+    );
+    return {
+      data: response.data || [],
+      total: response.total || 0,
+    };
+  },
+
+  // 获取规则匹配的客户列表（包含发送状态）
+  getMatchedCustomers: async (ruleId: number): Promise<MatchedCustomer[]> => {
+    const response = await createRequest(
+      `/api/business/marketing/rules/${ruleId}/matched-customers`,
+      { method: 'GET' }
+    );
+    return response.data || [];
   },
 };

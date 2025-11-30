@@ -73,6 +73,7 @@ public class NotificationMessage implements Serializable {
         APPOINTMENT_CANCELLATION,
         APPOINTMENT_COMPLETION,
         APPOINTMENT_REMINDER,
+        MARKETING,
         SMS,
         EMAIL
     }

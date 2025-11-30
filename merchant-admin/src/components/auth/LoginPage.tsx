@@ -13,6 +13,7 @@ import {
   IconButton,
   Grid,
   Snackbar,
+  Chip,
   alpha,
 } from '@mui/material';
 import {
@@ -1382,9 +1383,9 @@ const LoginPage: React.FC = () => {
                     </Button>
                   </Typography>
 
-                  {/* 商户注册链接 */}
+                  {/* 商户注册链接 - 简约风格 */}
                   {pageMode === 'login' && (
-                    <Typography sx={{ fontSize: '0.8rem', color: '#999', textAlign: 'center' }}>
+                    <Typography sx={{ textAlign: 'center', fontSize: '0.8rem', color: '#999', pt: 1 }}>
                       {t('auth.noMerchantAccount')}{' '}
                       <Button
                         variant="text"
@@ -1400,15 +1401,25 @@ const LoginPage: React.FC = () => {
                           minWidth: 'auto',
                           fontSize: '0.8rem',
                           verticalAlign: 'baseline',
-                          whiteSpace: 'nowrap',
                           '&:hover': {
                             backgroundColor: 'transparent',
                             textDecoration: 'underline',
                           },
                         }}
                       >
-                        {t('auth.merchantRegister')}
+                        {t('auth.merchantRegisterFreeTrial')}
                       </Button>
+                      <Box
+                        component="span"
+                        sx={{
+                          fontSize: '0.7rem',
+                          color: '#10B981',
+                          fontWeight: 500,
+                          ml: 0.5,
+                        }}
+                      >
+                        {t('auth.freeTrialBadge')}
+                      </Box>
                     </Typography>
                   )}
                 </Box>

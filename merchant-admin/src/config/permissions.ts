@@ -160,6 +160,16 @@ export const NOTIFICATION_PERMISSIONS = {
 } as const;
 
 // ============================================================================
+// Marketing（营销）权限
+// ============================================================================
+export const MARKETING_PERMISSIONS = {
+  VIEW_RULES: 'marketing:view_rules',
+  MANAGE_RULES: 'marketing:manage_rules',
+  SEND: 'marketing:send',
+  VIEW_LOGS: 'marketing:view_logs',
+} as const;
+
+// ============================================================================
 // Users（用户管理）权限
 // ============================================================================
 export const USER_PERMISSIONS = {
@@ -224,6 +234,7 @@ export const ALL_PERMISSIONS = {
   COST: COST_PERMISSIONS,
   SETTINGS: SETTINGS_PERMISSIONS,
   NOTIFICATION: NOTIFICATION_PERMISSIONS,
+  MARKETING: MARKETING_PERMISSIONS,
   USER: USER_PERMISSIONS,
   RBAC: RBAC_PERMISSIONS,
   AUDIT: AUDIT_PERMISSIONS,
@@ -375,6 +386,16 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { code: 'notifications:view_logs', name: '查看日志', resource: 'notifications', action: 'view_logs' },
       { code: 'notifications:retry', name: '重试通知', resource: 'notifications', action: 'retry' },
       { code: 'notifications:delete_template', name: '删除模板', resource: 'notifications', action: 'delete_template' },
+    ],
+  },
+  {
+    name: 'marketing',
+    displayName: '营销管理',
+    permissions: [
+      { code: 'marketing:view_rules', name: '查看营销规则', resource: 'marketing', action: 'view_rules' },
+      { code: 'marketing:manage_rules', name: '管理营销规则', resource: 'marketing', action: 'manage_rules', description: '新增、编辑、删除营销规则' },
+      { code: 'marketing:send', name: '发送营销消息', resource: 'marketing', action: 'send', description: '手动触发发送营销消息' },
+      { code: 'marketing:view_logs', name: '查看发送记录', resource: 'marketing', action: 'view_logs' },
     ],
   },
   {

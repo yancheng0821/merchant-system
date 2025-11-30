@@ -63,7 +63,21 @@
     "generate": "Generate",
     "or": "or",
     "openInNewTab": "Open in new tab",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "weekdays": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
+    }
   },
   "auth": {
     "and": "and",
@@ -303,6 +317,8 @@
     "switchToRegister": "Sign up now",
     "switchToLogin": "Sign in now",
     "noMerchantAccount": "Don't have a merchant account?",
+    "freeTrialBadge": "· 14-Day Free Trial",
+    "merchantRegisterFreeTrial": "Register Merchant",
     "usernameRequired": "Username is required",
     "passwordRequired": "Password is required",
     "emailRequired": "Email is required",
@@ -464,6 +480,7 @@
     "roomManagement": "Rooms",
     "schedule": "Schedule",
     "notifications": "Notifications",
+    "marketing": "Marketing",
     "analytics": "Analytics",
     "costs": "Cost Management",
     "settings": "Settings",
@@ -2579,8 +2596,11 @@
       "APPOINTMENT_COMPLETION": "Appointment Completion",
       "APPOINTMENT_CONFIRMATION": "Appointment Confirmation",
       "APPOINTMENT_REMINDER": "Appointment Reminder",
+      "APPOINTMENT_CHECKOUT_STAFF": "Appointment Checkout (Staff)",
       "PACKAGE_VERIFICATION": "Package Verification",
-      "PACKAGE_PURCHASE_SUCCESS": "Package Purchase Success"
+      "PACKAGE_PURCHASE_SUCCESS": "Package Purchase Success",
+      "STAFF_DAILY_SUMMARY": "Staff Daily Summary",
+      "MARKETING_REMINDER": "Marketing Reminder"
     },
     "createTemplateSuccess": "Template created successfully",
     "updateTemplateSuccess": "Template updated successfully",
@@ -2777,6 +2797,87 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "confirmCancel": "Confirm Cancel"
+  },
+  "marketing": {
+    "title": "Marketing",
+    "subtitle": "Customer lifecycle marketing and automated reminders",
+    "tabs": {
+      "rules": "Marketing Rules",
+      "history": "Send History"
+    },
+    "rulesDescription": "Set up automated marketing rules to periodically send reminders to qualified customers",
+    "noRules": "No marketing rules yet",
+    "createFirstRule": "Create your first rule",
+    "addRule": "Add Rule",
+    "editRule": "Edit Rule",
+    "ruleFormDescription": "Set trigger conditions and notification content",
+    "ruleNamePlaceholder": "e.g., Lost Customer Recall",
+    "subjectPlaceholder": "Enter email subject",
+    "contentPlaceholder": "Enter notification content...",
+    "availableVariables": "Available Variables",
+    "ruleDialogSubtitle": "Configure automated marketing rule",
+    "deleteRuleConfirm": "Delete Rule",
+    "deleteRuleMessage": "Are you sure you want to delete rule \"{{name}}\"? This action cannot be undone.",
+    "ruleName": "Rule Name",
+    "triggerCondition": "Trigger Condition",
+    "triggerType": "Condition Type",
+    "triggerDays": "Days Threshold",
+    "triggerTypes": {
+      "inactiveDays": "Inactive Days",
+      "lastVisitDays": "Days Since Last Visit",
+      "noBookingDays": "Days Without Booking"
+    },
+    "notificationSettings": "Notification Settings",
+    "notificationType": "Send Method",
+    "notificationTypes": {
+      "email": "Email",
+      "sms": "SMS",
+      "both": "Email and SMS"
+    },
+    "emailSubject": "Email Subject",
+    "emailContent": "Email Content",
+    "contentPlaceholderHelp": "Available variables: {{customerName}}, {{merchantName}}, {{lastVisitDate}}",
+    "scheduleSettings": "Schedule Settings",
+    "schedule": "Schedule",
+    "scheduleType": "Execution Type",
+    "scheduleTime": "Execution Time",
+    "scheduleDayOfWeek": "Day of Week",
+    "scheduleTypes": {
+      "manual": "Manual Trigger",
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "cooldownDays": "Cooldown Days",
+    "cooldownDaysHelp": "Same customer will not receive repeated messages within this period",
+    "matchedCustomers": "Matched Customers",
+    "sendNow": "Send Now",
+    "status": {
+      "sent": "Sent",
+      "failed": "Failed",
+      "pending": "Pending"
+    },
+    "messages": {
+      "ruleCreated": "Rule created successfully",
+      "ruleUpdated": "Rule updated successfully",
+      "ruleDeleted": "Rule deleted successfully",
+      "sendSuccess": "Successfully sent to {{count}} customers"
+    },
+    "errors": {
+      "nameRequired": "Please enter rule name"
+    },
+    "noLogs": "No send history yet",
+    "searchPlaceholder": "Search customer name or email",
+    "statusFilter": "Status Filter",
+    "sendTime": "Send Time",
+    "customer": "Customer",
+    "contact": "Contact",
+    "type": "Type",
+    "errorMessage": "Error Message",
+    "previewEmail": "Preview Email",
+    "emailPreview": "Email Preview",
+    "noSubject": "(No subject)",
+    "noContent": "(No content)",
+    "noMatchedCustomers": "No customers match the criteria"
   },
   "analytics": {
     "title": "Analytics",
@@ -3620,7 +3721,11 @@
       "Delete Material": "Delete Material",
       "View Billing": "View Billing",
       "View Online Booking Settings": "View Online Booking Settings",
-      "Update Online Booking Settings": "Update Online Booking Settings"
+      "Update Online Booking Settings": "Update Online Booking Settings",
+      "View Marketing Rules": "View Marketing Rules",
+      "Manage Marketing Rules": "Manage Marketing Rules",
+      "Send Marketing Messages": "Send Marketing Messages",
+      "View Marketing Logs": "View Marketing Logs"
     },
     "permissionDescriptions": {
       "View Dashboard": "View dashboard data and statistics",
@@ -3757,7 +3862,11 @@
       "Delete Material": "Delete material purchase record",
       "View Billing": "View merchant billing information and history",
       "View Online Booking Settings": "View online booking feature settings and configuration",
-      "Update Online Booking Settings": "Update online booking settings (enable/disable, booking rules, time limits, etc.)"
+      "Update Online Booking Settings": "Update online booking settings (enable/disable, booking rules, time limits, etc.)",
+      "View Marketing Rules": "View marketing automation rules for customer outreach",
+      "Manage Marketing Rules": "Create, update, delete marketing rules and campaigns",
+      "Send Marketing Messages": "Manually trigger sending marketing messages to customers",
+      "View Marketing Logs": "View marketing message send history and status"
     },
     "permissionModules": {
       "dashboard": "Dashboard",
@@ -3790,6 +3899,9 @@
       "notifications.general": "General Permissions",
       "notifications.notification_templates": "Template Management",
       "notifications.notification_logs": "Notification Logs",
+      "marketing": "Marketing",
+      "marketing.marketing_rules": "Marketing Rules",
+      "marketing.marketing_logs": "Send History",
       "access_control": "Access Control",
       "access_control.user_management": "User Management",
       "access_control.role_management": "Role Management",
@@ -3888,7 +4000,8 @@
       "tenant": "Merchant Management",
       "staffAttendance": "Staff Attendance",
       "staffNotification": "Staff Notification",
-      "costManagement": "Cost Management"
+      "costManagement": "Cost Management",
+      "marketing": "Marketing"
     }
   },
   "admin": {

@@ -1250,12 +1250,14 @@ const CustomerManagement: React.FC = () => {
                             setSelectedCustomer(customer);
                           }}
                           sx={{
+                            color: '#999',
                             '&:hover': {
-                              backgroundColor: alpha(THEME_COLOR, 0.1),
+                              backgroundColor: 'rgba(0,0,0,0.04)',
+                              color: '#666',
                             },
                           }}
                         >
-                          <MoreVertIcon />
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       )}
                     </TableCell>

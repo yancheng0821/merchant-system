@@ -209,6 +209,75 @@ public class NotificationMQService {
     }
 
     /**
+     * 发送营销通知
+     */
+    public void sendMarketingNotification(Long tenantId, Long ruleId, Long customerId,
+                                          String recipientEmail, String recipientPhone,
+                                          String recipientName, String subject, String content,
+                                          String notificationType, String businessName) {
+        if (!useMQ) {
+            log.info("MQ is disabled for marketing notification");
+            return;
+        }
+
+        try {
+            log.info("Sending marketing notification via MQ to: email={}, phone={}", recipientEmail, recipientPhone);
+
+            // 构建接收者信息
+            com.merchant.server.common.dto.NotificationRequest.RecipientInfo recipient =
+                com.merchant.server.common.dto.NotificationRequest.RecipientInfo.builder()
+                    .email(recipientEmail)
+                    .phone(recipientPhone)
+                    .name(recipientName)
+                    .build();
+
+            // 构建模板变量
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("customerName", recipientName);
+            variables.put("subject", subject);
+            variables.put("content", content);
+            variables.put("merchantName", businessName);
+
+            // 确定通知渠道
+            String channel;
+            if ("EMAIL".equalsIgnoreCase(notificationType)) {
+                channel = "EMAIL";
+            } else if ("SMS".equalsIgnoreCase(notificationType)) {
+                channel = "SMS";
+            } else {
+                channel = "BOTH";
+            }
+
+            // 构建 NotificationRequest - businessId 存储客户ID
+            com.merchant.server.common.dto.NotificationRequest request =
+                com.merchant.server.common.dto.NotificationRequest.builder()
+                    .scene("marketing.reminder")
+                    .tenantId(tenantId)
+                    .recipient(recipient)
+                    .channel(channel)
+                    .variables(variables)
+                    .businessId(String.valueOf(customerId))
+                    .fromName(businessName)
+                    .build();
+
+            // 将 NotificationRequest 作为 payload
+            Map<String, Object> payload = objectMapper.convertValue(request, Map.class);
+
+            NotificationMessage mqMessage = NotificationMessage.builder()
+                    .messageType(NotificationMessage.MessageType.MARKETING)
+                    .tenantId(tenantId)
+                    .priority(NotificationMessage.Priority.LOW)
+                    .payload(payload)
+                    .build();
+
+            messageProducer.sendMarketingNotification(mqMessage);
+            log.info("Marketing notification sent to MQ successfully");
+        } catch (Exception e) {
+            log.error("Failed to send marketing notification via MQ: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * 构建通知消息
      */
     @SuppressWarnings("unchecked")

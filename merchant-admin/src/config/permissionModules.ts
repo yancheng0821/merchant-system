@@ -157,7 +157,22 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
     ],
   },
 
-  // 11. Access Control - 访问控制（多级结构）
+  // 11. Marketing - 营销管理（多级结构）
+  {
+    name: 'marketing',
+    subModules: [
+      {
+        name: 'marketing_rules',
+        resourceTypes: ['marketing_rules'],
+      },
+      {
+        name: 'marketing_logs',
+        resourceTypes: ['marketing_logs'],
+      },
+    ],
+  },
+
+  // 12. Access Control - 访问控制（多级结构）
   {
     name: 'access_control',
     subModules: [
@@ -180,7 +195,7 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
     ],
   },
 
-  // 12. Settings - 系统设置（多级结构）
+  // 13. Settings - 系统设置（多级结构）
   {
     name: 'settings',
     subModules: [

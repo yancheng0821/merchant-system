@@ -15,6 +15,7 @@ import {
   AdminPanelSettings as RBACIcon,
   AccountBalance as CostsIcon,
   Business as TenantIcon,
+  Campaign as MarketingIcon,
 } from '@mui/icons-material';
 import { PermissionCode } from '../config/permissions';
 import { RoleCode } from '../config/roles';
@@ -114,7 +115,16 @@ export const generateNavigationConfig = (merchantConfig?: MerchantConfig): MenuI
     anyPermission: ['notifications:view_logs', 'notifications:manage_template'] as PermissionCode[]
   });
 
-  // 9. 数据分析 - 业务洞察（目前只有订单统计）
+  // 9. 营销中心 - 客户营销
+  baseMenuItems.push({
+    textKey: 'nav.marketing',
+    icon: React.createElement(MarketingIcon),
+    id: 'marketing',
+    color: '#059669',
+    anyPermission: ['marketing:view_rules', 'marketing:view_logs'] as PermissionCode[]
+  });
+
+  // 10. 数据分析 - 业务洞察（目前只有订单统计）
   baseMenuItems.push({
     textKey: 'nav.analytics',
     icon: React.createElement(AnalyticsIcon),

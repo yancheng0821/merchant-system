@@ -329,6 +329,8 @@ const AuditLogs: React.FC = () => {
       MERCHANT_CONFIG_ITEM: t('audit.resource.merchantConfigItem'),
       MERCHANT_SETTINGS: t('audit.resource.merchantSettings'),
       TENANT: t('audit.resource.tenant'),
+      // Marketing Resources
+      MARKETING: t('audit.resource.marketing'),
     };
     return resourceMap[resource] || resource;
   };
@@ -369,6 +371,11 @@ const AuditLogs: React.FC = () => {
     // Notification resources - Orange
     if (normalizedResource.includes('NOTIFICATION')) {
       return { bg: alpha('#F97316', 0.1), color: '#F97316' };
+    }
+
+    // Marketing resources - Pink/Magenta
+    if (normalizedResource.includes('MARKETING')) {
+      return { bg: alpha('#EC4899', 0.1), color: '#EC4899' };
     }
 
     // Cost Management resources - Red
@@ -830,6 +837,8 @@ const AuditLogs: React.FC = () => {
                   <MenuItem value="MERCHANT">{t('audit.resource.merchant')}</MenuItem>
                   <MenuItem value="MERCHANT_CONFIG_ITEM">{t('audit.resource.merchantConfigItem')}</MenuItem>
                   <MenuItem value="TENANT">{t('audit.resource.tenant')}</MenuItem>
+                  {/* Marketing Resources */}
+                  <MenuItem value="MARKETING">{t('audit.resource.marketing')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

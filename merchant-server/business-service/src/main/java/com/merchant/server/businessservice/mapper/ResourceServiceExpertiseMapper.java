@@ -67,4 +67,9 @@ public interface ResourceServiceExpertiseMapper {
      * 删除资源的所有专长记录
      */
     void deleteByResourceId(@Param("resourceId") Long resourceId);
+
+    /**
+     * 批量查询多个资源的专长（解决N+1查询问题）
+     */
+    List<ResourceServiceExpertise> findByResourceIds(@Param("resourceIds") List<Long> resourceIds);
 }

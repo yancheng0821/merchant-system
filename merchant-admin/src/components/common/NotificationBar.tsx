@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  IconButton,
-  Collapse,
-  alpha,
 } from '@mui/material';
-import {
-  Campaign as CampaignIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-} from '@mui/icons-material';
 import { businessNotificationApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +26,6 @@ const NotificationBar: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [expanded, setExpanded] = useState(true);
 
   // 根据当前语言获取通知标题和内容
   const getLocalizedText = (notification: SystemNotification) => {
@@ -81,17 +72,14 @@ const NotificationBar: React.FC = () => {
 
   // 自动轮播
   useEffect(() => {
-    if (!expanded || notifications.length <= 1) return;
+    if (notifications.length <= 1) return;
 
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => {
-        const nextIndex = (prev + 1) % notifications.length;
-        return nextIndex;
-      });
+      setCurrentIndex((prev) => (prev + 1) % notifications.length);
     }, 8000); // 每8秒切换一次
 
     return () => clearInterval(timer);
-  }, [notifications.length, expanded]);
+  }, [notifications.length]);
 
   // 当通知列表变化时，重置索引以防越界
   useEffect(() => {
@@ -99,10 +87,6 @@ const NotificationBar: React.FC = () => {
       setCurrentIndex(0);
     }
   }, [notifications.length, currentIndex]);
-
-  const handleToggle = () => {
-    setExpanded(!expanded);
-  };
 
   if (notifications.length === 0) {
     return null;
@@ -117,144 +101,73 @@ const NotificationBar: React.FC = () => {
 
   const localizedText = getLocalizedText(currentNotification);
 
-  // 根据通知级别获取颜色配置
-  const getLevelColors = (level: string) => {
+  // 根据通知级别获取颜色
+  const getLevelColor = (level: string) => {
     switch (level) {
-      case 'WARNING':
-        return {
-          primary: '#F59E0B', // 黄色
-          light: 'rgba(245, 158, 11, 0.08)',
-          medium: 'rgba(245, 158, 11, 0.04)',
-          hover: 'rgba(245, 158, 11, 0.12)',
-          hoverMedium: 'rgba(245, 158, 11, 0.06)',
-        };
-      case 'ERROR':
-        return {
-          primary: '#EF4444', // 红色
-          light: 'rgba(239, 68, 68, 0.08)',
-          medium: 'rgba(239, 68, 68, 0.04)',
-          hover: 'rgba(239, 68, 68, 0.12)',
-          hoverMedium: 'rgba(239, 68, 68, 0.06)',
-        };
-      case 'SUCCESS':
-        return {
-          primary: '#10B981', // 绿色
-          light: 'rgba(16, 185, 129, 0.08)',
-          medium: 'rgba(16, 185, 129, 0.04)',
-          hover: 'rgba(16, 185, 129, 0.12)',
-          hoverMedium: 'rgba(16, 185, 129, 0.06)',
-        };
+      case 'WARNING': return '#F59E0B';
+      case 'ERROR': return '#EF4444';
+      case 'SUCCESS': return '#10B981';
       case 'INFO':
-      default:
-        return {
-          primary: '#6366F1', // 蓝紫色
-          light: 'rgba(99, 102, 241, 0.08)',
-          medium: 'rgba(99, 102, 241, 0.04)',
-          hover: 'rgba(99, 102, 241, 0.12)',
-          hoverMedium: 'rgba(99, 102, 241, 0.06)',
-        };
+      default: return '#6366F1';
     }
   };
 
-  const colors = getLevelColors(currentNotification.level);
+  const color = getLevelColor(currentNotification.level);
 
   return (
     <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1.5,
-        px: expanded ? 2.5 : 0,
-        py: expanded ? 0.5 : 0,
-        background: expanded
-          ? `linear-gradient(90deg, ${colors.light} 0%, ${colors.medium} 50%, transparent 100%)`
-          : 'transparent',
-        borderRadius: 2,
-        maxWidth: expanded ? 'none' : 'auto',
-        minWidth: expanded ? 'auto' : 'auto',
-        width: expanded ? 'auto' : 'auto',
-        height: 40,
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-        overflow: expanded ? 'visible' : 'hidden',
-        position: 'relative',
-        cursor: expanded ? 'default' : 'pointer',
-        '&:hover': {
-          background: expanded
-            ? `linear-gradient(90deg, ${colors.hover} 0%, ${colors.hoverMedium} 50%, transparent 100%)`
-            : 'transparent',
-        },
+        gap: 1,
+        flex: 1,
+        minWidth: 0,
       }}
-      onClick={!expanded ? handleToggle : undefined}
     >
-      {/* 图标 - 始终显示 */}
-      <IconButton
-        size="small"
-        onClick={expanded ? handleToggle : undefined}
+      {/* 通知指示点 */}
+      <Box
         sx={{
-          width: 32,
-          height: 32,
-          color: colors.primary,
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          bgcolor: color,
           flexShrink: 0,
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            backgroundColor: colors.light,
-            transform: 'scale(1.1)',
-          },
+        }}
+      />
+
+      {/* 通知内容 */}
+      <Typography
+        sx={{
+          color: '#666',
+          fontSize: '0.8125rem',
+          lineHeight: 1.4,
+          flex: 1,
+          minWidth: 0,
         }}
       >
-        <CampaignIcon sx={{ fontSize: 20 }} />
-      </IconButton>
+        <Box component="span" sx={{ fontWeight: 500, color: '#444' }}>
+          {localizedText.title}
+        </Box>
+        {' · '}
+        <Box component="span" sx={{ color: '#888' }}>
+          {localizedText.content}
+        </Box>
+      </Typography>
 
-      {/* 通知内容 - 展开时显示 */}
-      {expanded && (
+      {/* 通知数量指示（多条时显示） */}
+      {notifications.length > 1 && (
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            pr: 1,
-            height: 32,
-            ml: 1,
-            overflow: 'hidden',
-            animation: expanded ? 'slideIn 0.3s ease-out' : 'none',
-            '@keyframes slideIn': {
-              '0%': {
-                opacity: 0,
-                transform: 'translateX(-20px)',
-              },
-              '100%': {
-                opacity: 1,
-                transform: 'translateX(0)',
-              },
-            },
+            px: 1,
+            py: 0.25,
+            borderRadius: 1,
+            bgcolor: 'rgba(0,0,0,0.04)',
+            fontSize: '0.7rem',
+            color: '#888',
+            flexShrink: 0,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography
-              variant="body2"
-              component="span"
-              sx={{
-                fontWeight: 600,
-                color: '#475569',
-                fontSize: '0.8125rem',
-                lineHeight: 1.6,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {localizedText.title}:
-            </Typography>
-            <Typography
-              variant="body2"
-              component="span"
-              sx={{
-                color: '#64748B',
-                fontSize: '0.8125rem',
-                lineHeight: 1.6,
-              }}
-            >
-              {localizedText.content}
-            </Typography>
-          </Box>
+          {currentIndex + 1}/{notifications.length}
         </Box>
       )}
     </Box>

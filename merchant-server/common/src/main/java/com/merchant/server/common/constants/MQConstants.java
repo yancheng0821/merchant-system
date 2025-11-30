@@ -71,6 +71,11 @@ public class MQConstants {
     public static final String QUEUE_PACKAGE_PURCHASE = "notification.package.purchase";
 
     /**
+     * 营销通知队列
+     */
+    public static final String QUEUE_MARKETING = "notification.marketing";
+
+    /**
      * 死信队列
      */
     public static final String QUEUE_DLQ = "notification.dlq";
@@ -132,6 +137,11 @@ public class MQConstants {
      * 套餐购买成功 Routing Key
      */
     public static final String ROUTING_KEY_PACKAGE_PURCHASE = "package.purchase";
+
+    /**
+     * 营销通知 Routing Key
+     */
+    public static final String ROUTING_KEY_MARKETING = "marketing.reminder";
 
     // ==================== Dead Letter ====================
     /**

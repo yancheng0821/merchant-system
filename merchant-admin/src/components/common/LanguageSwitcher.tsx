@@ -67,10 +67,12 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       };
     }
     return {
-      color: '#666',
+      color: '#888',
+      width: 32,
+      height: 32,
       '&:hover': {
         backgroundColor: 'rgba(0, 0, 0, 0.04)',
-        color: '#1a1a1a',
+        color: '#666',
       },
     };
   };

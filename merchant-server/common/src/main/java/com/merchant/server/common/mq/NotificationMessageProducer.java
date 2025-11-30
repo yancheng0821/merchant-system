@@ -150,4 +150,12 @@ public class NotificationMessageProducer {
         log.info("Sending package purchase success notification via MQ: messageId={}", message.getMessageId());
         sendNotification(message, MQConstants.ROUTING_KEY_PACKAGE_PURCHASE);
     }
+
+    /**
+     * 发送营销通知
+     */
+    public void sendMarketingNotification(NotificationMessage message) {
+        log.info("Sending marketing notification via MQ: messageId={}", message.getMessageId());
+        sendNotification(message, MQConstants.ROUTING_KEY_MARKETING);
+    }
 }

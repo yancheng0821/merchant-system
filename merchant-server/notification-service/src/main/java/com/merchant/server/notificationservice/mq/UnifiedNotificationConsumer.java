@@ -117,6 +117,14 @@ public class UnifiedNotificationConsumer {
     }
 
     /**
+     * 处理营销通知
+     */
+    @RabbitListener(id = "marketing-consumer", queues = MQConstants.QUEUE_MARKETING)
+    public void handleMarketing(NotificationMessage message, Message amqpMessage, Channel channel) {
+        handleNotification(message, amqpMessage, channel, "marketing");
+    }
+
+    /**
      * 统一的通知处理逻辑
      * 所有业务队列的消息都通过这个方法处理
      */

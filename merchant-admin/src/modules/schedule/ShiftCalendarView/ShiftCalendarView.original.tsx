@@ -553,10 +553,12 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     open: boolean;
     message: string;
     severity: 'success' | 'error' | 'warning' | 'info';
+    duration?: number;
   }>({
     open: false,
     message: '',
     severity: 'warning',
+    duration: 4000,
   });
   // 从localStorage读取视图模式，默认为false
   const [isCompactMode, setIsCompactMode] = useState(() => {
@@ -767,7 +769,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   // WebSocket 实时通知：收到新的在线预约时自动刷新
   useEffect(() => {
     if (newAppointment) {
-      // 显示通知
+      // 显示通知（WebSocket 消息需要更长的显示时间）
       setSnackbar({
         open: true,
         message: t('schedule.newOnlineAppointment', {
@@ -777,6 +779,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           defaultValue: `New online booking: ${newAppointment.customerName} on ${newAppointment.date} at ${newAppointment.time?.substring(0, 5)}`
         }),
         severity: 'info',
+        duration: 8000,
       });
 
       // 静默刷新预约列表，不显示 loading 状态，避免界面闪烁
@@ -790,7 +793,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   // WebSocket 实时通知：收到预约取消通知时更新界面
   useEffect(() => {
     if (cancelledAppointment) {
-      // 显示通知
+      // 显示通知（WebSocket 消息需要更长的显示时间）
       setSnackbar({
         open: true,
         message: t('schedule.appointmentCancelled', {
@@ -800,6 +803,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           defaultValue: `Appointment cancelled: ${cancelledAppointment.customerName} on ${cancelledAppointment.date} at ${cancelledAppointment.time?.substring(0, 5)}`
         }),
         severity: 'warning',
+        duration: 8000,
       });
 
       // 从本地状态中移除被取消的预约，无需重新加载
@@ -1075,27 +1079,32 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     setCurrentDate(getMerchantNow());
   };
 
-  // 检查是否是过去的时间 - 精确到分钟（基于商户时区）
+  // 检查是否是过去的时间 - 按小时判断（基于商户时区）
   const isPastTime = (date: Date, timeStr: string): boolean => {
-    // 使用商户时区的当前时间，而不是浏览器本地时间
+    // 使用商户时区的当前时间
     const now = getMerchantNow();
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [slotHour] = timeStr.split(':').map(Number);
 
     // 检查日期是否是今天（基于商户时区）
-    const isToday = format(date, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const dateStr = format(date, 'yyyy-MM-dd');
 
-    // 如果不是今天，直接判断日期是否在过去
-    if (!isToday) {
-      return date < now;
+    // 如果日期在今天之前，肯定是过去的
+    if (dateStr < todayStr) {
+      return true;
     }
 
-    // 如果是今天，比较当前时间和时间槽的结束时间
-    // 只有当整个小时时间段都过去了，才标记为不可用
-    const slotEndTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours + 1, 0, 0, 0);
+    // 如果日期在今天之后，肯定不是过去的
+    if (dateStr > todayStr) {
+      return false;
+    }
 
-    // 添加5分钟缓冲，避免拒绝正在创建的预约
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-    return slotEndTime < fiveMinutesAgo;
+    // 如果是今天，使用 format 获取正确的商户时区小时数
+    const nowHour = parseInt(format(now, 'H'), 10);
+
+    // 只要当前小时 > 时间槽小时，该槽就是过去的
+    // 例如：现在是12:30，则11点槽是过去的，12点槽不是
+    return slotHour < nowHour;
   };
 
   // 检查员工在指定时间是否可用
@@ -4099,7 +4108,7 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
       <Portal container={isFullscreen ? calendarContainerRef.current : undefined}>
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={8000}
+          autoHideDuration={snackbar.duration || 4000}
           onClose={(event, reason) => {
             if (reason === 'timeout' || reason === 'escapeKeyDown') {
               setSnackbar({ ...snackbar, open: false });

@@ -433,4 +433,24 @@
         AND expiration_date >= UTC_TIMESTAMP()
     </select>
 
+    <!-- 统计不活跃客户数量（用于营销规则匹配） -->
+    <select id="countInactiveCustomers" resultType="int">
+        SELECT COUNT(*) FROM customers
+        WHERE tenant_id = #{tenantId}
+        AND status = 'ACTIVE'
+        AND (last_visit_date IS NULL OR last_visit_date &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY))
+    </select>
+
+    <!-- 获取不活跃客户列表（用于营销通知发送） -->
+    <select id="selectInactiveCustomers" resultMap="CustomerResultMap">
+        SELECT <include refid="Base_Column_List"/>,
+               <include refid="Tier_Column_List"/>
+        FROM customers c
+        LEFT JOIN membership_tier mt ON c.membership_tier_id = mt.id AND mt.is_deleted = false
+        WHERE c.tenant_id = #{tenantId}
+        AND c.status = 'ACTIVE'
+        AND (c.last_visit_date IS NULL OR c.last_visit_date &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY))
+        AND (c.email IS NOT NULL OR c.phone IS NOT NULL)
+    </select>
+
 </mapper>

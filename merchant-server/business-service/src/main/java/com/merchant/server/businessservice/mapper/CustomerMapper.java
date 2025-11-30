@@ -227,4 +227,20 @@ public interface CustomerMapper {
      * 获取客户活跃套餐数量
      */
     int countActivePackages(@Param("customerId") Long customerId);
+
+    /**
+     * 统计不活跃客户数量（用于营销规则匹配）
+     * @param tenantId 租户ID
+     * @param days 天数阈值
+     * @return 超过指定天数未到店的客户数量
+     */
+    int countInactiveCustomers(@Param("tenantId") Long tenantId, @Param("days") Integer days);
+
+    /**
+     * 获取不活跃客户列表（用于营销通知发送）
+     * @param tenantId 租户ID
+     * @param days 天数阈值
+     * @return 超过指定天数未到店的客户列表
+     */
+    List<Customer> selectInactiveCustomers(@Param("tenantId") Long tenantId, @Param("days") Integer days);
 }
