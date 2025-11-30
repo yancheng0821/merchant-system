@@ -33,10 +33,9 @@ public class MarketingScheduleTask {
     private LocalDateTime lastCacheClearTime = LocalDateTime.now();
 
     /**
-     * 每分钟检查一次需要执行的营销规则（测试用）
-     * TODO: 测试完成后改回每小时执行 @Scheduled(cron = "0 0 * * * ?")
+     * 每小时整点检查一次需要执行的营销规则
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public void checkAndExecuteMarketingRules() {
         log.info("=== Starting marketing schedule check ===");
 
@@ -103,12 +102,11 @@ public class MarketingScheduleTask {
                 if (shouldExecuteRule(rule, currentHour, currentDayOfWeek)) {
                     log.info("Executing marketing rule {} for tenant {}", rule.getId(), tenantId);
 
-                    // TODO: 测试完成后恢复此检查
                     // 检查是否今天已经执行过（防止重复执行）
-                    // if (hasExecutedToday(rule, merchantNow.toLocalDate())) {
-                    //     log.debug("Rule {} already executed today, skipping", rule.getId());
-                    //     continue;
-                    // }
+                    if (hasExecutedToday(rule, merchantNow.toLocalDate())) {
+                        log.debug("Rule {} already executed today, skipping", rule.getId());
+                        continue;
+                    }
 
                     int sentCount = marketingRuleService.sendNow(rule.getId());
                     log.info("Marketing rule {} executed, sent to {} customers", rule.getId(), sentCount);
@@ -121,18 +119,18 @@ public class MarketingScheduleTask {
 
     /**
      * 判断规则是否应该执行
-     * TODO: 测试完成后改回只比较小时
      */
     private boolean shouldExecuteRule(MarketingRule rule, int currentHour, int currentDayOfWeek) {
         if (rule.getScheduleTime() == null) {
             return false;
         }
 
-        // 测试模式：只要是自动执行规则就执行
-        // 正式模式应该比较小时：
-        // LocalTime scheduleTime = rule.getScheduleTime();
-        // int scheduleHour = scheduleTime.getHour();
-        // if (currentHour != scheduleHour) { return false; }
+        // 比较当前小时与规则设定的执行小时
+        LocalTime scheduleTime = rule.getScheduleTime();
+        int scheduleHour = scheduleTime.getHour();
+        if (currentHour != scheduleHour) {
+            return false;
+        }
 
         MarketingRule.ScheduleType scheduleType = rule.getScheduleType();
 
