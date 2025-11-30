@@ -3650,7 +3650,7 @@
       "View Performance": "查看业绩",
       "View Own Performance": "查看自己的业绩",
       "Update Merchant Info": "编辑商户信息",
-      "Update Tax Config": "编辑税务配置",
+      "Update Operations Settings": "修改运营设置",
       "Manage Terminal": "管理终端",
       "Manage Stripe": "管理Stripe",
       "Manage Templates": "管理模板",
@@ -3705,7 +3705,9 @@
       "Create Material": "创建物料采购",
       "Update Material": "更新物料采购",
       "Delete Material": "删除物料采购",
-      "View Billing": "查看账单"
+      "View Billing": "查看账单",
+      "View Online Booking Settings": "查看在线预约设置",
+      "Update Online Booking Settings": "修改在线预约设置"
     },
     "permissionDescriptions": {
       "View Dashboard": "查看仪表盘数据和统计图表",
@@ -3784,7 +3786,7 @@
       "View Performance": "查看员工业绩分析",
       "View Own Performance": "仅查看自己的业绩数据",
       "Update Merchant Info": "修改商户基本信息",
-      "Update Tax Config": "修改税务配置",
+      "Update Operations Settings": "修改运营设置（包括税率配置、营业时间等）",
       "Manage Terminal": "管理支付终端",
       "Manage Stripe": "配置Stripe连接",
       "Manage Templates": "管理通知模板",
@@ -3840,7 +3842,9 @@
       "Create Material": "创建新的物料采购记录",
       "Update Material": "修改物料采购信息",
       "Delete Material": "删除物料采购记录",
-      "View Billing": "查看商户账单信息和历史记录"
+      "View Billing": "查看商户账单信息和历史记录",
+      "View Online Booking Settings": "查看在线预约功能的设置和配置信息",
+      "Update Online Booking Settings": "修改在线预约设置（包括启用/禁用、预约规则、时间限制等）"
     },
     "permissionModules": {
       "dashboard": "仪表盘",
@@ -3880,10 +3884,11 @@
       "access_control.permission_management": "权限管理",
       "settings": "系统设置",
       "settings.basic_settings": "基础设置",
-      "settings.tax_settings": "税务设置",
+      "settings.operations": "运营设置",
       "settings.system_settings": "系统设置",
       "settings.payment_settings": "支付设置",
       "settings.terminal_settings": "终端设置",
+      "settings.online_booking": "在线预约",
       "settings.billing": "账单管理"
     },
     "auditLogs": "审计日志",
@@ -3966,6 +3971,7 @@
       "notificationLog": "通知日志",
       "merchant": "商户",
       "merchantConfigItem": "商户配置项",
+      "merchantSettings": "商户设置",
       "tenant": "商户管理",
       "staffAttendance": "员工考勤",
       "staffNotification": "员工通知",

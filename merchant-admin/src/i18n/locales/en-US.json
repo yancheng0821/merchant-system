@@ -3562,7 +3562,7 @@
       "View Performance": "View Performance",
       "View Own Performance": "View Own Performance",
       "Update Merchant Info": "Update Merchant Info",
-      "Update Tax Config": "Update Tax Config",
+      "Update Operations Settings": "Update Operations Settings",
       "Manage Terminal": "Manage Terminal",
       "Manage Stripe": "Manage Stripe",
       "Manage Templates": "Manage Templates",
@@ -3618,7 +3618,9 @@
       "Create Material": "Create Material",
       "Update Material": "Update Material",
       "Delete Material": "Delete Material",
-      "View Billing": "View Billing"
+      "View Billing": "View Billing",
+      "View Online Booking Settings": "View Online Booking Settings",
+      "Update Online Booking Settings": "Update Online Booking Settings"
     },
     "permissionDescriptions": {
       "View Dashboard": "View dashboard data and statistics",
@@ -3697,7 +3699,7 @@
       "View Performance": "View staff performance analysis",
       "View Own Performance": "View only own performance data",
       "Update Merchant Info": "Update merchant basic information",
-      "Update Tax Config": "Update tax configuration",
+      "Update Operations Settings": "Update operations settings (tax rates, business hours, etc.)",
       "Manage Terminal": "Manage payment terminal",
       "Manage Stripe": "Configure Stripe connection",
       "Manage Templates": "Manage notification templates",
@@ -3753,7 +3755,9 @@
       "Create Material": "Create new material purchase record",
       "Update Material": "Update material purchase information",
       "Delete Material": "Delete material purchase record",
-      "View Billing": "View merchant billing information and history"
+      "View Billing": "View merchant billing information and history",
+      "View Online Booking Settings": "View online booking feature settings and configuration",
+      "Update Online Booking Settings": "Update online booking settings (enable/disable, booking rules, time limits, etc.)"
     },
     "permissionModules": {
       "dashboard": "Dashboard",
@@ -3793,10 +3797,11 @@
       "access_control.permission_management": "Permission Management",
       "settings": "Settings",
       "settings.basic_settings": "Basic Settings",
-      "settings.tax_settings": "Tax Settings",
+      "settings.operations": "Operations",
       "settings.system_settings": "System Settings",
       "settings.payment_settings": "Payment Settings",
       "settings.terminal_settings": "Terminal Settings",
+      "settings.online_booking": "Online Booking",
       "settings.billing": "Billing"
     },
     "auditLogs": "Audit Logs",
@@ -3879,6 +3884,7 @@
       "notificationLog": "Notification Log",
       "merchant": "Merchant",
       "merchantConfigItem": "Merchant Config Item",
+      "merchantSettings": "Merchant Settings",
       "tenant": "Merchant Management",
       "staffAttendance": "Staff Attendance",
       "staffNotification": "Staff Notification",

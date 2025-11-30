@@ -189,8 +189,8 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
         resourceTypes: ['basic_settings'],
       },
       {
-        name: 'tax_settings',
-        resourceTypes: ['tax_settings'],
+        name: 'operations',
+        resourceTypes: ['operations'],
       },
       {
         name: 'system_settings',
@@ -203,6 +203,10 @@ export const PERMISSION_MODULE_STRUCTURE: PermissionModuleConfig[] = [
       {
         name: 'terminal_settings',
         resourceTypes: ['terminal_settings'],
+      },
+      {
+        name: 'online_booking',
+        resourceTypes: ['online_booking'],
       },
       {
         name: 'billing',

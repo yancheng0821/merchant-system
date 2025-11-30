@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.controller;
 
+import com.merchant.server.common.annotation.Auditable;
 import com.merchant.server.common.annotation.RequiresPermission;
 import com.merchant.server.common.dto.ApiResponse;
 import com.merchant.server.businessservice.client.MerchantServiceClient;
@@ -48,6 +49,7 @@ public class OnlineBookingConfigController {
     /**
      * 更新在线预约配置
      */
+    @Auditable(resource = "MERCHANT_SETTINGS", action = "UPDATE", recordOldValue = true, description = "更新在线预约设置")
     @RequiresPermission("settings:update_merchant")
     @PutMapping("/config")
     public ResponseEntity<OnlineBookingConfig> updateConfig(

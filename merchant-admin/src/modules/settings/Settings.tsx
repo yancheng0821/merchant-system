@@ -170,7 +170,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       label: t('settings.tabs.operations'),
       icon: <TuneIcon />,
       color: '#F59E0B',
-      permission: 'settings:update_merchant' as const,
+      permission: 'settings:update_operations' as const,
     },
     {
       key: 'system',
@@ -191,7 +191,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       label: t('settings.tabs.onlineBooking'),
       icon: <OnlineBookingIcon />,
       color: '#3B82F6',
-      permission: 'settings:update_merchant' as const,
+      permissions: ['settings:view_online_booking', 'settings:update_online_booking'] as const,
     },
     // {
     //   key: 'payment',
@@ -202,7 +202,28 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
     // },
   ];
 
-  const tabsConfig = allTabsConfig.filter(tab => hasPermission(tab.permission));
+  const tabsConfig = allTabsConfig.filter(tab => {
+    // 如果有 permissions 数组（多个权限），必须全部满足
+    if ('permissions' in tab && tab.permissions) {
+      return tab.permissions.every(p => hasPermission(p));
+    }
+    // 如果只有单个 permission
+    if ('permission' in tab && tab.permission) {
+      return hasPermission(tab.permission);
+    }
+    return true;
+  });
+
+  // 检查 tab 是否有权限的辅助函数
+  const hasTabPermission = (tab: typeof allTabsConfig[0]) => {
+    if ('permissions' in tab && tab.permissions) {
+      return tab.permissions.every(p => hasPermission(p));
+    }
+    if ('permission' in tab && tab.permission) {
+      return hasPermission(tab.permission);
+    }
+    return true;
+  };
 
   // 初始化selectedTab - 在useState初始化时就读取localStorage，避免闪烁
   const [selectedTab, setSelectedTab] = useState(() => {
@@ -210,7 +231,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
     const searchParams = new URLSearchParams(location.search);
     const urlTab = searchParams.get('tab');
     if (urlTab) {
-      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const filteredTabs = allTabsConfig.filter(hasTabPermission);
       const urlTabIndex = filteredTabs.findIndex(tab => tab.key === urlTab);
       if (urlTabIndex >= 0) {
         return urlTabIndex;
@@ -219,7 +240,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
     // 如果从prop传入了tab（如Stripe回调）
     if (propInitialTab === 'payment' || propInitialTab === 'stripe') {
-      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const filteredTabs = allTabsConfig.filter(hasTabPermission);
       const paymentTabIndex = filteredTabs.findIndex(tab => tab.key === 'payment');
       return paymentTabIndex >= 0 ? paymentTabIndex : 0;
     }
@@ -227,7 +248,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
     // 检查localStorage中保存的tab
     const savedTabKey = localStorage.getItem('settingsSelectedTab');
     if (savedTabKey) {
-      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const filteredTabs = allTabsConfig.filter(hasTabPermission);
       const savedTabIndex = filteredTabs.findIndex(tab => tab.key === savedTabKey);
       if (savedTabIndex >= 0) {
         return savedTabIndex;
@@ -237,7 +258,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
     // 兼容旧的settingsTab key (payment专用)
     const settingsTab = localStorage.getItem('settingsTab');
     if (settingsTab === 'payment' || settingsTab === 'stripe') {
-      const filteredTabs = allTabsConfig.filter(tab => hasPermission(tab.permission));
+      const filteredTabs = allTabsConfig.filter(hasTabPermission);
       const paymentTabIndex = filteredTabs.findIndex(tab => tab.key === 'payment');
       if (paymentTabIndex >= 0) {
         localStorage.removeItem('settingsTab');

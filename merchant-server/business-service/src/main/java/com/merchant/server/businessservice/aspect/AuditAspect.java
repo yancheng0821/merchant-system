@@ -603,6 +603,12 @@ public class AuditAspect {
                     Object orderService = applicationContext.getBean("orderServiceImpl");
                     Method getById = orderService.getClass().getMethod("getOrderById", Long.class);
                     return getById.invoke(orderService, resourceId);
+                } else if ("MERCHANT_SETTINGS".equals(resource)) {
+                    // 获取OnlineBookingConfig - 通过tenantId获取
+                    Object onlineBookingConfigMapper = applicationContext.getBean("onlineBookingConfigMapper");
+                    Method findByTenantId = onlineBookingConfigMapper.getClass().getMethod("findByTenantId", Long.class);
+                    // 对于MERCHANT_SETTINGS，resourceId实际上是tenantId
+                    return findByTenantId.invoke(onlineBookingConfigMapper, tenantId != null ? tenantId : resourceId);
                 }
                 // STAFF_ATTENDANCE 由 getOldValueForStaffAttendance 专门处理
                 // 可以添加其他资源类型的处理
@@ -788,7 +794,12 @@ public class AuditAspect {
                 "startDate", "endDate", "vendor", "paymentMethod",
                 // 成本管理 - 物料采购相关
                 "materialName", "materialCategory", "quantity", "unit", "unitPrice",
-                "totalAmount", "supplier", "purchaseDate"
+                "totalAmount", "supplier", "purchaseDate",
+                // 在线预约设置相关
+                "enabled", "bookingPageSlug", "advanceBookingDays", "minAdvanceHours",
+                "allowCustomerCancel", "cancelDeadlineHours", "allowCustomerReschedule",
+                "rescheduleDeadlineHours", "requireConfirmation", "welcomeMessage",
+                "cancellationPolicy", "googleBusinessEnabled", "googlePlaceId"
             };
 
             Class<?> clazz = obj.getClass();

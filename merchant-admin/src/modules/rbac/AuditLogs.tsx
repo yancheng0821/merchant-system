@@ -327,6 +327,7 @@ const AuditLogs: React.FC = () => {
       // Merchant Resources
       MERCHANT: t('audit.resource.merchant'),
       MERCHANT_CONFIG_ITEM: t('audit.resource.merchantConfigItem'),
+      MERCHANT_SETTINGS: t('audit.resource.merchantSettings'),
       TENANT: t('audit.resource.tenant'),
     };
     return resourceMap[resource] || resource;

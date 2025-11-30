@@ -208,6 +208,8 @@ const PublicBooking: React.FC = () => {
   const [weekAvailability, setWeekAvailability] = useState<{ [dateStr: string]: TimeSlot[] }>({});
   // 周切换加载状态
   const [weekLoading, setWeekLoading] = useState(false);
+  // 展开更多周状态
+  const [weeksExpanded, setWeeksExpanded] = useState(false);
 
   // 客户信息
   const [customerInfo, setCustomerInfo] = useState({
@@ -460,16 +462,17 @@ const PublicBooking: React.FC = () => {
     fetchTimeSlots();
   }, [merchantInfo, selectedServices, selectedStaff, selectedDate, slug]);
 
-  // 获取指定周的可用性数据
-  const fetchWeekAvailability = useCallback(async (targetWeekStart: Date) => {
+  // 获取指定周的可用性数据（支持多周）
+  const fetchWeekAvailability = useCallback(async (targetWeekStart: Date, weeksCount: number = 1) => {
     if (!merchantInfo || selectedServices.length === 0) return {};
 
     const serviceIdsParams = selectedServices.map(s => `serviceIds=${s.id}`).join('&');
     const newWeekAvailability: { [dateStr: string]: TimeSlot[] } = {};
 
-    // 并行获取7天的可用性数据
+    // 并行获取所有天的可用性数据
     const fetchPromises = [];
-    for (let i = 0; i < 7; i++) {
+    const totalDays = 7 * weeksCount;
+    for (let i = 0; i < totalDays; i++) {
       const day = addDays(targetWeekStart, i);
       const dateStr = format(day, 'yyyy-MM-dd');
 
@@ -507,19 +510,21 @@ const PublicBooking: React.FC = () => {
       : addWeeks(weekStart, 1);
 
     setWeekLoading(true);
-    const newAvailability = await fetchWeekAvailability(newWeekStart);
+    // 加载4周数据，保持展开时数据完整
+    const newAvailability = await fetchWeekAvailability(newWeekStart, 4);
     setWeekAvailability(newAvailability);
     setWeekStart(newWeekStart);
     setWeekLoading(false);
   }, [weekStart, weekLoading, fetchWeekAvailability]);
 
-  // 进入日期选择步骤时加载当前周数据（仅在进入步骤2时加载一次）
+  // 进入日期选择步骤时预加载4周数据（避免展开时闪烁）
   useEffect(() => {
     const loadInitialWeekData = async () => {
       if (!merchantInfo || selectedServices.length === 0 || activeStep !== 2) return;
 
       setWeekLoading(true);
-      const availability = await fetchWeekAvailability(weekStart);
+      // 直接加载4周数据，这样展开时不会闪烁
+      const availability = await fetchWeekAvailability(weekStart, 4);
       setWeekAvailability(availability);
       setWeekLoading(false);
     };
@@ -529,7 +534,7 @@ const PublicBooking: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [merchantInfo, selectedServices, selectedStaff, activeStep]);
 
-  // 倒计时 - 当进入结账页面时开始10分钟倒计时
+  // 倒计时 - 当进入结账页��时开始10分钟倒计时
   useEffect(() => {
     if (activeStep === 3 && checkoutStartTime) {
       const timer = setInterval(() => {
@@ -770,10 +775,10 @@ const PublicBooking: React.FC = () => {
     return false;
   };
 
-  // 生成周视图日期
-  const getWeekDays = () => {
+  // 生成周视图日期（支持多周）
+  const getWeekDays = (weeksCount: number = 1) => {
     const days = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7 * weeksCount; i++) {
       days.push(addDays(weekStart, i));
     }
     return days;
@@ -1903,8 +1908,90 @@ const PublicBooking: React.FC = () => {
 
   // ==================== 日期时间选择页面 ====================
   const renderDateTimeSelection = () => {
-    const weekDays = getWeekDays();
+    // 根据展开状态决定显示周数：1周或4周
+    const allDays = getWeekDays(weeksExpanded ? 4 : 1);
     const { morning, afternoon, evening } = groupTimeSlots();
+
+    // 渲染单个日期项
+    const renderDayItem = (day: Date) => {
+      const isDisabled = isDateDisabled(day);
+      const isSelected = selectedDate && isSameDay(day, selectedDate);
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const daySlots = weekAvailability[dateStr] || [];
+      const slotsCount = daySlots.length;
+      const isLimitedAvailability = slotsCount > 0 && slotsCount <= 3;
+
+      return (
+        <Box
+          key={day.toISOString()}
+          onClick={() => !isDisabled && setSelectedDate(day)}
+          sx={{
+            flex: 1,
+            textAlign: 'center',
+            py: 1.5,
+            mx: 0.5,
+            borderRadius: 2,
+            cursor: isDisabled ? 'default' : 'pointer',
+            bgcolor: isSelected ? '#1a1a1a' : 'transparent',
+            border: isSelected ? 'none' : '1px solid transparent',
+            opacity: isDisabled ? 0.3 : 1,
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            '&:hover': {
+              bgcolor: isDisabled ? 'transparent' : isSelected ? '#1a1a1a' : '#f5f5f5',
+              transform: isDisabled ? 'none' : 'scale(1.05)',
+            },
+          }}
+        >
+          <Typography sx={{ fontSize: 12, color: isSelected ? '#fff' : '#666', mb: 0.5 }}>
+            {getDayAbbr(day)}
+          </Typography>
+          <Typography sx={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#fff' : '#1a1a1a' }}>
+            {format(day, 'd')}
+          </Typography>
+          {/* 可用性提示 */}
+          {!isDisabled && slotsCount > 0 && (
+            <Box sx={{
+              mt: 0.5,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 0.25,
+            }}>
+              {isLimitedAvailability ? (
+                <Typography sx={{
+                  fontSize: 9,
+                  color: isSelected ? 'rgba(255,255,255,0.8)' : '#f59e0b',
+                  fontWeight: 600,
+                }}>
+                  {t('publicBooking.limitedSlots', { count: slotsCount })}
+                </Typography>
+              ) : (
+                <>
+                  {[...Array(Math.min(3, Math.ceil(slotsCount / 4)))].map((_, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: '50%',
+                        bgcolor: isSelected ? 'rgba(255,255,255,0.6)' : '#22c55e',
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+            </Box>
+          )}
+        </Box>
+      );
+    };
+
+    // 将日期按周分组
+    const weeks: Date[][] = [];
+    for (let i = 0; i < allDays.length; i += 7) {
+      weeks.push(allDays.slice(i, i + 7));
+    }
 
     return (
       <Box>
@@ -1939,87 +2026,29 @@ const PublicBooking: React.FC = () => {
           </Box>
         </Box>
 
-        {/* 周日期选择 */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          {weekDays.map((day) => {
-            const isDisabled = isDateDisabled(day);
-            const isSelected = selectedDate && isSameDay(day, selectedDate);
-            const dateStr = format(day, 'yyyy-MM-dd');
-            const daySlots = weekAvailability[dateStr] || [];
-            const slotsCount = daySlots.length;
-            const isLimitedAvailability = slotsCount > 0 && slotsCount <= 3;
+        {/* 周日期选择 - 支持多周显示 */}
+        {weeks.map((weekDays, weekIndex) => (
+          <Box key={weekIndex} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+            {weekDays.map(renderDayItem)}
+          </Box>
+        ))}
 
-            return (
-              <Box
-                key={day.toISOString()}
-                onClick={() => !isDisabled && setSelectedDate(day)}
-                sx={{
-                  flex: 1,
-                  textAlign: 'center',
-                  py: 1.5,
-                  mx: 0.5,
-                  borderRadius: 2,
-                  cursor: isDisabled ? 'default' : 'pointer',
-                  bgcolor: isSelected ? '#1a1a1a' : 'transparent',
-                  border: isSelected ? 'none' : '1px solid transparent',
-                  opacity: isDisabled ? 0.3 : 1,
-                  transition: 'all 0.2s ease',
-                  position: 'relative',
-                  '&:hover': {
-                    bgcolor: isDisabled ? 'transparent' : isSelected ? '#1a1a1a' : '#f5f5f5',
-                    transform: isDisabled ? 'none' : 'scale(1.05)',
-                  },
-                }}
-              >
-                <Typography sx={{ fontSize: 12, color: isSelected ? '#fff' : '#666', mb: 0.5 }}>
-                  {getDayAbbr(day)}
-                </Typography>
-                <Typography sx={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#fff' : '#1a1a1a' }}>
-                  {format(day, 'd')}
-                </Typography>
-                {/* 可用性提示 */}
-                {!isDisabled && slotsCount > 0 && (
-                  <Box sx={{
-                    mt: 0.5,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: 0.25,
-                  }}>
-                    {isLimitedAvailability ? (
-                      <Typography sx={{
-                        fontSize: 9,
-                        color: isSelected ? 'rgba(255,255,255,0.8)' : '#f59e0b',
-                        fontWeight: 600,
-                      }}>
-                        {t('publicBooking.limitedSlots', { count: slotsCount })}
-                      </Typography>
-                    ) : (
-                      <>
-                        {[...Array(Math.min(3, Math.ceil(slotsCount / 4)))].map((_, i) => (
-                          <Box
-                            key={i}
-                            sx={{
-                              width: 4,
-                              height: 4,
-                              borderRadius: '50%',
-                              bgcolor: isSelected ? 'rgba(255,255,255,0.6)' : '#22c55e',
-                            }}
-                          />
-                        ))}
-                      </>
-                    )}
-                  </Box>
-                )}
-              </Box>
-            );
-          })}
-        </Box>
-
-        {/* 展开更多周的按钮 */}
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <IconButton sx={{ border: '1px solid #e5e5e5', borderRadius: '50%', color: '#666' }}>
-            <ExpandMoreIcon />
+        {/* 展开/收起更多周按钮 */}
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <IconButton
+            onClick={() => setWeeksExpanded(!weeksExpanded)}
+            sx={{
+              border: '1px solid #e5e5e5',
+              borderRadius: '50%',
+              color: '#666',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: '#f5f5f5',
+                borderColor: '#ccc',
+              },
+            }}
+          >
+            {weeksExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
         </Box>
 
