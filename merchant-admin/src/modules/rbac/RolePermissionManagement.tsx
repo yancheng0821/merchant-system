@@ -20,6 +20,8 @@ import {
   Collapse,
   IconButton,
   alpha,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   ExpandMore,
@@ -50,6 +52,10 @@ const RolePermissionManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -331,72 +337,97 @@ const RolePermissionManagement: React.FC = () => {
 
   return (
     <Box>
-      <Grid container spacing={3}>
+      <Grid container spacing={isMobile ? 2 : 3}>
         {/* 左侧：角色列表 - 简约风格 */}
         <Grid item xs={12} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Typography sx={{ mb: 2, fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Typography sx={{ mb: isMobile ? 1.5 : 2, fontSize: isMobile ? '0.8rem' : '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
                 {t('rbac.selectRole')}
               </Typography>
               {roles.length === 0 ? (
-                <Box display="flex" flexDirection="column" alignItems="center" py={4}>
-                  <SecurityIcon sx={{ fontSize: 40, color: '#ccc', mb: 1 }} />
-                  <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>
+                <Box display="flex" flexDirection="column" alignItems="center" py={isMobile ? 2 : 4}>
+                  <SecurityIcon sx={{ fontSize: isMobile ? 32 : 40, color: '#ccc', mb: 1 }} />
+                  <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#888' }}>
                     {t('rbac.noRoles')}
                   </Typography>
                 </Box>
               ) : (
-                <List disablePadding>
-                  {roles.map(role => (
-                    <ListItem key={role.id} disablePadding sx={{ mb: 0.5 }}>
-                      <ListItemButton
-                        selected={selectedRole?.id === role.id}
+                <Box sx={{ display: isMobile ? 'flex' : 'block', flexWrap: 'wrap', gap: isMobile ? 0.5 : 0 }}>
+                  {isMobile ? (
+                    /* 移动端横向滚动角色列表 */
+                    roles.map(role => (
+                      <Chip
+                        key={role.id}
+                        label={translateRoleName(role.roleName)}
                         onClick={() => setSelectedRole(role)}
                         sx={{
-                          borderRadius: 1.5,
-                          py: 1,
-                          px: 1.5,
-                          '&.Mui-selected': {
-                            backgroundColor: alpha(THEME_COLOR, 0.1),
-                            color: THEME_COLOR,
-                            '&:hover': {
-                              backgroundColor: alpha(THEME_COLOR, 0.15),
-                            },
-                          },
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          height: 28,
+                          backgroundColor: selectedRole?.id === role.id ? alpha(THEME_COLOR, 0.1) : '#f5f5f5',
+                          color: selectedRole?.id === role.id ? THEME_COLOR : '#666',
+                          border: selectedRole?.id === role.id ? `1px solid ${alpha(THEME_COLOR, 0.3)}` : '1px solid transparent',
                           '&:hover': {
-                            backgroundColor: 'rgba(0,0,0,0.04)',
+                            backgroundColor: alpha(THEME_COLOR, 0.15),
                           },
                         }}
-                      >
-                        <Box sx={{ width: '100%' }}>
-                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
-                            {translateRoleName(role.roleName)}
-                          </Typography>
-                          {role.isSystem && (
-                            <Chip
-                              label={t('rbac.systemRole')}
-                              size="small"
-                              sx={{
-                                mt: 0.5,
-                                height: 18,
-                                fontSize: '0.6875rem',
-                                backgroundColor: alpha(SECONDARY_COLOR, 0.1),
-                                color: SECONDARY_COLOR,
-                              }}
-                            />
-                          )}
-                        </Box>
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
+                      />
+                    ))
+                  ) : (
+                    /* 桌面端列表 */
+                    <List disablePadding>
+                      {roles.map(role => (
+                        <ListItem key={role.id} disablePadding sx={{ mb: 0.5 }}>
+                          <ListItemButton
+                            selected={selectedRole?.id === role.id}
+                            onClick={() => setSelectedRole(role)}
+                            sx={{
+                              borderRadius: 1.5,
+                              py: 1,
+                              px: 1.5,
+                              '&.Mui-selected': {
+                                backgroundColor: alpha(THEME_COLOR, 0.1),
+                                color: THEME_COLOR,
+                                '&:hover': {
+                                  backgroundColor: alpha(THEME_COLOR, 0.15),
+                                },
+                              },
+                              '&:hover': {
+                                backgroundColor: 'rgba(0,0,0,0.04)',
+                              },
+                            }}
+                          >
+                            <Box sx={{ width: '100%' }}>
+                              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
+                                {translateRoleName(role.roleName)}
+                              </Typography>
+                              {role.isSystem && (
+                                <Chip
+                                  label={t('rbac.systemRole')}
+                                  size="small"
+                                  sx={{
+                                    mt: 0.5,
+                                    height: 18,
+                                    fontSize: '0.6875rem',
+                                    backgroundColor: alpha(SECONDARY_COLOR, 0.1),
+                                    color: SECONDARY_COLOR,
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          </ListItemButton>
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                </Box>
               )}
             </CardContent>
           </Card>
@@ -406,17 +437,17 @@ const RolePermissionManagement: React.FC = () => {
         <Grid item xs={12} md={9}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
-                <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={isMobile ? 1.5 : 2.5}>
+                <Typography sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
                   {selectedRole ? t('rbac.rolePermissions', { roleName: translateRoleName(selectedRole.roleName) }) : t('rbac.selectRoleToManagePermissions')}
                 </Typography>
-                {selectedRole && (
+                {selectedRole && !isMobile && (
                   <Button
                     size="small"
                     variant="contained"
@@ -743,13 +774,20 @@ const RolePermissionManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: isMobile ? 16 : 24 }}
       >
         <Alert
           severity={snackbar.severity}
           sx={{
-            width: '100%',
+            width: isMobile ? 'auto' : '100%',
+            minWidth: isMobile ? 200 : 280,
             borderRadius: 2,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: isMobile ? 0.5 : 1,
+            '& .MuiAlert-icon': {
+              fontSize: isMobile ? 18 : 22,
+            },
           }}
         >
           {snackbar.message}

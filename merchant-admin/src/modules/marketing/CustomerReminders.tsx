@@ -29,6 +29,8 @@ import {
   Card,
   CardContent,
   Menu,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -80,6 +82,10 @@ const CustomerReminders: React.FC = () => {
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
   const { user } = useAuth();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   const isMonochrome = themeMode === 'monochrome';
   const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#059669';
@@ -368,7 +374,92 @@ const CustomerReminders: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      ) : isMobile ? (
+        /* 移动端卡片视图 */
+        <Box>
+          {rules.map((rule) => (
+            <Card
+              key={rule.id}
+              onClick={(e) => {
+                if (canManage || canSend) {
+                  setMenuAnchorEl(e.currentTarget);
+                  setSelectedRule(rule);
+                }
+              }}
+              sx={{
+                mb: 1.5,
+                borderRadius: 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                border: '1px solid rgba(0,0,0,0.06)',
+                cursor: (canManage || canSend) ? 'pointer' : 'default',
+                WebkitTapHighlightColor: 'transparent',
+                '&:active': { bgcolor: 'rgba(0,0,0,0.02)' },
+              }}
+            >
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                {/* 第一行：规则名称 + 状态 */}
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a', flex: 1 }} noWrap>
+                    {rule.name}
+                  </Typography>
+                  <Chip
+                    label={rule.enabled ? t('common.enabled') : t('common.disabled')}
+                    size="small"
+                    sx={{
+                      backgroundColor: rule.enabled
+                        ? (isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.1))
+                        : 'rgba(0,0,0,0.06)',
+                      color: rule.enabled ? (isMonochrome ? '#1a1a1a' : '#10B981') : '#888',
+                      fontWeight: 600,
+                      fontSize: '0.65rem',
+                      height: 20,
+                      ml: 1,
+                    }}
+                  />
+                </Box>
+                {/* 第二行：触发条件 + 通知类型 */}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.75}>
+                  <Typography sx={{ fontSize: '0.7rem', color: '#666' }}>
+                    {getTriggerTypeLabel(rule.triggerType)} ≥ {rule.triggerDays} {t('common.days')}
+                  </Typography>
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    {(rule.notificationType === 'EMAIL' || rule.notificationType === 'BOTH') && (
+                      <EmailIcon sx={{ fontSize: 14, color: THEME_COLOR }} />
+                    )}
+                    {(rule.notificationType === 'SMS' || rule.notificationType === 'BOTH') && (
+                      <SmsIcon sx={{ fontSize: 14, color: THEME_COLOR }} />
+                    )}
+                  </Box>
+                </Box>
+                {/* 第三行：调度 + 匹配客户数 */}
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <ScheduleIcon sx={{ fontSize: 12, color: '#999' }} />
+                    <Typography sx={{ fontSize: '0.65rem', color: '#999' }}>
+                      {getScheduleLabel(rule)}
+                    </Typography>
+                  </Box>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={0.5}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      rule.matchedCustomerCount && rule.matchedCustomerCount > 0 && handleViewMatchedCustomers(rule);
+                    }}
+                  >
+                    <PeopleIcon sx={{ fontSize: 12, color: THEME_COLOR }} />
+                    <Typography sx={{ fontSize: '0.65rem', color: THEME_COLOR }}>
+                      {rule.matchedCustomerCount ?? '-'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
       ) : (
+        /* 桌面端表格视图 */
         <Card
           sx={{
             borderRadius: 2.5,
@@ -593,10 +684,11 @@ const CustomerReminders: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            maxWidth: 720,
+            borderRadius: isMobile ? 0 : 3,
+            maxWidth: isMobile ? '100%' : 720,
           }
         }}
       >
@@ -655,8 +747,8 @@ const CustomerReminders: React.FC = () => {
             }}
           />
 
-          {/* 两栏布局 */}
-          <Box display="grid" gridTemplateColumns="1fr 1fr" gap={3}>
+          {/* 两栏布局（移动端单栏） */}
+          <Box display="grid" gridTemplateColumns={isMobile ? '1fr' : '1fr 1fr'} gap={isMobile ? 2 : 3}>
             {/* 左栏：触发条件 + 调度设置 */}
             <Box>
               {/* 触发条件卡片 */}
@@ -971,9 +1063,10 @@ const CustomerReminders: React.FC = () => {
         onClose={() => setPreviewOpen(false)}
         maxWidth="sm"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
+            borderRadius: isMobile ? 0 : 2.5,
           }
         }}
       >
@@ -1051,6 +1144,7 @@ const CustomerReminders: React.FC = () => {
         PaperProps={{
           sx: {
             borderRadius: 2.5,
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
@@ -1173,11 +1267,17 @@ const CustomerReminders: React.FC = () => {
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           severity={snackbar.severity}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
-          sx={{ borderRadius: 2 }}
+          sx={{
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {snackbar.message}
         </Alert>

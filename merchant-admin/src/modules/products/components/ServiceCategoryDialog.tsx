@@ -18,6 +18,8 @@ import {
   Grid,
   Alert,
   Snackbar,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -109,6 +111,11 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
   const [localCategories, setLocalCategories] = useState<ServiceCategory[]>([]);
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -1036,11 +1043,18 @@ const ServiceCategoryDialog: React.FC<ServiceCategoryDialogProps> = ({
       autoHideDuration={5000}
       onClose={() => setError(null)}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      sx={isMobile ? { top: 70 } : undefined}
     >
       <Alert
         onClose={() => setError(null)}
         severity="error"
-        sx={{ width: '100%', borderRadius: 2 }}
+        sx={{
+          width: '100%',
+          borderRadius: isMobile ? 1.5 : 2,
+          fontSize: isMobile ? '0.8rem' : undefined,
+          py: isMobile ? 0.5 : undefined,
+          '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+        }}
       >
         {error}
       </Alert>

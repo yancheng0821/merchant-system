@@ -32,7 +32,10 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
-  Snackbar
+  Snackbar,
+  Collapse,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -47,6 +50,7 @@ import {
   Error as ErrorIcon,
   Replay as RetryIcon,
   MoreVert as MoreVertIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { notificationApi } from '../../services/api';
@@ -75,6 +79,11 @@ const NotificationLogManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +103,7 @@ const NotificationLogManagement: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -312,19 +322,22 @@ const NotificationLogManagement: React.FC = () => {
               {t('notifications.notificationLogs')}
             </Typography>
             <Box>
-              <IconButton
-                size="small"
-                onClick={fetchLogs}
-                sx={{
-                  color: '#666',
-                  '&:hover': {
-                    bgcolor: 'rgba(0,0,0,0.04)',
-                    color: '#1a1a1a',
-                  },
-                }}
-              >
-                <RefreshIcon sx={{ fontSize: 20 }} />
-              </IconButton>
+              {/* 桌面端刷新按钮（移动端在筛选栏显示） */}
+              {!isMobile && (
+                <IconButton
+                  size="small"
+                  onClick={fetchLogs}
+                  sx={{
+                    color: '#666',
+                    '&:hover': {
+                      bgcolor: 'rgba(0,0,0,0.04)',
+                      color: '#1a1a1a',
+                    },
+                  }}
+                >
+                  <RefreshIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              )}
               {/* 批量重试功能已注释 - 使用单条重试按钮代替 */}
               {/* <Button
                 variant="contained"
@@ -364,237 +377,291 @@ const NotificationLogManagement: React.FC = () => {
       )}
 
       {/* 现代化搜索和过滤区域 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          mb: 3,
-        }}
-      >
-        <CardContent sx={{ p: 2.5 }}>
-          <Grid container spacing={2} alignItems="center">
-            {/* 第一行 */}
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.notificationType')}</InputLabel>
-                <Select
-                  value={filters.type}
-                  onChange={(e) => handleFilterChange('type', e.target.value)}
-                  label={t('notifications.notificationType')}
-                  sx={{
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
-                  <MenuItem value="SMS" sx={{ fontSize: '0.875rem' }}>{t('notifications.sms')}</MenuItem>
-                  <MenuItem value="EMAIL" sx={{ fontSize: '0.875rem' }}>{t('notifications.email')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.status')}</InputLabel>
-                <Select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  label={t('notifications.status')}
-                  sx={{
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
-                  <MenuItem value="SENT" sx={{ fontSize: '0.875rem' }}>{t('notifications.sent')}</MenuItem>
-                  <MenuItem value="FAILED" sx={{ fontSize: '0.875rem' }}>{t('notifications.failed')}</MenuItem>
-                  <MenuItem value="PENDING" sx={{ fontSize: '0.875rem' }}>{t('notifications.pending')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.businessType', 'Business Type')}</InputLabel>
-                <Select
-                  value={filters.businessType}
-                  onChange={(e) => handleFilterChange('businessType', e.target.value)}
-                  label={t('notifications.businessType', 'Business Type')}
-                  sx={{
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
-                  {businessTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value} sx={{ fontSize: '0.875rem' }}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                fullWidth
-                size="small"
-                label={t('notifications.recipient')}
-                value={filters.recipient}
-                onChange={(e) => handleFilterChange('recipient', e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                  },
-                  '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={1.5}>
-              <TextField
-                fullWidth
-                size="small"
-                label={t('notifications.businessId')}
-                value={filters.businessId}
-                onChange={(e) => handleFilterChange('businessId', e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: themeColor,
-                    },
-                  },
-                  '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
-                }}
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      {isMobile ? (
+        /* 移动端筛选布局 */
+        <Box sx={{ mb: 2 }}>
+          {/* 筛选按钮栏 */}
+          <Box display="flex" gap={1} mb={1.5}>
+            <IconButton
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              sx={{
+                border: '1px solid rgba(0,0,0,0.12)',
+                borderRadius: 1.5,
+                width: 40,
+                height: 40,
+                color: filtersExpanded ? themeColor : '#666',
+                bgcolor: filtersExpanded ? alpha(themeColor, 0.08) : 'transparent',
+              }}
+            >
+              <FilterListIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+            <IconButton
+              onClick={fetchLogs}
+              sx={{
+                border: '1px solid rgba(0,0,0,0.12)',
+                borderRadius: 1.5,
+                width: 40,
+                height: 40,
+                color: '#666',
+              }}
+            >
+              <RefreshIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Box>
 
-      {/* 现代化表格 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          overflow: 'hidden',
-        }}
-      >
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('notifications.notificationType')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.recipient')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.status')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.businessType', 'Business Type')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.businessId')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.createdAt')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.sentAt')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  {t('notifications.actions')}
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {logs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">
-                      {t('notifications.noLogs')}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                logs
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((log) => (
-                  <TableRow
-                    key={log.id}
+          {/* 可折叠筛选面板 */}
+          <Collapse in={filtersExpanded}>
+            <Card sx={{ borderRadius: 2, border: '1px solid rgba(0,0,0,0.08)', mb: 1.5 }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Grid container spacing={1.5}>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem' }}>{t('notifications.notificationType')}</InputLabel>
+                      <Select
+                        value={filters.type}
+                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                        label={t('notifications.notificationType')}
+                        sx={{ borderRadius: 1.5, fontSize: '0.75rem' }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.75rem' }}>{t('notifications.all')}</MenuItem>
+                        <MenuItem value="SMS" sx={{ fontSize: '0.75rem' }}>{t('notifications.sms')}</MenuItem>
+                        <MenuItem value="EMAIL" sx={{ fontSize: '0.75rem' }}>{t('notifications.email')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem' }}>{t('notifications.status')}</InputLabel>
+                      <Select
+                        value={filters.status}
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                        label={t('notifications.status')}
+                        sx={{ borderRadius: 1.5, fontSize: '0.75rem' }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.75rem' }}>{t('notifications.all')}</MenuItem>
+                        <MenuItem value="SENT" sx={{ fontSize: '0.75rem' }}>{t('notifications.sent')}</MenuItem>
+                        <MenuItem value="FAILED" sx={{ fontSize: '0.75rem' }}>{t('notifications.failed')}</MenuItem>
+                        <MenuItem value="PENDING" sx={{ fontSize: '0.75rem' }}>{t('notifications.pending')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem' }}>{t('notifications.businessType', 'Business Type')}</InputLabel>
+                      <Select
+                        value={filters.businessType}
+                        onChange={(e) => handleFilterChange('businessType', e.target.value)}
+                        label={t('notifications.businessType', 'Business Type')}
+                        sx={{ borderRadius: 1.5, fontSize: '0.75rem' }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.75rem' }}>{t('notifications.all')}</MenuItem>
+                        {businessTypes.map((type) => (
+                          <MenuItem key={type.value} value={type.value} sx={{ fontSize: '0.75rem' }}>
+                            {type.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Collapse>
+        </Box>
+      ) : (
+        /* 桌面端筛选布局 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            mb: 3,
+          }}
+        >
+          <CardContent sx={{ p: 2.5 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={6} md={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.notificationType')}</InputLabel>
+                  <Select
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
+                    label={t('notifications.notificationType')}
                     sx={{
-                      '&:hover': {
-                        backgroundColor: alpha(themeColor, 0.04),
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
                       },
-                      transition: 'background-color 0.2s ease',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
                     }}
                   >
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
+                    <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
+                    <MenuItem value="SMS" sx={{ fontSize: '0.875rem' }}>{t('notifications.sms')}</MenuItem>
+                    <MenuItem value="EMAIL" sx={{ fontSize: '0.875rem' }}>{t('notifications.email')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.status')}</InputLabel>
+                  <Select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    label={t('notifications.status')}
+                    sx={{
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                    }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
+                    <MenuItem value="SENT" sx={{ fontSize: '0.875rem' }}>{t('notifications.sent')}</MenuItem>
+                    <MenuItem value="FAILED" sx={{ fontSize: '0.875rem' }}>{t('notifications.failed')}</MenuItem>
+                    <MenuItem value="PENDING" sx={{ fontSize: '0.875rem' }}>{t('notifications.pending')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('notifications.businessType', 'Business Type')}</InputLabel>
+                  <Select
+                    value={filters.businessType}
+                    onChange={(e) => handleFilterChange('businessType', e.target.value)}
+                    label={t('notifications.businessType', 'Business Type')}
+                    sx={{
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                    }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('notifications.all')}</MenuItem>
+                    {businessTypes.map((type) => (
+                      <MenuItem key={type.value} value={type.value} sx={{ fontSize: '0.875rem' }}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label={t('notifications.recipient')}
+                  value={filters.recipient}
+                  onChange={(e) => handleFilterChange('recipient', e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                    },
+                    '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={1.5}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label={t('notifications.businessId')}
+                  value={filters.businessId}
+                  onChange={(e) => handleFilterChange('businessId', e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: themeColor,
+                      },
+                    },
+                    '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 现代化表格/卡片列表 */}
+      {isMobile ? (
+        /* 移动端卡片列表 */
+        <Box>
+          {logs.length === 0 ? (
+            <Box sx={{ py: 4, textAlign: 'center', bgcolor: '#fff', borderRadius: 2, border: '1px solid rgba(0,0,0,0.08)' }}>
+              <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                {t('notifications.noLogs')}
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {logs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((log) => (
+                <Card
+                  key={log.id}
+                  onClick={(e) => handleMenuOpen(e, log.id)}
+                  sx={{
+                    mb: 1.5,
+                    borderRadius: 1.5,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    cursor: 'pointer',
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:active': { bgcolor: 'rgba(0,0,0,0.02)' },
+                  }}
+                >
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    {/* 第一行：类型 + 收件人 + 状态 */}
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                      <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 0, flex: 1 }}>
                         {log.type === 'SMS' ? (
-                          <SmsIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
+                          <SmsIcon sx={{ fontSize: 16, color: '#3B82F6', flexShrink: 0 }} />
                         ) : (
-                          <EmailIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                          <EmailIcon sx={{ fontSize: 16, color: '#10B981', flexShrink: 0 }} />
                         )}
-                        <Typography variant="body2">
-                          {getTypeLabel(log.type)}
+                        <Typography sx={{ fontSize: '0.8rem', color: '#1a1a1a', fontWeight: 500 }} noWrap>
+                          {log.recipient}
                         </Typography>
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {log.recipient}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
                       <Chip
                         label={getStatusLabel(log.status)}
+                        size="small"
                         sx={{
                           backgroundColor: getStatusColor(log.status) === 'success'
                             ? alpha('#10B981', 0.1)
@@ -607,127 +674,278 @@ const NotificationLogManagement: React.FC = () => {
                             ? '#EF4444'
                             : '#F59E0B',
                           fontWeight: 600,
-                          fontSize: '0.75rem',
-                          height: 24,
-                          '& .MuiChip-label': {
-                            px: 2,
-                          },
+                          fontSize: '0.65rem',
+                          height: 20,
+                          ml: 1,
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {log.businessType ? getBusinessTypeLabel(log.businessType) : '-'}
+                    </Box>
+                    {/* 第二行：业务类型 */}
+                    <Typography sx={{ fontSize: '0.7rem', color: '#666', mb: 0.5 }} noWrap>
+                      {log.businessType ? getBusinessTypeLabel(log.businessType) : '-'}
+                    </Typography>
+                    {/* 第三行：时间 */}
+                    <Typography sx={{ fontSize: '0.65rem', color: '#999' }}>
+                      {formatUtcToMerchantTime(log.createdAt, 'yyyy-MM-dd HH:mm')}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* 移动端简化分页 */}
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  bgcolor: '#fff',
+                  borderRadius: 1.5,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                }}
+              >
+                <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                  {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, totalElements)} / {totalElements}
+                </Typography>
+                <Box display="flex" gap={1}>
+                  <Button
+                    size="small"
+                    disabled={page === 0}
+                    onClick={() => setPage(page - 1)}
+                    sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem', color: '#666', borderRadius: 1 }}
+                  >
+                    {t('common.previousPage')}
+                  </Button>
+                  <Button
+                    size="small"
+                    disabled={(page + 1) * rowsPerPage >= totalElements}
+                    onClick={() => setPage(page + 1)}
+                    sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem', color: themeColor, borderRadius: 1 }}
+                  >
+                    {t('common.nextPage')}
+                  </Button>
+                </Box>
+              </Box>
+            </>
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+          }}
+        >
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('notifications.notificationType')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.recipient')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.status')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.businessType', 'Business Type')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.businessId')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.createdAt')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.sentAt')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
+                    {t('notifications.actions')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {logs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        {t('notifications.noLogs')}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {log.businessId || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                          {formatUtcToMerchantTime(log.createdAt, 'yyyy-MM-dd')}
-                        </Typography>
-                        <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
-                          {formatUtcToMerchantTime(log.createdAt, 'HH:mm:ss')}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {log.sentAt ? (
-                        <Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                            {formatUtcToMerchantTime(log.sentAt, 'yyyy-MM-dd')}
-                          </Typography>
-                          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
-                            {formatUtcToMerchantTime(log.sentAt, 'HH:mm:ss')}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">-</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, log.id)}
-                        sx={{
-                          color: 'text.secondary',
-                          '&:hover': {
-                            backgroundColor: alpha(themeColor, 0.1),
-                            color: themeColor,
-                          },
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <MoreVertIcon sx={{ fontSize: 20 }} />
-                      </IconButton>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : (
+                  logs
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((log) => (
+                    <TableRow
+                      key={log.id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: alpha(themeColor, 0.04),
+                        },
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          {log.type === 'SMS' ? (
+                            <SmsIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
+                          ) : (
+                            <EmailIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                          )}
+                          <Typography variant="body2">
+                            {getTypeLabel(log.type)}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {log.recipient}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusLabel(log.status)}
+                          sx={{
+                            backgroundColor: getStatusColor(log.status) === 'success'
+                              ? alpha('#10B981', 0.1)
+                              : getStatusColor(log.status) === 'error'
+                              ? alpha('#EF4444', 0.1)
+                              : alpha('#F59E0B', 0.1),
+                            color: getStatusColor(log.status) === 'success'
+                              ? '#10B981'
+                              : getStatusColor(log.status) === 'error'
+                              ? '#EF4444'
+                              : '#F59E0B',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            height: 24,
+                            '& .MuiChip-label': {
+                              px: 2,
+                            },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {log.businessType ? getBusinessTypeLabel(log.businessType) : '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {log.businessId || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                            {formatUtcToMerchantTime(log.createdAt, 'yyyy-MM-dd')}
+                          </Typography>
+                          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
+                            {formatUtcToMerchantTime(log.createdAt, 'HH:mm:ss')}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {log.sentAt ? (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                              {formatUtcToMerchantTime(log.sentAt, 'yyyy-MM-dd')}
+                            </Typography>
+                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.75rem' }}>
+                              {formatUtcToMerchantTime(log.sentAt, 'HH:mm:ss')}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">-</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, log.id)}
+                          sx={{
+                            color: 'text.secondary',
+                            '&:hover': {
+                              backgroundColor: alpha(themeColor, 0.1),
+                              color: themeColor,
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        {/* Actions Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-          PaperProps={{
-            sx: {
-              borderRadius: 1.5,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              border: '1px solid rgba(0,0,0,0.06)',
-              minWidth: 150,
-            }
-          }}
-          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        >
-          <MenuItem onClick={handleMenuViewDetails}>
+          <TablePagination
+            component="div"
+            count={totalElements}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            labelRowsPerPage={t('common.rowsPerPage')}
+            sx={{
+              borderTop: '1px solid rgba(0,0,0,0.06)',
+              backgroundColor: '#fafafa',
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                fontSize: '0.875rem',
+                color: '#666',
+              },
+            }}
+          />
+        </Card>
+      )}
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            borderRadius: 1.5,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            minWidth: 150,
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={handleMenuViewDetails}>
+          <ListItemIcon>
+            <ViewIcon sx={{ fontSize: 18, color: themeColor }} />
+          </ListItemIcon>
+          <Typography variant="body2">{t('notifications.viewDetails', 'View Details')}</Typography>
+        </MenuItem>
+        {hasPermission('notifications:retry') &&
+         selectedLogId && logs.find(l => l.id === selectedLogId)?.status &&
+         (logs.find(l => l.id === selectedLogId)!.status === 'FAILED' ||
+          logs.find(l => l.id === selectedLogId)!.status === 'PENDING') && (
+          <MenuItem onClick={handleMenuRetry}>
             <ListItemIcon>
-              <ViewIcon sx={{ fontSize: 18, color: themeColor }} />
+              <RetryIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
             </ListItemIcon>
-            <Typography variant="body2">{t('notifications.viewDetails', 'View Details')}</Typography>
+            <Typography variant="body2">{t('notifications.retrySingle', 'Retry Send')}</Typography>
           </MenuItem>
-          {hasPermission('notifications:retry') &&
-           selectedLogId && logs.find(l => l.id === selectedLogId)?.status &&
-           (logs.find(l => l.id === selectedLogId)!.status === 'FAILED' ||
-            logs.find(l => l.id === selectedLogId)!.status === 'PENDING') && (
-            <MenuItem onClick={handleMenuRetry}>
-              <ListItemIcon>
-                <RetryIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
-              </ListItemIcon>
-              <Typography variant="body2">{t('notifications.retrySingle', 'Retry Send')}</Typography>
-            </MenuItem>
-          )}
-        </Menu>
-
-        <TablePagination
-          component="div"
-          count={totalElements}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          labelRowsPerPage={t('common.rowsPerPage')}
-          sx={{
-            borderTop: '1px solid rgba(0,0,0,0.06)',
-            backgroundColor: '#fafafa',
-            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-              fontSize: '0.875rem',
-              color: '#666',
-            },
-          }}
-        />
-      </Card>
+        )}
+      </Menu>
 
       {/* 通知详情弹窗 */}
       <Dialog
@@ -735,10 +953,11 @@ const NotificationLogManagement: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -1263,14 +1482,18 @@ const NotificationLogManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSuccessMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSuccessMessage(null)}
           severity="success"
           sx={{
             width: '100%',
-            borderRadius: 2,
+            borderRadius: isMobile ? 1.5 : 2,
             boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
           }}
         >
           {successMessage}

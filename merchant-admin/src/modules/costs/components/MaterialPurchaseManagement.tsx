@@ -26,6 +26,8 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -65,6 +67,10 @@ const MaterialPurchaseManagement: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -278,15 +284,15 @@ const MaterialPurchaseManagement: React.FC = () => {
       {/* 搜索和操作区域 */}
       <Card
         sx={{
-          borderRadius: 2.5,
+          borderRadius: isMobile ? 2 : 2.5,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.06)',
-          mb: 3,
+          mb: isMobile ? 2 : 3,
         }}
       >
-        <CardContent sx={{ p: 2.5 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
+        <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1.5 : 2} alignItems={isMobile ? 'stretch' : 'center'}>
+            <Box flex={1}>
               <TextField
                 fullWidth
                 size="small"
@@ -296,14 +302,14 @@ const MaterialPurchaseManagement: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: isMobile ? 18 : 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: 'rgba(0,0,0,0.12)',
                     },
@@ -316,188 +322,284 @@ const MaterialPurchaseManagement: React.FC = () => {
                   },
                 }}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={6}>
-              <Box display="flex" gap={2} justifyContent="flex-end">
-                {hasPermission('costs:create_material') && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => handleOpenDialog()}
-                    sx={{
-                      borderRadius: 1.5,
-                      height: 36,
-                      px: 2,
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      bgcolor: THEME_COLOR,
-                      boxShadow: 'none',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: THEME_COLOR_DARK,
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {t('costs.materials.addMaterial')}
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          </Grid>
+            {hasPermission('costs:create_material') && (
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
+                onClick={() => handleOpenDialog()}
+                fullWidth={isMobile}
+                sx={{
+                  borderRadius: 1.5,
+                  height: 36,
+                  px: 2,
+                  fontSize: isMobile ? '0.8rem' : '0.875rem',
+                  fontWeight: 500,
+                  bgcolor: THEME_COLOR,
+                  boxShadow: 'none',
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    bgcolor: THEME_COLOR_DARK,
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {t('costs.materials.addMaterial')}
+              </Button>
+            )}
+          </Box>
         </CardContent>
       </Card>
 
-      {/* 表格 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          overflow: 'hidden',
-        }}
-      >
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('costs.materials.materialName')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('costs.materials.category')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
-                  {t('costs.materials.quantity')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
-                  {t('costs.materials.unitPrice')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
-                  {t('costs.materials.totalAmount')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('costs.materials.supplier')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('costs.materials.purchaseDate')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('costs.materials.statusLabel')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
-                  {t('common.actions')}
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
-                  </TableCell>
-                </TableRow>
-              ) : filteredMaterials.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {searchTerm
-                        ? t('costs.materials.noSearchResults', 'No materials match your search')
-                        : t('costs.noData', 'No materials found')}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredMaterials.map((material) => (
-                  <TableRow
-                    key={material.id}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: alpha(THEME_COLOR, 0.04),
-                      },
-                      transition: 'background-color 0.15s ease',
-                    }}
-                  >
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+      {/* 表格/卡片列表 */}
+      {isMobile ? (
+        /* 移动端卡片视图 */
+        <Box>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={6}>
+              <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
+            </Box>
+          ) : filteredMaterials.length === 0 ? (
+            <Box textAlign="center" py={6}>
+              <Typography variant="body2" color="text.secondary">
+                {searchTerm
+                  ? t('costs.materials.noSearchResults', 'No materials match your search')
+                  : t('costs.noData', 'No materials found')}
+              </Typography>
+            </Box>
+          ) : (
+            filteredMaterials.map((material) => (
+              <Card
+                key={material.id}
+                sx={{
+                  borderRadius: 2,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  mb: 1.5,
+                  bgcolor: '#fff',
+                }}
+              >
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Box flex={1} mr={1}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a', mb: 0.5 }}>
                         {material.materialName}
                       </Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Chip
-                        label={categories.find(c => c.value === material.materialCategory)?.label}
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          fontSize: '0.75rem',
-                          height: 24,
-                          bgcolor: alpha(THEME_COLOR, 0.1),
-                          color: THEME_COLOR,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                        {material.quantity ?? 0} {units.find(u => u.value === material.unit)?.label || material.unit}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
-                        {CurrencyUtils.formatAmountWithCommas(Number(material.unitPrice ?? 0))}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right" sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem', color: THEME_COLOR }}>
-                        {CurrencyUtils.formatAmountWithCommas(Number(material.totalAmount ?? 0))}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
-                        {material.supplier || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                        {material.purchaseDate ? format(new Date(material.purchaseDate), 'yyyy-MM-dd') : '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Chip
-                        label={statusOptions.find(s => s.value === material.paymentStatus)?.label}
-                        size="small"
-                        sx={{
-                          bgcolor: alpha(getStatusColor(material.paymentStatus), 0.1),
-                          color: getStatusColor(material.paymentStatus),
-                          fontWeight: 500,
-                          fontSize: '0.75rem',
-                          height: 24,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right" sx={{ py: 1.5 }}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, material)}
-                        sx={{
-                          color: '#888',
-                          '&:hover': {
-                            bgcolor: alpha(THEME_COLOR, 0.08),
+                      <Box display="flex" gap={0.5} flexWrap="wrap">
+                        <Chip
+                          label={categories.find(c => c.value === material.materialCategory)?.label}
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            fontSize: '0.65rem',
+                            height: 20,
+                            bgcolor: alpha(THEME_COLOR, 0.1),
                             color: THEME_COLOR,
-                          },
-                        }}
-                      >
-                        <MoreVertIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
+                          }}
+                        />
+                        <Chip
+                          label={statusOptions.find(s => s.value === material.paymentStatus)?.label}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(getStatusColor(material.paymentStatus), 0.1),
+                            color: getStatusColor(material.paymentStatus),
+                            fontWeight: 500,
+                            fontSize: '0.65rem',
+                            height: 20,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, material)}
+                      sx={{ color: '#888', p: 0.5 }}
+                    >
+                      <MoreVertIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {t('costs.materials.quantity')}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                      {material.quantity ?? 0} {units.find(u => u.value === material.unit)?.label || material.unit}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {t('costs.materials.totalAmount')}
+                    </Typography>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: THEME_COLOR }}>
+                      {CurrencyUtils.formatAmountWithCommas(Number(material.totalAmount ?? 0))}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {t('costs.materials.purchaseDate')}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                      {material.purchaseDate ? format(new Date(material.purchaseDate), 'yyyy-MM-dd') : '-'}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格视图 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+          }}
+        >
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('costs.materials.materialName')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('costs.materials.category')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
+                    {t('costs.materials.quantity')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
+                    {t('costs.materials.unitPrice')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
+                    {t('costs.materials.totalAmount')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('costs.materials.supplier')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('costs.materials.purchaseDate')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('costs.materials.statusLabel')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
+                    {t('common.actions')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                      <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Card>
+                ) : filteredMaterials.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {searchTerm
+                          ? t('costs.materials.noSearchResults', 'No materials match your search')
+                          : t('costs.noData', 'No materials found')}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredMaterials.map((material) => (
+                    <TableRow
+                      key={material.id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: alpha(THEME_COLOR, 0.04),
+                        },
+                        transition: 'background-color 0.15s ease',
+                      }}
+                    >
+                      <TableCell sx={{ py: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+                          {material.materialName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
+                        <Chip
+                          label={categories.find(c => c.value === material.materialCategory)?.label}
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            fontSize: '0.75rem',
+                            height: 24,
+                            bgcolor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                          {material.quantity ?? 0} {units.find(u => u.value === material.unit)?.label || material.unit}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
+                          {CurrencyUtils.formatAmountWithCommas(Number(material.unitPrice ?? 0))}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem', color: THEME_COLOR }}>
+                          {CurrencyUtils.formatAmountWithCommas(Number(material.totalAmount ?? 0))}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#666' }}>
+                          {material.supplier || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                          {material.purchaseDate ? format(new Date(material.purchaseDate), 'yyyy-MM-dd') : '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5 }}>
+                        <Chip
+                          label={statusOptions.find(s => s.value === material.paymentStatus)?.label}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(getStatusColor(material.paymentStatus), 0.1),
+                            color: getStatusColor(material.paymentStatus),
+                            fontWeight: 500,
+                            fontSize: '0.75rem',
+                            height: 24,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 1.5 }}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, material)}
+                          sx={{
+                            color: '#888',
+                            '&:hover': {
+                              bgcolor: alpha(THEME_COLOR, 0.08),
+                              color: THEME_COLOR,
+                            },
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      )}
 
       {/* Actions Menu */}
       <Menu
@@ -548,13 +650,14 @@ const MaterialPurchaseManagement: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         TransitionProps={{
           onExited: handleDialogExited,
         }}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.12)',
           }
         }}
       >
@@ -597,7 +700,7 @@ const MaterialPurchaseManagement: React.FC = () => {
         <DialogContent sx={{ p: 0 }}>
           <Box sx={{ p: 2.5 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={isMobile ? 12 : 6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -618,7 +721,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={isMobile ? 12 : 6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -645,7 +748,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   ))}
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={isMobile ? 12 : 4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -667,7 +770,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={isMobile ? 12 : 4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -689,7 +792,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={isMobile ? 12 : 4}>
                 <TextField
                   fullWidth
                   size="small"
@@ -713,7 +816,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={isMobile ? 12 : 6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -733,7 +836,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={isMobile ? 12 : 6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -755,7 +858,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={isMobile ? 12 : 6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -782,7 +885,7 @@ const MaterialPurchaseManagement: React.FC = () => {
                   ))}
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={isMobile ? 12 : 6}>
                 <TextField
                   fullWidth
                   size="small"
@@ -879,6 +982,7 @@ const MaterialPurchaseManagement: React.FC = () => {
             borderRadius: 2.5,
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
             maxWidth: 360,
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
@@ -934,14 +1038,18 @@ const MaterialPurchaseManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{
             width: '100%',
-            borderRadius: 2,
+            borderRadius: isMobile ? 1.5 : 2,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
           }}
         >
           {snackbar.message}

@@ -32,6 +32,8 @@ import {
   Grid,
   InputAdornment,
   Snackbar,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import {
@@ -71,8 +73,8 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+function TabPanel(props: TabPanelProps & { isMobile?: boolean }) {
+  const { children, value, index, isMobile, ...other } = props;
   return (
     <div
       role="tabpanel"
@@ -81,7 +83,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`template-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ p: isMobile ? 1 : 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -90,6 +92,11 @@ const NotificationTemplateManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -349,106 +356,175 @@ const NotificationTemplateManagement: React.FC = () => {
     return templates.filter(template => template.type === type);
   };
 
-  const renderTemplateTable = (templateList: NotificationTemplate[]) => (
-    <TableContainer>
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ backgroundColor: '#fafafa' }}>
-            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
-              {t('notifications.templateCode')}
-            </TableCell>
-            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
-              {t('notifications.templateName')}
-            </TableCell>
-            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
-              {t('notifications.status')}
-            </TableCell>
-            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
-              {t('notifications.updatedAt')}
-            </TableCell>
-            <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
-              {t('notifications.actions')}
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+  const renderTemplateTable = (templateList: NotificationTemplate[]) => {
+    // 移动端卡片视图
+    if (isMobile) {
+      return (
+        <Box>
           {templateList.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                <Typography color="text.secondary">
-                  {t('notifications.noTemplates')}
-                </Typography>
-              </TableCell>
-            </TableRow>
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                {t('notifications.noTemplates')}
+              </Typography>
+            </Box>
           ) : (
             templateList.map((template) => (
-              <TableRow 
+              <Card
                 key={template.id}
+                onClick={(e) => {
+                  setMenuAnchorEl(e.currentTarget);
+                  setSelectedTemplate(template);
+                }}
                 sx={{
-                  '&:hover': {
-                    backgroundColor: alpha(themeColor, 0.04),
-                  },
-                  transition: 'background-color 0.2s ease',
+                  mb: 1,
+                  borderRadius: 1.5,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  '&:active': { bgcolor: 'rgba(0,0,0,0.02)' },
                 }}
               >
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {template.templateCode}
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  {/* 第一行：模板名称 + 状态 */}
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }} noWrap>
+                        {template.templateName}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }} noWrap>
+                        {template.templateCode}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={template.status === 'ACTIVE' ? t('notifications.active') : t('notifications.inactive')}
+                      size="small"
+                      sx={{
+                        backgroundColor: template.status === 'ACTIVE'
+                          ? alpha('#10B981', 0.1)
+                          : alpha('#6B7280', 0.1),
+                        color: template.status === 'ACTIVE' ? '#10B981' : '#6B7280',
+                        fontWeight: 600,
+                        fontSize: '0.65rem',
+                        height: 20,
+                        ml: 1,
+                      }}
+                    />
+                  </Box>
+                  {/* 第二行：更新时间 */}
+                  <Typography sx={{ fontSize: '0.65rem', color: '#999' }}>
+                    {t('notifications.updatedAt')}: {formatUtcToMerchantTime(template.updatedAt, 'yyyy-MM-dd HH:mm')}
                   </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {template.templateName}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={template.status === 'ACTIVE' ? t('notifications.active') : t('notifications.inactive')}
-                    sx={{
-                      backgroundColor: template.status === 'ACTIVE' 
-                        ? alpha('#10B981', 0.1) 
-                        : alpha('#6B7280', 0.1),
-                      color: template.status === 'ACTIVE' ? '#10B981' : '#6B7280',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      height: 24,
-                      '& .MuiChip-label': {
-                        px: 2,
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatUtcToMerchantTime(template.updatedAt, 'yyyy-MM-dd HH:mm:ss')}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      setMenuAnchorEl(e.currentTarget);
-                      setSelectedTemplate(template);
-                    }}
-                    sx={{
-                      color: 'text.secondary',
-                      '&:hover': {
-                        backgroundColor: alpha(themeColor, 0.1),
-                        transform: 'scale(1.1)',
-                      },
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <MoreVertIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
+                </CardContent>
+              </Card>
             ))
           )}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+        </Box>
+      );
+    }
+
+    // 桌面端表格视图
+    return (
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#fafafa' }}>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>
+                {t('notifications.templateCode')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                {t('notifications.templateName')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                {t('notifications.status')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                {t('notifications.updatedAt')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                {t('notifications.actions')}
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {templateList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <Typography color="text.secondary">
+                    {t('notifications.noTemplates')}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              templateList.map((template) => (
+                <TableRow
+                  key={template.id}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: alpha(themeColor, 0.04),
+                    },
+                    transition: 'background-color 0.2s ease',
+                  }}
+                >
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {template.templateCode}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {template.templateName}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={template.status === 'ACTIVE' ? t('notifications.active') : t('notifications.inactive')}
+                      sx={{
+                        backgroundColor: template.status === 'ACTIVE'
+                          ? alpha('#10B981', 0.1)
+                          : alpha('#6B7280', 0.1),
+                        color: template.status === 'ACTIVE' ? '#10B981' : '#6B7280',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        height: 24,
+                        '& .MuiChip-label': {
+                          px: 2,
+                        },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatUtcToMerchantTime(template.updatedAt, 'yyyy-MM-dd HH:mm:ss')}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        setMenuAnchorEl(e.currentTarget);
+                        setSelectedTemplate(template);
+                      }}
+                      sx={{
+                        color: 'text.secondary',
+                        '&:hover': {
+                          backgroundColor: alpha(themeColor, 0.1),
+                          transform: 'scale(1.1)',
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <MoreVertIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
 
   if (loading) {
     return (
@@ -537,7 +613,7 @@ const NotificationTemplateManagement: React.FC = () => {
       {/* 模板表格 */}
       <Card
         sx={{
-          borderRadius: 2.5,
+          borderRadius: isMobile ? 2 : 2.5,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
@@ -547,14 +623,16 @@ const NotificationTemplateManagement: React.FC = () => {
           <Tabs
             value={tabValue}
             onChange={handleTabChange}
+            variant={isMobile ? 'fullWidth' : 'standard'}
             sx={{
               backgroundColor: '#fafafa',
               '& .MuiTab-root': {
                 color: '#666',
                 fontWeight: 500,
-                fontSize: '0.875rem',
+                fontSize: isMobile ? '0.8rem' : '0.875rem',
                 textTransform: 'none',
-                py: 1.5,
+                py: isMobile ? 1 : 1.5,
+                minHeight: isMobile ? 40 : 48,
                 '&.Mui-selected': {
                   color: themeColor,
                   fontWeight: 600,
@@ -571,11 +649,11 @@ const NotificationTemplateManagement: React.FC = () => {
           </Tabs>
         </Box>
 
-        <TabPanel value={tabValue} index={0}>
+        <TabPanel value={tabValue} index={0} isMobile={isMobile}>
           {renderTemplateTable(getFilteredTemplates('SMS'))}
         </TabPanel>
 
-        <TabPanel value={tabValue} index={1}>
+        <TabPanel value={tabValue} index={1} isMobile={isMobile}>
           {renderTemplateTable(getFilteredTemplates('EMAIL'))}
         </TabPanel>
       </Card>
@@ -586,13 +664,14 @@ const NotificationTemplateManagement: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         TransitionProps={{
           onExited: handleDialogExited,
         }}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -1061,10 +1140,11 @@ const NotificationTemplateManagement: React.FC = () => {
         onClose={() => setOpenPreviewDialog(false)}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -1226,14 +1306,18 @@ const NotificationTemplateManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSuccessMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSuccessMessage(null)}
           severity="success"
           sx={{
             width: '100%',
-            borderRadius: 2,
+            borderRadius: isMobile ? 1.5 : 2,
             boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
           }}
         >
           {successMessage}

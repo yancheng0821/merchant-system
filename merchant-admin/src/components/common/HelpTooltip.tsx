@@ -18,8 +18,8 @@ interface HelpTooltipProps {
   compact?: boolean; // 新增：紧凑模式，用于输入框内部
 }
 
-const HelpTooltip: React.FC<HelpTooltipProps> = ({ 
-  title, 
+const HelpTooltip: React.FC<HelpTooltipProps> = ({
+  title,
   placement = 'top',
   size = 'small',
   variant = 'help',
@@ -29,6 +29,54 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
   compact = false
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // 检测是否为触摸设备
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+  // 点击其他地方关闭 tooltip
+  React.useEffect(() => {
+    if (isOpen && isTouchDevice) {
+      const handleClickOutside = () => {
+        setIsOpen(false);
+      };
+      // 延迟添加监听器，避免立即触发
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [isOpen, isTouchDevice]);
+
+  // 处理点击事件（移动端支持）
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsOpen(!isOpen);
+  };
+
+  // 处理关闭
+  const handleClose = () => {
+    setIsOpen(false);
+  };
+
+  // 处理 hover（桌面端）
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (!isTouchDevice) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (!isTouchDevice) {
+      setIsOpen(false);
+    }
+  };
 
   const getColorConfig = () => {
     switch (color) {
@@ -89,7 +137,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
   };
 
   return (
-    <Tooltip 
+    <Tooltip
       title={
         <Box sx={{ p: 0.5 }}>
           {showIcon && (
@@ -109,9 +157,9 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
               />
             </Box>
           )}
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               fontSize: '0.875rem',
               lineHeight: 1.5,
               fontWeight: 400,
@@ -125,8 +173,11 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
       }
       placement={placement}
       arrow
-      enterDelay={300}
-      leaveDelay={200}
+      open={isOpen}
+      onClose={handleClose}
+      disableFocusListener
+      disableHoverListener
+      disableTouchListener
       sx={{
         '& .MuiTooltip-tooltip': {
           backgroundColor: colorConfig.tooltipBg,
@@ -162,8 +213,9 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
     >
       <IconButton
         size={size}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         sx={{
           color: colorConfig.iconColor,
           padding: compact ? '3px' : (size === 'small' ? '6px' : size === 'medium' ? '8px' : '10px'),

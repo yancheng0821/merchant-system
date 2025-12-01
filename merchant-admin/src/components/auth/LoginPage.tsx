@@ -580,7 +580,7 @@ const LoginPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
         position: 'relative',
       }}
     >
@@ -588,16 +588,16 @@ const LoginPage: React.FC = () => {
       <Box
         sx={{
           position: 'absolute',
-          top: 32,
-          right: 32,
+          top: { xs: 12, sm: 32 },
+          right: { xs: 12, sm: 32 },
           zIndex: 1000,
         }}
       >
-        <LanguageSwitcher variant="login" size="medium" />
+        <LanguageSwitcher variant="login" size="small" />
       </Box>
 
-      <Container maxWidth="lg">
-        <Grid container spacing={6} alignItems="center" justifyContent="center">
+      <Container maxWidth="lg" className="auth-container" sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+        <Grid container spacing={{ xs: 0, sm: 4, md: 6 }} alignItems="center" justifyContent="center" className="auth-grid">
           {/* 左侧 - 系统优势介绍 */}
           <Grid item xs={12} md={5} sx={{ display: { xs: 'none', md: 'block' } }}>
             <Box sx={{ pr: 4 }}>
@@ -685,7 +685,7 @@ const LoginPage: React.FC = () => {
               <Box
                 sx={{
                   textAlign: 'center',
-                  mb: 4,
+                  mb: 3,
                   display: { xs: 'block', md: 'none' },
                 }}
               >
@@ -710,8 +710,8 @@ const LoginPage: React.FC = () => {
               <Paper
                 elevation={0}
                 sx={{
-                  borderRadius: 3,
-                  p: { xs: 3, sm: 4 },
+                  borderRadius: { xs: 2, sm: 3 },
+                  p: { xs: 2, sm: 3, md: 4 },
                   background: '#fff',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                   border: '1px solid rgba(0, 0, 0, 0.06)',
@@ -1432,7 +1432,7 @@ const LoginPage: React.FC = () => {
         </Grid>
 
         {/* 页面底部版权信息 */}
-        <Box sx={{ mt: 6, textAlign: 'center' }}>
+        <Box sx={{ mt: { xs: 3, sm: 4, md: 6 }, textAlign: 'center' }}>
           <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
             © {new Date().getFullYear()}
             <Box component="img" src="/s-logo.png" alt="Swiftmind" sx={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.7 }} />

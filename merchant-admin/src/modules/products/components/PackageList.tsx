@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Box,
   Card,
+  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -16,6 +17,8 @@ import {
   alpha,
   Button,
   CircularProgress,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -60,8 +63,12 @@ const PackageList: React.FC<PackageListProps> = ({
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -139,211 +146,328 @@ const PackageList: React.FC<PackageListProps> = ({
 
   return (
     <>
-      <Box
-        sx={{
-          borderRadius: 2,
-          border: '1px solid rgba(0,0,0,0.08)',
-          overflow: 'hidden',
-          bgcolor: '#fff',
-        }}
-      >
-        <TableContainer>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#fafafa' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                  {t('packages.packageName')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                  {t('packages.includedServices')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'right' }}>
-                  {t('packages.originalPrice')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'right' }}>
-                  {t('packages.packagePrice')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
-                  {t('packages.discount')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
-                  {t('packages.validity')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
-                  {t('packages.statusLabel')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
-                  {t('packages.actions')}
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {packages.map((pkg) => {
-                const packageServices = getPackageServices(pkg);
-                const totalServices = getTotalServicesCount(pkg);
+      {isMobile ? (
+        /* 移动端卡片列表 */
+        <Box>
+          {packages.map((pkg) => {
+            const packageServices = getPackageServices(pkg);
+            const totalServices = getTotalServicesCount(pkg);
 
-                return (
-                  <TableRow
-                    key={pkg.id}
-                    hover
-                    sx={{
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                      '& td': { py: 1.5, fontSize: '0.8125rem' },
-                    }}
-                  >
-                    {/* Package Name with Icon */}
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        <Box
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 1.5,
-                            bgcolor: alpha(pkg.color || '#06B6D4', 0.1),
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: pkg.color || '#06B6D4',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {getPackageIconComponent(pkg.icon)}
-                        </Box>
-                        <Box>
-                          <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
-                            {pkg.name}
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                            ID: {pkg.id}
-                          </Typography>
-                        </Box>
+            return (
+              <Card
+                key={pkg.id}
+                onClick={() => onView(pkg)}
+                sx={{
+                  mb: 1.5,
+                  borderRadius: 1.5,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  '&:active': {
+                    bgcolor: 'rgba(0,0,0,0.02)',
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  {/* 第一行：套餐名称 + 状态 */}
+                  <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1}>
+                    <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 0, flex: 1 }}>
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 1,
+                          bgcolor: alpha(pkg.color || '#06B6D4', 0.1),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: pkg.color || '#06B6D4',
+                          flexShrink: 0,
+                          '& svg': { fontSize: 14 },
+                        }}
+                      >
+                        {getPackageIconComponent(pkg.icon)}
                       </Box>
-                    </TableCell>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }} noWrap>
+                        {pkg.name}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={pkg.status === 'ACTIVE' ? t('packages.active') : t('packages.inactive')}
+                      size="small"
+                      sx={{
+                        bgcolor: pkg.status === 'ACTIVE' ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
+                        color: pkg.status === 'ACTIVE' ? '#10B981' : '#EF4444',
+                        fontWeight: 600,
+                        height: 20,
+                        fontSize: '0.7rem',
+                        flexShrink: 0,
+                      }}
+                    />
+                  </Box>
 
-                    {/* Services */}
-                    <TableCell>
-                      <Box>
-                        <Chip
-                          label={`${totalServices} ${t('products.sessions')}`}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha(THEME_COLOR, 0.1),
-                            color: THEME_COLOR,
-                            fontWeight: 500,
-                            height: 22,
-                            fontSize: '0.75rem',
-                          }}
-                        />
-                        <Box mt={0.5}>
-                          {packageServices.slice(0, 2).map((ps, idx) => (
-                            <Typography key={idx} sx={{ display: 'block', fontSize: '0.75rem', color: '#888' }}>
-                              • {ps.count}x {getServiceName(ps.service_id)}
-                            </Typography>
-                          ))}
-                          {packageServices.length > 2 && (
-                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                              +{packageServices.length - 2} {t('packages.moreServices')}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
+                  {/* 第二行：包含服务数量 */}
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <Chip
+                      label={`${totalServices} ${t('products.sessions')}`}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(THEME_COLOR, 0.1),
+                        color: THEME_COLOR,
+                        fontWeight: 500,
+                        height: 20,
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {pkg.validity_days} {t('packages.days')}
+                    </Typography>
+                  </Box>
 
-                    {/* Original Price */}
-                    <TableCell sx={{ textAlign: 'right' }}>
+                  {/* 第三行：价格 + 折扣 */}
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: THEME_COLOR }}>
+                        {CurrencyUtils.formatAmount(pkg.package_price)}
+                      </Typography>
                       <Typography
                         sx={{
                           textDecoration: 'line-through',
                           color: '#999',
-                          fontSize: '0.8125rem',
+                          fontSize: '0.75rem',
                         }}
                       >
                         {CurrencyUtils.formatAmount(pkg.original_price)}
                       </Typography>
-                    </TableCell>
-
-                    {/* Package Price */}
-                    <TableCell sx={{ textAlign: 'right' }}>
-                      <Typography
+                    </Box>
+                    {pkg.discount_percentage && pkg.discount_percentage > 0 && (
+                      <Chip
+                        label={`-${pkg.discount_percentage.toFixed(0)}%`}
+                        size="small"
                         sx={{
+                          bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1),
+                          color: isMonochrome ? '#1a1a1a' : '#10B981',
                           fontWeight: 600,
-                          color: THEME_COLOR,
-                          fontSize: '0.8125rem',
+                          height: 20,
+                          fontSize: '0.7rem',
                         }}
-                      >
-                        {CurrencyUtils.formatAmount(pkg.package_price)}
-                      </Typography>
-                    </TableCell>
+                      />
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Box>
+      ) : (
+        /* 桌面端表格 */
+        <Box
+          sx={{
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            bgcolor: '#fff',
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ backgroundColor: '#fafafa' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    {t('packages.packageName')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                    {t('packages.includedServices')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'right' }}>
+                    {t('packages.originalPrice')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'right' }}>
+                    {t('packages.packagePrice')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
+                    {t('packages.discount')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
+                    {t('packages.validity')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
+                    {t('packages.statusLabel')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5, textAlign: 'center' }}>
+                    {t('packages.actions')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {packages.map((pkg) => {
+                  const packageServices = getPackageServices(pkg);
+                  const totalServices = getTotalServicesCount(pkg);
 
-                    {/* Discount */}
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      {pkg.discount_percentage && pkg.discount_percentage > 0 ? (
+                  return (
+                    <TableRow
+                      key={pkg.id}
+                      hover
+                      sx={{
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                        '& td': { py: 1.5, fontSize: '0.8125rem' },
+                      }}
+                    >
+                      {/* Package Name with Icon */}
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <Box
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 1.5,
+                              bgcolor: alpha(pkg.color || '#06B6D4', 0.1),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: pkg.color || '#06B6D4',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {getPackageIconComponent(pkg.icon)}
+                          </Box>
+                          <Box>
+                            <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                              {pkg.name}
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                              ID: {pkg.id}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+
+                      {/* Services */}
+                      <TableCell>
+                        <Box>
+                          <Chip
+                            label={`${totalServices} ${t('products.sessions')}`}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha(THEME_COLOR, 0.1),
+                              color: THEME_COLOR,
+                              fontWeight: 500,
+                              height: 22,
+                              fontSize: '0.75rem',
+                            }}
+                          />
+                          <Box mt={0.5}>
+                            {packageServices.slice(0, 2).map((ps, idx) => (
+                              <Typography key={idx} sx={{ display: 'block', fontSize: '0.75rem', color: '#888' }}>
+                                • {ps.count}x {getServiceName(ps.service_id)}
+                              </Typography>
+                            ))}
+                            {packageServices.length > 2 && (
+                              <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                                +{packageServices.length - 2} {t('packages.moreServices')}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+
+                      {/* Original Price */}
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Typography
+                          sx={{
+                            textDecoration: 'line-through',
+                            color: '#999',
+                            fontSize: '0.8125rem',
+                          }}
+                        >
+                          {CurrencyUtils.formatAmount(pkg.original_price)}
+                        </Typography>
+                      </TableCell>
+
+                      {/* Package Price */}
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            color: THEME_COLOR,
+                            fontSize: '0.8125rem',
+                          }}
+                        >
+                          {CurrencyUtils.formatAmount(pkg.package_price)}
+                        </Typography>
+                      </TableCell>
+
+                      {/* Discount */}
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        {pkg.discount_percentage && pkg.discount_percentage > 0 ? (
+                          <Chip
+                            label={`-${pkg.discount_percentage.toFixed(0)}%`}
+                            size="small"
+                            sx={{
+                              bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1),
+                              color: isMonochrome ? '#1a1a1a' : '#10B981',
+                              fontWeight: 600,
+                              height: 24,
+                              fontSize: '0.75rem',
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            -
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      {/* Validity */}
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                          {pkg.validity_days} {t('packages.days')}
+                        </Typography>
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell sx={{ textAlign: 'center' }}>
                         <Chip
-                          label={`-${pkg.discount_percentage.toFixed(0)}%`}
+                          label={pkg.status === 'ACTIVE' ? t('packages.active') : t('packages.inactive')}
                           size="small"
                           sx={{
-                            bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.1)' : alpha('#10B981', 0.1),
-                            color: isMonochrome ? '#1a1a1a' : '#10B981',
+                            bgcolor: pkg.status === 'ACTIVE' ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
+                            color: pkg.status === 'ACTIVE' ? '#10B981' : '#EF4444',
                             fontWeight: 600,
-                            height: 24,
+                            height: 22,
                             fontSize: '0.75rem',
                           }}
                         />
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          -
-                        </Typography>
-                      )}
-                    </TableCell>
+                      </TableCell>
 
-                    {/* Validity */}
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
-                        {pkg.validity_days} {t('packages.days')}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Status */}
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Chip
-                        label={pkg.status === 'ACTIVE' ? t('packages.active') : t('packages.inactive')}
-                        size="small"
-                        sx={{
-                          bgcolor: pkg.status === 'ACTIVE' ? alpha('#10B981', 0.1) : alpha('#EF4444', 0.1),
-                          color: pkg.status === 'ACTIVE' ? '#10B981' : '#EF4444',
-                          fontWeight: 600,
-                          height: 22,
-                          fontSize: '0.75rem',
-                        }}
-                      />
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMenuOpen(e, pkg);
-                        }}
-                        sx={{
-                          color: '#999',
-                          '&:hover': {
-                            backgroundColor: 'rgba(0,0,0,0.04)',
-                            color: '#666',
-                          },
-                        }}
-                      >
-                        <MoreVertIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+                      {/* Actions */}
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMenuOpen(e, pkg);
+                          }}
+                          sx={{
+                            color: '#999',
+                            '&:hover': {
+                              backgroundColor: 'rgba(0,0,0,0.04)',
+                              color: '#666',
+                            },
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
       {/* Action Menu */}
       <Menu

@@ -864,7 +864,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
     switch (step) {
       case 0:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -993,7 +993,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                     /[a-z]/.test(formData.password) &&
                     /[0-9]/.test(formData.password) &&
                     /[!@#$%^&*(),.?":{}|<>]/.test(formData.password)
-                  ) ? '140px' : '0px',
+                  ) ? { xs: '80px', sm: '140px' } : '0px',
                   transition: 'min-height 0.3s ease-in-out',
                   overflow: 'hidden'
                 }}>
@@ -1007,10 +1007,32 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                   ) && (
                     <Fade in={true}>
                       <Box sx={{ mt: 0.5, mb: 1, px: 1 }}>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500 }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500, display: { xs: 'none', sm: 'block' } }}>
                           {t('auth.passwordRequirements')}:
                         </Typography>
-                        <Box sx={{ mt: 0.5 }}>
+                        {/* 移动端：两列网格布局 */}
+                        <Box sx={{ display: { xs: 'grid', sm: 'none' }, gridTemplateColumns: 'repeat(2, 1fr)', gap: 0.5, mt: 0.5 }}>
+                          {[
+                            { check: formData.password.length >= 8, label: t('auth.merchantRegisterPage.validation.passwordMinLengthShort') },
+                            { check: /[A-Z]/.test(formData.password), label: t('auth.merchantRegisterPage.validation.passwordNeedsUpperCaseShort') },
+                            { check: /[a-z]/.test(formData.password), label: t('auth.merchantRegisterPage.validation.passwordNeedsLowerCaseShort') },
+                            { check: /[0-9]/.test(formData.password), label: t('auth.merchantRegisterPage.validation.passwordNeedsNumberShort') },
+                            { check: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password), label: t('auth.merchantRegisterPage.validation.passwordNeedsSpecialCharShort') },
+                          ].map((item, idx) => (
+                            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                              {item.check ? (
+                                <CheckCircleIcon sx={{ fontSize: '0.75rem', color: 'success.main' }} />
+                              ) : (
+                                <CancelIcon sx={{ fontSize: '0.75rem', color: 'text.disabled' }} />
+                              )}
+                              <Typography variant="caption" sx={{ color: item.check ? 'success.main' : 'text.secondary', fontSize: '0.65rem' }}>
+                                {item.label}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                        {/* PC端：原始列表布局 */}
+                        <Box sx={{ mt: 0.5, display: { xs: 'none', sm: 'block' } }}>
                           {/* 至少8位 */}
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
                             {formData.password.length >= 8 ? (
@@ -1139,7 +1161,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
       case 1:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -1336,7 +1358,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
       case 2:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required sx={selectSx}>
                 <InputLabel>{t('auth.merchantRegisterPage.merchantInfo.timezone')}</InputLabel>
@@ -1618,7 +1640,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2,
+        p: { xs: 1, sm: 2 },
+        py: { xs: 3, sm: 2 },
         position: 'relative',
       }}
     >
@@ -1626,22 +1649,22 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
       <Box
         sx={{
           position: 'absolute',
-          top: 32,
-          right: 32,
+          top: { xs: 8, sm: 32 },
+          right: { xs: 8, sm: 32 },
           zIndex: 1000,
         }}
       >
-        <LanguageSwitcher variant="login" size="medium" />
+        <LanguageSwitcher variant="login" size="small" />
       </Box>
 
-      <Container maxWidth="md">
+      <Container maxWidth="md" className="auth-container" sx={{ px: { xs: 1, sm: 2 } }}>
         <Fade in timeout={1000}>
           <Card
             sx={{
               maxWidth: 800,
               width: '100%',
               mx: 'auto',
-              borderRadius: 3,
+              borderRadius: { xs: 2, sm: 3 },
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
               background: '#fff',
               border: '1px solid rgba(0, 0, 0, 0.06)',
@@ -1653,7 +1676,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 sx={{
                   background: 'transparent',
                   color: 'text.primary',
-                  p: 3,
+                  p: { xs: 2, sm: 3 },
                   textAlign: 'center',
                   borderBottom: '1px solid rgba(0,0,0,0.05)',
                 }}
@@ -1688,9 +1711,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 </Typography>
               </Box>
 
-              <Box sx={{ p: 4 }}>
+              <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
                 {/* 进度指示器 */}
-                <Box sx={{ mb: 4 }}>
+                <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
                       {t('common.step')} {activeStep + 1} {t('common.of')} {steps.length}
@@ -1717,13 +1740,17 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 {/* 步骤指示器 */}
                 <Stepper
                   activeStep={activeStep}
+                  alternativeLabel
                   sx={{
-                    mb: 4,
+                    mb: { xs: 2, sm: 4 },
                     '& .MuiStepLabel-root .Mui-completed': {
                       color: '#1a1a1a',
                     },
                     '& .MuiStepLabel-root .Mui-active': {
                       color: '#1a1a1a',
+                    },
+                    '& .MuiStepConnector-line': {
+                      borderTopWidth: 2,
                     },
                   }}
                 >
@@ -1733,8 +1760,8 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                         StepIconComponent={({ active, completed }) => (
                           <Box
                             sx={{
-                              width: 32,
-                              height: 32,
+                              width: { xs: 28, sm: 32 },
+                              height: { xs: 28, sm: 32 },
                               borderRadius: '50%',
                               display: 'flex',
                               alignItems: 'center',
@@ -1742,24 +1769,47 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                               backgroundColor: completed || active ? '#1a1a1a' : '#e5e5e5',
                               color: completed || active ? 'white' : '#999',
                               fontWeight: 500,
-                              fontSize: '0.8rem',
+                              fontSize: { xs: '0.7rem', sm: '0.8rem' },
                             }}
                           >
                             {completed ? (
-                              <CheckCircleIcon sx={{ fontSize: 18 }} />
+                              <CheckCircleIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
                             ) : (
                               index + 1
                             )}
                           </Box>
                         )}
                       >
-                        <Typography variant="body2" sx={{ mt: 1, fontWeight: 400, color: '#666', fontSize: '0.8rem' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1,
+                            fontWeight: 400,
+                            color: '#666',
+                            fontSize: { xs: '0.65rem', sm: '0.8rem' },
+                            display: { xs: 'none', sm: 'block' },
+                          }}
+                        >
                           {label}
                         </Typography>
                       </StepLabel>
                     </Step>
                   ))}
                 </Stepper>
+
+                {/* 移动端显示当前步骤名称 */}
+                <Typography
+                  sx={{
+                    display: { xs: 'block', sm: 'none' },
+                    textAlign: 'center',
+                    mb: 2,
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    color: '#1a1a1a',
+                  }}
+                >
+                  {steps[activeStep]}
+                </Typography>
 
                 {error && (
                   <Slide direction="down" in={!!error}>
@@ -1782,7 +1832,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: { xs: 2, sm: 3 },
                     mb: 3,
                     borderRadius: 2,
                     border: '1px solid rgba(0,0,0,0.06)',
@@ -1881,6 +1931,7 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             </CardContent>
           </Card>
         </Fade>
+
       </Container>
 
       {/* 成功对话框 */}
@@ -1890,31 +1941,37 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 2,
+            borderRadius: { xs: 2, sm: 3 },
+            m: { xs: 2, sm: 'auto' },
+            width: { xs: 'calc(100% - 32px)', sm: '100%' },
+            maxHeight: { xs: 'calc(100vh - 32px)', sm: 'none' },
           }
         }}
       >
-        <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
-          <Box sx={{ mb: 2 }}>
+        <DialogTitle sx={{ textAlign: 'center', pt: { xs: 2.5, sm: 4 }, pb: { xs: 1, sm: 2 } }}>
+          <Box sx={{ mb: { xs: 1, sm: 2 } }}>
             <CheckCircleIcon
               sx={{
-                fontSize: 64,
+                fontSize: { xs: 48, sm: 64 },
                 color: 'success.main',
               }}
             />
           </Box>
-          <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: 'text.primary' }}>
+          <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: 'text.primary', fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>
             {t('auth.merchantRegisterPage.success.title')}
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center', px: 4, py: 2 }}>
+        <DialogContent sx={{ textAlign: 'center', px: { xs: 2, sm: 4 }, py: { xs: 1, sm: 2 } }}>
           <Alert
             severity="success"
             sx={{
-              mb: 3,
+              mb: { xs: 2, sm: 3 },
               borderRadius: 2,
               '& .MuiAlert-icon': {
-                fontSize: '1.5rem',
+                fontSize: { xs: '1.2rem', sm: '1.5rem' },
+              },
+              '& .MuiAlert-message': {
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
               }
             }}
           >
@@ -1923,28 +1980,28 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
           {/* 租户代码 */}
           <Box sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: '#fafafa',
             borderRadius: 2,
-            mb: 2,
+            mb: { xs: 1.5, sm: 2 },
             border: '1px solid #e5e5e5',
           }}>
-            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#888' }}>
+            <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: '#888', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               {t('auth.merchantRegisterPage.success.tenantCodeLabel')}
             </Typography>
             <Typography
-              variant="h6"
               sx={{
                 fontFamily: 'monospace',
                 fontWeight: 600,
                 color: '#1a1a1a',
-                mb: 2,
+                mb: { xs: 1, sm: 2 },
+                fontSize: { xs: '1rem', sm: '1.25rem' },
               }}
             >
               {tenantCode || 'Loading...'}
             </Typography>
             <Button
-              startIcon={<CopyIcon />}
+              startIcon={<CopyIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1957,6 +2014,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 textTransform: 'none',
                 fontWeight: 500,
                 borderRadius: 2,
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                py: { xs: 0.5, sm: 0.75 },
+                px: { xs: 1.5, sm: 2 },
                 ...(copiedTenantCode ? {
                   bgcolor: 'success.main',
                   color: '#fff',
@@ -1974,28 +2034,28 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
 
           {/* 邀请码 */}
           <Box sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: '#fafafa',
             borderRadius: 2,
-            mb: 3,
+            mb: { xs: 1.5, sm: 3 },
             border: '1px solid #e5e5e5',
           }}>
-            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#888' }}>
+            <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: '#888', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               {t('auth.merchantRegisterPage.success.invitationCodeLabel')}
             </Typography>
             <Typography
-              variant="h6"
               sx={{
                 fontFamily: 'monospace',
                 fontWeight: 600,
                 color: '#1a1a1a',
-                mb: 2,
+                mb: { xs: 1, sm: 2 },
+                fontSize: { xs: '1rem', sm: '1.25rem' },
               }}
             >
               {invitationCode || 'Loading...'}
             </Typography>
             <Button
-              startIcon={<CopyIcon />}
+              startIcon={<CopyIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2008,6 +2068,9 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
                 textTransform: 'none',
                 fontWeight: 500,
                 borderRadius: 2,
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                py: { xs: 0.5, sm: 0.75 },
+                px: { xs: 1.5, sm: 2 },
                 ...(copiedInvitationCode ? {
                   bgcolor: 'success.main',
                   color: '#fff',
@@ -2023,23 +2086,24 @@ const MerchantRegisterPage: React.FC<MerchantRegisterPageProps> = ({ onBack }) =
             </Button>
           </Box>
 
-          <Typography variant="body2" sx={{ color: '#888', fontSize: '0.85rem' }}>
+          <Typography variant="body2" sx={{ color: '#888', fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
             {t('auth.merchantRegisterPage.success.confirmCopiedMessage')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', p: 3 }}>
+        <DialogActions sx={{ justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
           <Button
             onClick={handleGoToLogin}
             variant="contained"
             disabled={!copiedInvitationCode || !copiedTenantCode}
             sx={{
-              px: 4,
-              py: 1,
+              px: { xs: 3, sm: 4 },
+              py: { xs: 0.75, sm: 1 },
               textTransform: 'none',
               fontWeight: 500,
               borderRadius: 2,
               bgcolor: '#1a1a1a',
               boxShadow: 'none',
+              fontSize: { xs: '0.85rem', sm: '0.9rem' },
               '&:hover': { bgcolor: '#333', boxShadow: 'none' },
               '&:disabled': { bgcolor: '#e5e5e5', color: '#999' },
             }}

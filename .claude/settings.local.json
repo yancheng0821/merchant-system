@@ -27,7 +27,20 @@
       "Bash(./mvnw clean compile:*)",
       "Bash(../mvnw compile:*)",
       "Bash(wc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(tree:*)",
+      "Bash(npm install:*)",
+      "Bash(npx cap init:*)",
+      "Bash(npx cap:*)",
+      "Bash(pod install)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(open:*)",
+      "Bash(npm run cap:build:*)",
+      "Bash(ipconfig getifaddr:*)",
+      "Bash(npm start)",
+      "Bash(HOST=0.0.0.0 npm start)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

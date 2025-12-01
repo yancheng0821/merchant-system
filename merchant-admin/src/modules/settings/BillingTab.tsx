@@ -22,6 +22,9 @@ import {
   Grid,
   alpha,
   Divider,
+  Stack,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Receipt as ReceiptIcon,
@@ -59,6 +62,10 @@ const BillingTab: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -272,7 +279,7 @@ const BillingTab: React.FC = () => {
   }
 
   return (
-    <Grid container spacing={4}>
+    <Grid container spacing={isMobile ? 2 : 4}>
       {/* 订阅计划信息卡片 */}
       {subscription && subscription.plan && (
         <Grid item xs={12}>
@@ -283,106 +290,191 @@ const BillingTab: React.FC = () => {
               boxShadow: 'none',
             }}
           >
-            <CardContent sx={{ p: 2 }}>
-              {/* 单行展示所有信息 */}
-              <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
-                {/* 左侧：计划名称和日期 */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
-                    {i18n.language === 'zh-CN' ? subscription.plan.planNameZh : subscription.plan.planNameEn}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              {isMobile ? (
+                // 移动端布局
+                <Box>
+                  {/* 顶部：计划名称 + 状态 */}
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
+                      {i18n.language === 'zh-CN' ? subscription.plan.planNameZh : subscription.plan.planNameEn}
+                    </Typography>
+                    <Chip
+                      label={getSubscriptionStatusText(subscription.status)}
+                      size="small"
+                      sx={{
+                        fontWeight: 500,
+                        height: 20,
+                        fontSize: '0.65rem',
+                        ...getSubscriptionStatusColor(subscription.status)
+                      }}
+                    />
+                  </Box>
+
+                  {/* 日期 */}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
                     {subscription.status === 'TRIAL' && subscription.trialEndDate
                       ? `${t('billing.trialPeriod')} · ${t('billing.endsOn')} ${subscription.trialEndDate}`
                       : `${subscription.currentPeriodStart} ~ ${subscription.currentPeriodEnd}`}
                   </Typography>
+
+                  {/* 配额信息 - 网格布局 */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 1.5 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.65rem', color: '#6B7280' }}>{t('billing.maxUsers')}</Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                        {subscription.plan.maxUsers === -1 ? t('billing.unlimited') : subscription.plan.maxUsers}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.65rem', color: '#6B7280' }}>{t('billing.maxStaff')}</Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                        {subscription.plan.maxStaff === -1 ? t('billing.unlimited') : subscription.plan.maxStaff}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.65rem', color: '#6B7280' }}>{t('billing.maxAppointments')}</Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                        {subscription.plan.maxAppointmentsPerMonth === -1
+                          ? t('billing.unlimited')
+                          : `${subscription.plan.maxAppointmentsPerMonth}/${t('billing.month')}`}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.65rem', color: '#6B7280' }}>{t('billing.billingCycle')}</Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                        {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly')}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* 切换计费周期按钮 */}
+                  {subscription.status === 'ACTIVE' && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      onClick={handleChangeBillingCycle}
+                      disabled={changingBillingCycle}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        py: 0.75,
+                        borderColor: '#D1D5DB',
+                        color: '#6B7280',
+                        '&:hover': {
+                          borderColor: '#9CA3AF',
+                          bgcolor: '#F9FAFB',
+                        }
+                      }}
+                    >
+                      {changingBillingCycle
+                        ? t('common.loading')
+                        : t('billing.switchTo') + ' ' + (subscription.billingCycle === 'MONTHLY' ? t('billing.yearly') : t('billing.monthly'))}
+                    </Button>
+                  )}
                 </Box>
-
-                {/* 中间：配额信息 */}
-                <Box display="flex" gap={3} alignItems="center">
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                      {t('billing.maxUsers')}:
+              ) : (
+                // 桌面端布局
+                <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+                  {/* 左侧：计划名称和日期 */}
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
+                      {i18n.language === 'zh-CN' ? subscription.plan.planNameZh : subscription.plan.planNameEn}
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
-                      {subscription.plan.maxUsers === -1 ? t('billing.unlimited') : subscription.plan.maxUsers}
-                    </Typography>
-                  </Box>
-
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                      {t('billing.maxStaff')}:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
-                      {subscription.plan.maxStaff === -1 ? t('billing.unlimited') : subscription.plan.maxStaff}
+                    <Typography variant="caption" color="text.secondary">
+                      {subscription.status === 'TRIAL' && subscription.trialEndDate
+                        ? `${t('billing.trialPeriod')} · ${t('billing.endsOn')} ${subscription.trialEndDate}`
+                        : `${subscription.currentPeriodStart} ~ ${subscription.currentPeriodEnd}`}
                     </Typography>
                   </Box>
 
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                      {t('billing.maxAppointments')}:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
-                      {subscription.plan.maxAppointmentsPerMonth === -1
-                        ? t('billing.unlimited')
-                        : `${subscription.plan.maxAppointmentsPerMonth}/${t('billing.month')}`}
-                    </Typography>
+                  {/* 中间：配额信息 */}
+                  <Box display="flex" gap={3} alignItems="center">
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                        {t('billing.maxUsers')}:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                        {subscription.plan.maxUsers === -1 ? t('billing.unlimited') : subscription.plan.maxUsers}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                        {t('billing.maxStaff')}:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                        {subscription.plan.maxStaff === -1 ? t('billing.unlimited') : subscription.plan.maxStaff}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                        {t('billing.maxAppointments')}:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                        {subscription.plan.maxAppointmentsPerMonth === -1
+                          ? t('billing.unlimited')
+                          : `${subscription.plan.maxAppointmentsPerMonth}/${t('billing.month')}`}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
+                        {t('billing.billingCycle')}:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                        {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly')}
+                      </Typography>
+                      {subscription.status === 'ACTIVE' && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={handleChangeBillingCycle}
+                          disabled={changingBillingCycle}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.7rem',
+                            py: 0.25,
+                            px: 1,
+                            ml: 1,
+                            minWidth: 'auto',
+                            height: '22px',
+                            borderColor: '#D1D5DB',
+                            color: '#6B7280',
+                            '&:hover': {
+                              borderColor: '#9CA3AF',
+                              bgcolor: '#F9FAFB',
+                            }
+                          }}
+                        >
+                          {changingBillingCycle
+                            ? t('common.loading')
+                            : t('billing.switchTo') + ' ' + (subscription.billingCycle === 'MONTHLY' ? t('billing.yearly') : t('billing.monthly'))}
+                        </Button>
+                      )}
+                    </Box>
                   </Box>
 
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                      {t('billing.billingCycle')}:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
-                      {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly')}
-                    </Typography>
-                    {subscription.status === 'ACTIVE' && (
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={handleChangeBillingCycle}
-                        disabled={changingBillingCycle}
-                        sx={{
-                          textTransform: 'none',
-                          fontSize: '0.7rem',
-                          py: 0.25,
-                          px: 1,
-                          ml: 1,
-                          minWidth: 'auto',
-                          height: '22px',
-                          borderColor: '#D1D5DB',
-                          color: '#6B7280',
-                          '&:hover': {
-                            borderColor: '#9CA3AF',
-                            bgcolor: '#F9FAFB',
-                          }
-                        }}
-                      >
-                        {changingBillingCycle
-                          ? t('common.loading')
-                          : t('billing.switchTo') + ' ' + (subscription.billingCycle === 'MONTHLY' ? t('billing.yearly') : t('billing.monthly'))}
-                      </Button>
-                    )}
+                  {/* 分隔线 */}
+                  <Divider orientation="vertical" flexItem sx={{ mx: 1, borderColor: '#E5E7EB' }} />
+
+                  {/* 右侧：状态 */}
+                  <Box display="flex" alignItems="center" gap={1.5}>
+                    <Chip
+                      label={getSubscriptionStatusText(subscription.status)}
+                      size="small"
+                      sx={{
+                        fontWeight: 500,
+                        height: 20,
+                        fontSize: '0.7rem',
+                        ...getSubscriptionStatusColor(subscription.status)
+                      }}
+                    />
                   </Box>
                 </Box>
-
-                {/* 分隔线 */}
-                <Divider orientation="vertical" flexItem sx={{ mx: 1, borderColor: '#E5E7EB' }} />
-
-                {/* 右侧：状态 */}
-                <Box display="flex" alignItems="center" gap={1.5}>
-                  <Chip
-                    label={getSubscriptionStatusText(subscription.status)}
-                    size="small"
-                    sx={{
-                      fontWeight: 500,
-                      height: 20,
-                      fontSize: '0.7rem',
-                      ...getSubscriptionStatusColor(subscription.status)
-                    }}
-                  />
-                </Box>
-              </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -396,57 +488,140 @@ const BillingTab: React.FC = () => {
             boxShadow: 'none',
           }}
         >
-          <CardContent sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" mb={3}>
+          <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+            <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
               <Box
                 sx={{
-                  width: 36,
-                  height: 36,
+                  width: isMobile ? 32 : 36,
+                  height: isMobile ? 32 : 36,
                   borderRadius: 2,
                   bgcolor: '#f5f5f5',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  mr: 2,
+                  mr: 1.5,
                 }}
               >
-                <ReceiptIcon sx={{ fontSize: 18, color: '#666' }} />
+                <ReceiptIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
               </Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                 {t('billing.title')}
               </Typography>
             </Box>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
+              <Alert severity="error" sx={{ mb: isMobile ? 2 : 3, fontSize: isMobile ? '0.75rem' : undefined }}>
                 {error}
               </Alert>
             )}
 
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('billing.invoiceNumber')}</TableCell>
-                  <TableCell>{t('billing.billingPeriod')}</TableCell>
-                  <TableCell align="right">{t('billing.amount')}</TableCell>
-                  <TableCell>{t('billing.statusLabel')}</TableCell>
-                  <TableCell>{t('billing.paymentDate')}</TableCell>
-                  <TableCell align="center">{t('common.actions')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {invoices.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <ReceiptIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                      <Typography variant="body1" color="text.secondary">
-                        {t('billing.noInvoices')}
+          {invoices.length === 0 ? (
+            <Box textAlign="center" py={isMobile ? 4 : 8}>
+              <ReceiptIcon sx={{ fontSize: isMobile ? 48 : 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="body1" color="text.secondary" sx={{ fontSize: isMobile ? '0.85rem' : undefined }}>
+                {t('billing.noInvoices')}
+              </Typography>
+            </Box>
+          ) : isMobile ? (
+            // 移动端卡片视图
+            <Stack spacing={1.5}>
+              {invoices.map((invoice) => (
+                <Box
+                  key={invoice.id}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    bgcolor: '#fafafa',
+                  }}
+                >
+                  {/* 顶部：发票号 + 状态 */}
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#1a1a1a' }}>
+                      {invoice.invoiceNumber}
+                    </Typography>
+                    <Chip
+                      label={getStatusText(invoice.status)}
+                      color={getStatusColor(invoice.status)}
+                      size="small"
+                      sx={{ height: 20, fontSize: '0.65rem' }}
+                    />
+                  </Box>
+
+                  {/* 账单周期 */}
+                  <Typography sx={{ fontSize: '0.7rem', color: '#666', mb: 1 }}>
+                    {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
+                  </Typography>
+
+                  {/* 金额 + 支付日期 */}
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>
+                      ${invoice.amount.toFixed(2)} {invoice.currency}
+                    </Typography>
+                    {invoice.paymentDate && (
+                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                        {t('billing.paymentDate')}: {invoice.paymentDate}
                       </Typography>
-                    </TableCell>
+                    )}
+                  </Box>
+
+                  {/* 操作按钮 */}
+                  <Box display="flex" gap={1}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      fullWidth
+                      onClick={() => handleViewDetails(invoice)}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        color: '#666',
+                        borderColor: '#d0d0d0',
+                        '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
+                      }}
+                    >
+                      {t('common.viewDetails')}
+                    </Button>
+                    {invoice.status === 'PENDING' && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        fullWidth
+                        startIcon={<PaymentIcon sx={{ fontSize: 16 }} />}
+                        onClick={() => handlePay(invoice)}
+                        sx={{
+                          textTransform: 'none',
+                          fontSize: '0.75rem',
+                          py: 0.5,
+                          bgcolor: '#1a1a1a',
+                          boxShadow: 'none',
+                          '&:hover': { bgcolor: '#333', boxShadow: 'none' },
+                        }}
+                      >
+                        {t('billing.pay')}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            // 桌面端表格视图
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{t('billing.invoiceNumber')}</TableCell>
+                    <TableCell>{t('billing.billingPeriod')}</TableCell>
+                    <TableCell align="right">{t('billing.amount')}</TableCell>
+                    <TableCell>{t('billing.statusLabel')}</TableCell>
+                    <TableCell>{t('billing.paymentDate')}</TableCell>
+                    <TableCell align="center">{t('common.actions')}</TableCell>
                   </TableRow>
-                ) : (
-                  invoices.map((invoice) => (
+                </TableHead>
+                <TableBody>
+                  {invoices.map((invoice) => (
                     <TableRow key={invoice.id} hover>
                       <TableCell>
                         <Typography variant="body2" fontWeight={500}>
@@ -509,11 +684,11 @@ const BillingTab: React.FC = () => {
                         </Box>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
           </CardContent>
         </Card>
       </Grid>
@@ -522,10 +697,16 @@ const BillingTab: React.FC = () => {
       <Dialog
         open={detailDialogOpen}
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            mx: isMobile ? 2 : 0,
+          }
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : undefined }}>
           {t('billing.invoiceDetails')}
         </DialogTitle>
         <DialogContent dividers>
@@ -657,8 +838,14 @@ const BillingTab: React.FC = () => {
         onClose={() => setConfirmDialogOpen(false)}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            mx: isMobile ? 2 : 0,
+          }
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : undefined }}>
           {t('billing.confirmChangeCycle')}
         </DialogTitle>
         <DialogContent>

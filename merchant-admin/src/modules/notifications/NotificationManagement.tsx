@@ -5,7 +5,9 @@ import {
   Tab,
   Paper,
   Typography,
-  Fade
+  Fade,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
@@ -20,6 +22,11 @@ const NotificationManagement: React.FC = () => {
   const { hasPermission } = usePermission();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
   const [tabValue, setTabValue] = useState(0);
 
   // 根据主题模式动态设置主题色
@@ -87,9 +94,9 @@ const NotificationManagement: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ overflowX: 'hidden', width: '100%' }}>
       {/* 现代化页面标题 */}
-      <Box mb={4}>
+      <Box mb={isMobile ? 2 : 4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
@@ -99,29 +106,32 @@ const NotificationManagement: React.FC = () => {
                 fontWeight: 600,
                 color: THEME_COLOR,
                 mb: 0.5,
+                fontSize: isMobile ? '1.25rem' : '1.5rem',
               }}
             >
               {t('notifications.title')}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>
+            <Typography variant="body2" sx={{ color: '#888', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
               {t('nav.notifications')}
             </Typography>
           </Box>
         </Box>
       </Box>
 
-      <Box mb={3}>
+      <Box mb={isMobile ? 2 : 3}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
+          variant={isMobile ? 'fullWidth' : 'standard'}
           sx={{
             borderBottom: '2px solid',
             borderColor: 'divider',
             '& .MuiTab-root': {
               fontWeight: 500,
-              fontSize: '0.9rem',
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
               textTransform: 'none',
-              minHeight: 56,
+              minHeight: isMobile ? 44 : 56,
+              px: isMobile ? 1 : 2,
               '&.Mui-selected': {
                 fontWeight: 600,
                 color: THEME_COLOR,

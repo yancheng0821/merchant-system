@@ -29,6 +29,8 @@ import {
   Paper,
   Menu,
   MenuItem,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -59,6 +61,10 @@ const UserRoleManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -247,13 +253,13 @@ const UserRoleManagement: React.FC = () => {
       {/* 简约搜索区域 */}
       <Card
         sx={{
-          borderRadius: 2.5,
+          borderRadius: isMobile ? 2 : 2.5,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.06)',
-          mb: 3,
+          mb: isMobile ? 2 : 3,
         }}
       >
-        <CardContent sx={{ py: 2, px: 2.5 }}>
+        <CardContent sx={{ py: isMobile ? 1.5 : 2, px: isMobile ? 1.5 : 2.5 }}>
           <TextField
             fullWidth
             size="small"
@@ -263,14 +269,14 @@ const UserRoleManagement: React.FC = () => {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                  <SearchIcon sx={{ color: '#999', fontSize: isMobile ? 18 : 20 }} />
                 </InputAdornment>
               ),
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1.5,
-                fontSize: '0.875rem',
+                fontSize: isMobile ? '0.8rem' : '0.875rem',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'rgba(0,0,0,0.12)',
                 },
@@ -286,144 +292,252 @@ const UserRoleManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 简约表格卡片 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: '#fff',
-        }}
-      >
-        <CardContent sx={{ p: 0 }}>
+      {/* 表格/卡片列表 */}
+      {isMobile ? (
+        /* 移动端卡片视图 */
+        <Box>
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-              <CircularProgress sx={{ color: THEME_COLOR }} />
+            <Box display="flex" justifyContent="center" py={6}>
+              <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
             </Box>
           ) : filteredUsers.length === 0 ? (
             <Box display="flex" flexDirection="column" alignItems="center" py={6}>
-              <SecurityIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
-              <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
+              <SecurityIcon sx={{ fontSize: 40, color: '#ccc', mb: 2 }} />
+              <Typography sx={{ color: '#888', fontSize: '0.8rem' }}>
                 {t('rbac.noUsers')}
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                      {t('rbac.username')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                      {t('rbac.email')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                      {t('rbac.phone')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                      {t('rbac.status')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                      {t('rbac.currentRoles')}
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                      {t('rbac.actions')}
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredUsers.map(user => (
-                    <TableRow
-                      key={user.id}
-                      hover
-                      sx={{
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                        '& td': { py: 1.5, fontSize: '0.875rem' }
-                      }}
-                    >
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1.5}>
-                          <Avatar
-                            src={getFullImageUrl(user.avatarUrl)}
-                            alt={user.username}
-                            sx={{
-                              width: 36,
-                              height: 36,
-                              bgcolor: user.avatarUrl ? 'transparent' : THEME_COLOR,
-                              fontSize: '0.875rem',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {!user.avatarUrl && user.username?.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Box>
-                            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
-                              {user.username}
-                            </Typography>
-                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                              ID: {user.id}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
+            filteredUsers.map(user => (
+              <Card
+                key={user.id}
+                sx={{
+                  borderRadius: 2,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  mb: 1.5,
+                  bgcolor: '#fff',
+                }}
+              >
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Box display="flex" alignItems="center" gap={1} flex={1} mr={1}>
+                      <Avatar
+                        src={getFullImageUrl(user.avatarUrl)}
+                        alt={user.username}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          bgcolor: user.avatarUrl ? 'transparent' : THEME_COLOR,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {!user.avatarUrl && user.username?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box flex={1}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }}>
+                          {user.username}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
                           {user.email}
                         </Typography>
+                      </Box>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      {getStatusChip(user.status)}
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          setMenuAnchorEl(e.currentTarget);
+                          setSelectedUser(user);
+                        }}
+                        sx={{ color: '#888', p: 0.5 }}
+                      >
+                        <MoreVertIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                  {user.phone && (
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                        {t('rbac.phone')}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                        {user.phone}
+                      </Typography>
+                    </Box>
+                  )}
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {t('rbac.currentRoles')}
+                    </Typography>
+                    <Box display="flex" gap={0.5} flexWrap="wrap" justifyContent="flex-end" maxWidth="70%">
+                      {user.roles && user.roles.length > 0 ? (
+                        user.roles.map(role => (
+                          <Chip
+                            key={role.id}
+                            label={translateRoleName(role.roleName)}
+                            size="small"
+                            sx={{
+                              backgroundColor: alpha(ROLE_CHIP_COLOR, 0.1),
+                              color: ROLE_CHIP_COLOR,
+                              fontWeight: 500,
+                              fontSize: '0.65rem',
+                              height: 20,
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>-</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格视图 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: '#fff',
+          }}
+        >
+          <CardContent sx={{ p: 0 }}>
+            {loading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+                <CircularProgress sx={{ color: THEME_COLOR }} />
+              </Box>
+            ) : filteredUsers.length === 0 ? (
+              <Box display="flex" flexDirection="column" alignItems="center" py={6}>
+                <SecurityIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
+                <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
+                  {t('rbac.noUsers')}
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                        {t('rbac.username')}
                       </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
-                          {user.phone || '-'}
-                        </Typography>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                        {t('rbac.email')}
                       </TableCell>
-                      <TableCell>{getStatusChip(user.status)}</TableCell>
-                      <TableCell>
-                        <Box display="flex" gap={0.5} flexWrap="wrap">
-                          {user.roles && user.roles.length > 0 ? (
-                            user.roles.map(role => (
-                              <Chip
-                                key={role.id}
-                                label={translateRoleName(role.roleName)}
-                                size="small"
-                                sx={{
-                                  backgroundColor: alpha(ROLE_CHIP_COLOR, 0.1),
-                                  color: ROLE_CHIP_COLOR,
-                                  fontWeight: 500,
-                                  fontSize: '0.75rem',
-                                }}
-                              />
-                            ))
-                          ) : (
-                            <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
-                              -
-                            </Typography>
-                          )}
-                        </Box>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                        {t('rbac.phone')}
                       </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            setMenuAnchorEl(e.currentTarget);
-                            setSelectedUser(user);
-                          }}
-                          sx={{
-                            color: '#999',
-                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
-                          }}
-                        >
-                          <MoreVertIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                        {t('rbac.status')}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                        {t('rbac.currentRoles')}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                        {t('rbac.actions')}
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHead>
+                  <TableBody>
+                    {filteredUsers.map(user => (
+                      <TableRow
+                        key={user.id}
+                        hover
+                        sx={{
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                          '& td': { py: 1.5, fontSize: '0.875rem' }
+                        }}
+                      >
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={1.5}>
+                            <Avatar
+                              src={getFullImageUrl(user.avatarUrl)}
+                              alt={user.username}
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                bgcolor: user.avatarUrl ? 'transparent' : THEME_COLOR,
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {!user.avatarUrl && user.username?.charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Box>
+                              <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                                {user.username}
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                                ID: {user.id}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
+                            {user.email}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
+                            {user.phone || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{getStatusChip(user.status)}</TableCell>
+                        <TableCell>
+                          <Box display="flex" gap={0.5} flexWrap="wrap">
+                            {user.roles && user.roles.length > 0 ? (
+                              user.roles.map(role => (
+                                <Chip
+                                  key={role.id}
+                                  label={translateRoleName(role.roleName)}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: alpha(ROLE_CHIP_COLOR, 0.1),
+                                    color: ROLE_CHIP_COLOR,
+                                    fontWeight: 500,
+                                    fontSize: '0.75rem',
+                                  }}
+                                />
+                              ))
+                            ) : (
+                              <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
+                                -
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              setMenuAnchorEl(e.currentTarget);
+                              setSelectedUser(user);
+                            }}
+                            sx={{
+                              color: '#999',
+                              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+                            }}
+                          >
+                            <MoreVertIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 操作菜单 - 简约风格 */}
       <Menu
@@ -505,24 +619,25 @@ const UserRoleManagement: React.FC = () => {
       <Dialog
         open={openAssignDialog}
         onClose={() => setOpenAssignDialog(false)}
-        maxWidth="sm"
+        maxWidth="xs"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 2.5,
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
-        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box sx={{ px: isMobile ? 2 : 3, py: 1.5, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" gap={1}>
-            <SecurityIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
-            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            <SecurityIcon sx={{ color: THEME_COLOR, fontSize: isMobile ? 18 : 20 }} />
+            <Typography sx={{ fontWeight: 600, fontSize: isMobile ? '0.875rem' : '1rem', color: '#1a1a1a' }}>
               {t('rbac.assignRole')}
             </Typography>
           </Box>
         </Box>
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
+        <DialogContent sx={{ px: isMobile ? 2 : 3, py: 2 }}>
           <Box>
             {roles.map(role => (
               <FormControlLabel
@@ -531,6 +646,7 @@ const UserRoleManagement: React.FC = () => {
                   <Checkbox
                     checked={selectedRoleIds.includes(role.id)}
                     onChange={() => handleToggleRole(role.id)}
+                    size={isMobile ? 'small' : 'medium'}
                     sx={{
                       color: '#ccc',
                       '&.Mui-checked': { color: THEME_COLOR },
@@ -539,24 +655,24 @@ const UserRoleManagement: React.FC = () => {
                 }
                 label={
                   <Box>
-                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>
                       {translateRoleName(role.roleName)}
                     </Typography>
                     {role.isSystem && (
                       <Chip
                         label={t('rbac.systemRole')}
                         size="small"
-                        sx={{ mt: 0.5, height: 18, fontSize: '0.6875rem', bgcolor: '#f0f0f0', color: '#666' }}
+                        sx={{ mt: 0.5, height: 16, fontSize: '0.6rem', bgcolor: '#f0f0f0', color: '#666' }}
                       />
                     )}
                   </Box>
                 }
-                sx={{ width: '100%', mb: 1.5 }}
+                sx={{ width: '100%', mb: isMobile ? 1 : 1.5 }}
               />
             ))}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <DialogActions sx={{ px: isMobile ? 2 : 3, py: 1.5, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button
             size="small"
             onClick={() => setOpenAssignDialog(false)}
@@ -564,7 +680,7 @@ const UserRoleManagement: React.FC = () => {
             sx={{
               textTransform: 'none',
               color: '#666',
-              fontSize: '0.875rem',
+              fontSize: isMobile ? '0.8rem' : '0.875rem',
             }}
           >
             {t('rbac.cancel')}
@@ -576,9 +692,9 @@ const UserRoleManagement: React.FC = () => {
             disabled={assignLoading}
             sx={{
               borderRadius: 1.5,
-              px: 2.5,
+              px: isMobile ? 2 : 2.5,
               py: 0.75,
-              fontSize: '0.875rem',
+              fontSize: isMobile ? '0.8rem' : '0.875rem',
               fontWeight: 500,
               bgcolor: THEME_COLOR,
               boxShadow: 'none',
@@ -600,13 +716,20 @@ const UserRoleManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: isMobile ? 16 : 24 }}
       >
         <Alert
           severity={snackbar.severity}
           sx={{
-            width: '100%',
+            width: isMobile ? 'auto' : '100%',
+            minWidth: isMobile ? 200 : 280,
             borderRadius: 2,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: isMobile ? 0.5 : 1,
+            '& .MuiAlert-icon': {
+              fontSize: isMobile ? 18 : 22,
+            },
           }}
         >
           {snackbar.message}

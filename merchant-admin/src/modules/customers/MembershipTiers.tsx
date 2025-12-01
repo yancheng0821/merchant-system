@@ -26,6 +26,8 @@ import {
   alpha,
   Menu,
   MenuItem,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -72,6 +74,10 @@ const MembershipTiers: React.FC = () => {
   const { hasPermission } = usePermission();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -350,15 +356,16 @@ const MembershipTiers: React.FC = () => {
       {/* 搜索和操作区域 */}
       <Box
         sx={{
-          borderRadius: 2,
+          borderRadius: isMobile ? 1.5 : 2,
           border: '1px solid rgba(0,0,0,0.08)',
           bgcolor: '#fff',
-          mb: 2.5,
-          p: 2.5,
+          mb: isMobile ? 1.5 : 2.5,
+          p: isMobile ? 1.5 : 2.5,
         }}
       >
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+        {isMobile ? (
+          /* 移动端布局 */
+          <Box display="flex" gap={1}>
             <TextField
               fullWidth
               size="small"
@@ -368,19 +375,16 @@ const MembershipTiers: React.FC = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                    <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 1.5,
-                  fontSize: '0.875rem',
+                  fontSize: '0.8rem',
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: THEME_COLOR,
@@ -388,184 +392,362 @@ const MembershipTiers: React.FC = () => {
                 },
               }}
             />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Box display="flex" gap={1.5} justifyContent="flex-end">
-              {hasPermission('membership_tiers:create') && (
-                <Button
-                  size="small"
-                  variant="contained"
-                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => handleOpenDialog()}
-                  sx={{
+            {hasPermission('membership_tiers:create') && (
+              <IconButton
+                size="small"
+                onClick={() => handleOpenDialog()}
+                sx={{
+                  bgcolor: THEME_COLOR,
+                  borderRadius: 1.5,
+                  width: 40,
+                  height: 40,
+                  color: '#fff',
+                  '&:hover': {
+                    bgcolor: THEME_COLOR_HOVER,
+                  },
+                }}
+              >
+                <AddIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            )}
+          </Box>
+        ) : (
+          /* 桌面端布局 */
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder={t('membershipTiers.searchPlaceholder', 'Search by name or code...')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
-                    py: 0.75,
-                    px: 2,
                     fontSize: '0.875rem',
-                    fontWeight: 500,
-                    bgcolor: THEME_COLOR,
-                    boxShadow: 'none',
-                    textTransform: 'none',
-                    '&:hover': {
-                      bgcolor: THEME_COLOR_HOVER,
-                      boxShadow: 'none',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
                     },
-                  }}
-                >
-                  {t('membershipTiers.addTier', 'Add Tier')}
-                </Button>
-              )}
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  },
+                }}
+              />
+            </Grid>
 
-      {/* 表格 */}
-      <Box
-        sx={{
-          borderRadius: 2,
-          border: '1px solid rgba(0,0,0,0.08)',
-          overflow: 'hidden',
-          bgcolor: '#fff',
-        }}
-      >
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('membershipTiers.name', 'Name')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('membershipTiers.code', 'Code')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('membershipTiers.requiredPoints', 'Required Points')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('membershipTiers.discountRate', 'Discount Rate')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                  {t('membershipTiers.status', 'Status')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
-                  {t('common.actions', 'Actions')}
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
-                  </TableCell>
-                </TableRow>
-              ) : filteredTiers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
-                      {searchTerm
-                        ? t('membershipTiers.noSearchResults', 'No levels match your search')
-                        : t('membershipTiers.noTiers', 'No membership levels found')}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTiers.map((tier) => (
-                  <TableRow
-                    key={tier.id}
+            <Grid item xs={12} md={6}>
+              <Box display="flex" gap={1.5} justifyContent="flex-end">
+                {hasPermission('membership_tiers:create') && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => handleOpenDialog()}
                     sx={{
+                      borderRadius: 1.5,
+                      py: 0.75,
+                      px: 2,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      bgcolor: THEME_COLOR,
+                      boxShadow: 'none',
+                      textTransform: 'none',
                       '&:hover': {
-                        backgroundColor: '#fafafa',
+                        bgcolor: THEME_COLOR_HOVER,
+                        boxShadow: 'none',
                       },
                     }}
                   >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 1.5,
-                            bgcolor: alpha(tier.color || '#9CA3AF', 0.15),
-                            color: tier.color || '#9CA3AF',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            '& svg': { fontSize: 16 },
-                          }}
-                        >
-                          {getTierIcon(tier.icon || 'star')}
-                        </Box>
-                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>{tier.name}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={tier.code}
-                        size="small"
+                    {t('membershipTiers.addTier', 'Add Tier')}
+                  </Button>
+                )}
+              </Box>
+            </Grid>
+          </Grid>
+        )}
+      </Box>
+
+      {/* 会员等级列表 - 移动端卡片视图 / 桌面端表格视图 */}
+      {isMobile ? (
+        /* 移动端卡片列表 */
+        <Box>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
+            </Box>
+          ) : filteredTiers.length === 0 ? (
+            <Box
+              sx={{
+                py: 4,
+                textAlign: 'center',
+                bgcolor: '#fff',
+                borderRadius: 1.5,
+                border: '1px solid rgba(0,0,0,0.08)',
+              }}
+            >
+              <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
+                {searchTerm
+                  ? t('membershipTiers.noSearchResults', 'No levels match your search')
+                  : t('membershipTiers.noTiers', 'No membership levels found')}
+              </Typography>
+            </Box>
+          ) : (
+            filteredTiers.map((tier) => (
+              <Card
+                key={tier.id}
+                sx={{
+                  mb: 1.5,
+                  borderRadius: 1.5,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                }}
+              >
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  {/* 第一行：图标、名称、状态、操作按钮 */}
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                    <Box display="flex" alignItems="center" gap={1.5} flex={1} minWidth={0}>
+                      <Box
                         sx={{
-                          height: 24,
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          bgcolor: '#fafafa',
-                          color: '#1a1a1a',
-                          border: '1px solid #e0e0e0',
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>
-                        {tier.requiredPoints.toLocaleString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          color: tier.discountRate < 100 ? DISCOUNT_COLOR : '#999',
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1.5,
+                          bgcolor: alpha(tier.color || '#9CA3AF', 0.15),
+                          color: tier.color || '#9CA3AF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          '& svg': { fontSize: 18 },
                         }}
                       >
-                        {getDiscountDisplay(tier.discountRate)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
+                        {getTierIcon(tier.icon || 'star')}
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {tier.name}
+                        </Typography>
+                        <Chip
+                          label={tier.code}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.65rem',
+                            fontWeight: 500,
+                            bgcolor: '#fafafa',
+                            color: '#666',
+                            border: '1px solid #e0e0e0',
+                            mt: 0.25,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={0.5}>
                       <Chip
                         label={tier.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                         size="small"
                         sx={{
-                          height: 24,
-                          fontSize: '0.75rem',
+                          height: 22,
+                          fontSize: '0.65rem',
                           fontWeight: 500,
                           bgcolor: tier.isActive ? alpha('#10B981', 0.1) : alpha('#6B7280', 0.1),
                           color: tier.isActive ? '#059669' : '#6B7280',
                           border: 'none',
                         }}
                       />
-                    </TableCell>
-                    <TableCell align="right">
                       <IconButton
                         size="small"
                         onClick={(e) => handleMenuOpen(e, tier)}
-                        sx={{
-                          color: '#999',
-                          '&:hover': {
-                            bgcolor: 'rgba(0,0,0,0.04)',
-                          },
-                        }}
+                        sx={{ color: '#999', p: 0.5 }}
                       >
                         <MoreVertIcon sx={{ fontSize: 18 }} />
                       </IconButton>
+                    </Box>
+                  </Box>
+
+                  {/* 第二行：所需积分、折扣率 */}
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <StarIcon sx={{ fontSize: 14, color: '#F59E0B' }} />
+                      <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                        {t('membershipTiers.requiredPoints', 'Required Points')}:
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#1a1a1a' }}>
+                        {tier.requiredPoints.toLocaleString()}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: tier.discountRate < 100 ? DISCOUNT_COLOR : '#999',
+                      }}
+                    >
+                      {getDiscountDisplay(tier.discountRate)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格 */
+        <Box
+          sx={{
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            bgcolor: '#fff',
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('membershipTiers.name', 'Name')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('membershipTiers.code', 'Code')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('membershipTiers.requiredPoints', 'Required Points')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('membershipTiers.discountRate', 'Discount Rate')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                    {t('membershipTiers.status', 'Status')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }} align="right">
+                    {t('common.actions', 'Actions')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+                ) : filteredTiers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
+                        {searchTerm
+                          ? t('membershipTiers.noSearchResults', 'No levels match your search')
+                          : t('membershipTiers.noTiers', 'No membership levels found')}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredTiers.map((tier) => (
+                    <TableRow
+                      key={tier.id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: '#fafafa',
+                        },
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 1.5,
+                              bgcolor: alpha(tier.color || '#9CA3AF', 0.15),
+                              color: tier.color || '#9CA3AF',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              '& svg': { fontSize: 16 },
+                            }}
+                          >
+                            {getTierIcon(tier.icon || 'star')}
+                          </Box>
+                          <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>{tier.name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={tier.code}
+                          size="small"
+                          sx={{
+                            height: 24,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            bgcolor: '#fafafa',
+                            color: '#1a1a1a',
+                            border: '1px solid #e0e0e0',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a' }}>
+                          {tier.requiredPoints.toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography
+                          sx={{
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            color: tier.discountRate < 100 ? DISCOUNT_COLOR : '#999',
+                          }}
+                        >
+                          {getDiscountDisplay(tier.discountRate)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={tier.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
+                          size="small"
+                          sx={{
+                            height: 24,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            bgcolor: tier.isActive ? alpha('#10B981', 0.1) : alpha('#6B7280', 0.1),
+                            color: tier.isActive ? '#059669' : '#6B7280',
+                            border: 'none',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, tier)}
+                          sx={{
+                            color: '#999',
+                            '&:hover': {
+                              bgcolor: 'rgba(0,0,0,0.04)',
+                            },
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
       {/* Actions Menu */}
       <Menu
@@ -1005,14 +1187,18 @@ const MembershipTiers: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{
             width: '100%',
-            borderRadius: 2,
+            borderRadius: isMobile ? 1.5 : 2,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
           }}
         >
           {snackbar.message}

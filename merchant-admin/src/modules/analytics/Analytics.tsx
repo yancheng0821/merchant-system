@@ -27,7 +27,14 @@ import {
   ListItemText,
   Button,
   TableFooter,
+  useMediaQuery,
+  useTheme as useMuiTheme,
+  Collapse,
+  IconButton,
 } from '@mui/material';
+import {
+  FilterList as FilterListIcon,
+} from '@mui/icons-material';
 import {
   TrendingUp as TrendingUpIcon,
   AttachMoney as MoneyIcon,
@@ -95,6 +102,10 @@ const Analytics: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -102,6 +113,7 @@ const Analytics: React.FC = () => {
   const THEME_COLOR_DARK = isMonochrome ? '#333' : '#0e7490';
 
   const [timeRange, setTimeRange] = useState('today');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [analyticsData, setAnalyticsData] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -545,33 +557,36 @@ const Analytics: React.FC = () => {
   return (
     <Box>
       {/* 页面标题 */}
-      <Box mb={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Box mb={isMobile ? 2 : 4}>
+        <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} gap={isMobile ? 1.5 : 0}>
           <Box>
             <Typography
-              variant="h5"
+              variant={isMobile ? 'h6' : 'h5'}
               component="h1"
               sx={{
                 fontWeight: 600,
                 color: THEME_COLOR,
                 mb: 0.5,
+                fontSize: isMobile ? '1.1rem' : undefined,
               }}
             >
               {t('analytics.title')}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>
-              {t('analytics.subtitle')}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="body2" sx={{ color: '#888' }}>
+                {t('analytics.subtitle')}
+              </Typography>
+            )}
           </Box>
 
           <Box display="flex" gap={2}>
-            <FormControl size="small" sx={{ minWidth: 140 }}>
+            <FormControl size="small" sx={{ minWidth: isMobile ? 120 : 140 }}>
             <Select
               value={timeRange}
               onChange={handleTimeRangeChange}
               sx={{
                 borderRadius: 1.5,
-                fontSize: '0.8125rem',
+                fontSize: isMobile ? '0.75rem' : '0.8125rem',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: alpha(THEME_COLOR, 0.2),
                 },
@@ -583,11 +598,11 @@ const Analytics: React.FC = () => {
                 },
               }}
             >
-              <MenuItem value="today" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.today')}</MenuItem>
-              <MenuItem value="thisWeek" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisWeek')}</MenuItem>
-              <MenuItem value="thisMonth" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisMonth')}</MenuItem>
-              <MenuItem value="thisQuarter" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisQuarter')}</MenuItem>
-              <MenuItem value="thisYear" sx={{ fontSize: '0.8125rem' }}>{t('analytics.timePeriods.thisYear')}</MenuItem>
+              <MenuItem value="today" sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem' }}>{t('analytics.timePeriods.today')}</MenuItem>
+              <MenuItem value="thisWeek" sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem' }}>{t('analytics.timePeriods.thisWeek')}</MenuItem>
+              <MenuItem value="thisMonth" sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem' }}>{t('analytics.timePeriods.thisMonth')}</MenuItem>
+              <MenuItem value="thisQuarter" sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem' }}>{t('analytics.timePeriods.thisQuarter')}</MenuItem>
+              <MenuItem value="thisYear" sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem' }}>{t('analytics.timePeriods.thisYear')}</MenuItem>
             </Select>
           </FormControl>
           </Box>
@@ -595,23 +610,23 @@ const Analytics: React.FC = () => {
       </Box>
 
       {/* 统计卡片 */}
-      <Grid container spacing={2.5} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={isMobile ? 1.5 : 2.5} mb={isMobile ? 2 : 4}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#10B981', 0.08),
                     display: 'flex',
@@ -621,13 +636,13 @@ const Analytics: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 22 }} />
+                  <MoneyIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.totalRevenue')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {CurrencyUtils.formatAmountWithCommas(totalRevenue)}
                   </Typography>
                 </Box>
@@ -636,22 +651,22 @@ const Analytics: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#8B5CF6', 0.08),
                     display: 'flex',
@@ -661,13 +676,13 @@ const Analytics: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 22 }} />
+                  <MoneyIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.packagePurchaseTotal')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {CurrencyUtils.formatAmountWithCommas(packagePurchaseTotal)}
                   </Typography>
                 </Box>
@@ -676,22 +691,22 @@ const Analytics: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#6366F1', 0.08),
                     display: 'flex',
@@ -701,18 +716,13 @@ const Analytics: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <OrdersIcon sx={{ fontSize: 22 }} />
+                  <OrdersIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Box display="flex" alignItems="center" gap={0.5} mb={0.5} flexWrap="wrap">
-                    <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                      {t('analytics.orderSalesTotal')}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem', whiteSpace: 'nowrap' }}>
-                      ({t('analytics.includesTipsAndTax')})
-                    </Typography>
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {t('analytics.orderSalesTotal')}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {CurrencyUtils.formatAmountWithCommas(orderSalesTotal)}
                   </Typography>
                 </Box>
@@ -721,22 +731,22 @@ const Analytics: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#F59E0B', 0.08),
                     display: 'flex',
@@ -746,13 +756,13 @@ const Analytics: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 22 }} />
+                  <MoneyIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('analytics.totalTips')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {CurrencyUtils.formatAmountWithCommas(totalTips)}
                   </Typography>
                 </Box>
@@ -763,20 +773,21 @@ const Analytics: React.FC = () => {
       </Grid>
 
       {/* Tab 导航 */}
-      <Box mb={3}>
+      <Box mb={isMobile ? 2 : 3}>
         <Tabs
           value={selectedTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          variant={isMobile ? 'fullWidth' : 'scrollable'}
           scrollButtons="auto"
           sx={{
             borderBottom: '2px solid',
             borderColor: 'divider',
             '& .MuiTab-root': {
               fontWeight: 500,
-              fontSize: '0.9rem',
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
               textTransform: 'none',
-              minHeight: 56,
+              minHeight: isMobile ? 44 : 56,
+              py: isMobile ? 1 : 1.5,
               '&.Mui-selected': {
                 fontWeight: 600,
                 color: THEME_COLOR,
@@ -792,7 +803,7 @@ const Analytics: React.FC = () => {
           {tabsConfig.map((tab, index) => (
             <Tab
               key={index}
-              icon={tab.icon}
+              icon={isMobile ? undefined : tab.icon}
               iconPosition="start"
               label={tab.label}
             />
@@ -803,7 +814,7 @@ const Analytics: React.FC = () => {
       {/* Tab 内容 */}
       <Card
         sx={{
-          borderRadius: 2.5,
+          borderRadius: isMobile ? 2 : 2.5,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.06)',
         }}
@@ -1361,47 +1372,47 @@ const Analytics: React.FC = () => {
 
         {/* 订单统计 */}
         {currentTabKey === 'orders' && (
-        <Box sx={{ pt: 3 }}>
+        <Box sx={{ pt: isMobile ? 2 : 3, px: isMobile ? 1.5 : 0 }}>
           {orderStatsLoading ? (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
               <CircularProgress size={60} />
             </Box>
           ) : (
-            <Grid container spacing={3}>
+            <Grid container spacing={isMobile ? 2 : 3}>
               {/* 按服务维度统计 */}
               <Grid item xs={12}>
-                <Box display="flex" alignItems="center" mb={2.5}>
+                <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5}>
                   <Box
                     sx={{
-                      width: 4,
-                      height: 20,
+                      width: isMobile ? 3 : 4,
+                      height: isMobile ? 16 : 20,
                       bgcolor: isMonochrome ? '#1a1a1a' : '#6366F1',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
                   />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                     {t('analytics.orderStats.byService')}
                   </Typography>
                 </Box>
 
-                <Grid container spacing={2.5}>
+                <Grid container spacing={isMobile ? 1.5 : 2.5}>
                   {/* 饼图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                           {t('analytics.orderStats.serviceRevenueDistribution')}
                         </Typography>
                         {orderStatsByServiceCategory.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
                             <PieChart>
                               <Pie
                                 data={orderStatsByServiceCategory}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={60}
-                                outerRadius={100}
+                                innerRadius={isMobile ? 40 : 60}
+                                outerRadius={isMobile ? 70 : 100}
                                 paddingAngle={2}
                                 dataKey="totalAmount"
                                 nameKey="serviceCategory"
@@ -1436,25 +1447,25 @@ const Analytics: React.FC = () => {
 
                   {/* 柱状图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                           {t('analytics.orderStats.serviceOrderCount')}
                         </Typography>
                         {orderStatsByServiceCategory.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
                             <BarChart data={orderStatsByServiceCategory}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                               <XAxis
                                 dataKey="serviceCategory"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 11, fill: '#999' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
                               />
                               <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 11, fill: '#999' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
                               />
                               <Tooltip />
                               <Bar dataKey="orderCount" radius={[4, 4, 0, 0]}>
@@ -1469,7 +1480,7 @@ const Analytics: React.FC = () => {
                             </BarChart>
                           </ResponsiveContainer>
                         ) : (
-                          <Box display="flex" justifyContent="center" alignItems="center" height={300}>
+                          <Box display="flex" justifyContent="center" alignItems="center" height={isMobile ? 220 : 300}>
                             <Typography variant="body2" color="text.secondary">
                               {t('analytics.noDataAvailable')}
                             </Typography>
@@ -1481,15 +1492,15 @@ const Analytics: React.FC = () => {
 
                   {/* 服务统计表格 */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                         {/* Category筛选器 */}
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                        <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} gap={isMobile ? 1.5 : 0} mb={2}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.8rem' : undefined }}>
                             {t('analytics.orderStats.serviceDetails')}
                           </Typography>
-                          <Box display="flex" gap={2} alignItems="center">
-                            <FormControl size="small" sx={{ minWidth: 180 }}>
+                          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2} alignItems={isMobile ? 'stretch' : 'center'} width={isMobile ? '100%' : 'auto'}>
+                            <FormControl size="small" sx={{ minWidth: isMobile ? undefined : 180, width: isMobile ? '100%' : 'auto' }}>
                               <Select
                                 multiple
                                 displayEmpty
@@ -1608,7 +1619,7 @@ const Analytics: React.FC = () => {
                               </Select>
                             </FormControl>
 
-                            <FormControl size="small" sx={{ minWidth: 180 }}>
+                            <FormControl size="small" sx={{ minWidth: isMobile ? undefined : 180, width: isMobile ? '100%' : 'auto' }}>
                               <Select
                                 multiple
                                 displayEmpty
@@ -1745,21 +1756,35 @@ const Analytics: React.FC = () => {
                           </Box>
                         </Box>
 
-                        <TableContainer>
-                          <Table size="small">
+                        <TableContainer sx={{ overflowX: 'auto' }}>
+                          <Table size="small" sx={{ minWidth: isMobile ? 500 : 'auto' }}>
                             <TableHead>
                               <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.serviceName')}</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.category')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.salesCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.originalPrice')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{
+                                  fontWeight: 600,
+                                  color: '#666',
+                                  borderBottom: '1px solid rgba(0,0,0,0.08)',
+                                  py: isMobile ? 1 : 1.5,
+                                  fontSize: isMobile ? '0.7rem' : undefined,
+                                  position: isMobile ? 'sticky' : 'static',
+                                  left: 0,
+                                  bgcolor: '#fff',
+                                  zIndex: 1,
+                                  minWidth: isMobile ? 100 : 'auto',
+                                  boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                }}>{t('analytics.orderStats.serviceName')}</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.category')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.salesCount')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.originalPrice')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>
                                   {t('analytics.orderStats.totalAmount')}
-                                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
-                                    ({t('analytics.actualPaymentAmount')})
-                                  </Typography>
+                                  {!isMobile && (
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
+                                      ({t('analytics.actualPaymentAmount')})
+                                    </Typography>
+                                  )}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.tips')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
@@ -1768,20 +1793,30 @@ const Analytics: React.FC = () => {
                                 const categoryColor = categoryColorMap.get(category) || COLORS[0];
                                 return (
                                 <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}>
-                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.serviceName}</TableCell>
-                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5 }}>
-                                    <Typography variant="caption" sx={{ color: categoryColor, fontWeight: 500 }}>
+                                  <TableCell sx={{
+                                    borderBottom: '1px solid rgba(0,0,0,0.04)',
+                                    py: isMobile ? 1 : 1.5,
+                                    color: '#1a1a1a',
+                                    fontSize: isMobile ? '0.75rem' : undefined,
+                                    position: isMobile ? 'sticky' : 'static',
+                                    left: 0,
+                                    bgcolor: '#fff',
+                                    zIndex: 1,
+                                    boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                  }}>{row.serviceName}</TableCell>
+                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
+                                    <Typography variant="caption" sx={{ color: categoryColor, fontWeight: 500, fontSize: isMobile ? '0.7rem' : undefined }}>
                                       {row.serviceCategory || '-'}
                                     </Typography>
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.orderCount}</TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#666' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : undefined }}>{row.orderCount}</TableCell>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#666', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {row.originalPrice ? CurrencyUtils.formatAmountWithCommas(row.originalPrice) : '-'}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, fontWeight: 600, color: '#1a1a1a' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount || 0)}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#F59E0B' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#F59E0B', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
                                 </TableRow>
@@ -1790,20 +1825,31 @@ const Analytics: React.FC = () => {
                             </TableBody>
                             <TableFooter>
                               <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{
+                                  fontWeight: 600,
+                                  color: '#1a1a1a',
+                                  borderTop: '1px solid rgba(0,0,0,0.08)',
+                                  py: isMobile ? 1 : 1.5,
+                                  fontSize: isMobile ? '0.75rem' : undefined,
+                                  position: isMobile ? 'sticky' : 'static',
+                                  left: 0,
+                                  bgcolor: '#fff',
+                                  zIndex: 1,
+                                  boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                }}>
                                   {t('analytics.orderStats.total')}
                                 </TableCell>
-                                <TableCell sx={{ borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}></TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{ borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5 }}></TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {summaryData.serviceItemCount}
                                 </TableCell>
-                                <TableCell align="right" sx={{ color: '#999', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ color: '#999', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   -
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {CurrencyUtils.formatAmountWithCommas(summaryData.totalAmount)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {CurrencyUtils.formatAmountWithCommas(summaryData.totalTips)}
                                 </TableCell>
                               </TableRow>
@@ -1818,38 +1864,38 @@ const Analytics: React.FC = () => {
 
               {/* 按支付方式统计 */}
               <Grid item xs={12}>
-                <Box display="flex" alignItems="center" mb={2.5} mt={3}>
+                <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5} mt={isMobile ? 2 : 3}>
                   <Box
                     sx={{
-                      width: 4,
-                      height: 20,
+                      width: isMobile ? 3 : 4,
+                      height: isMobile ? 16 : 20,
                       bgcolor: isMonochrome ? '#1a1a1a' : '#10B981',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
                   />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                     {t('analytics.orderStats.byPaymentMethod')}
                   </Typography>
                 </Box>
 
-                <Grid container spacing={2.5}>
+                <Grid container spacing={isMobile ? 1.5 : 2.5}>
                   {/* 饼图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                           {t('analytics.orderStats.paymentMethodDistribution')}
                         </Typography>
                         {orderStatsByPayment.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
                             <PieChart>
                               <Pie
                                 data={orderStatsByPayment}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={60}
-                                outerRadius={100}
+                                innerRadius={isMobile ? 40 : 60}
+                                outerRadius={isMobile ? 70 : 100}
                                 paddingAngle={2}
                                 dataKey="totalAmount"
                                 nameKey="paymentMethod"
@@ -1880,25 +1926,25 @@ const Analytics: React.FC = () => {
 
                   {/* 柱状图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                           {t('analytics.orderStats.paymentMethodOrderCount')}
                         </Typography>
                         {orderStatsByPayment.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
                             <BarChart data={orderStatsByPayment}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                               <XAxis
                                 dataKey="paymentMethod"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 11, fill: '#999' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
                               />
                               <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 11, fill: '#999' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
                               />
                               <Tooltip />
                               <Bar dataKey="orderCount" fill="#10B981" radius={[4, 4, 0, 0]} />
@@ -1917,15 +1963,15 @@ const Analytics: React.FC = () => {
 
                   {/* 支付方式统计表格 */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                         {/* Payment Method筛选器 */}
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                        <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} gap={isMobile ? 1.5 : 0} mb={2}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.8rem' : undefined }}>
                             {t('analytics.orderStats.paymentMethodDetails')}
                           </Typography>
-                          <Box display="flex" gap={2} alignItems="center">
-                            <FormControl size="small" sx={{ minWidth: 180 }}>
+                          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2} alignItems={isMobile ? 'stretch' : 'center'} width={isMobile ? '100%' : 'auto'}>
+                            <FormControl size="small" sx={{ minWidth: isMobile ? undefined : 180, width: isMobile ? '100%' : 'auto' }}>
                               <Select
                                 multiple
                                 displayEmpty
@@ -2058,37 +2104,59 @@ const Analytics: React.FC = () => {
                           </Box>
                         </Box>
 
-                        <TableContainer>
-                          <Table size="small">
+                        <TableContainer sx={{ overflowX: 'auto' }}>
+                          <Table size="small" sx={{ minWidth: isMobile ? 380 : 'auto' }}>
                             <TableHead>
                               <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.paymentCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{
+                                  fontWeight: 600,
+                                  color: '#666',
+                                  borderBottom: '1px solid rgba(0,0,0,0.08)',
+                                  py: isMobile ? 1 : 1.5,
+                                  fontSize: isMobile ? '0.7rem' : undefined,
+                                  position: isMobile ? 'sticky' : 'static',
+                                  left: 0,
+                                  bgcolor: '#fff',
+                                  zIndex: 1,
+                                  minWidth: isMobile ? 90 : 'auto',
+                                  boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.paymentCount')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>
                                   {t('analytics.orderStats.totalAmount')}
-                                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
-                                    ({t('analytics.actualPaymentAmount')})
-                                  </Typography>
+                                  {!isMobile && (
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
+                                      ({t('analytics.actualPaymentAmount')})
+                                    </Typography>
+                                  )}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.tips')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {filteredOrderStatsByPayment.map((row: any, index: number) => (
                                 <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}>
-                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5 }}>
-                                    <Box display="flex" alignItems="center" gap={1}>
-                                      {getPaymentMethodIcon(row.paymentMethod)}
-                                      <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 500 }}>
+                                  <TableCell sx={{
+                                    borderBottom: '1px solid rgba(0,0,0,0.04)',
+                                    py: isMobile ? 1 : 1.5,
+                                    position: isMobile ? 'sticky' : 'static',
+                                    left: 0,
+                                    bgcolor: '#fff',
+                                    zIndex: 1,
+                                    boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                  }}>
+                                    <Box display="flex" alignItems="center" gap={isMobile ? 0.5 : 1}>
+                                      {!isMobile && getPaymentMethodIcon(row.paymentMethod)}
+                                      <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 500, fontSize: isMobile ? '0.75rem' : undefined }}>
                                         {row.paymentMethod}
                                       </Typography>
                                     </Box>
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.orderCount}</TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, fontWeight: 600, color: '#1a1a1a' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : undefined }}>{row.orderCount}</TableCell>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount)}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#F59E0B' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#F59E0B', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
                                 </TableRow>
@@ -2096,16 +2164,27 @@ const Analytics: React.FC = () => {
                             </TableBody>
                             <TableFooter>
                               <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{
+                                  fontWeight: 600,
+                                  color: '#1a1a1a',
+                                  borderTop: '1px solid rgba(0,0,0,0.08)',
+                                  py: isMobile ? 1 : 1.5,
+                                  fontSize: isMobile ? '0.75rem' : undefined,
+                                  position: isMobile ? 'sticky' : 'static',
+                                  left: 0,
+                                  bgcolor: '#fff',
+                                  zIndex: 1,
+                                  boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                }}>
                                   {t('analytics.orderStats.total')}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {paymentSummaryData.orderCount}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalAmount)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {CurrencyUtils.formatAmountWithCommas(paymentSummaryData.totalTips)}
                                 </TableCell>
                               </TableRow>
@@ -2120,38 +2199,38 @@ const Analytics: React.FC = () => {
 
               {/* 按支付方式统计Package购买 */}
               <Grid item xs={12}>
-                <Box display="flex" alignItems="center" mb={2.5} mt={3}>
+                <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5} mt={isMobile ? 2 : 3}>
                   <Box
                     sx={{
-                      width: 4,
-                      height: 20,
+                      width: isMobile ? 3 : 4,
+                      height: isMobile ? 16 : 20,
                       bgcolor: isMonochrome ? '#1a1a1a' : '#8B5CF6',
                       borderRadius: 0.5,
                       mr: 1.5,
                     }}
                   />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                     {t('analytics.orderStats.packagePurchaseStats')}
                   </Typography>
                 </Box>
 
-                <Grid container spacing={2.5}>
+                <Grid container spacing={isMobile ? 1.5 : 2.5}>
                   {/* 饼图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                           {t('analytics.orderStats.packagePurchaseDistribution')}
                         </Typography>
                         {packagePurchaseStats.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
                             <PieChart>
                               <Pie
                                 data={packagePurchaseStats}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={60}
-                                outerRadius={100}
+                                innerRadius={isMobile ? 40 : 60}
+                                outerRadius={isMobile ? 70 : 100}
                                 paddingAngle={2}
                                 dataKey="totalAmount"
                                 nameKey="paymentMethod"
@@ -2182,25 +2261,25 @@ const Analytics: React.FC = () => {
 
                   {/* 柱状图 */}
                   <Grid item xs={12} md={6}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                           {t('analytics.orderStats.packagePurchaseCount')}
                         </Typography>
                         {packagePurchaseStats.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
                             <BarChart data={packagePurchaseStats}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                               <XAxis
                                 dataKey="paymentMethod"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 11, fill: '#999' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
                               />
                               <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 11, fill: '#999' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
                               />
                               <Tooltip />
                               <Bar dataKey="orderCount" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
@@ -2219,15 +2298,15 @@ const Analytics: React.FC = () => {
 
                   {/* Package购买统计表格 */}
                   <Grid item xs={12}>
-                    <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-                      <CardContent sx={{ p: 2.5 }}>
+                    <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+                      <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                         {/* Payment Method筛选器 */}
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                        <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} gap={isMobile ? 1.5 : 0} mb={2}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.8rem' : undefined }}>
                             {t('analytics.orderStats.packagePurchaseDetails')}
                           </Typography>
-                          <Box display="flex" gap={2} alignItems="center">
-                            <FormControl size="small" sx={{ minWidth: 180 }}>
+                          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2} alignItems={isMobile ? 'stretch' : 'center'} width={isMobile ? '100%' : 'auto'}>
+                            <FormControl size="small" sx={{ minWidth: isMobile ? undefined : 180, width: isMobile ? '100%' : 'auto' }}>
                               <Select
                                 multiple
                                 displayEmpty
@@ -2366,37 +2445,59 @@ const Analytics: React.FC = () => {
                           </Box>
                         </Box>
 
-                        <TableContainer>
-                          <Table size="small">
+                        <TableContainer sx={{ overflowX: 'auto' }}>
+                          <Table size="small" sx={{ minWidth: isMobile ? 380 : 'auto' }}>
                             <TableHead>
                               <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.orderCount')}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{
+                                  fontWeight: 600,
+                                  color: '#666',
+                                  borderBottom: '1px solid rgba(0,0,0,0.08)',
+                                  py: isMobile ? 1 : 1.5,
+                                  fontSize: isMobile ? '0.7rem' : undefined,
+                                  position: isMobile ? 'sticky' : 'static',
+                                  left: 0,
+                                  bgcolor: '#fff',
+                                  zIndex: 1,
+                                  minWidth: isMobile ? 90 : 'auto',
+                                  boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                }}>{t('analytics.orderStats.paymentMethod')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.orderCount')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>
                                   {t('analytics.orderStats.totalAmount')}
-                                  <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
-                                    ({t('analytics.actualPaymentAmount')})
-                                  </Typography>
+                                  {!isMobile && (
+                                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.6rem', display: 'block' }}>
+                                      ({t('analytics.actualPaymentAmount')})
+                                    </Typography>
+                                  )}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>{t('analytics.orderStats.tips')}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.7rem' : undefined, whiteSpace: 'nowrap' }}>{t('analytics.orderStats.tips')}</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {filteredPackagePurchaseStats.map((row: any, index: number) => (
                                 <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' } }}>
-                                  <TableCell sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5 }}>
-                                    <Box display="flex" alignItems="center" gap={1}>
-                                      {getPaymentMethodIcon(row.paymentMethod)}
-                                      <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 500 }}>
+                                  <TableCell sx={{
+                                    borderBottom: '1px solid rgba(0,0,0,0.04)',
+                                    py: isMobile ? 1 : 1.5,
+                                    position: isMobile ? 'sticky' : 'static',
+                                    left: 0,
+                                    bgcolor: '#fff',
+                                    zIndex: 1,
+                                    boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                  }}>
+                                    <Box display="flex" alignItems="center" gap={isMobile ? 0.5 : 1}>
+                                      {!isMobile && getPaymentMethodIcon(row.paymentMethod)}
+                                      <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 500, fontSize: isMobile ? '0.75rem' : undefined }}>
                                         {row.paymentMethod}
                                       </Typography>
                                     </Box>
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#1a1a1a' }}>{row.orderCount}</TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, fontWeight: 600, color: '#1a1a1a' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : undefined }}>{row.orderCount}</TableCell>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalAmount)}
                                   </TableCell>
-                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: 1.5, color: '#F59E0B' }}>
+                                  <TableCell align="right" sx={{ borderBottom: '1px solid rgba(0,0,0,0.04)', py: isMobile ? 1 : 1.5, color: '#F59E0B', fontSize: isMobile ? '0.75rem' : undefined }}>
                                     {CurrencyUtils.formatAmountWithCommas(row.totalTips || 0)}
                                   </TableCell>
                                 </TableRow>
@@ -2404,16 +2505,27 @@ const Analytics: React.FC = () => {
                             </TableBody>
                             <TableFooter>
                               <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell sx={{
+                                  fontWeight: 600,
+                                  color: '#1a1a1a',
+                                  borderTop: '1px solid rgba(0,0,0,0.08)',
+                                  py: isMobile ? 1 : 1.5,
+                                  fontSize: isMobile ? '0.75rem' : undefined,
+                                  position: isMobile ? 'sticky' : 'static',
+                                  left: 0,
+                                  bgcolor: '#fff',
+                                  zIndex: 1,
+                                  boxShadow: isMobile ? '2px 0 4px rgba(0,0,0,0.05)' : 'none',
+                                }}>
                                   {t('analytics.orderStats.total')}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {packagePurchaseSummaryData.orderCount}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#1a1a1a', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalAmount)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: 1.5 }}>
+                                <TableCell align="right" sx={{ fontWeight: 600, color: '#F59E0B', borderTop: '1px solid rgba(0,0,0,0.08)', py: isMobile ? 1 : 1.5, fontSize: isMobile ? '0.75rem' : undefined }}>
                                   {CurrencyUtils.formatAmountWithCommas(packagePurchaseSummaryData.totalTips)}
                                 </TableCell>
                               </TableRow>

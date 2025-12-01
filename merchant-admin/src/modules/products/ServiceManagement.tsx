@@ -35,6 +35,9 @@ import {
   Tab,
   Fade,
   Divider,
+  Collapse,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import { PermissionButton } from '../../components/common/PermissionButton';
 import { PRODUCT_PERMISSIONS } from '../../config/permissions';
@@ -112,6 +115,7 @@ import {
   PhoneAndroid as PhoneIcon,
   Laptop as LaptopIcon,
   Watch as WatchIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -132,6 +136,10 @@ const ServiceManagement: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -185,6 +193,10 @@ const ServiceManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+
+  // 移动端筛选面板展开状态
+  const [serviceFiltersExpanded, setServiceFiltersExpanded] = useState(false);
+  const [packageFiltersExpanded, setPackageFiltersExpanded] = useState(false);
 
   // 获取租户ID
   const tenantId = user?.tenantId;
@@ -526,11 +538,11 @@ const ServiceManagement: React.FC = () => {
   return (
     <Box>
       {/* 现代化页面标题 */}
-      <Box mb={4}>
+      <Box mb={isMobile ? 2 : 4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h5"
+              variant={isMobile ? 'h6' : 'h5'}
               component="h1"
               sx={{
                 fontWeight: 600,
@@ -540,9 +552,11 @@ const ServiceManagement: React.FC = () => {
             >
               {t('products.title')}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>
-              {t('products.subtitle')}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="body2" sx={{ color: '#888' }}>
+                {t('products.subtitle')}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Box>
@@ -558,9 +572,9 @@ const ServiceManagement: React.FC = () => {
               borderColor: 'divider',
               '& .MuiTab-root': {
                 fontWeight: 500,
-                fontSize: '0.9rem',
+                fontSize: { xs: '0.85rem', sm: '0.9rem' },
                 textTransform: 'none',
-                minHeight: 56,
+                minHeight: { xs: 44, sm: 56 },
                 '&.Mui-selected': {
                   fontWeight: 600,
                   color: THEME_COLOR,
@@ -574,7 +588,26 @@ const ServiceManagement: React.FC = () => {
             }}
           >
             {tabsConfig.map((tab) => (
-              <Tab key={tab.key} label={tab.label} />
+              <Tab
+                key={tab.key}
+                label={tab.label}
+                disableRipple={isMobile}
+                sx={{
+                  // 移动端移除所有点击高亮效果
+                  ...(isMobile && {
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:focus': {
+                      outline: 'none',
+                    },
+                    '&:active': {
+                      backgroundColor: 'transparent',
+                    },
+                    '&.Mui-focusVisible': {
+                      backgroundColor: 'transparent',
+                    },
+                  }),
+                }}
+              />
             ))}
           </Tabs>
         </Box>
@@ -583,129 +616,251 @@ const ServiceManagement: React.FC = () => {
       {/* Services Tab Content */}
       {currentTabKey === 'services' && (
         <>
-          {/* 搜索和筛选区域 - 简约设计 */}
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 2,
-              mb: 2.5,
-              alignItems: 'center',
-            }}
-          >
-            <TextField
-              placeholder={t('products.searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
+          {/* 搜索和筛选区域 - 响应式设计 */}
+          {isMobile ? (
+            /* 移动端筛选布局 */
+            <Box sx={{ mb: 1.5 }}>
+              {/* 搜索栏 + 筛选按钮 + 添加按钮 */}
+              <Box display="flex" gap={1} mb={1.5} alignItems="stretch">
+                <TextField
+                  placeholder={t('products.searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  size="small"
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      bgcolor: '#fafafa',
+                      fontSize: '0.8rem',
+                      height: 40,
+                      '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                      '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <IconButton
+                  onClick={() => setServiceFiltersExpanded(!serviceFiltersExpanded)}
+                  sx={{
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    borderRadius: 1.5,
+                    width: 40,
+                    height: 40,
+                    flexShrink: 0,
+                    color: serviceFiltersExpanded ? THEME_COLOR : '#666',
+                    bgcolor: serviceFiltersExpanded ? alpha(THEME_COLOR, 0.08) : 'transparent',
+                  }}
+                >
+                  <FilterListIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+                {hasPermission('products:create') && (
+                  <IconButton
+                    onClick={() => {
+                      setSelectedService(null);
+                      setServiceDialogOpen(true);
+                    }}
+                    sx={{
+                      bgcolor: THEME_COLOR,
+                      borderRadius: 1.5,
+                      width: 40,
+                      height: 40,
+                      flexShrink: 0,
+                      color: '#fff',
+                      '&:hover': { bgcolor: THEME_COLOR_HOVER },
+                    }}
+                  >
+                    <AddIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                )}
+              </Box>
+
+              {/* 可折叠筛选面板 */}
+              <Collapse in={serviceFiltersExpanded}>
+                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                        {t('products.category')}
+                      </InputLabel>
+                      <Select
+                        value={categoryFilter}
+                        label={t('products.category')}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        sx={{
+                          borderRadius: 1.5,
+                          bgcolor: '#fafafa',
+                          fontSize: '0.75rem',
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                        }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.75rem' }}>{t('products.allCategories')}</MenuItem>
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id.toString()} sx={{ fontSize: '0.75rem' }}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                        {t('products.status')}
+                      </InputLabel>
+                      <Select
+                        value={statusFilter}
+                        label={t('products.status')}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        sx={{
+                          borderRadius: 1.5,
+                          bgcolor: '#fafafa',
+                          fontSize: '0.75rem',
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                        }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.75rem' }}>{t('products.allStatuses')}</MenuItem>
+                        <MenuItem value="ACTIVE" sx={{ fontSize: '0.75rem' }}>{t('products.active')}</MenuItem>
+                        <MenuItem value="INACTIVE" sx={{ fontSize: '0.75rem' }}>{t('products.inactive')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Collapse>
+            </Box>
+          ) : (
+            /* 桌面端筛选布局 */
+            <Box
               sx={{
-                minWidth: 280,
-                flex: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1.5,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('products.category')}</InputLabel>
-              <Select
-                value={categoryFilter}
-                label={t('products.category')}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                sx={{
-                  borderRadius: 1.5,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                }}
-              >
-                <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('products.allCategories')}</MenuItem>
-                {categories.map((category) => (
-                  <MenuItem key={category.id} value={category.id.toString()} sx={{ fontSize: '0.875rem' }}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('products.status')}</InputLabel>
-              <Select
-                value={statusFilter}
-                label={t('products.status')}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                sx={{
-                  borderRadius: 1.5,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                }}
-              >
-                <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('products.allStatuses')}</MenuItem>
-                <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('products.active')}</MenuItem>
-                <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('products.inactive')}</MenuItem>
-              </Select>
-            </FormControl>
-            <PermissionButton
-              permission={PRODUCT_PERMISSIONS.CREATE}
-              size="small"
-              variant="contained"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              onClick={() => {
-                setSelectedService(null);
-                setServiceDialogOpen(true);
-              }}
-              sx={{
-                borderRadius: 1.5,
-                height: 40,
-                px: 2,
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                bgcolor: THEME_COLOR,
-                boxShadow: 'none',
-                textTransform: 'none',
-                '&:hover': {
-                  bgcolor: THEME_COLOR_HOVER,
-                  boxShadow: 'none',
-                },
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 2,
+                mb: 2.5,
+                alignItems: 'center',
               }}
             >
-              {t('products.addService')}
-            </PermissionButton>
-          </Box>
+              <TextField
+                placeholder={t('products.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                size="small"
+                sx={{
+                  minWidth: 280,
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('products.category')}</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  label={t('products.category')}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  sx={{
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('products.allCategories')}</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id.toString()} sx={{ fontSize: '0.875rem' }}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('products.status')}</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label={t('products.status')}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  sx={{
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('products.allStatuses')}</MenuItem>
+                  <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('products.active')}</MenuItem>
+                  <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('products.inactive')}</MenuItem>
+                </Select>
+              </FormControl>
+              <PermissionButton
+                permission={PRODUCT_PERMISSIONS.CREATE}
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                onClick={() => {
+                  setSelectedService(null);
+                  setServiceDialogOpen(true);
+                }}
+                sx={{
+                  borderRadius: 1.5,
+                  height: 40,
+                  px: 2,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  bgcolor: THEME_COLOR,
+                  boxShadow: 'none',
+                  textTransform: 'none',
+                  '&:hover': {
+                    bgcolor: THEME_COLOR_HOVER,
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {t('products.addService')}
+              </PermissionButton>
+            </Box>
+          )}
 
-      {/* 管理分类按钮 */}
-      {hasPermission('product_categories:manage') && (
+      {/* 管理分类按钮 - 移动端隐藏 */}
+      {!isMobile && hasPermission('product_categories:manage') && (
         <Box mb={2.5}>
           <Button
             variant="outlined"
@@ -728,147 +883,280 @@ const ServiceManagement: React.FC = () => {
         </Box>
       )}
 
-      {/* 服务列表表格 */}
-      <Box
-        sx={{
-          borderRadius: 2,
-          border: '1px solid rgba(0,0,0,0.08)',
-          overflow: 'hidden',
-          bgcolor: '#fff',
-        }}
-      >
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <>
-            <TableContainer>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#fafafa' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.category')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.price')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.duration')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.resourceType')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.status')}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.actions')}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {services.map((service) => (
-                    <TableRow
-                      key={service.id}
-                      hover
-                      sx={{
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                        '& td': { py: 1.5, fontSize: '0.875rem' },
-                      }}
-                    >
-                      <TableCell>
-                        <Box>
-                          <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a' }}>
-                            {service.name}
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                            ID: {service.id}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
+      {/* 服务列表 - 响应式设计 */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+          <CircularProgress />
+        </Box>
+      ) : isMobile ? (
+        /* 移动端卡片列表 */
+        <Box>
+          {services.length === 0 ? (
+            <Box
+              sx={{
+                py: 4,
+                textAlign: 'center',
+                bgcolor: '#fff',
+                borderRadius: 1.5,
+                border: '1px solid rgba(0,0,0,0.08)',
+              }}
+            >
+              <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                {t('products.noServices')}
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {services.map((service) => (
+                <Card
+                  key={service.id}
+                  onClick={() => {
+                    setSelectedService(service);
+                    setViewDetailsDialogOpen(true);
+                  }}
+                  sx={{
+                    mb: 1.5,
+                    borderRadius: 1.5,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    cursor: 'pointer',
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:active': {
+                      bgcolor: 'rgba(0,0,0,0.02)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    {/* 第一行：服务名称 + 类别 */}
+                    <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1}>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a', mb: 0.25 }}>
+                          {service.name}
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={0.5}>
                           <Box
                             sx={{
-                              width: 28,
-                              height: 28,
-                              borderRadius: 1.5,
+                              width: 20,
+                              height: 20,
+                              borderRadius: 1,
                               bgcolor: alpha(getCategoryColor(service.categoryId), 0.1),
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               color: getCategoryColor(service.categoryId),
+                              '& svg': { fontSize: 12 },
                             }}
                           >
                             {getCategoryIcon(service.categoryId)}
                           </Box>
-                          <Typography sx={{ fontSize: '0.875rem', color: '#1a1a1a' }}>
+                          <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
                             {service.categoryName || categories.find(c => c.id === service.categoryId)?.name}
                           </Typography>
                         </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
-                          {CurrencyUtils.formatAmount(service.price)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
-                          {service.duration} {t('products.minutes')}
-                        </Typography>
-                      </TableCell>
+                      </Box>
+                      {getStatusChip(service.status)}
+                    </Box>
 
-                      <TableCell>
-                        <Chip
-                          label={service.resourceType}
-                          size="small"
+                    {/* 第二行：价格 + 时长 */}
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: THEME_COLOR }}>
+                        {CurrencyUtils.formatAmount(service.price)}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                        {service.duration} {t('products.minutes')}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* 移动端简化分页 */}
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  bgcolor: '#fff',
+                  borderRadius: 1.5,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                }}
+              >
+                <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                  {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, totalCount)} / {totalCount}
+                </Typography>
+                <Box display="flex" gap={1}>
+                  <Button
+                    size="small"
+                    disabled={page === 0}
+                    onClick={() => setPage(page - 1)}
+                    sx={{
+                      minWidth: 'auto',
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: '0.75rem',
+                      color: '#666',
+                      borderRadius: 1,
+                    }}
+                  >
+                    {t('common.previousPage')}
+                  </Button>
+                  <Button
+                    size="small"
+                    disabled={(page + 1) * rowsPerPage >= totalCount}
+                    onClick={() => setPage(page + 1)}
+                    sx={{
+                      minWidth: 'auto',
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: '0.75rem',
+                      color: THEME_COLOR,
+                      borderRadius: 1,
+                    }}
+                  >
+                    {t('common.nextPage')}
+                  </Button>
+                </Box>
+              </Box>
+            </>
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格 */
+        <Box
+          sx={{
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            bgcolor: '#fff',
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ backgroundColor: '#fafafa' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.service')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.category')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.price')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.duration')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.resourceType')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.status')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('products.actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {services.map((service) => (
+                  <TableRow
+                    key={service.id}
+                    hover
+                    sx={{
+                      '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                      '& td': { py: 1.5, fontSize: '0.875rem' },
+                    }}
+                  >
+                    <TableCell>
+                      <Box>
+                        <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                          {service.name}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                          ID: {service.id}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Box
                           sx={{
-                            backgroundColor: alpha(THEME_COLOR, 0.1),
-                            color: THEME_COLOR,
-                            fontWeight: 500,
-                            fontSize: '0.75rem',
-                            height: 22,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {getStatusChip(service.status)}
-                      </TableCell>
-                      <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            setMenuAnchorEl(e.currentTarget);
-                            setSelectedService(service);
-                          }}
-                          sx={{
-                            color: '#999',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0,0,0,0.04)',
-                              color: '#666',
-                            },
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1.5,
+                            bgcolor: alpha(getCategoryColor(service.categoryId), 0.1),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: getCategoryColor(service.categoryId),
                           }}
                         >
-                          <MoreVertIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                          {getCategoryIcon(service.categoryId)}
+                        </Box>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#1a1a1a' }}>
+                          {service.categoryName || categories.find(c => c.id === service.categoryId)?.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                        {CurrencyUtils.formatAmount(service.price)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
+                        {service.duration} {t('products.minutes')}
+                      </Typography>
+                    </TableCell>
 
-            <TablePagination
-              component="div"
-              count={totalCount}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              labelRowsPerPage={t('common.rowsPerPage')}
-              sx={{
-                borderTop: '1px solid rgba(0,0,0,0.06)',
-                '& .MuiTablePagination-select': {
-                  borderRadius: 1,
-                },
-              }}
-            />
-          </>
-        )}
-      </Box>
+                    <TableCell>
+                      <Chip
+                        label={service.resourceType}
+                        size="small"
+                        sx={{
+                          backgroundColor: alpha(THEME_COLOR, 0.1),
+                          color: THEME_COLOR,
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                          height: 22,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {getStatusChip(service.status)}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          setMenuAnchorEl(e.currentTarget);
+                          setSelectedService(service);
+                        }}
+                        sx={{
+                          color: '#999',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                            color: '#666',
+                          },
+                        }}
+                      >
+                        <MoreVertIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            labelRowsPerPage={t('common.rowsPerPage')}
+            sx={{
+              borderTop: '1px solid rgba(0,0,0,0.06)',
+              '& .MuiTablePagination-select': {
+                borderRadius: 1,
+              },
+            }}
+          />
+        </Box>
+      )}
 
       {/* 操作菜单 */}
       <Menu
@@ -1023,14 +1311,17 @@ const ServiceManagement: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
+            borderRadius: { xs: 2, sm: 2.5 },
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            m: { xs: 1, sm: 'auto' },
+            width: { xs: 'calc(100% - 16px)', sm: '100%' },
+            maxHeight: { xs: 'calc(100vh - 16px)', sm: 'calc(100% - 64px)' },
           }
         }}
       >
-        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 1.5, sm: 2 }, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: THEME_COLOR }}>
+            <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' }, color: THEME_COLOR }}>
               {t('products.serviceDetails')}
             </Typography>
             <IconButton
@@ -1043,7 +1334,7 @@ const ServiceManagement: React.FC = () => {
           </Box>
         </Box>
 
-        <DialogContent sx={{ p: 3 }}>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
           {selectedService && (
             <Grid container spacing={3}>
               {/* Basic Information */}
@@ -1144,125 +1435,245 @@ const ServiceManagement: React.FC = () => {
       {/* Packages Tab Content */}
       {currentTabKey === 'packages' && (
         <>
-          {/* Package Search and Filters - 简约设计 */}
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 2,
-              mb: 2.5,
-              alignItems: 'center',
-            }}
-          >
-            <TextField
-              placeholder={t('packages.searchPlaceholder')}
-              value={packageSearchTerm}
-              onChange={(e) => setPackageSearchTerm(e.target.value)}
-              size="small"
+          {/* Package Search and Filters - 响应式设计 */}
+          {isMobile ? (
+            /* 移动端筛选布局 */
+            <Box sx={{ mb: 1.5 }}>
+              {/* 搜索栏 + 筛选按钮 + 添加按钮 */}
+              <Box display="flex" gap={1} mb={1.5} alignItems="stretch">
+                <TextField
+                  placeholder={t('packages.searchPlaceholder')}
+                  value={packageSearchTerm}
+                  onChange={(e) => setPackageSearchTerm(e.target.value)}
+                  size="small"
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      bgcolor: '#fafafa',
+                      fontSize: '0.8rem',
+                      height: 40,
+                      '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                      '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <IconButton
+                  onClick={() => setPackageFiltersExpanded(!packageFiltersExpanded)}
+                  sx={{
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    borderRadius: 1.5,
+                    width: 40,
+                    height: 40,
+                    flexShrink: 0,
+                    color: packageFiltersExpanded ? THEME_COLOR : '#666',
+                    bgcolor: packageFiltersExpanded ? alpha(THEME_COLOR, 0.08) : 'transparent',
+                  }}
+                >
+                  <FilterListIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+                {hasPermission('packages:create') && (
+                  <IconButton
+                    onClick={() => {
+                      setSelectedPackage(null);
+                      setPackageDialogOpen(true);
+                    }}
+                    sx={{
+                      bgcolor: THEME_COLOR,
+                      borderRadius: 1.5,
+                      width: 40,
+                      height: 40,
+                      flexShrink: 0,
+                      color: '#fff',
+                      '&:hover': { bgcolor: THEME_COLOR_HOVER },
+                    }}
+                  >
+                    <AddIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                )}
+              </Box>
+
+              {/* 可折叠筛选面板 */}
+              <Collapse in={packageFiltersExpanded}>
+                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                        {t('packages.statusFilter')}
+                      </InputLabel>
+                      <Select
+                        value={packageStatusFilter}
+                        onChange={(e) => setPackageStatusFilter(e.target.value)}
+                        label={t('packages.statusFilter')}
+                        sx={{
+                          borderRadius: 1.5,
+                          bgcolor: '#fafafa',
+                          fontSize: '0.75rem',
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                        }}
+                      >
+                        <MenuItem value="" sx={{ fontSize: '0.75rem' }}>{t('common.all')}</MenuItem>
+                        <MenuItem value="ACTIVE" sx={{ fontSize: '0.75rem' }}>{t('packages.active')}</MenuItem>
+                        <MenuItem value="INACTIVE" sx={{ fontSize: '0.75rem' }}>{t('packages.inactive')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                        {t('packages.sortBy')}
+                      </InputLabel>
+                      <Select
+                        value={packageSortBy}
+                        onChange={(e) => setPackageSortBy(e.target.value as any)}
+                        label={t('packages.sortBy')}
+                        sx={{
+                          borderRadius: 1.5,
+                          bgcolor: '#fafafa',
+                          fontSize: '0.75rem',
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                        }}
+                      >
+                        <MenuItem value="created" sx={{ fontSize: '0.75rem' }}>{t('packages.sortByCreated')}</MenuItem>
+                        <MenuItem value="name" sx={{ fontSize: '0.75rem' }}>{t('packages.sortByName')}</MenuItem>
+                        <MenuItem value="price" sx={{ fontSize: '0.75rem' }}>{t('packages.sortByPrice')}</MenuItem>
+                        <MenuItem value="discount" sx={{ fontSize: '0.75rem' }}>{t('packages.sortByDiscount')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Collapse>
+            </Box>
+          ) : (
+            /* 桌面端筛选布局 */
+            <Box
               sx={{
-                minWidth: 280,
-                flex: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1.5,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                },
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 2,
+                mb: 2.5,
+                alignItems: 'center',
               }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('packages.statusFilter')}</InputLabel>
-              <Select
-                value={packageStatusFilter}
-                onChange={(e) => setPackageStatusFilter(e.target.value)}
-                label={t('packages.statusFilter')}
-                sx={{
-                  borderRadius: 1.5,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                }}
-              >
-                <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('common.all')}</MenuItem>
-                <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('packages.active')}</MenuItem>
-                <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('packages.inactive')}</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('packages.sortBy')}</InputLabel>
-              <Select
-                value={packageSortBy}
-                onChange={(e) => setPackageSortBy(e.target.value as any)}
-                label={t('packages.sortBy')}
-                sx={{
-                  borderRadius: 1.5,
-                  fontSize: '0.875rem',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(0,0,0,0.12)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: THEME_COLOR,
-                  },
-                }}
-              >
-                <MenuItem value="created" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByCreated')}</MenuItem>
-                <MenuItem value="name" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByName')}</MenuItem>
-                <MenuItem value="price" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByPrice')}</MenuItem>
-                <MenuItem value="discount" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByDiscount')}</MenuItem>
-              </Select>
-            </FormControl>
-            {hasPermission('packages:create') && (
-              <Button
+            >
+              <TextField
+                placeholder={t('packages.searchPlaceholder')}
+                value={packageSearchTerm}
+                onChange={(e) => setPackageSearchTerm(e.target.value)}
                 size="small"
-                variant="contained"
-                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                onClick={() => {
-                  setSelectedPackage(null);
-                  setPackageDialogOpen(true);
-                }}
                 sx={{
-                  borderRadius: 1.5,
-                  height: 40,
-                  px: 2,
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  bgcolor: THEME_COLOR,
-                  boxShadow: 'none',
-                  textTransform: 'none',
-                  '&:hover': {
-                    bgcolor: THEME_COLOR_HOVER,
-                    boxShadow: 'none',
+                  minWidth: 280,
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
                   },
                 }}
-              >
-                {t('packages.createPackage')}
-              </Button>
-            )}
-          </Box>
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('packages.statusFilter')}</InputLabel>
+                <Select
+                  value={packageStatusFilter}
+                  onChange={(e) => setPackageStatusFilter(e.target.value)}
+                  label={t('packages.statusFilter')}
+                  sx={{
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.875rem' }}>{t('common.all')}</MenuItem>
+                  <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('packages.active')}</MenuItem>
+                  <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('packages.inactive')}</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('packages.sortBy')}</InputLabel>
+                <Select
+                  value={packageSortBy}
+                  onChange={(e) => setPackageSortBy(e.target.value as any)}
+                  label={t('packages.sortBy')}
+                  sx={{
+                    borderRadius: 1.5,
+                    fontSize: '0.875rem',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0,0,0,0.12)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: THEME_COLOR,
+                    },
+                  }}
+                >
+                  <MenuItem value="created" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByCreated')}</MenuItem>
+                  <MenuItem value="name" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByName')}</MenuItem>
+                  <MenuItem value="price" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByPrice')}</MenuItem>
+                  <MenuItem value="discount" sx={{ fontSize: '0.875rem' }}>{t('packages.sortByDiscount')}</MenuItem>
+                </Select>
+              </FormControl>
+              {hasPermission('packages:create') && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => {
+                    setSelectedPackage(null);
+                    setPackageDialogOpen(true);
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    height: 40,
+                    px: 2,
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    bgcolor: THEME_COLOR,
+                    boxShadow: 'none',
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: THEME_COLOR_HOVER,
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  {t('packages.createPackage')}
+                </Button>
+              )}
+            </Box>
+          )}
 
           <PackageList
             packages={getFilteredAndSortedPackages()}
@@ -1374,11 +1785,18 @@ const ServiceManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSuccessMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSuccessMessage(null)}
           severity="success"
-          sx={{ width: '100%', borderRadius: 2 }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {successMessage}
         </Alert>
@@ -1390,11 +1808,18 @@ const ServiceManagement: React.FC = () => {
         autoHideDuration={5000}
         onClose={() => setServiceError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setServiceError(null)}
           severity="error"
-          sx={{ width: '100%', borderRadius: 2 }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {serviceError}
         </Alert>
@@ -1406,11 +1831,18 @@ const ServiceManagement: React.FC = () => {
         autoHideDuration={5000}
         onClose={() => setPackageError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setPackageError(null)}
           severity="error"
-          sx={{ width: '100%', borderRadius: 2 }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {packageError}
         </Alert>

@@ -6,6 +6,8 @@ import {
   Grid,
   CardContent,
   alpha,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   AttachMoney as MoneyIcon,
@@ -29,6 +31,10 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
   const { t } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // Theme-aware colors
   const isMonochrome = themeMode === 'monochrome';
@@ -83,44 +89,43 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
   return (
     <Box>
       {/* 页面标题 */}
-      <Box mb={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography
-              variant="h5"
-              component="h1"
-              sx={{
-                fontWeight: 600,
-                color: THEME_COLOR,
-                mb: 0.5,
-              }}
-            >
-              {t('payments.title')}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>
-              {t('payments.subtitle')}
-            </Typography>
-          </Box>
-        </Box>
+      <Box mb={isMobile ? 2 : 4}>
+        <Typography
+          variant={isMobile ? 'h6' : 'h5'}
+          component="h1"
+          sx={{
+            fontWeight: 600,
+            color: THEME_COLOR,
+            mb: 0.5,
+          }}
+        >
+          {t('payments.title')}
+        </Typography>
+        {!isMobile && (
+          <Typography variant="body2" sx={{ color: '#888' }}>
+            {t('payments.subtitle')}
+          </Typography>
+        )}
       </Box>
 
-      {/* 统计卡片 */}
-      <Grid container spacing={2.5} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
+      {/* 统计卡片 - 移动端2x2网格 */}
+      <Grid container spacing={isMobile ? 1.5 : 2.5} mb={isMobile ? 2 : 4}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.08),
                     display: 'flex',
@@ -130,13 +135,13 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 22 }} />
+                  <MoneyIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('payments.todayRevenue')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {CurrencyUtils.formatAmountWithCommas(stats.todayRevenue)}
                   </Typography>
                 </Box>
@@ -145,21 +150,22 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#6366F1', 0.08),
                     display: 'flex',
@@ -169,13 +175,13 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     flexShrink: 0,
                   }}
                 >
-                  <OrdersIcon sx={{ fontSize: 22 }} />
+                  <OrdersIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('payments.todayOrders')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {stats.todayOrders}
                   </Typography>
                 </Box>
@@ -184,21 +190,22 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#F59E0B', 0.08),
                     display: 'flex',
@@ -208,13 +215,13 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     flexShrink: 0,
                   }}
                 >
-                  <CreditCardIcon sx={{ fontSize: 22 }} />
+                  <CreditCardIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('payments.pendingPayments')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {stats.pendingPayments}
                   </Typography>
                 </Box>
@@ -223,21 +230,22 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
+              height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#EC4899', 0.08),
                     display: 'flex',
@@ -247,13 +255,13 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onNavigate }) => 
                     flexShrink: 0,
                   }}
                 >
-                  <TrendingUpIcon sx={{ fontSize: 22 }} />
+                  <TrendingUpIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem', mb: 0.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('payments.avgOrderValue')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {CurrencyUtils.formatAmountWithCommas(Math.round(stats.avgOrderValue))}
                   </Typography>
                 </Box>

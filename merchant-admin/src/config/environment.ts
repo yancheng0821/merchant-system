@@ -1,18 +1,48 @@
+import { Capacitor } from '@capacitor/core';
+
 /**
  * 环境配置文件
  * 统一管理API基础URL和其他环境相关配置
  */
 
 /**
+ * 检测是否在 Capacitor 原生应用中运行
+ */
+export const isNativeApp = (): boolean => {
+  return Capacitor.isNativePlatform();
+};
+
+/**
+ * 检测是否为开发环境（Live Reload 模式）
+ * 通过检查 server.url 配置或端口来判断
+ */
+const isDevServer = (): boolean => {
+  // 如果是通过 IP:3000 访问，说明是 Live Reload 开发模式
+  const port = window.location.port;
+  return port === '3000';
+};
+
+/**
  * 获取API基础URL
  * 根据当前访问的hostname自动判断环境
  */
 export const getApiBaseUrl = (): string => {
+  // Capacitor 原生应用
+  if (isNativeApp()) {
+    // 开发模式（Live Reload）：使用空字符串，让请求通过 dev server 代理
+    if (isDevServer()) {
+      return '';
+    }
+
+    // 生产环境发布时：使用生产 API 地址
+    return 'https://vamerchant.app';
+  }
+
   const hostname = window.location.hostname;
 
-  // 本地开发环境
+  // 本地开发环境（浏览器）：使用空字符串，让请求通过 dev server 代理
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8080';
+    return '';
   }
 
   // 生产环境使用相对路径（通过Nginx代理到gateway）

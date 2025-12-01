@@ -33,6 +33,9 @@ import {
     Snackbar,
     Popover,
     Tooltip,
+    Collapse,
+    useMediaQuery,
+    useTheme as useMuiTheme,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -47,6 +50,7 @@ import {
     Build as SkillIcon,
     MoreHoriz as MoreHorizIcon,
     Schedule as ScheduleIcon,
+    FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import StaffDialog from './StaffDialog';
@@ -62,6 +66,11 @@ const StaffResourceManagement: React.FC = () => {
     const { t } = useTranslation();
     const { hasPermission } = usePermission();
     const { themeMode } = useTheme();
+    const muiTheme = useMuiTheme();
+
+    // 移动端检测
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
     const [staff, setStaff] = useState<StaffResource[]>([]);
     const [filteredStaff, setFilteredStaff] = useState<StaffResource[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -79,6 +88,9 @@ const StaffResourceManagement: React.FC = () => {
     const [selectedStaffIdForExpertise, setSelectedStaffIdForExpertise] = useState<number | null>(null);
     const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(null);
     const [selectedStaffForStatus, setSelectedStaffForStatus] = useState<StaffResource | null>(null);
+
+    // 移动端筛选面板展开状态
+    const [filtersExpanded, setFiltersExpanded] = useState(false);
 
     // 加载状态
     const [loading, setLoading] = useState(true);
@@ -441,24 +453,29 @@ const StaffResourceManagement: React.FC = () => {
     };
 
     return (
-        <Box>
-            {/* 统计卡片 */}
-            <Grid container spacing={2.5} mb={4}>
-                <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ overflowX: 'hidden', width: '100%' }}>
+            {/* 统计卡片 - 移动端2x2网格 */}
+            <Grid container spacing={isMobile ? 1 : 2.5} mb={isMobile ? 2 : 4} sx={{ mx: 0, width: '100%' }}>
+                <Grid item xs={6} sm={6} md={3}>
                     <Card
                         sx={{
-                            borderRadius: 2.5,
+                            borderRadius: isMobile ? 2 : 2.5,
                             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                             border: '1px solid rgba(0,0,0,0.06)',
                             bgcolor: '#fff',
                         }}
                     >
-                        <CardContent sx={{ p: 2.5 }}>
-                            <Box display="flex" alignItems="center" gap={2.5}>
+                        <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                            <Box
+                                display="flex"
+                                alignItems={isMobile ? 'flex-start' : 'center'}
+                                flexDirection={isMobile ? 'column' : 'row'}
+                                gap={isMobile ? 1 : 2.5}
+                            >
                                 <Box
                                     sx={{
-                                        width: 44,
-                                        height: 44,
+                                        width: isMobile ? 36 : 44,
+                                        height: isMobile ? 36 : 44,
                                         borderRadius: 1.5,
                                         bgcolor: alpha(themeColor, 0.08),
                                         display: 'flex',
@@ -468,13 +485,13 @@ const StaffResourceManagement: React.FC = () => {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    <PersonIcon sx={{ fontSize: 22 }} />
+                                    <PersonIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                                 </Box>
                                 <Box sx={{ minWidth: 0 }}>
                                     <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
                                         {t('staff.totalStaff')}
                                     </Typography>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1.1rem' : '1.25rem', lineHeight: 1.2 }}>
                                         {staff.length}
                                     </Typography>
                                 </Box>
@@ -482,21 +499,26 @@ const StaffResourceManagement: React.FC = () => {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={6} sm={6} md={3}>
                     <Card
                         sx={{
-                            borderRadius: 2.5,
+                            borderRadius: isMobile ? 2 : 2.5,
                             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                             border: '1px solid rgba(0,0,0,0.06)',
                             bgcolor: '#fff',
                         }}
                     >
-                        <CardContent sx={{ p: 2.5 }}>
-                            <Box display="flex" alignItems="center" gap={2.5}>
+                        <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+                            <Box
+                                display="flex"
+                                alignItems={isMobile ? 'flex-start' : 'center'}
+                                flexDirection={isMobile ? 'column' : 'row'}
+                                gap={isMobile ? 1 : 2.5}
+                            >
                                 <Box
                                     sx={{
-                                        width: 44,
-                                        height: 44,
+                                        width: isMobile ? 36 : 44,
+                                        height: isMobile ? 36 : 44,
                                         borderRadius: 1.5,
                                         bgcolor: alpha(isMonochrome ? '#1a1a1a' : '#10B981', 0.08),
                                         display: 'flex',
@@ -506,13 +528,13 @@ const StaffResourceManagement: React.FC = () => {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    <WorkIcon sx={{ fontSize: 22 }} />
+                                    <WorkIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                                 </Box>
                                 <Box sx={{ minWidth: 0 }}>
                                     <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5 }}>
                                         {t('staff.activeStaff')}
                                     </Typography>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1.1rem' : '1.25rem', lineHeight: 1.2 }}>
                                         {staff.filter(s => s.status === 'ACTIVE').length}
                                     </Typography>
                                 </Box>
@@ -522,107 +544,202 @@ const StaffResourceManagement: React.FC = () => {
                 </Grid>
             </Grid>
 
-            {/* 搜索和过滤区域 */}
-            <Box
-                sx={{
-                    borderRadius: 2,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    bgcolor: '#fff',
-                    mb: 2.5,
-                    p: 2.5,
-                }}
-            >
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={6} md={4}>
+            {/* 搜索和过滤区域 - 响应式设计 */}
+            {isMobile ? (
+                /* 移动端筛选布局 */
+                <Box sx={{ mb: 1.5 }}>
+                    {/* 搜索栏 + 筛选按钮 + 添加按钮 */}
+                    <Box display="flex" gap={1} mb={1.5} alignItems="stretch">
                         <TextField
-                            fullWidth
-                            size="small"
                             placeholder={t('staff.searchPlaceholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
-                                    </InputAdornment>
-                                ),
-                            }}
+                            size="small"
+                            fullWidth
                             sx={{
                                 '& .MuiOutlinedInput-root': {
                                     borderRadius: 1.5,
-                                    fontSize: '0.875rem',
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: 'rgba(0,0,0,0.12)',
-                                    },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: themeColor,
-                                    },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: themeColor,
-                                    },
+                                    bgcolor: '#fafafa',
+                                    fontSize: '0.8rem',
+                                    height: 40,
+                                    '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                                    '&.Mui-focused fieldset': { borderColor: themeColor, borderWidth: 1 },
                                 },
                             }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FormControl fullWidth size="small">
-                            <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('staff.status')}</InputLabel>
-                            <Select
-                                value={statusFilter}
-                                label={t('staff.status')}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                sx={{
-                                    borderRadius: 1.5,
-                                    fontSize: '0.875rem',
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: 'rgba(0,0,0,0.12)',
-                                    },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: themeColor,
-                                    },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: themeColor,
-                                    },
-                                }}
-                            >
-                                <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('staff.allStatuses')}</MenuItem>
-                                <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.active')}</MenuItem>
-                                <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.inactive')}</MenuItem>
-                                <MenuItem value="VACATION" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.vacation')}</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    {hasPermission('staff:create') && (
-                        <Grid item xs={12} sm={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                            <Button
-                                size="small"
-                                variant="contained"
-                                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                        <IconButton
+                            onClick={() => setFiltersExpanded(!filtersExpanded)}
+                            sx={{
+                                border: '1px solid rgba(0,0,0,0.12)',
+                                borderRadius: 1.5,
+                                width: 40,
+                                height: 40,
+                                flexShrink: 0,
+                                color: filtersExpanded ? themeColor : '#666',
+                                bgcolor: filtersExpanded ? alpha(themeColor, 0.08) : 'transparent',
+                            }}
+                        >
+                            <FilterListIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                        {hasPermission('staff:create') && (
+                            <IconButton
                                 onClick={() => {
                                     setSelectedStaff(null);
                                     setStaffDialogOpen(true);
                                 }}
                                 sx={{
-                                    borderRadius: 1.5,
-                                    py: 0.75,
-                                    px: 2,
-                                    fontSize: '0.875rem',
-                                    fontWeight: 500,
                                     bgcolor: themeColor,
-                                    boxShadow: 'none',
-                                    textTransform: 'none',
-                                    '&:hover': {
-                                        bgcolor: themeColorDark,
-                                        boxShadow: 'none',
-                                    },
+                                    borderRadius: 1.5,
+                                    width: 40,
+                                    height: 40,
+                                    flexShrink: 0,
+                                    color: '#fff',
+                                    '&:hover': { bgcolor: themeColorDark },
                                 }}
                             >
-                                {t('staff.addStaff')}
-                            </Button>
+                                <AddIcon sx={{ fontSize: 20 }} />
+                            </IconButton>
+                        )}
+                    </Box>
+
+                    {/* 可折叠筛选面板 */}
+                    <Collapse in={filtersExpanded}>
+                        <Box sx={{ mb: 1.5 }}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: themeColor } }}>
+                                    {t('staff.status')}
+                                </InputLabel>
+                                <Select
+                                    value={statusFilter}
+                                    label={t('staff.status')}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    sx={{
+                                        borderRadius: 1.5,
+                                        bgcolor: '#fafafa',
+                                        fontSize: '0.75rem',
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: themeColor },
+                                    }}
+                                >
+                                    <MenuItem value="all" sx={{ fontSize: '0.75rem' }}>{t('staff.allStatuses')}</MenuItem>
+                                    <MenuItem value="ACTIVE" sx={{ fontSize: '0.75rem' }}>{t('staff.statusOptions.active')}</MenuItem>
+                                    <MenuItem value="INACTIVE" sx={{ fontSize: '0.75rem' }}>{t('staff.statusOptions.inactive')}</MenuItem>
+                                    <MenuItem value="VACATION" sx={{ fontSize: '0.75rem' }}>{t('staff.statusOptions.vacation')}</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Collapse>
+                </Box>
+            ) : (
+                /* 桌面端筛选布局 */
+                <Box
+                    sx={{
+                        borderRadius: 2,
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        bgcolor: '#fff',
+                        mb: 2.5,
+                        p: 2.5,
+                    }}
+                >
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm={6} md={4}>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                placeholder={t('staff.searchPlaceholder')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: 1.5,
+                                        fontSize: '0.875rem',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'rgba(0,0,0,0.12)',
+                                        },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: themeColor,
+                                        },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: themeColor,
+                                        },
+                                    },
+                                }}
+                            />
                         </Grid>
-                    )}
-                </Grid>
-            </Box>
+                        <Grid item xs={12} sm={6} md={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('staff.status')}</InputLabel>
+                                <Select
+                                    value={statusFilter}
+                                    label={t('staff.status')}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    sx={{
+                                        borderRadius: 1.5,
+                                        fontSize: '0.875rem',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'rgba(0,0,0,0.12)',
+                                        },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: themeColor,
+                                        },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: themeColor,
+                                        },
+                                    }}
+                                >
+                                    <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('staff.allStatuses')}</MenuItem>
+                                    <MenuItem value="ACTIVE" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.active')}</MenuItem>
+                                    <MenuItem value="INACTIVE" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.inactive')}</MenuItem>
+                                    <MenuItem value="VACATION" sx={{ fontSize: '0.875rem' }}>{t('staff.statusOptions.vacation')}</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        {hasPermission('staff:create') && (
+                            <Grid item xs={12} sm={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                                    onClick={() => {
+                                        setSelectedStaff(null);
+                                        setStaffDialogOpen(true);
+                                    }}
+                                    sx={{
+                                        borderRadius: 1.5,
+                                        py: 0.75,
+                                        px: 2,
+                                        fontSize: '0.875rem',
+                                        fontWeight: 500,
+                                        bgcolor: themeColor,
+                                        boxShadow: 'none',
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            bgcolor: themeColorDark,
+                                            boxShadow: 'none',
+                                        },
+                                    }}
+                                >
+                                    {t('staff.addStaff')}
+                                </Button>
+                            </Grid>
+                        )}
+                    </Grid>
+                </Box>
+            )}
 
             {/* 错误提示 */}
             {error && (
@@ -638,259 +755,417 @@ const StaffResourceManagement: React.FC = () => {
                 </Alert>
             )}
 
-            {/* 员工列表表格 */}
-            <Box
-                sx={{
-                    borderRadius: 2,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    overflow: 'hidden',
-                    bgcolor: '#fff',
-                }}
-            >
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.staff')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.contact')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.position')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
-                                    {t('staff.serviceExpertise', 'Service Expertise')}
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.status')}</TableCell>
-                                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.actions')}</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <CircularProgress sx={{ color: themeColor }} />
-                                    </TableCell>
-                                </TableRow>
-                            ) : filteredStaff.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <Typography color="text.secondary">
-                                            {t('staff.noStaff')}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredStaff
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((staffMember) => (
-                                        <TableRow
-                                            key={staffMember.id}
-                                            hover
-                                            sx={{
-                                                '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                                                '& td': { py: 1.5, fontSize: '0.875rem' },
-                                            }}
-                                        >
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={2}>
+            {/* 员工列表 - 响应式设计 */}
+            {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                    <CircularProgress sx={{ color: themeColor }} />
+                </Box>
+            ) : isMobile ? (
+                /* 移动端卡片列表 */
+                <Box>
+                    {filteredStaff.length === 0 ? (
+                        <Box
+                            sx={{
+                                py: 4,
+                                textAlign: 'center',
+                                bgcolor: '#fff',
+                                borderRadius: 1.5,
+                                border: '1px solid rgba(0,0,0,0.08)',
+                            }}
+                        >
+                            <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                {t('staff.noStaff')}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <>
+                            {filteredStaff
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((staffMember) => (
+                                    <Card
+                                        key={staffMember.id}
+                                        onClick={(e) => {
+                                            setMenuAnchorEl(e.currentTarget);
+                                            setSelectedStaff(staffMember);
+                                        }}
+                                        sx={{
+                                            mb: 1.5,
+                                            borderRadius: 1.5,
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                                            border: '1px solid rgba(0,0,0,0.06)',
+                                            cursor: 'pointer',
+                                            WebkitTapHighlightColor: 'transparent',
+                                            '&:active': {
+                                                bgcolor: 'rgba(0,0,0,0.02)',
+                                            },
+                                        }}
+                                    >
+                                        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                            {/* 第一行：头像 + 姓名 + 状态 */}
+                                            <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1}>
+                                                <Box display="flex" alignItems="center" gap={1.5} sx={{ minWidth: 0, flex: 1 }}>
                                                     <Avatar
                                                         src={getFullImageUrl(staffMember.avatar)}
                                                         sx={{
                                                             bgcolor: staffMember.avatar ? 'transparent' : getAvatarColor(staffMember.name),
-                                                            width: 40,
-                                                            height: 40,
+                                                            width: 36,
+                                                            height: 36,
+                                                            flexShrink: 0,
                                                         }}
                                                     >
                                                         {!staffMember.avatar && staffMember.name.charAt(0)}
                                                     </Avatar>
-                                                    <Box>
-                                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                    <Box sx={{ minWidth: 0 }}>
+                                                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }} noWrap>
                                                             {staffMember.name}
                                                         </Typography>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
-                                                            ID: {staffMember.id}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {t('staff.hiredOn')} {formatDate(staffMember.startDate)}
+                                                        <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                                                            {staffMember.position || t('staff.noPosition')}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    {staffMember.phone && (
-                                                        <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                                                            <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                                            <Typography variant="body2">
-                                                                {staffMember.countryCode && `${staffMember.countryCode.replace(/-[A-Z]{2}$/, '')} `}{staffMember.phone}
+                                                {getStatusChip(staffMember)}
+                                            </Box>
+
+                                            {/* 第二行：联系方式 */}
+                                            <Box display="flex" alignItems="center" gap={2} mb={1}>
+                                                {staffMember.phone && (
+                                                    <Box display="flex" alignItems="center" gap={0.5}>
+                                                        <PhoneIcon sx={{ fontSize: 14, color: '#888' }} />
+                                                        <Typography sx={{ fontSize: '0.7rem', color: '#666' }}>
+                                                            {staffMember.phone}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </Box>
+
+                                            {/* 第三行：服务专长 */}
+                                            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                                                {staffExpertise[staffMember.id] && staffExpertise[staffMember.id].length > 0 ? (
+                                                    <>
+                                                        <Chip
+                                                            label={`${staffExpertise[staffMember.id].length} ${t('staff.servicesLabel')}`}
+                                                            size="small"
+                                                            sx={{
+                                                                bgcolor: alpha(themeColor, 0.1),
+                                                                color: themeColor,
+                                                                fontWeight: 500,
+                                                                height: 20,
+                                                                fontSize: '0.7rem',
+                                                            }}
+                                                        />
+                                                    </>
+                                                ) : (
+                                                    <Typography sx={{ fontSize: '0.7rem', color: '#888', fontStyle: 'italic' }}>
+                                                        {t('staff.noServices')}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+
+                            {/* 移动端简化分页 */}
+                            <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                                sx={{
+                                    py: 1.5,
+                                    px: 2,
+                                    bgcolor: '#fff',
+                                    borderRadius: 1.5,
+                                    border: '1px solid rgba(0,0,0,0.08)',
+                                }}
+                            >
+                                <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                                    {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredStaff.length)} / {filteredStaff.length}
+                                </Typography>
+                                <Box display="flex" gap={1}>
+                                    <Button
+                                        size="small"
+                                        disabled={page === 0}
+                                        onClick={() => setPage(page - 1)}
+                                        sx={{
+                                            minWidth: 'auto',
+                                            px: 1.5,
+                                            py: 0.5,
+                                            fontSize: '0.75rem',
+                                            color: '#666',
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        {t('common.previousPage')}
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        disabled={(page + 1) * rowsPerPage >= filteredStaff.length}
+                                        onClick={() => setPage(page + 1)}
+                                        sx={{
+                                            minWidth: 'auto',
+                                            px: 1.5,
+                                            py: 0.5,
+                                            fontSize: '0.75rem',
+                                            color: themeColor,
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        {t('common.nextPage')}
+                                    </Button>
+                                </Box>
+                            </Box>
+                        </>
+                    )}
+                </Box>
+            ) : (
+                /* 桌面端表格 */
+                <Box
+                    sx={{
+                        borderRadius: 2,
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        overflow: 'hidden',
+                        bgcolor: '#fff',
+                    }}
+                >
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.staff')}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.contact')}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.position')}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>
+                                        {t('staff.serviceExpertise', 'Service Expertise')}
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.status')}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.875rem', py: 1.5 }}>{t('staff.actions')}</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {filteredStaff.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                                            <Typography color="text.secondary">
+                                                {t('staff.noStaff')}
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredStaff
+                                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                        .map((staffMember) => (
+                                            <TableRow
+                                                key={staffMember.id}
+                                                hover
+                                                sx={{
+                                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                                                    '& td': { py: 1.5, fontSize: '0.875rem' },
+                                                }}
+                                            >
+                                                <TableCell>
+                                                    <Box display="flex" alignItems="center" gap={2}>
+                                                        <Avatar
+                                                            src={getFullImageUrl(staffMember.avatar)}
+                                                            sx={{
+                                                                bgcolor: staffMember.avatar ? 'transparent' : getAvatarColor(staffMember.name),
+                                                                width: 40,
+                                                                height: 40,
+                                                            }}
+                                                        >
+                                                            {!staffMember.avatar && staffMember.name.charAt(0)}
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                                {staffMember.name}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.7rem' }}>
+                                                                ID: {staffMember.id}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {t('staff.hiredOn')} {formatDate(staffMember.startDate)}
                                                             </Typography>
                                                         </Box>
-                                                    )}
-                                                    {staffMember.email && (
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                                            <Typography variant="body2">{staffMember.email}</Typography>
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography variant="body2">{staffMember.position || '-'}</Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: 0.5,
-                                                        maxWidth: 280,
-                                                    }}
-                                                >
-                                                    {staffExpertise[staffMember.id] && staffExpertise[staffMember.id].length > 0 ? (
-                                                        <>
-                                                            {/* 显示前3个服务 */}
-                                                            {staffExpertise[staffMember.id].slice(0, 3).map((expertise) => (
-                                                                <Box
-                                                                    key={expertise.serviceId}
-                                                                    sx={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1,
-                                                                    }}
-                                                                >
-                                                                    {/* 技能等级圆点 */}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box>
+                                                        {staffMember.phone && (
+                                                            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                                                <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                                <Typography variant="body2">
+                                                                    {staffMember.countryCode && `${staffMember.countryCode.replace(/-[A-Z]{2}$/, '')} `}{staffMember.phone}
+                                                                </Typography>
+                                                            </Box>
+                                                        )}
+                                                        {staffMember.email && (
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                                <Typography variant="body2">{staffMember.email}</Typography>
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2">{staffMember.position || '-'}</Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box
+                                                        sx={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            gap: 0.5,
+                                                            maxWidth: 280,
+                                                        }}
+                                                    >
+                                                        {staffExpertise[staffMember.id] && staffExpertise[staffMember.id].length > 0 ? (
+                                                            <>
+                                                                {/* 显示前3个服务 */}
+                                                                {staffExpertise[staffMember.id].slice(0, 3).map((expertise) => (
                                                                     <Box
+                                                                        key={expertise.serviceId}
                                                                         sx={{
-                                                                            width: 8,
-                                                                            height: 8,
-                                                                            borderRadius: '50%',
-                                                                            bgcolor: getSkillLevelColor(expertise.skillLevel),
-                                                                            flexShrink: 0,
-                                                                        }}
-                                                                    />
-                                                                    {/* 服务名称 */}
-                                                                    <Typography
-                                                                        variant="body2"
-                                                                        sx={{
-                                                                            fontSize: '0.8rem',
-                                                                            color: 'text.primary',
-                                                                            overflow: 'hidden',
-                                                                            textOverflow: 'ellipsis',
-                                                                            whiteSpace: 'nowrap',
-                                                                            flex: 1,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 1,
                                                                         }}
                                                                     >
-                                                                        {expertise.serviceName}
-                                                                    </Typography>
-                                                                    {/* 技能等级标签 */}
-                                                                    <Typography
-                                                                        variant="caption"
-                                                                        sx={{
-                                                                            fontSize: '0.65rem',
-                                                                            color: getSkillLevelColor(expertise.skillLevel),
-                                                                            fontWeight: 600,
-                                                                            px: 0.75,
-                                                                            py: 0.25,
-                                                                            borderRadius: 0.5,
-                                                                            bgcolor: alpha(getSkillLevelColor(expertise.skillLevel), 0.1),
-                                                                            flexShrink: 0,
+                                                                        {/* 技能等级圆点 */}
+                                                                        <Box
+                                                                            sx={{
+                                                                                width: 8,
+                                                                                height: 8,
+                                                                                borderRadius: '50%',
+                                                                                bgcolor: getSkillLevelColor(expertise.skillLevel),
+                                                                                flexShrink: 0,
+                                                                            }}
+                                                                        />
+                                                                        {/* 服务名称 */}
+                                                                        <Typography
+                                                                            variant="body2"
+                                                                            sx={{
+                                                                                fontSize: '0.8rem',
+                                                                                color: 'text.primary',
+                                                                                overflow: 'hidden',
+                                                                                textOverflow: 'ellipsis',
+                                                                                whiteSpace: 'nowrap',
+                                                                                flex: 1,
+                                                                            }}
+                                                                        >
+                                                                            {expertise.serviceName}
+                                                                        </Typography>
+                                                                        {/* 技能等级标签 */}
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            sx={{
+                                                                                fontSize: '0.65rem',
+                                                                                color: getSkillLevelColor(expertise.skillLevel),
+                                                                                fontWeight: 600,
+                                                                                px: 0.75,
+                                                                                py: 0.25,
+                                                                                borderRadius: 0.5,
+                                                                                bgcolor: alpha(getSkillLevelColor(expertise.skillLevel), 0.1),
+                                                                                flexShrink: 0,
+                                                                            }}
+                                                                        >
+                                                                            {getSkillLevelText(expertise.skillLevel).substring(0, 3)}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                ))}
+                                                                {/* 如果超过3个，显示"查看更多"按钮 */}
+                                                                {staffExpertise[staffMember.id].length > 3 && (
+                                                                    <Box
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setExpertisePopoverAnchor(e.currentTarget);
+                                                                            setSelectedStaffIdForExpertise(staffMember.id);
                                                                         }}
-                                                                    >
-                                                                        {getSkillLevelText(expertise.skillLevel).substring(0, 3)}
-                                                                    </Typography>
-                                                                </Box>
-                                                            ))}
-                                                            {/* 如果超过3个，显示"查看更多"按钮 */}
-                                                            {staffExpertise[staffMember.id].length > 3 && (
-                                                                <Box
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setExpertisePopoverAnchor(e.currentTarget);
-                                                                        setSelectedStaffIdForExpertise(staffMember.id);
-                                                                    }}
-                                                                    sx={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 0.5,
-                                                                        cursor: 'pointer',
-                                                                        mt: 0.5,
-                                                                        py: 0.5,
-                                                                        '&:hover': {
-                                                                            '& .more-text': {
-                                                                                color: themeColor,
-                                                                                textDecoration: 'underline',
+                                                                        sx={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 0.5,
+                                                                            cursor: 'pointer',
+                                                                            mt: 0.5,
+                                                                            py: 0.5,
+                                                                            '&:hover': {
+                                                                                '& .more-text': {
+                                                                                    color: themeColor,
+                                                                                    textDecoration: 'underline',
+                                                                                }
                                                                             }
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <MoreHorizIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                                                    <Typography
-                                                                        className="more-text"
-                                                                        variant="caption"
-                                                                        sx={{
-                                                                            fontSize: '0.75rem',
-                                                                            color: 'text.secondary',
-                                                                            fontWeight: 500,
-                                                                            transition: 'all 0.2s',
                                                                         }}
                                                                     >
-                                                                        {staffExpertise[staffMember.id].length - 3} {t('staff.moreServices')}
-                                                                    </Typography>
-                                                                </Box>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
-                                                            {t('staff.noServices')}
-                                                        </Typography>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                {getStatusChip(staffMember)}
-                                            </TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={(e) => {
-                                                        setMenuAnchorEl(e.currentTarget);
-                                                        setSelectedStaff(staffMember);
-                                                    }}
-                                                    sx={{
-                                                        color: '#999',
-                                                        '&:hover': {
-                                                            backgroundColor: 'rgba(0,0,0,0.04)',
-                                                            color: '#666',
-                                                        },
-                                                    }}
-                                                >
-                                                    <MoreVertIcon sx={{ fontSize: 18 }} />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
-                    component="div"
-                    count={filteredStaff.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={(_, newPage) => setPage(newPage)}
-                    onRowsPerPageChange={(e) => {
-                        setRowsPerPage(parseInt(e.target.value, 10));
-                        setPage(0);
-                    }}
-                    labelRowsPerPage={t('common.rowsPerPage')}
-                    sx={{
-                        borderTop: '1px solid rgba(0,0,0,0.08)',
-                        '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                            fontSize: '0.875rem',
-                            color: '#666',
-                        },
-                    }}
-                />
-            </Box>
+                                                                        <MoreHorizIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                                                        <Typography
+                                                                            className="more-text"
+                                                                            variant="caption"
+                                                                            sx={{
+                                                                                fontSize: '0.75rem',
+                                                                                color: 'text.secondary',
+                                                                                fontWeight: 500,
+                                                                                transition: 'all 0.2s',
+                                                                            }}
+                                                                        >
+                                                                            {staffExpertise[staffMember.id].length - 3} {t('staff.moreServices')}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
+                                                                {t('staff.noServices')}
+                                                            </Typography>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {getStatusChip(staffMember)}
+                                                </TableCell>
+                                                <TableCell sx={{ textAlign: 'center' }}>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            setMenuAnchorEl(e.currentTarget);
+                                                            setSelectedStaff(staffMember);
+                                                        }}
+                                                        sx={{
+                                                            color: '#999',
+                                                            '&:hover': {
+                                                                backgroundColor: 'rgba(0,0,0,0.04)',
+                                                                color: '#666',
+                                                            },
+                                                        }}
+                                                    >
+                                                        <MoreVertIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={filteredStaff.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={(_, newPage) => setPage(newPage)}
+                        onRowsPerPageChange={(e) => {
+                            setRowsPerPage(parseInt(e.target.value, 10));
+                            setPage(0);
+                        }}
+                        labelRowsPerPage={t('common.rowsPerPage')}
+                        sx={{
+                            borderTop: '1px solid rgba(0,0,0,0.08)',
+                            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                                fontSize: '0.875rem',
+                                color: '#666',
+                            },
+                        }}
+                    />
+                </Box>
+            )}
 
             {/* 操作菜单 */}
             <Menu
@@ -1024,11 +1299,17 @@ const StaffResourceManagement: React.FC = () => {
                 autoHideDuration={3000}
                 onClose={() => setSuccessMessage(null)}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                sx={isMobile ? { top: 70 } : undefined}
             >
                 <Alert
                     onClose={() => setSuccessMessage(null)}
                     severity="success"
-                    sx={{ borderRadius: 2 }}
+                    sx={{
+                        borderRadius: isMobile ? 1.5 : 2,
+                        fontSize: isMobile ? '0.8rem' : undefined,
+                        py: isMobile ? 0.5 : undefined,
+                        '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+                    }}
                 >
                     {successMessage}
                 </Alert>

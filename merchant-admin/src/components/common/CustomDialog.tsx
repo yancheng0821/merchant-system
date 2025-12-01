@@ -8,6 +8,8 @@ import {
   Typography,
   Box,
   alpha,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Info as InfoIcon,
@@ -45,7 +47,11 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
   const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null);
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式设置颜色
   const isMonochrome = themeMode === 'monochrome';
@@ -93,7 +99,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   };
 
   const getTypeIcon = () => {
-    const iconSx = { fontSize: 20 };
+    const iconSx = { fontSize: isMobile ? 18 : 20 };
     switch (type) {
       case 'success':
         return <SuccessIcon sx={iconSx} />;
@@ -132,10 +138,11 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
       }}
       PaperProps={{
         sx: {
-          borderRadius: 2.5,
+          borderRadius: isMobile ? 2 : 2.5,
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-          minWidth: 320,
-          maxWidth: 400,
+          minWidth: isMobile ? 'auto' : 320,
+          maxWidth: isMobile ? 'calc(100% - 32px)' : 400,
+          mx: isMobile ? 2 : 0,
         }
       }}
       BackdropProps={{
@@ -145,11 +152,11 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
       }}
     >
       {/* 简约标题 */}
-      <DialogTitle sx={{ p: 2.5, pb: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-        <Box display="flex" alignItems="center" gap={1.5}>
+      <DialogTitle sx={{ p: isMobile ? 2 : 2.5, pb: isMobile ? 1.5 : 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5}>
           <Box sx={{
-            width: 36,
-            height: 36,
+            width: isMobile ? 32 : 36,
+            height: isMobile ? 32 : 36,
             borderRadius: 1.5,
             bgcolor: alpha(typeColor, 0.1),
             display: 'flex',
@@ -159,28 +166,28 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           }}>
             {getTypeIcon()}
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem', color: '#1a1a1a' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: isMobile ? '1rem' : '1.125rem', color: '#1a1a1a' }}>
             {title}
           </Typography>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 2.5, pt: 2 }}>
-        <Typography sx={{ color: '#666', fontSize: '0.9375rem', lineHeight: 1.6 }}>
+      <DialogContent sx={{ p: isMobile ? 2 : 2.5, pt: isMobile ? 1.5 : 2 }}>
+        <Typography sx={{ color: '#666', fontSize: isMobile ? '0.875rem' : '0.9375rem', lineHeight: 1.6 }}>
           {message}
         </Typography>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, pt: 0, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+      <DialogActions sx={{ p: isMobile ? 1.5 : 2, pt: 0, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         {showCancel && (
           <Button
             size="small"
             onClick={onClose}
             sx={{
               borderRadius: 1.5,
-              px: 2.5,
+              px: isMobile ? 2 : 2.5,
               py: 0.75,
-              fontSize: '0.8125rem',
+              fontSize: isMobile ? '0.75rem' : '0.8125rem',
               fontWeight: 500,
               color: '#666',
               textTransform: 'none',
@@ -196,9 +203,9 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           onClick={handleConfirm}
           sx={{
             borderRadius: 1.5,
-            px: 2.5,
+            px: isMobile ? 2 : 2.5,
             py: 0.75,
-            fontSize: '0.8125rem',
+            fontSize: isMobile ? '0.75rem' : '0.8125rem',
             fontWeight: 500,
             bgcolor: typeColor,
             boxShadow: 'none',

@@ -17,6 +17,8 @@ import {
   Divider,
   Tabs,
   Tab,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -105,6 +107,10 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -392,7 +398,7 @@ const CustomerPackages: React.FC<CustomerPackagesProps> = ({
                   );
                 })}
               </Tabs>
-              {onPurchasePackage && (
+              {!isMobile && onPurchasePackage && (
                 <IconButton
                   onClick={onPurchasePackage}
                   size="small"

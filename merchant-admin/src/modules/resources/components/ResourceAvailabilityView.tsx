@@ -17,6 +17,8 @@ import {
     TextField,
     InputAdornment,
     Button,
+    useMediaQuery,
+    useTheme as useMuiTheme,
 } from '@mui/material';
 import {
     Person as PersonIcon,
@@ -42,6 +44,11 @@ interface ResourceAvailabilityViewProps {
 const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ resourceType }) => {
     const { t } = useTranslation();
     const { themeMode } = useTheme();
+    const muiTheme = useMuiTheme();
+
+    // 移动端检测
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
     const [resources, setResources] = useState<Resource[]>([]);
     const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
     const [availabilities, setAvailabilities] = useState<Record<number, ResourceAvailability[]>>({});
@@ -370,40 +377,46 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
         const todayDayOfWeek = getTodayDayOfWeek();
 
         return (
-            <Grid container spacing={4}>
+            <Grid container spacing={isMobile ? 1.5 : 4}>
                 {filteredResources.map((resource) => {
-                    const availableSlots = timeSlots.filter(time => 
+                    const availableSlots = timeSlots.filter(time =>
                         checkResourceAvailability(resource.id, todayDayOfWeek, time, true) === 'available'
                     );
                     const bookedSlots = timeSlots.filter(time =>
                         checkResourceAvailability(resource.id, todayDayOfWeek, time, true) === 'booked'
                     );
-                    const unavailableSlots = timeSlots.filter(time => 
+                    const unavailableSlots = timeSlots.filter(time =>
                         checkResourceAvailability(resource.id, todayDayOfWeek, time, true) === 'unavailable'
                     );
                     const availabilityPercentage = Math.round((availableSlots.length / timeSlots.length) * 100);
-                    
+
                     return (
                         <Grid item xs={12} md={6} lg={4} key={resource.id}>
                             <Card
+                                onClick={isMobile ? () => setSelectedResourceForDetail(resource) : undefined}
                                 sx={{
-                                    borderRadius: 2.5,
+                                    borderRadius: isMobile ? 2 : 2.5,
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                                     border: '1px solid rgba(0,0,0,0.06)',
                                     height: '100%',
                                     bgcolor: '#fff',
+                                    cursor: isMobile ? 'pointer' : 'default',
+                                    WebkitTapHighlightColor: 'transparent',
                                     '&:hover': {
                                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                                     },
+                                    '&:active': isMobile ? {
+                                        bgcolor: 'rgba(0,0,0,0.02)',
+                                    } : {},
                                 }}
                             >
-                                <CardContent sx={{ p: 2.5 }}>
+                                <CardContent sx={{ p: isMobile ? 1.5 : 2.5, '&:last-child': { pb: isMobile ? 1.5 : 2.5 } }}>
                                     {/* 资源头部信息 */}
-                                    <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                                    <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5} mb={isMobile ? 1.5 : 2}>
                                         {getResourceIcon(resource)}
-                                        <Box flex={1}>
-                                            <Box display="flex" alignItems="center" gap={1.5}>
-                                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                                        <Box flex={1} minWidth={0}>
+                                            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.85rem' : '1rem' }} noWrap>
                                                     {resource.name}
                                                 </Typography>
                                                 {/* 实时状态指示器 */}
@@ -413,13 +426,13 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                         <Box display="flex" alignItems="center" gap={0.5}>
                                                             <Box
                                                                 sx={{
-                                                                    width: 6,
-                                                                    height: 6,
+                                                                    width: isMobile ? 5 : 6,
+                                                                    height: isMobile ? 5 : 6,
                                                                     borderRadius: '50%',
                                                                     bgcolor: currentlyAvailable ? '#10B981' : '#EF4444',
                                                                 }}
                                                             />
-                                                            <Typography variant="caption" sx={{ color: currentlyAvailable ? '#10B981' : '#EF4444' }}>
+                                                            <Typography variant="caption" sx={{ color: currentlyAvailable ? '#10B981' : '#EF4444', fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                                                 {currentlyAvailable ?
                                                                     t('resources.availability.available') :
                                                                     t('resources.availability.unavailable')}
@@ -428,7 +441,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                     );
                                                 })()}
                                             </Box>
-                                            <Typography variant="caption" sx={{ color: '#999' }}>
+                                            <Typography variant="caption" sx={{ color: '#999', fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                                 {resource.type === 'STAFF' ? t('resources.type.staff') : t('resources.type.room')}
                                                 {resource.type === 'ROOM' && resource.capacity && ` • ${resource.capacity}人`}
                                                 {resource.location && ` • ${resource.location}`}
@@ -437,12 +450,12 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                     </Box>
 
                                     {/* 可用性统计 */}
-                                    <Box mb={2}>
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                            <Typography variant="caption" sx={{ color: '#666' }}>
+                                    <Box mb={isMobile ? 1.5 : 2}>
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                                            <Typography variant="caption" sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                                 {t('resources.availability.todaySchedule')}
                                             </Typography>
-                                            <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600 }}>
+                                            <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600, fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                                 {availabilityPercentage}%
                                             </Typography>
                                         </Box>
@@ -450,7 +463,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                         {/* 进度条 */}
                                         <Box
                                             sx={{
-                                                height: 4,
+                                                height: isMobile ? 3 : 4,
                                                 borderRadius: 2,
                                                 bgcolor: 'rgba(0,0,0,0.04)',
                                                 overflow: 'hidden',
@@ -467,22 +480,22 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                         </Box>
                                     </Box>
 
-                                    {/* 时间段网格 */}
-                                    <Box mb={2}>
+                                    {/* 时间段网格 - 移动端显示更少 */}
+                                    <Box mb={isMobile ? 0 : 2}>
                                         <Box
                                             sx={{
                                                 display: 'grid',
-                                                gridTemplateColumns: 'repeat(6, 1fr)',
+                                                gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(6, 1fr)',
                                                 gap: 0.5,
                                             }}
                                         >
-                                            {timeSlots.slice(0, 24).map((time) => {
+                                            {timeSlots.slice(0, isMobile ? 12 : 24).map((time) => {
                                                 const status = checkResourceAvailability(resource.id, todayDayOfWeek, time, true);
                                                 return (
                                                     <Box
                                                         key={time}
                                                         sx={{
-                                                            py: 0.5,
+                                                            py: isMobile ? 0.25 : 0.5,
                                                             borderRadius: 1,
                                                             textAlign: 'center',
                                                             bgcolor:
@@ -498,7 +511,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                                                     status === 'available' ? '#10B981' :
                                                                     status === 'booked' ? '#F59E0B' :
                                                                     '#999',
-                                                                fontSize: '0.6rem',
+                                                                fontSize: isMobile ? '0.5rem' : '0.6rem',
                                                             }}
                                                         >
                                                             {time}
@@ -508,35 +521,37 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                             })}
                                         </Box>
 
-                                        {timeSlots.length > 24 && (
+                                        {!isMobile && timeSlots.length > 24 && (
                                             <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', display: 'block', mt: 1 }}>
                                                 +{timeSlots.length - 24} {t('resources.moreTimeSlots')}
                                             </Typography>
                                         )}
                                     </Box>
 
-                                    {/* 查看详细按钮 */}
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        onClick={() => {
-                                            setSelectedResourceForDetail(resource);
-                                        }}
-                                        sx={{
-                                            borderRadius: 1.5,
-                                            py: 1,
-                                            borderColor: 'rgba(0,0,0,0.15)',
-                                            color: '#666',
-                                            fontWeight: 500,
-                                            '&:hover': {
-                                                borderColor: themeColor,
-                                                color: themeColor,
-                                                bgcolor: 'rgba(59,130,246,0.04)',
-                                            },
-                                        }}
-                                    >
-                                        {t('resources.availability.viewDetailed')}
-                                    </Button>
+                                    {/* 查看详细按钮 - 仅桌面端显示 */}
+                                    {!isMobile && (
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            onClick={() => {
+                                                setSelectedResourceForDetail(resource);
+                                            }}
+                                            sx={{
+                                                borderRadius: 1.5,
+                                                py: 1,
+                                                borderColor: 'rgba(0,0,0,0.15)',
+                                                color: '#666',
+                                                fontWeight: 500,
+                                                '&:hover': {
+                                                    borderColor: themeColor,
+                                                    color: themeColor,
+                                                    bgcolor: 'rgba(59,130,246,0.04)',
+                                                },
+                                            }}
+                                        >
+                                            {t('resources.availability.viewDetailed')}
+                                        </Button>
+                                    )}
                                 </CardContent>
                             </Card>
                         </Grid>
@@ -548,6 +563,77 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
 
     // 渲染周视图
     const renderWeekView = () => {
+        // 移动端使用卡片列表展示每个员工的周排班
+        if (isMobile) {
+            return (
+                <Box>
+                    {filteredResources.map((resource) => {
+                        const resourceAvailability = availabilities[resource.id] || [];
+                        return (
+                            <Card
+                                key={resource.id}
+                                onClick={() => setSelectedResourceForDetail(resource)}
+                                sx={{
+                                    mb: 1.5,
+                                    borderRadius: 2,
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                                    border: '1px solid rgba(0,0,0,0.06)',
+                                    cursor: 'pointer',
+                                    WebkitTapHighlightColor: 'transparent',
+                                    '&:active': { bgcolor: 'rgba(0,0,0,0.02)' },
+                                }}
+                            >
+                                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                                    {/* 资源头部 */}
+                                    <Box display="flex" alignItems="center" gap={1} mb={1.5}>
+                                        {getResourceIcon(resource)}
+                                        <Box flex={1} minWidth={0}>
+                                            <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }} noWrap>
+                                                {resource.name}
+                                            </Typography>
+                                            <Typography sx={{ fontSize: '0.65rem', color: '#888' }}>
+                                                {resource.position || resource.description || '-'}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+
+                                    {/* 周排班概览 */}
+                                    <Box display="flex" gap={0.5} flexWrap="wrap">
+                                        {weekDays.map((day) => {
+                                            const dayAvailability = resourceAvailability.filter(
+                                                a => a.dayOfWeek === day.key && a.isAvailable
+                                            );
+                                            const hasSchedule = dayAvailability.length > 0;
+                                            return (
+                                                <Box
+                                                    key={day.key}
+                                                    sx={{
+                                                        flex: 1,
+                                                        minWidth: 36,
+                                                        py: 0.5,
+                                                        px: 0.25,
+                                                        borderRadius: 1,
+                                                        textAlign: 'center',
+                                                        bgcolor: hasSchedule ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+                                                        border: `1px solid ${hasSchedule ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                                                    }}
+                                                >
+                                                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: hasSchedule ? '#10B981' : '#EF4444' }}>
+                                                        {day.label.slice(0, 1)}
+                                                    </Typography>
+                                                </Box>
+                                            );
+                                        })}
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </Box>
+            );
+        }
+
+        // 桌面端使用表格
         return (
             <Card
                 sx={{
@@ -810,40 +896,46 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
     }
 
     return (
-        <Box>
+        <Box sx={{ overflowX: 'hidden', width: '100%' }}>
             {/* 头部控制栏 */}
             <Box
                 sx={{
-                    mb: 3,
-                    pb: 2,
+                    mb: isMobile ? 2 : 3,
+                    pb: isMobile ? 1.5 : 2,
                     borderBottom: '1px solid rgba(0,0,0,0.06)',
                 }}
             >
-                <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems={isMobile ? 'flex-start' : 'center'}
+                    flexDirection={isMobile ? 'column' : 'row'}
+                    gap={isMobile ? 1.5 : 0}
+                >
                     <Box display="flex" alignItems="center" gap={1.5}>
                         <Box
                             sx={{
                                 width: 4,
-                                height: 24,
+                                height: isMobile ? 20 : 24,
                                 bgcolor: themeColor,
                                 borderRadius: 0.5,
                             }}
                         />
                         <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : '1rem' }}>
                                 {resourceType === 'STAFF'
                                     ? t('resources.availability.staffAvailability')
                                     : t('resources.availability.roomAvailability')
                                 }
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#999' }}>
+                            <Typography variant="caption" sx={{ color: '#999', fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
                                 {t('resources.availability.subtitle')}
                             </Typography>
                         </Box>
                     </Box>
 
                     {!selectedResourceForDetail && (
-                        <Box display="flex" alignItems="center" gap={2}>
+                        <Box display="flex" alignItems="center" gap={isMobile ? 1 : 2} width={isMobile ? '100%' : 'auto'}>
                             <Tooltip title={t('common.refresh')}>
                                 <IconButton
                                     size="small"
@@ -854,7 +946,7 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                         '&:hover': { bgcolor: alpha(themeColor, 0.15) },
                                     }}
                                 >
-                                    <RefreshIcon sx={{ fontSize: 18 }} />
+                                    <RefreshIcon sx={{ fontSize: isMobile ? 16 : 18 }} />
                                 </IconButton>
                             </Tooltip>
 
@@ -863,21 +955,24 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                     bgcolor: alpha(themeColor, 0.08),
                                     borderRadius: 1.5,
                                     p: 0.5,
+                                    flex: isMobile ? 1 : 'none',
                                 }}
                             >
                                 <Tabs
                                     value={viewMode}
                                     onChange={(_, newValue) => setViewMode(newValue)}
+                                    variant={isMobile ? 'fullWidth' : 'standard'}
                                     sx={{
                                         minHeight: 'auto',
                                         '& .MuiTab-root': {
                                             minHeight: 'auto',
                                             py: 0.75,
-                                            px: 2,
-                                            fontSize: '0.8rem',
+                                            px: isMobile ? 1 : 2,
+                                            fontSize: isMobile ? '0.75rem' : '0.8rem',
                                             fontWeight: 500,
                                             borderRadius: 1,
                                             textTransform: 'none',
+                                            minWidth: isMobile ? 'auto' : 'inherit',
                                             '&.Mui-selected': {
                                                 color: '#fff',
                                                 bgcolor: themeColor,
@@ -893,14 +988,14 @@ const ResourceAvailabilityView: React.FC<ResourceAvailabilityViewProps> = ({ res
                                 >
                                     <Tab
                                         value="today"
-                                        label={t('resources.availability.todayView')}
-                                        icon={<TodayIcon sx={{ fontSize: 16 }} />}
+                                        label={isMobile ? t('resources.availability.today') : t('resources.availability.todayView')}
+                                        icon={<TodayIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
                                         iconPosition="start"
                                     />
                                     <Tab
                                         value="week"
-                                        label={t('resources.availability.weekView')}
-                                        icon={<WeekIcon sx={{ fontSize: 16 }} />}
+                                        label={isMobile ? t('resources.availability.week') : t('resources.availability.weekView')}
+                                        icon={<WeekIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
                                         iconPosition="start"
                                     />
                                 </Tabs>

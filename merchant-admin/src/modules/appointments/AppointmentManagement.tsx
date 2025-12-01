@@ -32,6 +32,9 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Collapse,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -51,6 +54,7 @@ import {
   Phone as PhoneIcon,
   Email as EmailIcon,
   MeetingRoom as MeetingRoomIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n/config';
@@ -72,7 +76,11 @@ const AppointmentManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // Theme-aware colors
   const isMonochrome = themeMode === 'monochrome';
@@ -97,6 +105,9 @@ const AppointmentManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+
+  // 移动端筛选面板展开状态
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // 通知状态
   const [snackbar, setSnackbar] = useState<{
@@ -300,13 +311,13 @@ const AppointmentManagement: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ overflowX: 'hidden', width: '100%' }}>
       {/* 页面标题 */}
-      <Box mb={4}>
+      <Box mb={isMobile ? 2 : 4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h5"
+              variant={isMobile ? 'h6' : 'h5'}
               component="h1"
               sx={{
                 fontWeight: 600,
@@ -316,31 +327,33 @@ const AppointmentManagement: React.FC = () => {
             >
               {t('appointments.title')}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>
-              {t('appointments.subtitle')}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="body2" sx={{ color: '#888' }}>
+                {t('appointments.subtitle')}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Box>
 
       {/* 简约统计卡片 */}
-      <Grid container spacing={2.5} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={isMobile ? 1 : 2.5} mb={isMobile ? 2 : 4} sx={{ mx: 0, width: '100%' }}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#8B5CF6', 0.08),
                     display: 'flex',
@@ -350,13 +363,13 @@ const AppointmentManagement: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <EventNoteIcon sx={{ fontSize: 22 }} />
+                  <EventNoteIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.totalAppointments')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1.1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {stats?.totalAppointments || 0}
                   </Typography>
                 </Box>
@@ -365,22 +378,22 @@ const AppointmentManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#3B82F6', 0.08),
                     display: 'flex',
@@ -390,13 +403,13 @@ const AppointmentManagement: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <CheckIcon sx={{ fontSize: 22 }} />
+                  <CheckIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.pendingService')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1.1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {stats?.confirmedAppointments || 0}
                   </Typography>
                 </Box>
@@ -405,22 +418,22 @@ const AppointmentManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.08),
                     display: 'flex',
@@ -430,13 +443,13 @@ const AppointmentManagement: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <TrendingUpIcon sx={{ fontSize: 22 }} />
+                  <TrendingUpIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.completedAppointments')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1.1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {stats?.completedAppointments || 0}
                   </Typography>
                 </Box>
@@ -445,22 +458,22 @@ const AppointmentManagement: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
               height: '100%',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2.5}>
                 <Box
                   sx={{
-                    width: 44,
-                    height: 44,
+                    width: isMobile ? 36 : 44,
+                    height: isMobile ? 36 : 44,
                     borderRadius: 1.5,
                     bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#F59E0B', 0.08),
                     display: 'flex',
@@ -470,13 +483,13 @@ const AppointmentManagement: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <MoneyIcon sx={{ fontSize: 22 }} />
+                  <MoneyIcon sx={{ fontSize: isMobile ? 18 : 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {t('appointments.totalRevenue')}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1.1rem' : '1.25rem', lineHeight: 1.2 }}>
                     {formatCurrency(stats?.totalRevenue || 0)}
                   </Typography>
                 </Box>
@@ -486,208 +499,454 @@ const AppointmentManagement: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* 现代化搜索和过滤区域 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: '#fff',
-          mb: 3,
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                placeholder={t('appointments.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                  },
-                }}
-              />
-            </Grid>
+      {/* 搜索和过滤区域 - 响应式设计 */}
+      {isMobile ? (
+        /* 移动端筛选布局 */
+        <Box sx={{ mb: 2 }}>
+          {/* 搜索栏 + 筛选按钮 */}
+          <Box display="flex" gap={1} mb={1.5} alignItems="stretch">
+            <TextField
+              placeholder={t('appointments.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 1.5,
+                  bgcolor: '#fafafa',
+                  fontSize: '0.8rem',
+                  height: 40,
+                  '& fieldset': { borderColor: 'rgba(0,0,0,0.08)' },
+                  '&.Mui-focused fieldset': { borderColor: THEME_COLOR, borderWidth: 1 },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#999', fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <IconButton
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              sx={{
+                border: '1px solid rgba(0,0,0,0.12)',
+                borderRadius: 1.5,
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                color: filtersExpanded ? THEME_COLOR : '#666',
+                bgcolor: filtersExpanded ? alpha(THEME_COLOR, 0.08) : 'transparent',
+              }}
+            >
+              <FilterListIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('appointments.statusFilter')}</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label={t('appointments.statusFilter')}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+          {/* 可折叠筛选面板 */}
+          <Collapse in={filtersExpanded}>
+            <Grid container spacing={1.5}>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                    {t('appointments.statusFilter')}
+                  </InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label={t('appointments.statusFilter')}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    sx={{
+                      borderRadius: 1.5,
+                      bgcolor: '#fafafa',
+                      fontSize: '0.75rem',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.75rem' }}>{t('appointments.allStatuses')}</MenuItem>
+                    <MenuItem value="pending_confirmation" sx={{ fontSize: '0.75rem' }}>{t('appointments.appointmentStatuses.pending-confirmation')}</MenuItem>
+                    <MenuItem value="confirmed" sx={{ fontSize: '0.75rem' }}>{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
+                    <MenuItem value="checked_in" sx={{ fontSize: '0.75rem' }}>{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
+                    <MenuItem value="completed" sx={{ fontSize: '0.75rem' }}>{t('appointments.appointmentStatuses.completed')}</MenuItem>
+                    <MenuItem value="cancelled" sx={{ fontSize: '0.75rem' }}>{t('appointments.appointmentStatuses.cancelled')}</MenuItem>
+                    <MenuItem value="no_show" sx={{ fontSize: '0.75rem' }}>{t('appointments.appointmentStatuses.no-show')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                    {t('appointments.sourceFilter')}
+                  </InputLabel>
+                  <Select
+                    value={sourceFilter}
+                    label={t('appointments.sourceFilter')}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                    sx={{
+                      borderRadius: 1.5,
+                      bgcolor: '#fafafa',
+                      fontSize: '0.75rem',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.75rem' }}>{t('appointments.allSources')}</MenuItem>
+                    <MenuItem value="ONLINE" sx={{ fontSize: '0.75rem' }}>{t('appointments.sourceOnline')}</MenuItem>
+                    <MenuItem value="GOOGLE" sx={{ fontSize: '0.75rem' }}>{t('appointments.sourceGoogle')}</MenuItem>
+                    <MenuItem value="ADMIN" sx={{ fontSize: '0.75rem' }}>{t('appointments.sourceAdmin')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ fontSize: '0.75rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                    {t('appointments.dateFilter')}
+                  </InputLabel>
+                  <Select
+                    value={dateFilter}
+                    label={t('appointments.dateFilter')}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    sx={{
+                      borderRadius: 1.5,
+                      bgcolor: '#fafafa',
+                      fontSize: '0.75rem',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.08)' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR },
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.75rem' }}>{t('appointments.dateOptions.allDates')}</MenuItem>
+                    <MenuItem value="today" sx={{ fontSize: '0.75rem' }}>{t('appointments.dateOptions.today')}</MenuItem>
+                    <MenuItem value="tomorrow" sx={{ fontSize: '0.75rem' }}>{t('appointments.dateOptions.tomorrow')}</MenuItem>
+                    <MenuItem value="this-week" sx={{ fontSize: '0.75rem' }}>{t('appointments.dateOptions.thisWeek')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Collapse>
+        </Box>
+      ) : (
+        /* 桌面端筛选布局 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: '#fff',
+            mb: 3,
+          }}
+        >
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  placeholder={t('appointments.searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                      </InputAdornment>
+                    ),
+                  }}
                   sx={{
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
                     },
                   }}
-                >
-                  <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('appointments.allStatuses')}</MenuItem>
-                  <MenuItem value="pending_confirmation" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.pending-confirmation')}</MenuItem>
-                  <MenuItem value="confirmed" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
-                  <MenuItem value="checked_in" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
-                  <MenuItem value="completed" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.completed')}</MenuItem>
-                  <MenuItem value="cancelled" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.cancelled')}</MenuItem>
-                  <MenuItem value="no_show" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.no-show')}</MenuItem>
-                </Select>
-              </FormControl>
+                />
+              </Grid>
+
+              <Grid item xs={6} sm={6} md={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('appointments.statusFilter')}</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label={t('appointments.statusFilter')}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    sx={{
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('appointments.allStatuses')}</MenuItem>
+                    <MenuItem value="pending_confirmation" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.pending-confirmation')}</MenuItem>
+                    <MenuItem value="confirmed" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.confirmed')}</MenuItem>
+                    <MenuItem value="checked_in" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.checked-in')}</MenuItem>
+                    <MenuItem value="completed" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.completed')}</MenuItem>
+                    <MenuItem value="cancelled" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.cancelled')}</MenuItem>
+                    <MenuItem value="no_show" sx={{ fontSize: '0.875rem' }}>{t('appointments.appointmentStatuses.no-show')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={6} sm={6} md={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('appointments.sourceFilter')}</InputLabel>
+                  <Select
+                    value={sourceFilter}
+                    label={t('appointments.sourceFilter')}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                    sx={{
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('appointments.allSources')}</MenuItem>
+                    <MenuItem value="ONLINE" sx={{ fontSize: '0.875rem' }}>{t('appointments.sourceOnline')}</MenuItem>
+                    <MenuItem value="GOOGLE" sx={{ fontSize: '0.875rem' }}>{t('appointments.sourceGoogle')}</MenuItem>
+                    <MenuItem value="ADMIN" sx={{ fontSize: '0.875rem' }}>{t('appointments.sourceAdmin')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={6} sm={6} md={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('appointments.dateFilter')}</InputLabel>
+                  <Select
+                    value={dateFilter}
+                    label={t('appointments.dateFilter')}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    sx={{
+                      borderRadius: 1.5,
+                      fontSize: '0.875rem',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: THEME_COLOR,
+                      },
+                    }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.allDates')}</MenuItem>
+                    <MenuItem value="today" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.today')}</MenuItem>
+                    <MenuItem value="tomorrow" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.tomorrow')}</MenuItem>
+                    <MenuItem value="this-week" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.thisWeek')}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
+          </CardContent>
+        </Card>
+      )}
 
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('appointments.sourceFilter')}</InputLabel>
-                <Select
-                  value={sourceFilter}
-                  label={t('appointments.sourceFilter')}
-                  onChange={(e) => setSourceFilter(e.target.value)}
-                  sx={{
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                  }}
+      {/* 移动端卡片列表 */}
+      {isMobile ? (
+        <Box>
+          {loading ? (
+            <Box textAlign="center" py={4}>
+              <CircularProgress sx={{ color: THEME_COLOR }} size={32} />
+            </Box>
+          ) : filteredAppointments.length === 0 ? (
+            <Box textAlign="center" py={4}>
+              <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
+                {t('appointments.noAppointments')}
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {filteredAppointments
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((appointment) => (
+                  <Card
+                    key={appointment.id}
+                    sx={{
+                      borderRadius: 2,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      mb: 1.5,
+                      overflow: 'hidden',
+                    }}
+                    onClick={() => {
+                      setSelectedAppointment(appointment);
+                      setViewDetailsOpen(true);
+                    }}
+                  >
+                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      {/* 顶部：客户 + 状态 */}
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                        <Box>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }}>
+                            {appointment.customer ?
+                              `${appointment.customer.firstName} ${appointment.customer.lastName}` :
+                              t('appointments.unknownCustomer')
+                            }
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                            #{appointment.id}
+                          </Typography>
+                        </Box>
+                        {getStatusChip(appointment.status)}
+                      </Box>
+
+                      {/* 中间：服务 + 日期时间 */}
+                      <Box mb={1}>
+                        {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
+                          <Box display="flex" flexWrap="wrap" gap={0.5} mb={0.75}>
+                            {appointment.appointmentServices.slice(0, 2).map((service, idx) => (
+                              <Chip
+                                key={idx}
+                                label={service.serviceName}
+                                size="small"
+                                sx={{
+                                  backgroundColor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#10B981', 0.1),
+                                  color: isMonochrome ? '#1a1a1a' : '#10B981',
+                                  fontWeight: 500,
+                                  fontSize: '0.65rem',
+                                  height: 20,
+                                }}
+                              />
+                            ))}
+                            {appointment.appointmentServices.length > 2 && (
+                              <Chip
+                                label={`+${appointment.appointmentServices.length - 2}`}
+                                size="small"
+                                sx={{
+                                  backgroundColor: 'rgba(0,0,0,0.06)',
+                                  color: '#666',
+                                  fontWeight: 500,
+                                  fontSize: '0.65rem',
+                                  height: 20,
+                                }}
+                              />
+                            )}
+                          </Box>
+                        ) : null}
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <CalendarIcon sx={{ fontSize: 12, color: THEME_COLOR }} />
+                            <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                              {formatDate(appointment.appointmentDate)}
+                            </Typography>
+                          </Box>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <TimeIcon sx={{ fontSize: 12, color: '#888' }} />
+                            <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                              {formatTime(appointment.appointmentTime)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+
+                      {/* 底部：金额 + 员工 */}
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: isMonochrome ? '#1a1a1a' : '#F59E0B' }}>
+                          {formatCurrency(appointment.totalAmount || 0)}
+                        </Typography>
+                        {appointment.appointmentResources && appointment.appointmentResources.length > 0 && (
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <PersonIcon sx={{ fontSize: 12, color: '#888' }} />
+                            <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                              {appointment.appointmentResources[0]?.resourceName || t('appointments.unassigned')}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              {/* 移动端分页 */}
+              <Box display="flex" justifyContent="center" alignItems="center" gap={2} py={2}>
+                <Button
+                  size="small"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                  sx={{ minWidth: 80, fontSize: '0.75rem' }}
                 >
-                  <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('appointments.allSources')}</MenuItem>
-                  <MenuItem value="ONLINE" sx={{ fontSize: '0.875rem' }}>{t('appointments.sourceOnline')}</MenuItem>
-                  <MenuItem value="GOOGLE" sx={{ fontSize: '0.875rem' }}>{t('appointments.sourceGoogle')}</MenuItem>
-                  <MenuItem value="ADMIN" sx={{ fontSize: '0.875rem' }}>{t('appointments.sourceAdmin')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem' }}>{t('appointments.dateFilter')}</InputLabel>
-                <Select
-                  value={dateFilter}
-                  label={t('appointments.dateFilter')}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  sx={{
-                    borderRadius: 1.5,
-                    fontSize: '0.875rem',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(0,0,0,0.12)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: THEME_COLOR,
-                    },
-                  }}
+                  {t('common.previous')}
+                </Button>
+                <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                  {page + 1} / {Math.max(1, Math.ceil(filteredAppointments.length / rowsPerPage))}
+                </Typography>
+                <Button
+                  size="small"
+                  disabled={page >= Math.ceil(filteredAppointments.length / rowsPerPage) - 1}
+                  onClick={() => setPage(page + 1)}
+                  sx={{ minWidth: 80, fontSize: '0.75rem' }}
                 >
-                  <MenuItem value="all" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.allDates')}</MenuItem>
-                  <MenuItem value="today" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.today')}</MenuItem>
-                  <MenuItem value="tomorrow" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.tomorrow')}</MenuItem>
-                  <MenuItem value="this-week" sx={{ fontSize: '0.875rem' }}>{t('appointments.dateOptions.thisWeek')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* 暂时隐藏新建预约按钮 - 从 Schedule 模块创建预约 */}
-            {/* <Grid item xs={12} md={2}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setAddAppointmentOpen(true)}
-                sx={{
-                  borderRadius: 2,
-                  py: 1.5,
-                  background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 6px 20px rgba(139, 92, 246, 0.4)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                {t('appointments.newAppointment')}
-              </Button>
-            </Grid> */}
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* 现代化表格 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          overflow: 'hidden',
-        }}
-      >
-        <TableContainer>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#fafafa' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.id')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.customer')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.services')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.dateTime')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.staff')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.amount')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.status')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.source')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.rating')}</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5, textAlign: 'center' }}>{t('appointments.tableHeaders.actions')}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
+                  {t('common.next')}
+                </Button>
+              </Box>
+            </>
+          )}
+        </Box>
+      ) : (
+        /* PC端表格 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ backgroundColor: '#fafafa' }}>
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
-                    <CircularProgress sx={{ color: THEME_COLOR }} size={32} />
-                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.id')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.customer')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.services')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.dateTime')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.staff')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.amount')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.status')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.source')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>{t('appointments.tableHeaders.rating')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5, textAlign: 'center' }}>{t('appointments.tableHeaders.actions')}</TableCell>
                 </TableRow>
-              ) : filteredAppointments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
-                    <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
-                      {t('appointments.noAppointments')}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                      <CircularProgress sx={{ color: THEME_COLOR }} size={32} />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredAppointments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                      <Typography sx={{ color: '#888', fontSize: '0.875rem' }}>
+                        {t('appointments.noAppointments')}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
                 filteredAppointments
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((appointment) => (
@@ -903,7 +1162,8 @@ const AppointmentManagement: React.FC = () => {
             },
           }}
         />
-      </Card>
+        </Card>
+      )}
 
       {/* 操作菜单 */}
       <Menu
@@ -1058,14 +1318,17 @@ const AppointmentManagement: React.FC = () => {
         disableEnforceFocus
         PaperProps={{
           sx: {
-            borderRadius: 2,
+            borderRadius: { xs: 2, sm: 2 },
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            m: { xs: 1, sm: 'auto' },
+            width: { xs: 'calc(100% - 16px)', sm: '100%' },
+            maxHeight: { xs: 'calc(100vh - 16px)', sm: 'calc(100% - 64px)' },
           }
         }}
       >
-        <Box sx={{ py: 2, px: 3, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 }, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' }, color: '#1a1a1a' }}>
               {t('appointments.appointmentDetails')}
             </Typography>
             <IconButton onClick={() => setViewDetailsOpen(false)} size="small" sx={{ color: '#888' }}>
@@ -1073,58 +1336,58 @@ const AppointmentManagement: React.FC = () => {
             </IconButton>
           </Box>
         </Box>
-        <DialogContent>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 1.5, sm: 2 } }}>
           {selectedAppointment && (
-            <Grid container spacing={3}>
+            <Grid container spacing={{ xs: 2, sm: 3 }}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                <Typography sx={{ fontWeight: 600, mb: { xs: 1, sm: 2 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                   {t('appointments.customerInfo')}
                 </Typography>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">
+                <Box display="flex" alignItems="center" gap={1} mb={0.75}>
+                  <PersonIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'text.secondary' }} />
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                     {selectedAppointment.customer ?
                       `${selectedAppointment.customer.firstName} ${selectedAppointment.customer.lastName}` :
                       t('appointments.unknownCustomer')
                     }
                   </Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">{selectedAppointment.customer?.phone || '-'}</Typography>
+                <Box display="flex" alignItems="center" gap={1} mb={0.75}>
+                  <PhoneIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'text.secondary' }} />
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{selectedAppointment.customer?.phone || '-'}</Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
-                  <EmailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">{selectedAppointment.customer?.email || '-'}</Typography>
+                  <EmailIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'text.secondary' }} />
+                  <Typography sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, wordBreak: 'break-all' }}>{selectedAppointment.customer?.email || '-'}</Typography>
                 </Box>
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                <Typography sx={{ fontWeight: 600, mb: { xs: 1, sm: 2 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                   {t('appointments.appointmentInfo')}
                 </Typography>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">{formatDate(selectedAppointment.appointmentDate)}</Typography>
+                <Box display="flex" alignItems="center" gap={1} mb={0.75}>
+                  <CalendarIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'text.secondary' }} />
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{formatDate(selectedAppointment.appointmentDate)}</Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <TimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2">
+                <Box display="flex" alignItems="center" gap={1} mb={0.75}>
+                  <TimeIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'text.secondary' }} />
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                     {formatTime(selectedAppointment.appointmentTime)} ({selectedAppointment.duration} {t('appointments.minutesUnit')})
                   </Typography>
                 </Box>
                 {selectedAppointment.appointmentResources && selectedAppointment.appointmentResources.length > 0 ? (
                   <Box>
                     {selectedAppointment.appointmentResources.map((resource, idx) => (
-                      <Box key={idx} display="flex" alignItems="center" gap={1} mb={1}>
+                      <Box key={idx} display="flex" alignItems="center" gap={1} mb={0.75}>
                         {resource.resourceType === 'STAFF' ? (
-                          <PersonIcon sx={{ fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
+                          <PersonIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: isMonochrome ? '#6a6a6a' : '#6366F1' }} />
                         ) : (
-                          <MeetingRoomIcon sx={{ fontSize: 16, color: isMonochrome ? '#6a6a6a' : '#10B981' }} />
+                          <MeetingRoomIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: isMonochrome ? '#6a6a6a' : '#10B981' }} />
                         )}
-                        <Typography variant="body2">
+                        <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                           {resource.resourceName || t('appointments.unassigned')}
-                          <Typography variant="caption" color="text.secondary" component="span" sx={{ ml: 0.5 }}>
+                          <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '0.7rem', sm: '0.75rem' }, color: 'text.secondary' }}>
                             ({resource.resourceType === 'STAFF' ? t('appointments.staff') : t('appointments.room')})
                           </Typography>
                         </Typography>
@@ -1132,70 +1395,71 @@ const AppointmentManagement: React.FC = () => {
                     ))}
                   </Box>
                 ) : (
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary">{t('appointments.unassigned')}</Typography>
+                  <Box display="flex" alignItems="center" gap={1} mb={0.75}>
+                    <PersonIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: 'text.secondary' }} />
+                    <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }} color="text.secondary">{t('appointments.unassigned')}</Typography>
                   </Box>
                 )}
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {t('appointments.status')}: {getStatusChip(selectedAppointment.status)}
+                <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap" mb={0.75}>
+                  <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                    {t('appointments.status')}:
                   </Typography>
+                  {getStatusChip(selectedAppointment.status)}
                 </Box>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="body2" component="div" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                  <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                     {t('appointments.bookingSource')}:
-                    <Chip
-                      size="small"
-                      label={
-                        selectedAppointment.bookingSource === 'ONLINE' ? t('appointments.sourceOnline') :
-                        selectedAppointment.bookingSource === 'GOOGLE' ? t('appointments.sourceGoogle') :
-                        t('appointments.sourceAdmin')
-                      }
-                      sx={{
-                        height: 24,
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        bgcolor: isMonochrome ? alpha('#6B7280', 0.1) :
-                                 selectedAppointment.bookingSource === 'ONLINE' ? alpha('#3B82F6', 0.1) :
-                                 selectedAppointment.bookingSource === 'GOOGLE' ? alpha('#EA4335', 0.1) :
-                                 alpha('#6B7280', 0.1),
-                        color: isMonochrome ? '#6B7280' :
-                               selectedAppointment.bookingSource === 'ONLINE' ? '#3B82F6' :
-                               selectedAppointment.bookingSource === 'GOOGLE' ? '#EA4335' :
-                               '#6B7280',
-                        '& .MuiChip-label': { px: 2 },
-                      }}
-                    />
                   </Typography>
+                  <Chip
+                    size="small"
+                    label={
+                      selectedAppointment.bookingSource === 'ONLINE' ? t('appointments.sourceOnline') :
+                      selectedAppointment.bookingSource === 'GOOGLE' ? t('appointments.sourceGoogle') :
+                      t('appointments.sourceAdmin')
+                    }
+                    sx={{
+                      height: { xs: 20, sm: 24 },
+                      fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                      fontWeight: 600,
+                      bgcolor: isMonochrome ? alpha('#6B7280', 0.1) :
+                               selectedAppointment.bookingSource === 'ONLINE' ? alpha('#3B82F6', 0.1) :
+                               selectedAppointment.bookingSource === 'GOOGLE' ? alpha('#EA4335', 0.1) :
+                               alpha('#6B7280', 0.1),
+                      color: isMonochrome ? '#6B7280' :
+                             selectedAppointment.bookingSource === 'ONLINE' ? '#3B82F6' :
+                             selectedAppointment.bookingSource === 'GOOGLE' ? '#EA4335' :
+                             '#6B7280',
+                      '& .MuiChip-label': { px: { xs: 1, sm: 2 } },
+                    }}
+                  />
                 </Box>
               </Grid>
 
               <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                <Typography sx={{ fontWeight: 600, mb: { xs: 1, sm: 2 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                   {t('appointments.services')}
                 </Typography>
                 {selectedAppointment.appointmentServices && selectedAppointment.appointmentServices.length > 0 ? (
                   <Box>
                     {selectedAppointment.appointmentServices.map((service, index) => (
-                      <Box key={index} display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Typography variant="body2">{service.serviceName}</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Box key={index} display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.75}>
+                        <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' }, flex: 1, minWidth: 0 }}>{service.serviceName}</Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' }, flexShrink: 0, ml: 1, textAlign: 'right' }}>
                           {formatCurrency(service.price)} ({service.duration} {t('appointments.minutesUnit')})
                         </Typography>
                       </Box>
                     ))}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} pt={2} sx={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                      <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mt={{ xs: 1.5, sm: 2 }} pt={{ xs: 1.5, sm: 2 }} sx={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                         {t('appointments.total')}
                       </Typography>
-                      <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
+                      <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' }, color: isMonochrome ? '#1a1a1a' : '#10B981' }}>
                         {formatCurrency(selectedAppointment.totalAmount || 0)}
                       </Typography>
                     </Box>
                   </Box>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                     {t('appointments.noServiceDetails')}
                   </Typography>
                 )}
@@ -1203,10 +1467,10 @@ const AppointmentManagement: React.FC = () => {
 
               {selectedAppointment.notes && (
                 <Grid item xs={12}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                  <Typography sx={{ fontWeight: 600, mb: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                     {t('appointments.notes')}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                     {selectedAppointment.notes}
                   </Typography>
                 </Grid>
@@ -1214,27 +1478,27 @@ const AppointmentManagement: React.FC = () => {
 
               {selectedAppointment.rating && (
                 <Grid item xs={12}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                  <Typography sx={{ fontWeight: 600, mb: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                     {t('appointments.rating')}
                   </Typography>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                  <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                     <Box display="flex">
                       {[...Array(5)].map((_, index) => (
                         <StarIcon
                           key={index}
                           sx={{
-                            fontSize: 20,
+                            fontSize: { xs: 16, sm: 20 },
                             color: index < selectedAppointment.rating! ? '#F59E0B' : '#E5E7EB',
                           }}
                         />
                       ))}
                     </Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                       {selectedAppointment.rating}/5
                     </Typography>
                   </Box>
                   {selectedAppointment.review && (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                       {selectedAppointment.review}
                     </Typography>
                   )}
@@ -1331,12 +1595,19 @@ const AppointmentManagement: React.FC = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: isMobile ? 'center' : 'right' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
-          sx={{ width: '100%', borderRadius: 2 }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {snackbar.message}
         </Alert>

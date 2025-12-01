@@ -22,6 +22,8 @@ import {
   Alert,
   Snackbar,
   Fade,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
@@ -155,6 +157,10 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   const { hasPermission } = usePermission();
   const { themeMode, setThemeMode } = useTheme();
   const location = useLocation();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 权限过滤后的tabs配置
   const allTabsConfig = [
@@ -657,31 +663,34 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   return (
     <Box>
       {/* 页面标题 */}
-      <Box mb={4}>
+      <Box mb={isMobile ? 2 : 4}>
         <Typography
-          variant="h5"
+          variant={isMobile ? 'h6' : 'h5'}
           component="h1"
           sx={{
             fontWeight: 500,
             color: '#1a1a1a',
             mb: 0.5,
+            fontSize: isMobile ? '1.1rem' : undefined,
           }}
         >
           {t('settings.title')}
         </Typography>
-        <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
-          {t('settings.subtitle')}
-        </Typography>
+        {!isMobile && (
+          <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
+            {t('settings.subtitle')}
+          </Typography>
+        )}
       </Box>
 
       {/* 选项卡容器 */}
       <Card
         sx={{
-          borderRadius: 2,
+          borderRadius: isMobile ? 2 : 2,
           boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           border: '1px solid rgba(0,0,0,0.06)',
           overflow: 'hidden',
-          minHeight: '600px',
+          minHeight: isMobile ? 'auto' : '600px',
         }}
       >
         {/* 标签栏 */}
@@ -694,14 +703,15 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
             onChange={handleTabChange}
             variant="scrollable"
             scrollButtons="auto"
+            allowScrollButtonsMobile
             sx={{
               '& .MuiTab-root': {
-                minWidth: 100,
+                minWidth: isMobile ? 'auto' : 100,
                 fontWeight: 400,
                 textTransform: 'none',
-                fontSize: '0.85rem',
-                py: 1.5,
-                px: 2,
+                fontSize: isMobile ? '0.75rem' : '0.85rem',
+                py: isMobile ? 1 : 1.5,
+                px: isMobile ? 1.5 : 2,
                 color: '#666',
                 '&:hover': {
                   color: '#1a1a1a',
@@ -722,7 +732,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                 key={index}
                 icon={React.cloneElement(tab.icon, {
                   sx: {
-                    fontSize: 18,
+                    fontSize: isMobile ? 16 : 18,
                     color: selectedTab === index ? '#1a1a1a' : '#999',
                   }
                 })}
@@ -736,13 +746,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         {/* 基础设置 */}
         {currentTabKey === 'basic' && (
         <Fade in={currentTabKey === 'basic'} timeout={300}>
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: isMobile ? 2 : 3 }}>
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight={isMobile ? '200px' : '400px'}>
               <CircularProgress />
             </Box>
           ) : (
-            <Grid container spacing={4}>
+            <Grid container spacing={isMobile ? 2 : 4}>
               <Grid item xs={12} md={6}>
                 <Card
                   sx={{
@@ -751,28 +761,28 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                     boxShadow: 'none',
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box display="flex" alignItems="center" mb={3}>
+                  <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                    <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
                       <Box
                         sx={{
-                          width: 36,
-                          height: 36,
+                          width: isMobile ? 32 : 36,
+                          height: isMobile ? 32 : 36,
                           borderRadius: 2,
                           bgcolor: '#f5f5f5',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          mr: 2,
+                          mr: 1.5,
                         }}
                       >
-                        <BusinessIcon sx={{ fontSize: 18, color: '#666' }} />
+                        <BusinessIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
                       </Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                         {t('settings.merchantInfo')}
                       </Typography>
                     </Box>
 
-                    <Grid container spacing={3}>
+                    <Grid container spacing={isMobile ? 2 : 3}>
                       <Grid item xs={12}>
                         <TextField
                           fullWidth
@@ -1083,8 +1093,8 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         {/* 业务运营设置 (Operations) */}
         {currentTabKey === 'operations' && (
         <Fade in={currentTabKey === 'operations'} timeout={300}>
-          <Box sx={{ p: 3 }}>
-          <Grid container spacing={4}>
+          <Box sx={{ p: isMobile ? 2 : 3 }}>
+          <Grid container spacing={isMobile ? 2 : 4}>
             {/* 左侧：营业时间 */}
             <Grid item xs={12} md={6}>
               <Card
@@ -1094,29 +1104,31 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                   boxShadow: 'none',
                 }}
               >
-                <CardContent sx={{ p: 3 }}>
-                  <Box display="flex" alignItems="center" mb={3}>
+                <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                  <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
                     <Box
                       sx={{
-                        width: 36,
-                        height: 36,
+                        width: isMobile ? 32 : 36,
+                        height: isMobile ? 32 : 36,
                         borderRadius: 2,
                         bgcolor: '#f5f5f5',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        mr: 2,
+                        mr: 1.5,
                       }}
                     >
-                      <AccessTimeIcon sx={{ fontSize: 18, color: '#666' }} />
+                      <AccessTimeIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
                     </Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                       {t('settings.businessHoursSection.title')}
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'text.secondary' }}>
-                    {t('settings.businessHoursSection.description')}
-                  </Typography>
+                  {!isMobile && (
+                    <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'text.secondary' }}>
+                      {t('settings.businessHoursSection.description')}
+                    </Typography>
+                  )}
 
                   {/* 默认数据提示 */}
                   {isDefaultBusinessHours && (
@@ -1166,28 +1178,29 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                   </Box>
 
                   {/* 营业时间列表 */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 1 : 1.5 }}>
                     {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => (
                       <Box
                         key={day}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 2,
-                          p: 1.5,
+                          gap: isMobile ? 1 : 2,
+                          p: isMobile ? 1 : 1.5,
                           borderRadius: 1.5,
                           bgcolor: businessHours[day].closed ? '#fafafa' : '#fff',
                           border: '1px solid',
                           borderColor: businessHours[day].closed ? '#f0f0f0' : '#e0e0e0',
                           transition: 'all 0.2s ease',
+                          flexWrap: isMobile ? 'wrap' : 'nowrap',
                         }}
                       >
                         {/* 星期名称 */}
                         <Typography
                           sx={{
-                            width: 60,
+                            width: isMobile ? 40 : 60,
                             fontWeight: 500,
-                            fontSize: '0.85rem',
+                            fontSize: isMobile ? '0.75rem' : '0.85rem',
                             color: businessHours[day].closed ? '#999' : '#333',
                           }}
                         >
@@ -1203,10 +1216,10 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             }));
                           }}
                           sx={{
-                            px: 1.5,
+                            px: isMobile ? 1 : 1.5,
                             py: 0.5,
                             borderRadius: 1,
-                            fontSize: '0.75rem',
+                            fontSize: isMobile ? '0.7rem' : '0.75rem',
                             fontWeight: 500,
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
@@ -1227,7 +1240,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                         {/* 时间选择器 */}
                         {!businessHours[day].closed && (
                           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={locale}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, mt: isMobile ? 0.5 : 0, width: isMobile ? '100%' : 'auto' }}>
                               <TimePicker
                                 value={timeStringToDate(businessHours[day].start)}
                                 onChange={(newValue) => {
@@ -1242,11 +1255,11 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                   textField: {
                                     size: 'small',
                                     sx: {
-                                      width: 95,
+                                      width: isMobile ? 80 : 95,
                                       '& .MuiOutlinedInput-root': {
                                         borderRadius: 1,
                                         bgcolor: '#fafafa',
-                                        height: 32,
+                                        height: isMobile ? 28 : 32,
                                         '& fieldset': { borderColor: 'rgba(0,0,0,0.1)' },
                                         '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.2)' },
                                         '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
@@ -1254,13 +1267,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                       },
                                       '& .MuiOutlinedInput-input': {
                                         py: 0.5,
-                                        px: 1,
-                                        fontSize: '0.8rem',
+                                        px: isMobile ? 0.5 : 1,
+                                        fontSize: isMobile ? '0.7rem' : '0.8rem',
                                       },
                                     },
                                   },
                                   openPickerIcon: {
-                                    sx: { fontSize: 16 },
+                                    sx: { fontSize: isMobile ? 14 : 16 },
                                   },
                                   popper: {
                                     sx: {
@@ -1289,7 +1302,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                   },
                                 }}
                               />
-                              <Typography sx={{ color: '#999', fontSize: '0.8rem' }}>-</Typography>
+                              <Typography sx={{ color: '#999', fontSize: isMobile ? '0.7rem' : '0.8rem' }}>-</Typography>
                               <TimePicker
                                 value={timeStringToDate(businessHours[day].end)}
                                 onChange={(newValue) => {
@@ -1304,11 +1317,11 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                   textField: {
                                     size: 'small',
                                     sx: {
-                                      width: 95,
+                                      width: isMobile ? 80 : 95,
                                       '& .MuiOutlinedInput-root': {
                                         borderRadius: 1,
                                         bgcolor: '#fafafa',
-                                        height: 32,
+                                        height: isMobile ? 28 : 32,
                                         '& fieldset': { borderColor: 'rgba(0,0,0,0.1)' },
                                         '&:hover fieldset': { borderColor: 'rgba(0,0,0,0.2)' },
                                         '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
@@ -1316,13 +1329,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                                       },
                                       '& .MuiOutlinedInput-input': {
                                         py: 0.5,
-                                        px: 1,
-                                        fontSize: '0.8rem',
+                                        px: isMobile ? 0.5 : 1,
+                                        fontSize: isMobile ? '0.7rem' : '0.8rem',
                                       },
                                     },
                                   },
                                   openPickerIcon: {
-                                    sx: { fontSize: 16 },
+                                    sx: { fontSize: isMobile ? 14 : 16 },
                                   },
                                   popper: {
                                     sx: {
@@ -1372,7 +1385,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
             {/* 右侧：资源类型 + 税务设置 */}
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 2 : 3 }}>
                 {/* 资源类型 */}
                 <Card
                   sx={{
@@ -1381,23 +1394,23 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                     boxShadow: 'none',
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box display="flex" alignItems="center" mb={3}>
+                  <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                    <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
                       <Box
                         sx={{
-                          width: 36,
-                          height: 36,
+                          width: isMobile ? 32 : 36,
+                          height: isMobile ? 32 : 36,
                           borderRadius: 2,
                           bgcolor: '#f5f5f5',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          mr: 2,
+                          mr: 1.5,
                         }}
                       >
-                        <GroupIcon sx={{ fontSize: 18, color: '#666' }} />
+                        <GroupIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
                       </Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                         {t('settings.resourceTypes.title')}
                       </Typography>
                     </Box>
@@ -1463,23 +1476,23 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                     boxShadow: 'none',
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box display="flex" alignItems="center" mb={3}>
+                  <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                    <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
                       <Box
                         sx={{
-                          width: 36,
-                          height: 36,
+                          width: isMobile ? 32 : 36,
+                          height: isMobile ? 32 : 36,
                           borderRadius: 2,
                           bgcolor: '#f5f5f5',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          mr: 2,
+                          mr: 1.5,
                         }}
                       >
-                        <TaxIcon sx={{ fontSize: 18, color: '#666' }} />
+                        <TaxIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
                       </Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                         {t('settings.taxSettings')}
                       </Typography>
                     </Box>
@@ -1576,8 +1589,8 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         {/* 系统设置 */}
         {currentTabKey === 'system' && (
         <Fade in={currentTabKey === 'system'} timeout={300}>
-          <Box sx={{ p: 3 }}>
-          <Grid container spacing={4}>
+          <Box sx={{ p: isMobile ? 2 : 3 }}>
+          <Grid container spacing={isMobile ? 2 : 4}>
             <Grid item xs={12} md={6}>
               <Card
                 sx={{
@@ -1586,23 +1599,23 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                   boxShadow: 'none',
                 }}
               >
-                <CardContent sx={{ p: 3 }}>
-                  <Box display="flex" alignItems="center" mb={3}>
+                <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                  <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
                     <Box
                       sx={{
-                        width: 36,
-                        height: 36,
+                        width: isMobile ? 32 : 36,
+                        height: isMobile ? 32 : 36,
                         borderRadius: 2,
                         bgcolor: '#f5f5f5',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        mr: 2,
+                        mr: 1.5,
                       }}
                     >
-                      <TuneIcon sx={{ fontSize: 18, color: '#666' }} />
+                      <TuneIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
                     </Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                       {t('settings.systemPrefs')}
                     </Typography>
                   </Box>
@@ -1725,28 +1738,28 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                   boxShadow: 'none',
                 }}
               >
-                <CardContent sx={{ p: 3 }}>
-                  <Box display="flex" alignItems="center" mb={3}>
+                <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                  <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
                     <Box
                       sx={{
-                        width: 36,
-                        height: 36,
+                        width: isMobile ? 32 : 36,
+                        height: isMobile ? 32 : 36,
                         borderRadius: 2,
                         bgcolor: '#f5f5f5',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        mr: 2,
+                        mr: 1.5,
                       }}
                     >
-                      <PaletteIcon sx={{ fontSize: 18, color: '#666' }} />
+                      <PaletteIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
                     </Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
                       {t('settings.themeStyle', 'Theme Style')}
                     </Typography>
                   </Box>
 
-                  <Box display="flex" gap={2}>
+                  <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1.5 : 2}>
                     {/* Colorful Modern Option */}
                     <Box
                       onClick={() => setThemeMode('colorful')}
@@ -1842,7 +1855,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         {/* Billing Tab */}
         {currentTabKey === 'billing' && (
         <Fade in={currentTabKey === 'billing'} timeout={300}>
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: isMobile ? 2 : 3 }}>
             <BillingTab />
           </Box>
         </Fade>
@@ -1851,7 +1864,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         {/* Online Booking Tab */}
         {currentTabKey === 'onlineBooking' && (
         <Fade in={currentTabKey === 'onlineBooking'} timeout={300}>
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: isMobile ? 2 : 3 }}>
             <OnlineBookingTab />
           </Box>
         </Fade>
@@ -1869,18 +1882,19 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
       {/* 保存按钮 - 仅在非支付设置页、非账单页、非在线预约页显示 */}
       {currentTabKey !== 'payment' && currentTabKey !== 'billing' && currentTabKey !== 'onlineBooking' && (
-      <Box mt={4} display="flex" justifyContent="flex-end">
+      <Box mt={isMobile ? 2 : 4} display="flex" justifyContent="flex-end">
         <Button
           variant="contained"
-          startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
+          fullWidth={isMobile}
+          startIcon={saving ? <CircularProgress size={isMobile ? 16 : 18} color="inherit" /> : <SaveIcon sx={{ fontSize: isMobile ? 18 : 20 }} />}
           onClick={handleSaveSettings}
           disabled={saving}
           sx={{
-            px: 3,
-            py: 1,
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1.25 : 1,
             textTransform: 'none',
             fontWeight: 500,
-            fontSize: '0.9rem',
+            fontSize: isMobile ? '0.85rem' : '0.9rem',
             borderRadius: 2,
             bgcolor: '#1a1a1a',
             boxShadow: 'none',
@@ -1905,13 +1919,20 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
         autoHideDuration={4000}
         onClose={handleCloseNotification}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: isMobile ? 16 : 24 }}
       >
         <Alert
           onClose={handleCloseNotification}
           severity={notification.severity}
           sx={{
-            width: '100%',
+            width: isMobile ? 'auto' : '100%',
+            minWidth: isMobile ? 200 : 280,
             borderRadius: 2,
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: isMobile ? 0.5 : 1,
+            '& .MuiAlert-icon': {
+              fontSize: isMobile ? 18 : 22,
+            },
           }}
         >
           {notification.message}

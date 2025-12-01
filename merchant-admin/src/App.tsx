@@ -20,10 +20,13 @@ import {
   alpha,
   Alert,
   CircularProgress,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   ExitToApp as LogoutIcon,
+  Close as CloseIcon,
   ExpandLess,
   ExpandMore,
   ChevronLeft as ChevronLeftIcon,
@@ -67,6 +70,7 @@ import { usePermission } from './hooks/usePermission';
 import { canAccessRoute, ROUTE_PERMISSIONS } from './utils/routePermissions';
 
 const drawerWidth = 260;
+const mobileDrawerWidth = 280; // 移动端稍宽一点，更好点击
 
 const MainAppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -75,11 +79,16 @@ const MainAppContent: React.FC = () => {
   const { getMenuColor } = useTheme();
   const { userPermissions, isSuperAdmin } = usePermission();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileNotificationDismissed, setMobileNotificationDismissed] = useState(false);
 
   // 用于跟踪权限是否已经初始化过
   const permissionsInitialized = React.useRef(false);
@@ -311,6 +320,19 @@ const MainAppContent: React.FC = () => {
       handleMenuToggle(menuId);
     } else {
       setSelectedItem(menuId);
+      // 移动端点击菜单后自动关闭抽屉
+      if (mobileOpen) {
+        setMobileOpen(false);
+      }
+    }
+  };
+
+  // 移动端子菜单点击处理
+  const handleChildMenuClick = (childId: string) => {
+    setSelectedItem(childId);
+    // 移动端点击菜单后自动关闭抽屉
+    if (mobileOpen) {
+      setMobileOpen(false);
     }
   };
 
@@ -405,7 +427,9 @@ const MainAppContent: React.FC = () => {
 
       {/* 简约菜单列表 */}
       <List sx={{ flex: 1, px: 1.5, py: 1 }}>
-        {menuItems.map((item) => (
+        {menuItems
+          .filter(item => !(isMobile && item.id === 'schedule')) // 移动端隐藏排班模块
+          .map((item) => (
           <React.Fragment key={item.id}>
             <ListItemButton
               selected={selectedItem === item.id}
@@ -477,7 +501,7 @@ const MainAppContent: React.FC = () => {
                         },
                       }}
                       selected={selectedItem === child.id}
-                      onClick={() => setSelectedItem(child.id)}
+                      onClick={() => handleChildMenuClick(child.id)}
                     >
                       <ListItemIcon sx={{ minWidth: 32, '& .MuiSvgIcon-root': { fontSize: '1.1rem' } }}>
                         {child.icon}
@@ -500,31 +524,33 @@ const MainAppContent: React.FC = () => {
 
       {/* 底部区域 */}
       <Box sx={{ px: 1.5, py: 2, mt: 'auto' }}>
-        {/* 隐藏菜单按钮 */}
-        <Button
-          fullWidth
-          startIcon={<ChevronLeftIcon sx={{ fontSize: 18 }} />}
-          onClick={() => setDrawerOpen(false)}
-          sx={{
-            justifyContent: 'flex-start',
-            color: '#888',
-            textTransform: 'none',
-            borderRadius: 1.5,
-            py: 1,
-            px: 1.5,
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            '&:hover': {
-              bgcolor: 'rgba(0,0,0,0.04)',
-              color: '#333',
-            },
-          }}
-        >
-          {t('nav.hideMenu', 'Hide Menu')}
-        </Button>
+        {/* 隐藏菜单按钮 - 仅在桌面端显示 */}
+        {!isMobile && (
+          <Button
+            fullWidth
+            startIcon={<ChevronLeftIcon sx={{ fontSize: 18 }} />}
+            onClick={() => setDrawerOpen(false)}
+            sx={{
+              justifyContent: 'flex-start',
+              color: '#888',
+              textTransform: 'none',
+              borderRadius: 1.5,
+              py: 1,
+              px: 1.5,
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.04)',
+                color: '#333',
+              },
+            }}
+          >
+            {t('nav.hideMenu', 'Hide Menu')}
+          </Button>
+        )}
 
         {/* 公司信息 */}
-        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)', textAlign: 'center' }}>
+        <Box sx={{ mt: isMobile ? 0 : 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)', textAlign: 'center' }}>
           <Typography sx={{ fontSize: '0.6875rem', color: '#bbb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
             Powered by
             <Box component="img" src="/s-logo.png" alt="Swiftmind" sx={{ width: 12, height: 12, objectFit: 'contain', opacity: 0.7 }} />
@@ -686,9 +712,12 @@ const MainAppContent: React.FC = () => {
                 display: { xs: 'block', sm: 'none' },
                 '& .MuiDrawer-paper': {
                   boxSizing: 'border-box',
-                  width: drawerWidth,
+                  width: mobileDrawerWidth,
                   background: '#ffffff',
-                  boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+                  boxShadow: '0 0 20px rgba(0,0,0,0.15)',
+                  // iOS Safe Area 支持
+                  paddingTop: 'env(safe-area-inset-top)',
+                  paddingBottom: 'env(safe-area-inset-bottom)',
                 },
               }}
             >
@@ -721,15 +750,49 @@ const MainAppContent: React.FC = () => {
             component="main"
             sx={{
               flexGrow: 1,
-              p: 3,
+              p: { xs: 1, sm: 2, md: 3 },
               width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
               minHeight: '100vh',
               background: '#f8fafc',
               transition: 'width 0.3s ease',
+              overflowX: 'hidden',
             }}
           >
             <Toolbar />
-            <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3 } }}>
+
+            {/* 移动端通知栏 - 可关闭 */}
+            {!mobileNotificationDismissed && (
+              <Box
+                sx={{
+                  display: { xs: 'flex', md: 'none' },
+                  alignItems: 'center',
+                  mb: 1.5,
+                  mx: 0.5,
+                  p: 1,
+                  bgcolor: '#fff',
+                  borderRadius: 1.5,
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}
+              >
+                <NotificationBar />
+                <IconButton
+                  size="small"
+                  onClick={() => setMobileNotificationDismissed(true)}
+                  sx={{
+                    ml: 0.5,
+                    p: 0.5,
+                    color: '#999',
+                    flexShrink: 0,
+                    '&:hover': { color: '#666' },
+                  }}
+                >
+                  <CloseIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
+            )}
+
+            <Container maxWidth={false} sx={{ px: { xs: 0, sm: 2, md: 3 }, overflowX: 'hidden' }}>
               {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
               {selectedItem === 'products' && <ServiceManagement />}
               {selectedItem === 'orders' && <PaymentManagement onNavigate={setSelectedItem} />}

@@ -19,6 +19,8 @@ import {
     Tooltip,
     alpha,
     Snackbar,
+    useMediaQuery,
+    useTheme as useMuiTheme,
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -93,6 +95,10 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
 }) => {
     const { t } = useTranslation();
     const { themeMode } = useTheme();
+    const muiTheme = useMuiTheme();
+
+    // 移动端检测
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
     // 根据主题模式动态设置主题色
     const isMonochrome = themeMode === 'monochrome';
@@ -451,7 +457,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
             sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1.5,
+                gap: isMobile ? 1 : 1.5,
                 py: 1,
                 borderBottom: '1px solid rgba(0,0,0,0.06)',
             }}
@@ -464,7 +470,8 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                     handleUpdateSegment(dayOfWeek, segmentIndex, 'startTime', e.target.value)
                 }
                 sx={{
-                    width: 110,
+                    width: isMobile ? 95 : 110,
+                    flex: isMobile ? 1 : 'none',
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 1.5,
                         bgcolor: '#fafafa',
@@ -481,10 +488,10 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                     },
                 }}
                 InputProps={{
-                    sx: { fontSize: '0.8rem' },
+                    sx: { fontSize: isMobile ? '0.75rem' : '0.8rem' },
                 }}
             />
-            <Typography variant="caption" sx={{ color: '#999' }}>
+            <Typography variant="caption" sx={{ color: '#999', flexShrink: 0 }}>
                 —
             </Typography>
             <TextField
@@ -495,7 +502,8 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                     handleUpdateSegment(dayOfWeek, segmentIndex, 'endTime', e.target.value)
                 }
                 sx={{
-                    width: 110,
+                    width: isMobile ? 95 : 110,
+                    flex: isMobile ? 1 : 'none',
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 1.5,
                         bgcolor: '#fafafa',
@@ -512,7 +520,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                     },
                 }}
                 InputProps={{
-                    sx: { fontSize: '0.8rem' },
+                    sx: { fontSize: isMobile ? '0.75rem' : '0.8rem' },
                 }}
             />
             <IconButton
@@ -520,10 +528,11 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 onClick={() => handleDeleteSegment(dayOfWeek, segmentIndex)}
                 sx={{
                     color: '#999',
+                    flexShrink: 0,
                     '&:hover': { color: '#EF4444', bgcolor: 'rgba(239,68,68,0.08)' },
                 }}
             >
-                <DeleteIcon sx={{ fontSize: 18 }} />
+                <DeleteIcon sx={{ fontSize: isMobile ? 16 : 18 }} />
             </IconButton>
         </Box>
     );
@@ -536,7 +545,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
             <Box
                 key={day.dayOfWeek}
                 sx={{
-                    py: 2,
+                    py: isMobile ? 1.5 : 2,
                     borderBottom: '1px solid rgba(0,0,0,0.06)',
                 }}
             >
@@ -550,11 +559,11 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                     }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: THEME_COLOR, minWidth: 60 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: THEME_COLOR, minWidth: isMobile ? 50 : 60, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                             {dayInfo?.label}
                         </Typography>
                         {day.segments.length > 0 && (
-                            <Typography variant="caption" sx={{ color: '#999' }}>
+                            <Typography variant="caption" sx={{ color: '#999', fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                 {day.segments.length} {t('staff.availabilityEditor.labels.segments')}
                             </Typography>
                         )}
@@ -569,7 +578,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                                     disabled={day.segments.length === 0}
                                     sx={{ color: '#666', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
                                 >
-                                    <CopyIcon sx={{ fontSize: 18 }} />
+                                    <CopyIcon sx={{ fontSize: isMobile ? 16 : 18 }} />
                                 </IconButton>
                             </span>
                         </Tooltip>
@@ -581,7 +590,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                                     disabled={day.segments.length === 0}
                                     sx={{ color: '#999', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
                                 >
-                                    <DeleteIcon sx={{ fontSize: 18 }} />
+                                    <DeleteIcon sx={{ fontSize: isMobile ? 16 : 18 }} />
                                 </IconButton>
                             </span>
                         </Tooltip>
@@ -590,7 +599,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
 
                 {/* 时间段列表 */}
                 {day.segments.length === 0 ? (
-                    <Typography variant="caption" sx={{ color: '#999', ml: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: '#999', ml: 0.5, fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
                         {t('staff.availabilityEditor.labels.restDay')}
                     </Typography>
                 ) : (
@@ -604,13 +613,13 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 {/* 添加时间段按钮 */}
                 <Button
                     size="small"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                    startIcon={<AddIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
                     onClick={() => handleAddSegment(day.dayOfWeek)}
                     sx={{
                         mt: 1,
                         ml: 0.5,
                         color: '#666',
-                        fontSize: '0.8rem',
+                        fontSize: isMobile ? '0.75rem' : '0.8rem',
                         '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                     }}
                 >
@@ -627,24 +636,25 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 onClose={onClose}
                 maxWidth="md"
                 fullWidth
+                fullScreen={isMobile}
                 PaperProps={{
                     sx: {
-                        borderRadius: 2.5,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                        borderRadius: isMobile ? 0 : 2.5,
+                        boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
                         bgcolor: '#fff',
                     },
                 }}
             >
                 {/* 标题 */}
-                <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <Box sx={{ px: isMobile ? 2 : 3, py: isMobile ? 1.5 : 2, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                     <Box display="flex" alignItems="center" justifyContent="space-between">
                         <Box display="flex" alignItems="center" gap={1.5}>
-                            <ScheduleIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+                            <ScheduleIcon sx={{ color: THEME_COLOR, fontSize: isMobile ? 18 : 20 }} />
                             <Box>
-                                <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
+                                <Typography sx={{ fontWeight: 600, fontSize: isMobile ? '0.9rem' : '1rem', color: '#1a1a1a' }}>
                                     {t('staff.availabilityEditor.title')}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: '#888' }}>
+                                <Typography variant="caption" sx={{ color: '#888', fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
                                     {staffName}
                                 </Typography>
                             </Box>
@@ -667,13 +677,15 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
 
                 {/* 内容 */}
                 <DialogContent sx={{ p: 0 }}>
-                    <Box sx={{ px: 3, py: 2 }}>
+                    <Box sx={{ px: isMobile ? 2 : 3, py: isMobile ? 1.5 : 2 }}>
                         {/* 快捷操作栏 */}
                         <Box
                             sx={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
+                                flexDirection: isMobile ? 'column' : 'row',
+                                gap: isMobile ? 1 : 0,
                                 mb: 2,
                                 pb: 2,
                                 borderBottom: '1px solid rgba(0,0,0,0.06)',
@@ -682,13 +694,14 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                             <Button
                                 variant="outlined"
                                 size="small"
+                                fullWidth={isMobile}
                                 onClick={(e) => setTemplateMenuAnchor(e.currentTarget)}
-                                startIcon={<ScheduleIcon sx={{ fontSize: 16 }} />}
+                                startIcon={<ScheduleIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
                                 sx={{
                                     borderRadius: 1.5,
                                     borderColor: 'rgba(0,0,0,0.15)',
                                     color: '#666',
-                                    fontSize: '0.8rem',
+                                    fontSize: isMobile ? '0.75rem' : '0.8rem',
                                     '&:hover': {
                                         borderColor: THEME_COLOR,
                                         bgcolor: 'rgba(0,0,0,0.02)',
@@ -697,7 +710,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                             >
                                 {t('staff.availabilityEditor.actions.applyTemplate')}
                             </Button>
-                            <Typography variant="caption" sx={{ color: '#999' }}>
+                            <Typography variant="caption" sx={{ color: '#999', fontSize: isMobile ? '0.65rem' : '0.75rem', textAlign: isMobile ? 'center' : 'right' }}>
                                 {t('staff.availabilityEditor.labels.timeSlotHint')}
                             </Typography>
                         </Box>
@@ -725,21 +738,23 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 {/* 操作按钮 */}
                 <DialogActions
                     sx={{
-                        px: 3,
-                        py: 2,
+                        px: isMobile ? 2 : 3,
+                        py: isMobile ? 1.5 : 2,
                         borderTop: '1px solid rgba(0,0,0,0.06)',
+                        gap: isMobile ? 1 : 0,
                     }}
                 >
                     <Button
                         onClick={onClose}
                         disabled={saving}
                         size="small"
+                        fullWidth={isMobile}
                         sx={{
                             borderRadius: 1.5,
                             px: 2,
                             color: '#666',
                             textTransform: 'none',
-                            fontSize: '0.8125rem',
+                            fontSize: isMobile ? '0.75rem' : '0.8125rem',
                         }}
                     >
                         {t('staff.availabilityEditor.actions.cancel')}
@@ -749,12 +764,13 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                         onClick={handleSave}
                         disabled={saving || !weekAvailability}
                         size="small"
+                        fullWidth={isMobile}
                         sx={{
                             borderRadius: 1.5,
                             px: 2.5,
                             textTransform: 'none',
                             fontWeight: 500,
-                            fontSize: '0.8125rem',
+                            fontSize: isMobile ? '0.75rem' : '0.8125rem',
                             bgcolor: THEME_COLOR,
                             boxShadow: 'none',
                             '&:hover': {
@@ -778,11 +794,18 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 autoHideDuration={6000}
                 onClose={() => setError(null)}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                sx={isMobile ? { top: 70 } : undefined}
             >
                 <Alert
                     onClose={() => setError(null)}
                     severity="error"
-                    sx={{ width: '100%' }}
+                    sx={{
+                        width: '100%',
+                        borderRadius: isMobile ? 1.5 : 2,
+                        fontSize: isMobile ? '0.8rem' : undefined,
+                        py: isMobile ? 0.5 : undefined,
+                        '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+                    }}
                 >
                     {error}
                 </Alert>
@@ -794,11 +817,18 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 autoHideDuration={3000}
                 onClose={() => setSuccessMessage(null)}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                sx={isMobile ? { top: 70 } : undefined}
             >
                 <Alert
                     onClose={() => setSuccessMessage(null)}
                     severity="success"
-                    sx={{ width: '100%' }}
+                    sx={{
+                        width: '100%',
+                        borderRadius: isMobile ? 1.5 : 2,
+                        fontSize: isMobile ? '0.8rem' : undefined,
+                        py: isMobile ? 0.5 : undefined,
+                        '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+                    }}
                 >
                     {successMessage}
                 </Alert>

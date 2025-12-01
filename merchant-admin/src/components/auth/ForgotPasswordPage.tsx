@@ -93,26 +93,27 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
+        py: { xs: 4, sm: 2 },
         position: 'relative',
       }}
     >
-      {/* 语言切换器 */}
+      {/* 语言切换器 - 固定在右上角 */}
       <Box
         sx={{
           position: 'absolute',
-          top: 32,
-          right: 32,
+          top: { xs: 12, sm: 32 },
+          right: { xs: 12, sm: 32 },
           zIndex: 1000,
         }}
       >
-        <LanguageSwitcher variant="login" size="medium" />
+        <LanguageSwitcher variant="login" size="small" />
       </Box>
 
-      <Container maxWidth="xs">
+      <Container maxWidth="xs" sx={{ px: { xs: 1, sm: 2 } }}>
         <Box>
           {/* 顶部Logo区域 */}
-          <Box sx={{ textAlign: 'center', mb: 5 }}>
+          <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 4, md: 5 } }}>
             <Typography
               sx={{
                 fontSize: '1.75rem',
@@ -134,14 +135,14 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
           <Paper
             elevation={0}
             sx={{
-              borderRadius: 3,
-              p: { xs: 3, sm: 4 },
+              borderRadius: { xs: 2, sm: 3 },
+              p: { xs: 2, sm: 3, md: 4 },
               background: '#fff',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
               border: '1px solid rgba(0, 0, 0, 0.06)',
             }}
           >
-            <Box textAlign="center" mb={4}>
+            <Box textAlign="center" mb={{ xs: 2.5, sm: 3, md: 4 }}>
               <Typography
                 variant="h5"
                 component="h1"
@@ -269,7 +270,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
           </Paper>
 
           {/* 版权信息 */}
-          <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Box sx={{ mt: { xs: 3, sm: 4 }, textAlign: 'center' }}>
             <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
               © {new Date().getFullYear()}
               <Box component="img" src="/s-logo.png" alt="Swiftmind" sx={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.7 }} />

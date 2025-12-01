@@ -30,6 +30,8 @@ import {
   Button,
   Alert,
   Popover,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -73,6 +75,10 @@ const AuditLogs: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -683,9 +689,9 @@ const AuditLogs: React.FC = () => {
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box>
         {/* Filter Bar - 简约风格 */}
-        <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', mb: 3 }}>
-          <CardContent sx={{ py: 2, px: 2.5 }}>
-            <Grid container spacing={2} alignItems="center">
+        <Card sx={{ borderRadius: isMobile ? 2 : 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', mb: isMobile ? 2 : 3 }}>
+          <CardContent sx={{ py: isMobile ? 1.5 : 2, px: isMobile ? 1.5 : 2.5 }}>
+            <Grid container spacing={isMobile ? 1.5 : 2} alignItems="center">
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -697,14 +703,14 @@ const AuditLogs: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                        <SearchIcon sx={{ color: '#999', fontSize: isMobile ? 18 : 20 }} />
                       </InputAdornment>
                     ),
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.875rem',
+                      fontSize: isMobile ? '0.8rem' : '0.875rem',
                       '& .MuiOutlinedInput-notchedOutline': {
                         borderColor: 'rgba(0,0,0,0.12)',
                       },
@@ -718,7 +724,7 @@ const AuditLogs: React.FC = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={3}>
                 <TextField
                   fullWidth
                   size="small"
@@ -728,7 +734,7 @@ const AuditLogs: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.875rem',
+                      fontSize: isMobile ? '0.75rem' : '0.875rem',
                       cursor: 'pointer',
                       '& .MuiOutlinedInput-notchedOutline': {
                         borderColor: 'rgba(0,0,0,0.12)',
@@ -740,20 +746,20 @@ const AuditLogs: React.FC = () => {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
+                    '& .MuiInputLabel-root': { color: '#666', fontSize: isMobile ? '0.75rem' : '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                   InputProps={{
                     readOnly: true,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <EventIcon sx={{ fontSize: 20, color: '#999' }} />
+                        <EventIcon sx={{ fontSize: isMobile ? 16 : 20, color: '#999' }} />
                       </InputAdornment>
                     ),
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={3}>
                 <TextField
                   fullWidth
                   size="small"
@@ -763,7 +769,7 @@ const AuditLogs: React.FC = () => {
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 1.5,
-                      fontSize: '0.875rem',
+                      fontSize: isMobile ? '0.75rem' : '0.875rem',
                       cursor: 'pointer',
                       '& .MuiOutlinedInput-notchedOutline': {
                         borderColor: 'rgba(0,0,0,0.12)',
@@ -775,20 +781,20 @@ const AuditLogs: React.FC = () => {
                         borderColor: THEME_COLOR,
                       },
                     },
-                    '& .MuiInputLabel-root': { color: '#666', fontSize: '0.875rem' },
+                    '& .MuiInputLabel-root': { color: '#666', fontSize: isMobile ? '0.75rem' : '0.875rem' },
                     '& .MuiInputLabel-root.Mui-focused': { color: THEME_COLOR },
                   }}
                   InputProps={{
                     readOnly: true,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <EventIcon sx={{ fontSize: 20, color: '#999' }} />
+                        <EventIcon sx={{ fontSize: isMobile ? 16 : 20, color: '#999' }} />
                       </InputAdornment>
                     ),
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={6} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel sx={{ color: '#666', fontSize: '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.resourceLabel')}
@@ -842,9 +848,9 @@ const AuditLogs: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                <InputLabel sx={{ color: '#666', fontSize: isMobile ? '0.75rem' : '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.actionLabel')}
                 </InputLabel>
                 <Select
@@ -853,7 +859,7 @@ const AuditLogs: React.FC = () => {
                   onChange={(e) => setActionFilter(e.target.value)}
                   sx={{
                     borderRadius: 1.5,
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '0.75rem' : '0.875rem',
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: 'rgba(0,0,0,0.12)',
                     },
@@ -882,9 +888,9 @@ const AuditLogs: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={6} md={3}>
               <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#666', fontSize: '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
+                <InputLabel sx={{ color: '#666', fontSize: isMobile ? '0.75rem' : '0.875rem', '&.Mui-focused': { color: THEME_COLOR } }}>
                   {t('audit.statusLabel')}
                 </InputLabel>
                 <Select
@@ -893,7 +899,7 @@ const AuditLogs: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   sx={{
                     borderRadius: 1.5,
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '0.75rem' : '0.875rem',
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: 'rgba(0,0,0,0.12)',
                     },
@@ -912,8 +918,8 @@ const AuditLogs: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={12} md={3}>
-              <Box display="flex" gap={1} justifyContent="flex-end">
+            <Grid item xs={6} sm={12} md={3}>
+              <Box display="flex" gap={1} justifyContent={isMobile ? 'flex-start' : 'flex-end'}>
                 <Tooltip title={t('audit.refresh')}>
                   <IconButton
                     size="small"
@@ -923,7 +929,7 @@ const AuditLogs: React.FC = () => {
                       '&:hover': { backgroundColor: alpha(THEME_COLOR, 0.15) },
                     }}
                   >
-                    <RefreshIcon sx={{ color: THEME_COLOR, fontSize: 20 }} />
+                    <RefreshIcon sx={{ color: THEME_COLOR, fontSize: isMobile ? 18 : 20 }} />
                   </IconButton>
                 </Tooltip>
               </Box>
@@ -932,187 +938,265 @@ const AuditLogs: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Audit Logs Table - 简约风格 */}
-      <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
-        <CardContent sx={{ p: 0 }}>
-          {error && (
-            <Box p={2.5}>
-              <Alert
-                severity="error"
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiAlert-message': { width: '100%' }
-                }}
-                action={
-                  <Tooltip title={t('audit.refresh')}>
-                    <IconButton onClick={loadAuditLogs} size="small" sx={{ color: 'error.main' }}>
-                      <RefreshIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-                }
-              >
-                <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }} gutterBottom>
-                    {t('audit.loadError')}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.8125rem' }}>
-                    {error}
-                  </Typography>
-                </Box>
-              </Alert>
+      {/* Audit Logs Table/Cards - 简约风格 */}
+      {error && (
+        <Box mb={2}>
+          <Alert
+            severity="error"
+            sx={{
+              borderRadius: 2,
+              '& .MuiAlert-message': { width: '100%' }
+            }}
+            action={
+              <Tooltip title={t('audit.refresh')}>
+                <IconButton onClick={loadAuditLogs} size="small" sx={{ color: 'error.main' }}>
+                  <RefreshIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            }
+          >
+            <Box>
+              <Typography sx={{ fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }} gutterBottom>
+                {t('audit.loadError')}
+              </Typography>
+              <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem' }}>
+                {error}
+              </Typography>
             </Box>
-          )}
-          {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-              <CircularProgress sx={{ color: THEME_COLOR }} />
-            </Box>
-          ) : logs.length === 0 && !error ? (
-            <Box display="flex" flexDirection="column" alignItems="center" py={6}>
-              <FilterIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
-              <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>{t('audit.noLogs')}</Typography>
-            </Box>
-          ) : logs.length > 0 && !error ? (
-            <>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.dateTime')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.user')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.resourceLabel')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.actionLabel')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.resourceId')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.statusLabel')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.changes')}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                        {t('audit.ipAddress')}
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {logs.map((log) => (
-                      <TableRow
-                        key={log.id}
-                        hover
-                        sx={{
-                          '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                          '& td': { py: 1.5, fontSize: '0.8125rem' }
-                        }}
-                      >
-                        <TableCell>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
-                            {formatDate(log.createdAt)}
+          </Alert>
+        </Box>
+      )}
+      {loading ? (
+        <Box display="flex" justifyContent="center" py={6}>
+          <CircularProgress size={isMobile ? 24 : 32} sx={{ color: THEME_COLOR }} />
+        </Box>
+      ) : logs.length === 0 && !error ? (
+        <Box display="flex" flexDirection="column" alignItems="center" py={6}>
+          <FilterIcon sx={{ fontSize: isMobile ? 40 : 48, color: '#ccc', mb: 2 }} />
+          <Typography sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem', color: '#888' }}>{t('audit.noLogs')}</Typography>
+        </Box>
+      ) : logs.length > 0 && !error ? (
+        <>
+          {isMobile ? (
+            /* 移动端卡片视图 */
+            <Box>
+              {logs.map((log) => {
+                const resourceColors = getResourceColor(log.resource);
+                return (
+                  <Card
+                    key={log.id}
+                    sx={{
+                      borderRadius: 2,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      mb: 1.5,
+                      bgcolor: '#fff',
+                    }}
+                  >
+                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                        <Box flex={1} mr={1}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.8rem', color: '#1a1a1a', mb: 0.5 }}>
+                            {log.username || `User #${log.userId}`}
                           </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
-                              {log.username || `User #${log.userId}`}
-                            </Typography>
-                            <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                              ID: {log.userId}
-                            </Typography>
+                          <Box display="flex" gap={0.5} flexWrap="wrap">
+                            <Chip
+                              label={getResourceLabel(log.resource)}
+                              size="small"
+                              sx={{
+                                backgroundColor: resourceColors.bg,
+                                color: resourceColors.color,
+                                fontWeight: 500,
+                                fontSize: '0.6rem',
+                                height: 18,
+                              }}
+                            />
+                            {getStatusChip(log.status)}
                           </Box>
-                        </TableCell>
-                        <TableCell>
-                          {(() => {
-                            const colors = getResourceColor(log.resource);
-                            return (
-                              <Chip
-                                label={getResourceLabel(log.resource)}
-                                size="small"
-                                sx={{
-                                  backgroundColor: colors.bg,
-                                  color: colors.color,
-                                  fontWeight: 500,
-                                  fontSize: '0.75rem',
-                                  height: 22,
-                                }}
-                              />
-                            );
-                          })()}
-                        </TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
-                            {getActionLabel(log.action)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            sx={{
-                              fontFamily: log.resourceId ? 'monospace' : 'inherit',
-                              fontSize: '0.8125rem',
-                              color: log.resourceId ? '#1a1a1a' : '#888',
-                              fontWeight: log.resourceId ? 500 : 400
-                            }}
+                        </Box>
+                        {(log.oldValue || log.newValue) && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewChanges(log)}
+                            sx={{ color: THEME_COLOR, p: 0.5 }}
                           >
-                            {log.resourceId ? `#${log.resourceId}` : '-'}
-                          </Typography>
+                            <HistoryIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        )}
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                        <Typography sx={{ fontSize: '0.65rem', color: '#888' }}>
+                          {t('audit.actionLabel')}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, color: '#1a1a1a' }}>
+                          {getActionLabel(log.action)}
+                          {log.resourceId ? ` #${log.resourceId}` : ''}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography sx={{ fontSize: '0.65rem', color: '#888' }}>
+                          {t('audit.dateTime')}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.65rem', fontFamily: 'monospace', color: '#666' }}>
+                          {formatDate(log.createdAt)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Box>
+          ) : (
+            /* 桌面端表格视图 */
+            <Card sx={{ borderRadius: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#fff' }}>
+              <CardContent sx={{ p: 0 }}>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.dateTime')}
                         </TableCell>
-                        <TableCell>{getStatusChip(log.status)}</TableCell>
-                        <TableCell>
-                          {(log.oldValue || log.newValue) ? (
-                            <Tooltip title={t('audit.viewChanges')}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleViewChanges(log)}
-                                sx={{
-                                  color: THEME_COLOR,
-                                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
-                                }}
-                              >
-                                <HistoryIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Tooltip>
-                          ) : (
-                            <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>-</Typography>
-                          )}
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.user')}
                         </TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
-                            {log.ipAddress || '-'}
-                          </Typography>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.resourceLabel')}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.actionLabel')}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.resourceId')}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.statusLabel')}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.changes')}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                          {t('audit.ipAddress')}
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                component="div"
-                count={totalCount}
-                page={page}
-                onPageChange={handleChangePage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                rowsPerPageOptions={[10, 25, 50, 100]}
-                labelRowsPerPage={t('audit.rowsPerPage')}
-                sx={{
-                  borderTop: '1px solid',
-                  borderColor: 'divider',
-                  '& .MuiTablePagination-select': {
-                    borderRadius: 1,
-                  },
-                }}
-              />
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
+                    </TableHead>
+                    <TableBody>
+                      {logs.map((log) => (
+                        <TableRow
+                          key={log.id}
+                          hover
+                          sx={{
+                            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                            '& td': { py: 1.5, fontSize: '0.8125rem' }
+                          }}
+                        >
+                          <TableCell>
+                            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
+                              {formatDate(log.createdAt)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Box>
+                              <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                                {log.username || `User #${log.userId}`}
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                                ID: {log.userId}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              const colors = getResourceColor(log.resource);
+                              return (
+                                <Chip
+                                  label={getResourceLabel(log.resource)}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: colors.bg,
+                                    color: colors.color,
+                                    fontWeight: 500,
+                                    fontSize: '0.75rem',
+                                    height: 22,
+                                  }}
+                                />
+                              );
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                              {getActionLabel(log.action)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                fontFamily: log.resourceId ? 'monospace' : 'inherit',
+                                fontSize: '0.8125rem',
+                                color: log.resourceId ? '#1a1a1a' : '#888',
+                                fontWeight: log.resourceId ? 500 : 400
+                              }}
+                            >
+                              {log.resourceId ? `#${log.resourceId}` : '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{getStatusChip(log.status)}</TableCell>
+                          <TableCell>
+                            {(log.oldValue || log.newValue) ? (
+                              <Tooltip title={t('audit.viewChanges')}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleViewChanges(log)}
+                                  sx={{
+                                    color: THEME_COLOR,
+                                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+                                  }}
+                                >
+                                  <HistoryIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Tooltip>
+                            ) : (
+                              <Typography sx={{ fontSize: '0.8125rem', color: '#888' }}>-</Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
+                              {log.ipAddress || '-'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          )}
+          <TablePagination
+            component="div"
+            count={totalCount}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={isMobile ? [10, 25] : [10, 25, 50, 100]}
+            labelRowsPerPage={isMobile ? '' : t('audit.rowsPerPage')}
+            sx={{
+              borderTop: isMobile ? 'none' : '1px solid',
+              borderColor: 'divider',
+              '& .MuiTablePagination-select': {
+                borderRadius: 1,
+              },
+              '& .MuiTablePagination-selectLabel': {
+                display: isMobile ? 'none' : 'block',
+              },
+              '& .MuiTablePagination-displayedRows': {
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
+              },
+            }}
+          />
+        </>
+      ) : null}
 
       {/* Change Comparison Dialog - 简约风格 */}
       <Dialog
@@ -1120,10 +1204,11 @@ const AuditLogs: React.FC = () => {
         onClose={() => setChangeDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.12)',
           },
         }}
       >

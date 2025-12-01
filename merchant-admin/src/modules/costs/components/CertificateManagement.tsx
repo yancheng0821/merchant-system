@@ -26,6 +26,8 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -62,6 +64,10 @@ const CertificateManagement: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -248,15 +254,15 @@ const CertificateManagement: React.FC = () => {
       {/* 简约搜索和操作区域 */}
       <Card
         sx={{
-          borderRadius: 2.5,
+          borderRadius: isMobile ? 2 : 2.5,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.06)',
-          mb: 3,
+          mb: isMobile ? 2 : 3,
         }}
       >
-        <CardContent sx={{ p: 2.5 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
+        <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1.5 : 2} alignItems={isMobile ? 'stretch' : 'center'}>
+            <Box flex={1}>
               <TextField
                 fullWidth
                 size="small"
@@ -266,14 +272,14 @@ const CertificateManagement: React.FC = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#999', fontSize: 20 }} />
+                      <SearchIcon sx={{ color: '#999', fontSize: isMobile ? 18 : 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1.5,
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: 'rgba(0,0,0,0.12)',
                     },
@@ -286,160 +292,248 @@ const CertificateManagement: React.FC = () => {
                   },
                 }}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={6}>
-              <Box display="flex" gap={2} justifyContent="flex-end">
-                {hasPermission('costs:create_certificate') && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => handleOpenDialog()}
-                    sx={{
-                      borderRadius: 1.5,
-                      px: 2,
-                      py: 0.75,
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      bgcolor: THEME_COLOR,
-                      boxShadow: 'none',
-                      textTransform: 'none',
-                      '&:hover': {
-                        bgcolor: THEME_COLOR_DARK,
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {t('costs.certificates.addCertificate')}
-                  </Button>
-                )}
-              </Box>
-            </Grid>
-          </Grid>
+            {hasPermission('costs:create_certificate') && (
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
+                onClick={() => handleOpenDialog()}
+                fullWidth={isMobile}
+                sx={{
+                  borderRadius: 1.5,
+                  px: 2,
+                  py: 0.75,
+                  fontSize: isMobile ? '0.8rem' : '0.875rem',
+                  fontWeight: 500,
+                  bgcolor: THEME_COLOR,
+                  boxShadow: 'none',
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    bgcolor: THEME_COLOR_DARK,
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {t('costs.certificates.addCertificate')}
+              </Button>
+            )}
+          </Box>
         </CardContent>
       </Card>
 
-      {/* 简约表格卡片 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: '#fff',
-        }}
-      >
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                  {t('costs.certificates.certificateName')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                  {t('costs.certificates.certificateType')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                  {t('costs.certificates.certificateNumber')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                  {t('costs.certificates.expiryDate')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
-                  {t('costs.certificates.statusLabel')}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }} align="right">
-                  {t('common.actions')}
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                    <CircularProgress sx={{ color: THEME_COLOR }} />
-                  </TableCell>
-                </TableRow>
-              ) : filteredCertificates.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                    <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
-                      {searchTerm
-                        ? t('costs.certificates.noSearchResults', 'No certificates match your search')
-                        : t('costs.noData', 'No certificates found')}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredCertificates.map((cert) => (
-                  <TableRow
-                    key={cert.id}
-                    hover
-                    sx={{
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-                      '& td': { py: 1.5, fontSize: '0.875rem' }
-                    }}
-                  >
-                    <TableCell>
-                      <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+      {/* 表格/卡片列表 */}
+      {isMobile ? (
+        /* 移动端卡片视图 */
+        <Box>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={6}>
+              <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
+            </Box>
+          ) : filteredCertificates.length === 0 ? (
+            <Box textAlign="center" py={6}>
+              <Typography variant="body2" color="text.secondary">
+                {searchTerm
+                  ? t('costs.certificates.noSearchResults', 'No certificates match your search')
+                  : t('costs.noData', 'No certificates found')}
+              </Typography>
+            </Box>
+          ) : (
+            filteredCertificates.map((cert) => (
+              <Card
+                key={cert.id}
+                sx={{
+                  borderRadius: 2,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  mb: 1.5,
+                  bgcolor: '#fff',
+                }}
+              >
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Box flex={1} mr={1}>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a', mb: 0.5 }}>
                         {cert.certificateName}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={certificateTypes.find(t => t.value === cert.certificateType)?.label}
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          fontSize: '0.75rem',
-                          height: 22,
-                          bgcolor: alpha(THEME_COLOR, 0.1),
-                          color: THEME_COLOR,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
-                        {cert.certificateNumber}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
-                        {cert.expiryDate ? format(new Date(cert.expiryDate), 'yyyy-MM-dd') : '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={statusOptions.find(s => s.value === cert.status)?.label}
-                        size="small"
-                        sx={{
-                          bgcolor: alpha(getStatusColor(cert.status), 0.1),
-                          color: getStatusColor(cert.status),
-                          fontWeight: 500,
-                          fontSize: '0.75rem',
-                          height: 22,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, cert)}
-                        sx={{
-                          color: '#999',
-                          '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
-                        }}
-                      >
-                        <MoreVertIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
+                      <Box display="flex" gap={0.5} flexWrap="wrap">
+                        <Chip
+                          label={certificateTypes.find(t => t.value === cert.certificateType)?.label}
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            fontSize: '0.65rem',
+                            height: 20,
+                            bgcolor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
+                          }}
+                        />
+                        <Chip
+                          label={statusOptions.find(s => s.value === cert.status)?.label}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(getStatusColor(cert.status), 0.1),
+                            color: getStatusColor(cert.status),
+                            fontWeight: 500,
+                            fontSize: '0.65rem',
+                            height: 20,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, cert)}
+                      sx={{ color: '#888', p: 0.5 }}
+                    >
+                      <MoreVertIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {t('costs.certificates.certificateNumber')}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                      {cert.certificateNumber || '-'}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                      {t('costs.certificates.expiryDate')}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                      {cert.expiryDate ? format(new Date(cert.expiryDate), 'yyyy-MM-dd') : '-'}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格视图 */
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: '#fff',
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                    {t('costs.certificates.certificateName')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                    {t('costs.certificates.certificateType')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                    {t('costs.certificates.certificateNumber')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                    {t('costs.certificates.expiryDate')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }}>
+                    {t('costs.certificates.statusLabel')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#666', py: 1.5 }} align="right">
+                    {t('common.actions')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                      <CircularProgress sx={{ color: THEME_COLOR }} />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Card>
+                ) : filteredCertificates.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                      <Typography sx={{ fontSize: '0.875rem', color: '#888' }}>
+                        {searchTerm
+                          ? t('costs.certificates.noSearchResults', 'No certificates match your search')
+                          : t('costs.noData', 'No certificates found')}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredCertificates.map((cert) => (
+                    <TableRow
+                      key={cert.id}
+                      hover
+                      sx={{
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                        '& td': { py: 1.5, fontSize: '0.875rem' }
+                      }}
+                    >
+                      <TableCell>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a' }}>
+                          {cert.certificateName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={certificateTypes.find(t => t.value === cert.certificateType)?.label}
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            fontSize: '0.75rem',
+                            height: 22,
+                            bgcolor: alpha(THEME_COLOR, 0.1),
+                            color: THEME_COLOR,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
+                          {cert.certificateNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontSize: '0.875rem', color: '#666' }}>
+                          {cert.expiryDate ? format(new Date(cert.expiryDate), 'yyyy-MM-dd') : '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={statusOptions.find(s => s.value === cert.status)?.label}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(getStatusColor(cert.status), 0.1),
+                            color: getStatusColor(cert.status),
+                            fontWeight: 500,
+                            fontSize: '0.75rem',
+                            height: 22,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, cert)}
+                          sx={{
+                            color: '#999',
+                            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      )}
 
       {/* Actions Menu - 简约风格 */}
       <Menu
@@ -483,13 +577,14 @@ const CertificateManagement: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
+        fullScreen={isMobile}
         TransitionProps={{
           onExited: handleDialogExited,
         }}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -512,9 +607,9 @@ const CertificateManagement: React.FC = () => {
             </IconButton>
           </Box>
         </Box>
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
+        <DialogContent sx={{ px: isMobile ? 2 : 3, py: 2.5 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -533,7 +628,7 @@ const CertificateManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -556,7 +651,7 @@ const CertificateManagement: React.FC = () => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -575,7 +670,7 @@ const CertificateManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -593,7 +688,7 @@ const CertificateManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -613,7 +708,7 @@ const CertificateManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -633,7 +728,7 @@ const CertificateManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -653,7 +748,7 @@ const CertificateManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={isMobile ? 12 : 6}>
               <TextField
                 fullWidth
                 size="small"
@@ -735,6 +830,7 @@ const CertificateManagement: React.FC = () => {
           sx: {
             borderRadius: 2.5,
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
@@ -785,14 +881,18 @@ const CertificateManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{
             width: '100%',
-            borderRadius: 2,
+            borderRadius: isMobile ? 1.5 : 2,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
           }}
         >
           {snackbar.message}

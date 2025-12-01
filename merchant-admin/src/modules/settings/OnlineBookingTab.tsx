@@ -20,6 +20,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   ContentCopy as CopyIcon,
@@ -174,6 +176,10 @@ const width80HiddenBoxSx = { width: 80, visibility: 'hidden' as const };
 const OnlineBookingTab: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<OnlineBookingConfig>(defaultConfig);
   const [notification, setNotification] = useState<{
@@ -465,12 +471,27 @@ const OnlineBookingTab: React.FC = () => {
   return (
     <Box>
       {/* 第一行：在线预约开关 (全宽) */}
-      <Card sx={{ ...cardSx, height: 'auto', mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <CardHeader
-            icon={<CalendarIcon sx={{ fontSize: 18, color: '#666' }} />}
-            title={t('settings.onlineBooking.enableTitle')}
-          />
+      <Card sx={{ ...cardSx, height: 'auto', mb: isMobile ? 2 : 3 }}>
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+          <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5}>
+            <Box
+              sx={{
+                width: isMobile ? 32 : 36,
+                height: isMobile ? 32 : 36,
+                borderRadius: 2,
+                bgcolor: '#f5f5f5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mr: 1.5,
+              }}
+            >
+              <CalendarIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
+            </Box>
+            <Typography variant="subtitle1" fontWeight={600} color="#111827" sx={{ fontSize: isMobile ? '0.9rem' : undefined }}>
+              {t('settings.onlineBooking.enableTitle')}
+            </Typography>
+          </Box>
 
           <SettingRow
             label={t('settings.onlineBooking.enableOnlineBooking')}
@@ -487,70 +508,157 @@ const OnlineBookingTab: React.FC = () => {
 
           {config.enabled && (
             <Box mt={2}>
-              <Typography variant="body2" fontWeight={500} color="#333" mb={1}>
+              <Typography variant="body2" fontWeight={500} color="#333" mb={1} sx={{ fontSize: isMobile ? '0.8rem' : undefined }}>
                 {t('settings.onlineBooking.bookingLink')}
               </Typography>
-              <Box display="flex" gap={1} alignItems="center">
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={bookingUrl}
-                  InputProps={{
-                    readOnly: true,
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LinkIcon sx={{ color: '#999', fontSize: 18 }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Tooltip title={t('common.copy')}>
-                  <IconButton onClick={copyBookingUrl} size="small">
-                    <CopyIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('common.openInNewTab')}>
-                  <IconButton onClick={() => window.open(bookingUrl, '_blank')} size="small">
-                    <OpenInNewIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('settings.onlineBooking.regenerateSlug')}>
-                  <Button
+              {isMobile ? (
+                // 移动端布局
+                <Box>
+                  <TextField
+                    fullWidth
                     size="small"
-                    variant="outlined"
-                    onClick={() => setOpenRegenerateDialog(true)}
-                    sx={{
-                      textTransform: 'none',
-                      minWidth: 'auto',
-                      px: 1.5,
-                      whiteSpace: 'nowrap',
-                      borderColor: '#ddd',
-                      color: '#666',
-                      '&:hover': { borderColor: '#999', bgcolor: '#f5f5f5' }
+                    value={bookingUrl}
+                    InputProps={{
+                      readOnly: true,
+                      sx: { fontSize: '0.75rem' },
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LinkIcon sx={{ color: '#999', fontSize: 16 }} />
+                        </InputAdornment>
+                      ),
                     }}
-                  >
-                    {t('settings.onlineBooking.regenerate')}
-                  </Button>
-                </Tooltip>
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                {t('settings.onlineBooking.slugNote')}
-              </Typography>
+                    sx={{ mb: 1 }}
+                  />
+                  <Box display="flex" gap={1}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<CopyIcon sx={{ fontSize: 14 }} />}
+                      onClick={copyBookingUrl}
+                      sx={{
+                        flex: 1,
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        borderColor: '#ddd',
+                        color: '#666',
+                      }}
+                    >
+                      {t('common.copy')}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                      onClick={() => window.open(bookingUrl, '_blank')}
+                      sx={{
+                        flex: 1,
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        borderColor: '#ddd',
+                        color: '#666',
+                      }}
+                    >
+                      {t('common.openInNewTab')}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setOpenRegenerateDialog(true)}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        py: 0.5,
+                        borderColor: '#ddd',
+                        color: '#666',
+                      }}
+                    >
+                      {t('settings.onlineBooking.regenerate')}
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                // 桌面端布局
+                <Box display="flex" gap={1} alignItems="center">
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={bookingUrl}
+                    InputProps={{
+                      readOnly: true,
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LinkIcon sx={{ color: '#999', fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Tooltip title={t('common.copy')}>
+                    <IconButton onClick={copyBookingUrl} size="small">
+                      <CopyIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('common.openInNewTab')}>
+                    <IconButton onClick={() => window.open(bookingUrl, '_blank')} size="small">
+                      <OpenInNewIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('settings.onlineBooking.regenerateSlug')}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setOpenRegenerateDialog(true)}
+                      sx={{
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                        px: 1.5,
+                        whiteSpace: 'nowrap',
+                        borderColor: '#ddd',
+                        color: '#666',
+                        '&:hover': { borderColor: '#999', bgcolor: '#f5f5f5' }
+                      }}
+                    >
+                      {t('settings.onlineBooking.regenerate')}
+                    </Button>
+                  </Tooltip>
+                </Box>
+              )}
+              {!isMobile && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  {t('settings.onlineBooking.slugNote')}
+                </Typography>
+              )}
             </Box>
           )}
         </CardContent>
       </Card>
 
       {/* 第二行：预约规则 + 取消政策 */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      <Grid container spacing={isMobile ? 2 : 3} sx={{ mb: isMobile ? 2 : 3 }}>
         {/* 左列：预约规则 */}
         <Grid item xs={12} md={6}>
           <Card sx={cardSx}>
-            <CardContent sx={{ p: 3 }}>
-              <CardHeader
-                icon={<ScheduleIcon sx={{ fontSize: 18, color: '#666' }} />}
-                title={t('settings.onlineBooking.bookingRules')}
-              />
+            <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+              <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5}>
+                <Box
+                  sx={{
+                    width: isMobile ? 32 : 36,
+                    height: isMobile ? 32 : 36,
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 1.5,
+                  }}
+                >
+                  <ScheduleIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
+                </Box>
+                <Typography variant="subtitle1" fontWeight={600} color="#111827" sx={{ fontSize: isMobile ? '0.9rem' : undefined }}>
+                  {t('settings.onlineBooking.bookingRules')}
+                </Typography>
+              </Box>
 
               <Box mb={2}>
                 <Typography variant="body2" fontWeight={500} color="#333" mb={1}>
@@ -620,11 +728,26 @@ const OnlineBookingTab: React.FC = () => {
         {/* 右列：取消/改期政策 */}
         <Grid item xs={12} md={6}>
           <Card sx={cardSx}>
-            <CardContent sx={{ p: 3 }}>
-              <CardHeader
-                icon={<CancelIcon sx={{ fontSize: 18, color: '#666' }} />}
-                title={t('settings.onlineBooking.cancellationPolicy')}
-              />
+            <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+              <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5}>
+                <Box
+                  sx={{
+                    width: isMobile ? 32 : 36,
+                    height: isMobile ? 32 : 36,
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 1.5,
+                  }}
+                >
+                  <CancelIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
+                </Box>
+                <Typography variant="subtitle1" fontWeight={600} color="#111827" sx={{ fontSize: isMobile ? '0.9rem' : undefined }}>
+                  {t('settings.onlineBooking.cancellationPolicy')}
+                </Typography>
+              </Box>
 
               {/* 允许客户取消预约 - 直接渲染避免失焦 */}
               <Box
@@ -710,15 +833,30 @@ const OnlineBookingTab: React.FC = () => {
       </Grid>
 
       {/* 第三行：商户Logo + 外观设置 */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      <Grid container spacing={isMobile ? 2 : 3} sx={{ mb: isMobile ? 2 : 3 }}>
         {/* 左列：商户Logo */}
         <Grid item xs={12} md={6}>
           <Card sx={cardSx}>
-            <CardContent sx={{ p: 3 }}>
-              <CardHeader
-                icon={<StorefrontIcon sx={{ fontSize: 18, color: '#666' }} />}
-                title={t('settings.onlineBooking.merchantLogo')}
-              />
+            <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+              <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5}>
+                <Box
+                  sx={{
+                    width: isMobile ? 32 : 36,
+                    height: isMobile ? 32 : 36,
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 1.5,
+                  }}
+                >
+                  <StorefrontIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
+                </Box>
+                <Typography variant="subtitle1" fontWeight={600} color="#111827" sx={{ fontSize: isMobile ? '0.9rem' : undefined }}>
+                  {t('settings.onlineBooking.merchantLogo')}
+                </Typography>
+              </Box>
 
               <Box display="flex" alignItems="flex-start" gap={3}>
                 <ImageUploader
@@ -746,11 +884,26 @@ const OnlineBookingTab: React.FC = () => {
         {/* 右列：外观设置 */}
         <Grid item xs={12} md={6}>
           <Card sx={cardSx}>
-            <CardContent sx={{ p: 3 }}>
-              <CardHeader
-                icon={<PaletteIcon sx={{ fontSize: 18, color: '#666' }} />}
-                title={t('settings.onlineBooking.appearance')}
-              />
+            <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+              <Box display="flex" alignItems="center" mb={isMobile ? 2 : 2.5}>
+                <Box
+                  sx={{
+                    width: isMobile ? 32 : 36,
+                    height: isMobile ? 32 : 36,
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 1.5,
+                  }}
+                >
+                  <PaletteIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
+                </Box>
+                <Typography variant="subtitle1" fontWeight={600} color="#111827" sx={{ fontSize: isMobile ? '0.9rem' : undefined }}>
+                  {t('settings.onlineBooking.appearance')}
+                </Typography>
+              </Box>
 
               <SettingRow
                 label={t('settings.onlineBooking.showTechnicianPhotos')}
@@ -781,14 +934,14 @@ const OnlineBookingTab: React.FC = () => {
       </Grid>
 
       {/* 第四行：Google Business 集成 (全宽) */}
-      <Card sx={{ ...cardSx, height: 'auto', mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
+      <Card sx={{ ...cardSx, height: 'auto', mb: isMobile ? 2 : 3 }}>
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={isMobile ? 2 : 2.5}>
             <Box display="flex" alignItems="center">
               <Box
                 sx={{
-                  width: 36,
-                  height: 36,
+                  width: isMobile ? 32 : 36,
+                  height: isMobile ? 32 : 36,
                   borderRadius: 2,
                   bgcolor: '#f5f5f5',
                   display: 'flex',
@@ -797,9 +950,9 @@ const OnlineBookingTab: React.FC = () => {
                   mr: 1.5,
                 }}
               >
-                <GoogleIcon sx={{ fontSize: 18, color: '#666' }} />
+                <GoogleIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
               </Box>
-              <Typography variant="subtitle1" fontWeight={600} color="#111827">
+              <Typography variant="subtitle1" fontWeight={600} color="#111827" sx={{ fontSize: isMobile ? '0.9rem' : undefined }}>
                 {t('settings.onlineBooking.googleIntegration')}
               </Typography>
             </Box>
@@ -808,7 +961,7 @@ const OnlineBookingTab: React.FC = () => {
               size="small"
               sx={{
                 fontWeight: 500,
-                fontSize: '0.75rem',
+                fontSize: isMobile ? '0.65rem' : '0.75rem',
                 bgcolor: config.googleBusinessEnabled ? '#e8f5e9' : '#f5f5f5',
                 color: config.googleBusinessEnabled ? '#2e7d32' : '#666',
               }}
@@ -957,6 +1110,7 @@ const OnlineBookingTab: React.FC = () => {
             borderRadius: 2.5,
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
             maxWidth: 360,
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
@@ -1013,11 +1167,21 @@ const OnlineBookingTab: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setNotification({ ...notification, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: isMobile ? 16 : 24 }}
       >
         <Alert
           onClose={() => setNotification({ ...notification, open: false })}
           severity={notification.severity}
-          sx={{ borderRadius: 2 }}
+          sx={{
+            borderRadius: 2,
+            width: isMobile ? 'auto' : '100%',
+            minWidth: isMobile ? 200 : 280,
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: isMobile ? 0.5 : 1,
+            '& .MuiAlert-icon': {
+              fontSize: isMobile ? 18 : 22,
+            },
+          }}
         >
           {notification.message}
         </Alert>

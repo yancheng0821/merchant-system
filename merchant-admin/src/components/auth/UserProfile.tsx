@@ -16,6 +16,8 @@ import {
   Fade,
   Tooltip,
   Alert,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -51,6 +53,11 @@ const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const { userPermissions, isSuperAdmin } = usePermission();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: user?.username || '',
@@ -155,7 +162,7 @@ const UserProfile: React.FC = () => {
               onClose={() => closeSnackbar(key)}
               sx={{
                 width: '100%',
-                minWidth: '400px',
+                minWidth: { xs: '280px', sm: '400px' },
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
@@ -240,7 +247,7 @@ const UserProfile: React.FC = () => {
               onClose={() => closeSnackbar(key)}
               sx={{
                 width: '100%',
-                minWidth: '400px',
+                minWidth: { xs: '280px', sm: '400px' },
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
@@ -295,7 +302,7 @@ const UserProfile: React.FC = () => {
               onClose={() => closeSnackbar(key)}
               sx={{
                 width: '100%',
-                minWidth: '400px',
+                minWidth: { xs: '280px', sm: '400px' },
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
@@ -322,7 +329,7 @@ const UserProfile: React.FC = () => {
               onClose={() => closeSnackbar(key)}
               sx={{
                 width: '100%',
-                minWidth: '400px',
+                minWidth: { xs: '280px', sm: '400px' },
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
@@ -351,7 +358,7 @@ const UserProfile: React.FC = () => {
             onClose={() => closeSnackbar(key)}
             sx={{
               width: '100%',
-              minWidth: '400px',
+              minWidth: { xs: '280px', sm: '400px' },
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
@@ -378,7 +385,7 @@ const UserProfile: React.FC = () => {
             onClose={() => closeSnackbar(key)}
             sx={{
               width: '100%',
-              minWidth: '400px',
+              minWidth: { xs: '280px', sm: '400px' },
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
@@ -401,7 +408,7 @@ const UserProfile: React.FC = () => {
             onClose={() => closeSnackbar(key)}
             sx={{
               width: '100%',
-              minWidth: '400px',
+              minWidth: { xs: '280px', sm: '400px' },
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
@@ -425,7 +432,7 @@ const UserProfile: React.FC = () => {
             onClose={() => closeSnackbar(key)}
             sx={{
               width: '100%',
-              minWidth: '400px',
+              minWidth: { xs: '280px', sm: '400px' },
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
@@ -444,7 +451,7 @@ const UserProfile: React.FC = () => {
             onClose={() => closeSnackbar(key)}
             sx={{
               width: '100%',
-              minWidth: '400px',
+              minWidth: { xs: '280px', sm: '400px' },
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
@@ -531,50 +538,25 @@ const UserProfile: React.FC = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: isMobile ? 1.5 : 3 }}>
       {/* 页面标题 */}
-      <Box mb={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography
-              variant="h5"
-              component="h1"
-              sx={{
-                fontWeight: 500,
-                color: '#1a1a1a',
-                mb: 0.5,
-              }}
-            >
-              {t('auth.userProfile')}
-            </Typography>
-            <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
-              {t('auth.userProfileSubtitle')}
-            </Typography>
-          </Box>
-          {/* 修改密码按钮 */}
-          <Button
-            variant="contained"
-            size="medium"
-            startIcon={<LockResetIcon />}
-            sx={{
-              px: 3,
-              py: 1,
-              textTransform: 'none',
-              fontWeight: 500,
-              fontSize: '0.9rem',
-              borderRadius: 2,
-              bgcolor: '#1a1a1a',
-              boxShadow: 'none',
-              '&:hover': {
-                bgcolor: '#333',
-                boxShadow: 'none',
-              },
-            }}
-            onClick={handleOpenPasswordDialog}
-          >
-            {t('auth.changePassword')}
-          </Button>
-        </Box>
+      <Box mb={isMobile ? 2 : 4}>
+        <Typography
+          variant={isMobile ? 'h6' : 'h5'}
+          component="h1"
+          sx={{
+            fontWeight: 500,
+            color: '#1a1a1a',
+            mb: 0.5,
+          }}
+        >
+          {t('auth.userProfile')}
+        </Typography>
+        {!isMobile && (
+          <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
+            {t('auth.userProfileSubtitle')}
+          </Typography>
+        )}
       </Box>
 
       {/* 无权限提示 */}
@@ -606,7 +588,7 @@ const UserProfile: React.FC = () => {
       {/* 主要内容卡片 */}
       <Card
         sx={{
-          borderRadius: 3,
+          borderRadius: isMobile ? 2 : 3,
           boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           border: '1px solid rgba(0,0,0,0.06)',
         }}
@@ -616,26 +598,27 @@ const UserProfile: React.FC = () => {
           <Paper
             elevation={0}
             sx={{
-              p: 4,
+              p: isMobile ? 2 : 4,
               background: '#fafafa',
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
+              borderTopLeftRadius: isMobile ? 8 : 12,
+              borderTopRightRadius: isMobile ? 8 : 12,
             }}
           >
-            <Box display="flex" alignItems="center" gap={3}>
-              <Box position="relative">
+            <Box display="flex" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 2 : 3}>
+              {/* 移动端：头像居中 */}
+              <Box position="relative" sx={isMobile ? { mx: 'auto' } : {}}>
                 <Avatar
                   src={getFullImageUrl(user.avatar)}
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: isMobile ? 72 : 80,
+                    height: isMobile ? 72 : 80,
                     border: '3px solid white',
                     boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
                   }}
                 >
-                  <PersonIcon sx={{ fontSize: 40 }} />
+                  <PersonIcon sx={{ fontSize: isMobile ? 36 : 40 }} />
                 </Avatar>
-                
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -643,7 +626,7 @@ const UserProfile: React.FC = () => {
                   accept="image/*"
                   style={{ display: 'none' }}
                 />
-                
+
                 <IconButton
                   onClick={() => fileInputRef.current?.click()}
                   disabled={avatarUploading}
@@ -653,8 +636,8 @@ const UserProfile: React.FC = () => {
                     right: -5,
                     bgcolor: '#1a1a1a',
                     color: 'white',
-                    width: 32,
-                    height: 32,
+                    width: isMobile ? 28 : 32,
+                    height: isMobile ? 28 : 32,
                     '&:hover': {
                       bgcolor: '#333',
                     },
@@ -664,58 +647,62 @@ const UserProfile: React.FC = () => {
                   }}
                 >
                   {avatarUploading ? (
-                    <CircularProgress size={16} color="inherit" />
+                    <CircularProgress size={isMobile ? 14 : 16} color="inherit" />
                   ) : (
-                    <CameraIcon sx={{ fontSize: 16 }} />
+                    <CameraIcon sx={{ fontSize: isMobile ? 14 : 16 }} />
                   )}
                 </IconButton>
               </Box>
 
-              <Box flex={1}>
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+              {/* 移动端：用户信息居中 */}
+              <Box flex={1} sx={isMobile ? { textAlign: 'center', width: '100%' } : {}}>
+                <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 0.5 }}>
                   {user.realName || user.username}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                   {user.email}
                 </Typography>
-                <Box display="flex" flexWrap="wrap" gap={1}>
+                <Box display="flex" flexWrap="wrap" gap={0.5} sx={isMobile ? { justifyContent: 'center' } : {}}>
                   {getRoleChips(user.roles)}
                 </Box>
               </Box>
 
-              <Box>
+              {/* 移动端：注册日期显示在下方 */}
+              <Box sx={isMobile ? { width: '100%', textAlign: 'center', pt: 1, borderTop: '1px solid rgba(0,0,0,0.06)' } : {}}>
                 <Typography variant="caption" color="text.secondary" display="block">
                   {t('auth.memberSince')}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                   {user.createdAt ? formatUtcToMerchantTime(user.createdAt, 'MMM dd, yyyy') : 'N/A'}
                 </Typography>
               </Box>
             </Box>
 
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block', fontSize: isMobile ? '0.65rem' : '0.75rem', textAlign: isMobile ? 'center' : 'left' }}>
               {t('auth.avatarUploadTip')}
             </Typography>
           </Paper>
 
           {/* 详细信息部分 */}
-          <Box sx={{ p: 4 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Box sx={{ p: isMobile ? 2 : 4 }}>
+            <Box display="flex" justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1.5 : 0} mb={isMobile ? 2 : 3}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
                 {t('auth.basicInfo')}
               </Typography>
-              
+
               {!editing ? (
                 <Button
-                  startIcon={<EditIcon />}
+                  startIcon={<EditIcon sx={{ fontSize: isMobile ? 16 : 18 }} />}
                   onClick={handleEdit}
                   size="small"
+                  fullWidth={isMobile}
                   sx={{
                     textTransform: 'none',
                     color: '#666',
                     borderRadius: 1.5,
                     px: 2,
                     py: 0.75,
+                    fontSize: isMobile ? '0.8rem' : '0.875rem',
                     '&:hover': {
                       backgroundColor: 'rgba(0,0,0,0.04)',
                     },
@@ -724,9 +711,9 @@ const UserProfile: React.FC = () => {
                   {t('auth.editProfile')}
                 </Button>
               ) : (
-                <Box display="flex" gap={1}>
+                <Box display="flex" gap={1} sx={isMobile ? { width: '100%' } : {}}>
                   <Button
-                    startIcon={loading ? <CircularProgress size={16} sx={{ color: '#1a1a1a' }} /> : <CheckCircleIcon />}
+                    startIcon={loading ? <CircularProgress size={14} sx={{ color: '#1a1a1a' }} /> : <CheckCircleIcon sx={{ fontSize: 16 }} />}
                     onClick={handleSave}
                     disabled={loading}
                     variant="outlined"
@@ -736,8 +723,10 @@ const UserProfile: React.FC = () => {
                       color: '#1a1a1a',
                       borderColor: '#1a1a1a',
                       borderRadius: 1.5,
-                      px: 2,
+                      px: isMobile ? 1.5 : 2,
                       py: 0.75,
+                      fontSize: isMobile ? '0.75rem' : '0.875rem',
+                      flex: isMobile ? 1 : 'none',
                       '&:hover': {
                         backgroundColor: 'rgba(0,0,0,0.04)',
                         borderColor: '#1a1a1a',
@@ -751,15 +740,17 @@ const UserProfile: React.FC = () => {
                     {t('auth.saveChanges')}
                   </Button>
                   <Button
-                    startIcon={<CancelIcon />}
+                    startIcon={<CancelIcon sx={{ fontSize: 16 }} />}
                     onClick={handleCancel}
                     size="small"
                     sx={{
                       textTransform: 'none',
                       color: '#888',
                       borderRadius: 1.5,
-                      px: 2,
+                      px: isMobile ? 1.5 : 2,
                       py: 0.75,
+                      fontSize: isMobile ? '0.75rem' : '0.875rem',
+                      flex: isMobile ? 1 : 'none',
                       '&:hover': {
                         backgroundColor: 'rgba(0,0,0,0.04)',
                       },
@@ -771,7 +762,7 @@ const UserProfile: React.FC = () => {
               )}
             </Box>
 
-            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={3}>
+            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={isMobile ? 2 : 3}>
               <TextField
                 fullWidth
                 label={t('auth.username')}
@@ -890,6 +881,32 @@ const UserProfile: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* 修改密码按钮 - 底部 */}
+      <Box sx={{ mt: isMobile ? 2 : 3 }}>
+        <Button
+          variant="contained"
+          size={isMobile ? 'medium' : 'large'}
+          fullWidth
+          startIcon={<LockResetIcon sx={{ fontSize: isMobile ? 18 : 22 }} />}
+          sx={{
+            py: isMobile ? 1.25 : 1.5,
+            textTransform: 'none',
+            fontWeight: 500,
+            fontSize: isMobile ? '0.875rem' : '1rem',
+            borderRadius: 2,
+            bgcolor: '#1a1a1a',
+            boxShadow: 'none',
+            '&:hover': {
+              bgcolor: '#333',
+              boxShadow: 'none',
+            },
+          }}
+          onClick={handleOpenPasswordDialog}
+        >
+          {t('auth.changePassword')}
+        </Button>
+      </Box>
+
       {/* 修改密码弹窗 */}
       <Dialog
         open={passwordDialogOpen}
@@ -898,7 +915,10 @@ const UserProfile: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: { xs: 2, sm: 3 },
+            m: { xs: 2, sm: 'auto' },
+            width: { xs: 'calc(100% - 32px)', sm: '100%' },
+            maxHeight: { xs: 'calc(100vh - 32px)', sm: 'none' },
           }
         }}
       >

@@ -23,6 +23,8 @@ import {
   alpha,
   Snackbar,
   Alert,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -74,6 +76,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -492,9 +498,16 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
       <Snackbar open={snackbar.open} autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}
-          sx={{ width: '100%', borderRadius: 1.5 }}>
+          sx={{
+            width: '100%',
+            borderRadius: 1.5,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

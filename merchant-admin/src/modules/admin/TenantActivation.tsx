@@ -32,6 +32,8 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -49,6 +51,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 const TenantActivation: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -249,128 +255,224 @@ const TenantActivation: React.FC = () => {
   return (
     <Box>
       {/* 页面标题 */}
-      <Box mb={3}>
+      <Box mb={isMobile ? 2 : 3}>
         <Typography
-          variant="h5"
+          variant={isMobile ? 'h6' : 'h5'}
           component="h1"
           sx={{
             fontWeight: 600,
             color: THEME_COLOR,
             mb: 0.5,
+            fontSize: isMobile ? '1.1rem' : undefined,
           }}
         >
           {t('admin.tenantActivation.title')}
         </Typography>
-        <Typography variant="body2" sx={{ color: '#888' }}>
-          {t('admin.tenantActivation.subtitle')}
-        </Typography>
+        {!isMobile && (
+          <Typography variant="body2" sx={{ color: '#888' }}>
+            {t('admin.tenantActivation.subtitle')}
+          </Typography>
+        )}
       </Box>
 
-      {/* 提示信息 */}
-      <Alert
-        severity="info"
-        icon={<InfoIcon sx={{ color: THEME_COLOR }} />}
-        sx={{
-          mb: 3,
-          borderRadius: 2,
-          backgroundColor: alpha(THEME_COLOR, 0.06),
-          border: '1px solid',
-          borderColor: alpha(THEME_COLOR, 0.15),
-          '& .MuiAlert-message': {
-            color: '#666',
-            fontSize: '0.875rem',
-          },
-        }}
-      >
-        {t('admin.tenantActivation.infoMessage')}
-      </Alert>
+      {/* 提示信息 - 移动端隐藏 */}
+      {!isMobile && (
+        <Alert
+          severity="info"
+          icon={<InfoIcon sx={{ color: THEME_COLOR }} />}
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            backgroundColor: alpha(THEME_COLOR, 0.06),
+            border: '1px solid',
+            borderColor: alpha(THEME_COLOR, 0.15),
+            '& .MuiAlert-message': {
+              color: '#666',
+              fontSize: '0.875rem',
+            },
+          }}
+        >
+          {t('admin.tenantActivation.infoMessage')}
+        </Alert>
+      )}
 
       {/* 简约筛选工具栏 */}
       <Card
         sx={{
-          mb: 3,
+          mb: isMobile ? 2 : 3,
           borderRadius: 2.5,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.06)',
           bgcolor: '#fff',
         }}
       >
-        <CardContent sx={{ py: 2, px: 2.5 }}>
-          <Box display="flex" flexWrap="wrap" alignItems="center" gap={2}>
-            {/* Status Filter */}
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                displayEmpty
+        <CardContent sx={{ py: isMobile ? 1.5 : 2, px: isMobile ? 2 : 2.5 }}>
+          <Box display="flex" flexWrap="wrap" alignItems="center" gap={isMobile ? 1 : 2}>
+            {/* 筛选和排序按钮组 */}
+            <Box display="flex" alignItems="center" gap={1}>
+              {/* Status Filter */}
+              <FormControl size="small">
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 1.5,
+                    bgcolor: '#fff',
+                    fontSize: isMobile ? '0.75rem' : undefined,
+                    minWidth: isMobile ? 100 : 160,
+                    height: isMobile ? 32 : 40,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  }}
+                >
+                  <MenuItem value="ALL">{t('admin.tenantActivation.allStatus')}</MenuItem>
+                  <MenuItem value="ACTIVE">{t('admin.tenantActivation.statusActive')}</MenuItem>
+                  <MenuItem value="INACTIVE">{t('admin.tenantActivation.statusInactive')}</MenuItem>
+                  <MenuItem value="SUSPENDED">{t('admin.tenantActivation.statusSuspended')}</MenuItem>
+                </Select>
+              </FormControl>
+
+              {/* Sort Order */}
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={sortOrder === 'desc' ? <ArrowDownwardIcon sx={{ fontSize: isMobile ? 14 : 16 }} /> : <ArrowUpwardIcon sx={{ fontSize: isMobile ? 14 : 16 }} />}
+                onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
                 sx={{
                   borderRadius: 1.5,
-                  bgcolor: '#fff',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d0d0d0' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: THEME_COLOR, borderWidth: '1px' },
+                  textTransform: 'none',
+                  borderColor: isMonochrome ? '#999' : THEME_COLOR,
+                  color: THEME_COLOR,
+                  fontSize: isMobile ? '0.75rem' : '0.8125rem',
+                  px: isMobile ? 1 : 2,
+                  height: isMobile ? 32 : 40,
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    borderColor: THEME_COLOR_DARK,
+                    backgroundColor: isMonochrome ? 'rgba(0,0,0,0.04)' : 'rgba(20, 184, 166, 0.08)',
+                  },
                 }}
               >
-                <MenuItem value="ALL">{t('admin.tenantActivation.allStatus')}</MenuItem>
-                <MenuItem value="ACTIVE">{t('admin.tenantActivation.statusActive')}</MenuItem>
-                <MenuItem value="INACTIVE">{t('admin.tenantActivation.statusInactive')}</MenuItem>
-                <MenuItem value="SUSPENDED">{t('admin.tenantActivation.statusSuspended')}</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Sort Order */}
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={sortOrder === 'desc' ? <ArrowDownwardIcon sx={{ fontSize: 16 }} /> : <ArrowUpwardIcon sx={{ fontSize: 16 }} />}
-              onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-              sx={{
-                borderRadius: 1.5,
-                textTransform: 'none',
-                borderColor: isMonochrome ? '#999' : THEME_COLOR,
-                color: THEME_COLOR,
-                fontSize: '0.8125rem',
-                '&:hover': {
-                  borderColor: THEME_COLOR_DARK,
-                  backgroundColor: isMonochrome ? 'rgba(0,0,0,0.04)' : 'rgba(20, 184, 166, 0.08)',
-                },
-              }}
-            >
-              {sortOrder === 'desc' ? t('admin.tenantActivation.newest') : t('admin.tenantActivation.oldest')}
-            </Button>
+                {sortOrder === 'desc' ? t('admin.tenantActivation.newest') : t('admin.tenantActivation.oldest')}
+              </Button>
+            </Box>
 
             {/* Results Count */}
             <Box sx={{ flex: 1 }} />
-            <Typography variant="body2" sx={{ color: '#888', fontSize: '0.8125rem' }}>
+            <Typography variant="body2" sx={{ color: '#888', fontSize: isMobile ? '0.7rem' : '0.8125rem' }}>
               {t('admin.tenantActivation.showing')} <strong style={{ color: '#1a1a1a' }}>{filteredTenants.length}</strong> {t('admin.tenantActivation.merchants')}
             </Typography>
           </Box>
         </CardContent>
       </Card>
 
-      {/* 简约表格卡片 */}
-      <Card
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: '#fff',
-        }}
-      >
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-              <CircularProgress sx={{ color: THEME_COLOR }} />
-            </Box>
-          ) : filteredTenants.length === 0 ? (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-              <Typography variant="body2" sx={{ color: '#888' }}>
-                {statusFilter !== 'ALL'
-                  ? t('admin.tenantActivation.noTenantsWithFilter')
-                  : t('admin.tenantActivation.noTenants')}
-              </Typography>
-            </Box>
-          ) : (
+      {/* 数据展示 - 移动端卡片/桌面端表格 */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+          <CircularProgress sx={{ color: THEME_COLOR }} />
+        </Box>
+      ) : filteredTenants.length === 0 ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+          <Typography variant="body2" sx={{ color: '#888' }}>
+            {statusFilter !== 'ALL'
+              ? t('admin.tenantActivation.noTenantsWithFilter')
+              : t('admin.tenantActivation.noTenants')}
+          </Typography>
+        </Box>
+      ) : isMobile ? (
+        // 移动端卡片视图
+        <Stack spacing={1.5}>
+          {filteredTenants.map((tenant) => (
+            <Card
+              key={tenant.id}
+              sx={{
+                borderRadius: 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                border: '1px solid rgba(0,0,0,0.06)',
+                bgcolor: '#fff',
+              }}
+            >
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                {/* 顶部：商户名称 + 操作按钮 */}
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+                  <Box sx={{ flex: 1, mr: 1 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: '#1a1a1a', mb: 0.5 }}>
+                      {tenant.tenantName}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                      {tenant.tenantCode}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    {getStatusChip(tenant.status)}
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, tenant)}
+                      sx={{
+                        color: '#999',
+                        p: 0.5,
+                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+                      }}
+                    >
+                      <MoreVertIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                {/* 联系人信息 */}
+                <Box sx={{ display: 'grid', gap: 0.75 }}>
+                  <Box display="flex" alignItems="center">
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888', minWidth: 60 }}>
+                      {t('admin.tenantActivation.contactPerson')}:
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#666', ml: 0.5 }}>
+                      {tenant.contactPerson}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center">
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888', minWidth: 60 }}>
+                      {t('admin.tenantActivation.contactPhone')}:
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#666', ml: 0.5 }}>
+                      {tenant.contactPhone}
+                    </Typography>
+                  </Box>
+                  {tenant.contactEmail && (
+                    <Box display="flex" alignItems="center">
+                      <Typography sx={{ fontSize: '0.75rem', color: '#888', minWidth: 60 }}>
+                        {t('admin.tenantActivation.contactEmail')}:
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#666', ml: 0.5, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {tenant.contactEmail}
+                      </Typography>
+                    </Box>
+                  )}
+                  <Box display="flex" alignItems="center">
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888', minWidth: 60 }}>
+                      {t('admin.tenantActivation.createdAt')}:
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#888', ml: 0.5 }}>
+                      {tenant.createdAt}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      ) : (
+        // 桌面端表格视图
+        <Card
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: '#fff',
+          }}
+        >
+          <CardContent sx={{ p: 0 }}>
             <TableContainer>
               <Table>
                 <TableHead>
@@ -445,9 +547,9 @@ const TenantActivation: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions Menu - 简约风格 */}
       <Menu
@@ -533,6 +635,7 @@ const TenantActivation: React.FC = () => {
           sx: {
             borderRadius: 2.5,
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
@@ -614,11 +717,12 @@ const TenantActivation: React.FC = () => {
         onClose={handleCloseDetailsDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         TransitionProps={{ onExited: handleDetailsDialogExited }}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -632,27 +736,27 @@ const TenantActivation: React.FC = () => {
             </IconButton>
           </Box>
         </Box>
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
+        <DialogContent sx={{ px: isMobile ? 2 : 3, py: 2.5 }}>
           {/* Tenant Basic Info */}
           {selectedTenant && (
             <Box sx={{ mb: 3, p: 2, backgroundColor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.06)' }}>
               <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a', mb: 1.5 }}>
                 {t('admin.tenantActivation.basicInfo')}
               </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 1 }}>
+                <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                   <strong>{t('admin.tenantActivation.tenantCode')}:</strong> {selectedTenant.tenantCode}
                 </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                   <strong>{t('admin.tenantActivation.tenantName')}:</strong> {selectedTenant.tenantName}
                 </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                   <strong>{t('admin.tenantActivation.contactPerson')}:</strong> {selectedTenant.contactPerson}
                 </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                   <strong>{t('admin.tenantActivation.contactPhone')}:</strong> {selectedTenant.contactPhone}
                 </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#666', gridColumn: '1 / -1' }}>
+                <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666', gridColumn: isMobile ? undefined : '1 / -1' }}>
                   <strong>{t('admin.tenantActivation.contactEmail')}:</strong> {selectedTenant.contactEmail}
                 </Typography>
               </Box>
@@ -670,54 +774,54 @@ const TenantActivation: React.FC = () => {
               </Box>
             ) : subscription ? (
               <Box sx={{ p: 2, backgroundColor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr', gap: 1.5 }}>
                   <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#888', mb: 0.5 }}>
                       {t('admin.tenantActivation.planName')}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem', fontWeight: 600, color: '#1a1a1a' }}>
                       {i18n.language === 'zh-CN'
                         ? (subscription.plan?.planNameZh || subscription.plan?.planNameEn || 'N/A')
                         : (subscription.plan?.planNameEn || subscription.plan?.planNameZh || 'N/A')}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#888', mb: 0.5 }}>
                       {t('admin.tenantActivation.planStatus')}
                     </Typography>
                     {getStatusChip(subscription.status)}
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#888', mb: 0.5 }}>
                       {t('admin.tenantActivation.startDate')}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                       {subscription.trialStartDate || subscription.currentPeriodStart || 'N/A'}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#888', mb: 0.5 }}>
                       {t('admin.tenantActivation.endDate')}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                       {subscription.trialEndDate || subscription.currentPeriodEnd || 'N/A'}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#888', mb: 0.5 }}>
                       {t('admin.tenantActivation.price')}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: SUCCESS_COLOR }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.8rem' : '0.875rem', fontWeight: 600, color: SUCCESS_COLOR }}>
                       ${subscription.billingCycle === 'MONTHLY'
                         ? (subscription.plan?.monthlyPrice || 0).toFixed(2)
                         : (subscription.plan?.yearlyPrice || 0).toFixed(2)}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', color: '#888', mb: 0.5 }}>
                       {t('admin.tenantActivation.billingCycle')}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.8125rem', color: '#666' }}>
+                    <Typography sx={{ fontSize: isMobile ? '0.75rem' : '0.8125rem', color: '#666' }}>
                       {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : subscription.billingCycle === 'YEARLY' ? t('billing.yearly') : 'N/A'}
                     </Typography>
                   </Box>
@@ -740,38 +844,74 @@ const TenantActivation: React.FC = () => {
                 <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
               </Box>
             ) : invoices.length > 0 ? (
-              <TableContainer sx={{ border: '1px solid rgba(0,0,0,0.06)', borderRadius: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.invoiceNumber')}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.amount')}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.billingPeriod')}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.invoiceStatus')}</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.paymentDate')}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {invoices.map((invoice) => (
-                      <TableRow key={invoice.id} hover sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
-                        <TableCell sx={{ fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{invoice.invoiceNumber}</TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: SUCCESS_COLOR }}>
-                            ${invoice.amount.toFixed(2)} {invoice.currency}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                          {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
-                        </TableCell>
-                        <TableCell>{getStatusChip(invoice.status === 'PAID' ? 'ACTIVE' : invoice.status)}</TableCell>
-                        <TableCell sx={{ fontSize: '0.8125rem', color: '#888', py: 1.5 }}>
-                          {invoice.paymentDate || '-'}
-                        </TableCell>
+              isMobile ? (
+                // 移动端发票卡片视图
+                <Stack spacing={1.5}>
+                  {invoices.map((invoice) => (
+                    <Box
+                      key={invoice.id}
+                      sx={{
+                        p: 1.5,
+                        backgroundColor: '#fafafa',
+                        borderRadius: 2,
+                        border: '1px solid rgba(0,0,0,0.06)',
+                      }}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                          {invoice.invoiceNumber}
+                        </Typography>
+                        {getStatusChip(invoice.status === 'PAID' ? 'ACTIVE' : invoice.status)}
+                      </Box>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: SUCCESS_COLOR, mb: 0.5 }}>
+                        ${invoice.amount.toFixed(2)} {invoice.currency}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
+                        {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
+                      </Typography>
+                      {invoice.paymentDate && (
+                        <Typography sx={{ fontSize: '0.7rem', color: '#888', mt: 0.5 }}>
+                          {t('admin.tenantActivation.paymentDate')}: {invoice.paymentDate}
+                        </Typography>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+              ) : (
+                // 桌面端发票表格视图
+                <TableContainer sx={{ border: '1px solid rgba(0,0,0,0.06)', borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.invoiceNumber')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.amount')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.billingPeriod')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.invoiceStatus')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.paymentDate')}</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {invoices.map((invoice) => (
+                        <TableRow key={invoice.id} hover sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+                          <TableCell sx={{ fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{invoice.invoiceNumber}</TableCell>
+                          <TableCell>
+                            <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: SUCCESS_COLOR }}>
+                              ${invoice.amount.toFixed(2)} {invoice.currency}
+                            </Typography>
+                          </TableCell>
+                          <TableCell sx={{ fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
+                            {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
+                          </TableCell>
+                          <TableCell>{getStatusChip(invoice.status === 'PAID' ? 'ACTIVE' : invoice.status)}</TableCell>
+                          <TableCell sx={{ fontSize: '0.8125rem', color: '#888', py: 1.5 }}>
+                            {invoice.paymentDate || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )
             ) : (
               <Typography sx={{ fontSize: '0.8125rem', color: '#888', p: 2, backgroundColor: '#fafafa', borderRadius: 2 }}>
                 {t('admin.tenantActivation.noInvoices')}
@@ -810,14 +950,21 @@ const TenantActivation: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: isMobile ? 16 : 24 }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{
-            width: '100%',
+            width: isMobile ? 'auto' : '100%',
+            minWidth: isMobile ? 200 : 280,
             borderRadius: 2,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            py: isMobile ? 0.5 : 1,
+            '& .MuiAlert-icon': {
+              fontSize: isMobile ? 18 : 22,
+            },
           }}
         >
           {snackbar.message}

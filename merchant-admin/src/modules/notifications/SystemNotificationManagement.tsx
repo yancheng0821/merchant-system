@@ -22,6 +22,11 @@ import {
   Typography,
   Alert,
   Snackbar,
+  Card,
+  CardContent,
+  alpha,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -51,6 +56,10 @@ const SystemNotificationManagement: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -266,119 +275,238 @@ const SystemNotificationManagement: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* 表格 */}
-      <TableContainer
-        component={Paper}
-        sx={{
-          borderRadius: 2.5,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-        }}
-      >
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: '#fafafa' }}>
-              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.title')}</TableCell>
-              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.content')}</TableCell>
-              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.level')}</TableCell>
-              <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.createdAt')}</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
-                {t('common.actions')}
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {notifications
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((notification) => {
-                const localizedText = getLocalizedText(notification);
-                return (
-                  <TableRow key={notification.id} hover>
-                    <TableCell>{notification.id}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {localizedText.title}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          maxWidth: 300,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {localizedText.content}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={levelOptions.find(opt => opt.value === notification.level)?.label}
-                        size="small"
-                        sx={{
-                          backgroundColor: `${getLevelColor(notification.level)}15`,
-                          color: getLevelColor(notification.level),
-                          fontWeight: 500,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {notification.createdAt
-                        ? formatUtcToMerchantTime(notification.createdAt, 'yyyy-MM-dd HH:mm:ss')
-                        : '-'}
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(notification)}
-                        sx={{ color: THEME_COLOR }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDeleteDialog(notification)}
-                        sx={{ color: '#EF4444', ml: 1 }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            {notifications.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('notifications.noSystemNotifications')}
-                  </Typography>
+      {/* 表格/卡片列表 */}
+      {isMobile ? (
+        /* 移动端卡片列表 */
+        <Box>
+          {notifications.length === 0 ? (
+            <Box sx={{ py: 4, textAlign: 'center', bgcolor: '#fff', borderRadius: 2, border: '1px solid rgba(0,0,0,0.08)' }}>
+              <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                {t('notifications.noSystemNotifications')}
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              {notifications
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((notification) => {
+                  const localizedText = getLocalizedText(notification);
+                  return (
+                    <Card
+                      key={notification.id}
+                      sx={{
+                        mb: 1.5,
+                        borderRadius: 1.5,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        {/* 第一行：标题 + 级别 */}
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                          <Typography sx={{ fontSize: '0.8rem', color: '#1a1a1a', fontWeight: 500, flex: 1 }} noWrap>
+                            {localizedText.title}
+                          </Typography>
+                          <Chip
+                            label={levelOptions.find(opt => opt.value === notification.level)?.label}
+                            size="small"
+                            sx={{
+                              backgroundColor: alpha(getLevelColor(notification.level), 0.1),
+                              color: getLevelColor(notification.level),
+                              fontWeight: 600,
+                              fontSize: '0.65rem',
+                              height: 20,
+                              ml: 1,
+                            }}
+                          />
+                        </Box>
+                        {/* 第二行：内容预览 */}
+                        <Typography sx={{ fontSize: '0.7rem', color: '#666', mb: 1 }} noWrap>
+                          {localizedText.content}
+                        </Typography>
+                        {/* 第三行：时间 + 操作按钮 */}
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography sx={{ fontSize: '0.65rem', color: '#999' }}>
+                            {notification.createdAt
+                              ? formatUtcToMerchantTime(notification.createdAt, 'yyyy-MM-dd HH:mm')
+                              : '-'}
+                          </Typography>
+                          <Box>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog(notification)}
+                              sx={{ color: THEME_COLOR, p: 0.5 }}
+                            >
+                              <EditIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDeleteDialog(notification)}
+                              sx={{ color: '#EF4444', p: 0.5, ml: 0.5 }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+              {/* 移动端简化分页 */}
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  bgcolor: '#fff',
+                  borderRadius: 1.5,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                }}
+              >
+                <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                  {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, notifications.length)} / {notifications.length}
+                </Typography>
+                <Box display="flex" gap={1}>
+                  <Button
+                    size="small"
+                    disabled={page === 0}
+                    onClick={() => setPage(page - 1)}
+                    sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem', color: '#666', borderRadius: 1 }}
+                  >
+                    {t('common.previousPage')}
+                  </Button>
+                  <Button
+                    size="small"
+                    disabled={(page + 1) * rowsPerPage >= notifications.length}
+                    onClick={() => setPage(page + 1)}
+                    sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem', color: THEME_COLOR, borderRadius: 1 }}
+                  >
+                    {t('common.nextPage')}
+                  </Button>
+                </Box>
+              </Box>
+            </>
+          )}
+        </Box>
+      ) : (
+        /* 桌面端表格 */
+        <TableContainer
+          component={Paper}
+          sx={{
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+          }}
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.title')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.content')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.level')}</TableCell>
+                <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>{t('notifications.createdAt')}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem' }}>
+                  {t('common.actions')}
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={notifications.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage={t('common.rowsPerPage')}
-          sx={{
-            borderTop: '1px solid rgba(0,0,0,0.06)',
-            backgroundColor: '#fafafa',
-            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-              fontSize: '0.8125rem',
-              color: '#666',
-            },
-          }}
-        />
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {notifications
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((notification) => {
+                  const localizedText = getLocalizedText(notification);
+                  return (
+                    <TableRow key={notification.id} hover>
+                      <TableCell>{notification.id}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {localizedText.title}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            maxWidth: 300,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {localizedText.content}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={levelOptions.find(opt => opt.value === notification.level)?.label}
+                          size="small"
+                          sx={{
+                            backgroundColor: `${getLevelColor(notification.level)}15`,
+                            color: getLevelColor(notification.level),
+                            fontWeight: 500,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {notification.createdAt
+                          ? formatUtcToMerchantTime(notification.createdAt, 'yyyy-MM-dd HH:mm:ss')
+                          : '-'}
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDialog(notification)}
+                          sx={{ color: THEME_COLOR }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDeleteDialog(notification)}
+                          sx={{ color: '#EF4444', ml: 1 }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              {notifications.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('notifications.noSystemNotifications')}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={notifications.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage={t('common.rowsPerPage')}
+            sx={{
+              borderTop: '1px solid rgba(0,0,0,0.06)',
+              backgroundColor: '#fafafa',
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                fontSize: '0.8125rem',
+                color: '#666',
+              },
+            }}
+          />
+        </TableContainer>
+      )}
 
       {/* 创建/编辑对话框 */}
       <Dialog
@@ -386,10 +514,11 @@ const SystemNotificationManagement: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 0 : 2.5,
+            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -585,6 +714,7 @@ const SystemNotificationManagement: React.FC = () => {
           sx: {
             borderRadius: 2.5,
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            mx: isMobile ? 2 : 0,
           }
         }}
       >
@@ -637,11 +767,17 @@ const SystemNotificationManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSuccessMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSuccessMessage(null)}
           severity="success"
-          sx={{ borderRadius: 2 }}
+          sx={{
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {successMessage}
         </Alert>
@@ -653,11 +789,17 @@ const SystemNotificationManagement: React.FC = () => {
         autoHideDuration={5000}
         onClose={() => setError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setError(null)}
           severity="error"
-          sx={{ borderRadius: 2 }}
+          sx={{
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {error}
         </Alert>

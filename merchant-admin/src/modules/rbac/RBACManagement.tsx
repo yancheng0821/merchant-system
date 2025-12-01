@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Tabs, Tab, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
 import {
   People as PeopleIcon,
   Security as SecurityIcon,
@@ -20,6 +20,10 @@ const RBACManagement: React.FC = () => {
   const { t } = useTranslation();
   const { isSuperAdmin, hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const muiTheme = useMuiTheme();
+
+  // 移动端检测
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -42,40 +46,48 @@ const RBACManagement: React.FC = () => {
   return (
     <Box>
       {/* 现代化页面标题 - 匹配其他模块风格 */}
-      <Box mb={4}>
+      <Box mb={isMobile ? 2 : 4}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography
-              variant="h5"
+              variant={isMobile ? 'h6' : 'h5'}
               component="h1"
               sx={{
                 fontWeight: 600,
                 color: THEME_COLOR,
                 mb: 0.5,
+                fontSize: isMobile ? '1.1rem' : undefined,
               }}
             >
               {t('rbac.title')}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#888' }}>
-              {t('rbac.subtitle')}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="body2" sx={{ color: '#888' }}>
+                {t('rbac.subtitle')}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Box>
 
       {/* Tab 导航 */}
-      <Box mb={3}>
+      <Box mb={isMobile ? 2 : 3}>
         <Tabs
           value={visibleTabs.indexOf(activeTab)}
           onChange={handleTabChange}
+          variant={isMobile ? 'scrollable' : 'standard'}
+          scrollButtons={isMobile ? 'auto' : false}
+          allowScrollButtonsMobile
           sx={{
             borderBottom: '2px solid',
             borderColor: 'divider',
             '& .MuiTab-root': {
               fontWeight: 500,
-              fontSize: '0.9rem',
+              fontSize: isMobile ? '0.8rem' : '0.9rem',
               textTransform: 'none',
-              minHeight: 56,
+              minHeight: isMobile ? 44 : 56,
+              minWidth: isMobile ? 'auto' : undefined,
+              px: isMobile ? 1.5 : 2,
               '&.Mui-selected': {
                 fontWeight: 600,
                 color: THEME_COLOR,
@@ -91,33 +103,33 @@ const RBACManagement: React.FC = () => {
           {/* 用户管理 Tab */}
           {hasPermission('users:view') && (
             <Tab
-              icon={<PeopleIcon />}
+              icon={<PeopleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />}
               iconPosition="start"
-              label={t('rbac.userManagement')}
+              label={isMobile ? t('rbac.users') : t('rbac.userManagement')}
             />
           )}
           {/* 角色管理 Tab */}
           {hasPermission('rbac:view_roles') && (
             <Tab
-              icon={<RoleIcon />}
+              icon={<RoleIcon sx={{ fontSize: isMobile ? 18 : 24 }} />}
               iconPosition="start"
-              label={t('rbac.roleManagement')}
+              label={isMobile ? t('rbac.roles') : t('rbac.roleManagement')}
             />
           )}
           {/* 只有超级管理员才能看到权限管理 Tab */}
           {isSuperAdmin() && (
             <Tab
-              icon={<SecurityIcon />}
+              icon={<SecurityIcon sx={{ fontSize: isMobile ? 18 : 24 }} />}
               iconPosition="start"
-              label={t('rbac.rolePermissionManagement')}
+              label={isMobile ? t('rbac.permissions') : t('rbac.rolePermissionManagement')}
             />
           )}
           {/* 店长和超管都能查看审计日志 */}
           {hasPermission('audit:view') && (
             <Tab
-              icon={<AuditIcon />}
+              icon={<AuditIcon sx={{ fontSize: isMobile ? 18 : 24 }} />}
               iconPosition="start"
-              label={t('rbac.auditLogs')}
+              label={isMobile ? t('rbac.audit') : t('rbac.auditLogs')}
             />
           )}
         </Tabs>

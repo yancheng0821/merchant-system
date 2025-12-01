@@ -21,6 +21,8 @@ import {
     alpha,
     Checkbox,
     Snackbar,
+    useMediaQuery,
+    useTheme as useMuiTheme,
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -56,6 +58,10 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
 }) => {
     const { t } = useTranslation();
     const { themeMode } = useTheme();
+    const muiTheme = useMuiTheme();
+
+    // 移动端检测
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
     // 根据主题模式动态设置主题色
     const isMonochrome = themeMode === 'monochrome';
@@ -318,13 +324,14 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
             onClose={onClose}
             maxWidth="md"
             fullWidth
+            fullScreen={isMobile}
             TransitionProps={{
                 onExited: onExited,
             }}
             PaperProps={{
                 sx: {
-                    borderRadius: 2.5,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    borderRadius: isMobile ? 0 : 2.5,
+                    boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
                 },
             }}
         >
@@ -637,7 +644,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                             background: '#fafafa',
                         }}
                     >
-                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                        <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} alignItems={isMobile ? 'flex-start' : 'center'} justifyContent="space-between" mb={2} gap={isMobile ? 1.5 : 0}>
                             <Box display="flex" alignItems="center" gap={1}>
                                 <BuildIcon sx={{ fontSize: 16, color: THEME_COLOR }} />
                                 <Box>
@@ -677,6 +684,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                         borderRadius: 2,
                                         textTransform: 'none',
                                         color: THEME_COLOR,
+                                        alignSelf: isMobile ? 'flex-end' : 'auto',
                                         '&:hover': {
                                             backgroundColor: alpha(THEME_COLOR, 0.1),
                                         },
@@ -736,92 +744,107 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                                             onClick={handleToggleService}
                                             sx={{
                                                 display: 'flex',
-                                                alignItems: 'center',
-                                                p: 2,
+                                                flexDirection: isMobile ? 'column' : 'row',
+                                                alignItems: isMobile ? 'stretch' : 'center',
+                                                p: isMobile ? 1.5 : 2,
                                                 borderBottom: index < allServices.length - 1 ? `1px solid ${alpha(THEME_COLOR, 0.1)}` : 'none',
                                                 background: selectedServices.has(service.id) ? alpha(THEME_COLOR, 0.05) : 'white',
                                                 transition: 'all 0.2s ease',
                                                 cursor: 'pointer',
+                                                WebkitTapHighlightColor: 'transparent',
                                                 '&:hover': {
                                                     background: alpha(THEME_COLOR, 0.08),
                                                 },
                                             }}
                                         >
-                                            <Checkbox
-                                                checked={selectedServices.has(service.id)}
-                                                onChange={() => {}}
-                                                onClick={(e) => e.stopPropagation()}
-                                                sx={{
-                                                    color: THEME_COLOR,
-                                                    pointerEvents: 'none',
-                                                    '&.Mui-checked': {
-                                                        color: THEME_COLOR,
-                                                    },
-                                                }}
-                                            />
-                                        <Box flex={1} ml={1}>
-                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                {service.name}
-                                            </Typography>
-                                            {service.categoryName && (
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {service.categoryName}
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                        <Box sx={{ minWidth: 160 }} onClick={(e) => e.stopPropagation()}>
-                                            {selectedServices.has(service.id) ? (
-                                                <Select
-                                                    size="small"
-                                                    value={serviceExpertise[service.id]?.skillLevel || 'INTERMEDIATE'}
-                                                    onChange={(e) => {
-                                                        setServiceExpertise(prev => ({
-                                                            ...prev,
-                                                            [service.id]: {
-                                                                skillLevel: e.target.value
-                                                            }
-                                                        }));
-                                                    }}
+                                            {/* 移动端：服务名称行（包含checkbox） */}
+                                            <Box display="flex" alignItems="center" flex={1}>
+                                                <Checkbox
+                                                    checked={selectedServices.has(service.id)}
+                                                    onChange={() => {}}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    size={isMobile ? 'small' : 'medium'}
                                                     sx={{
-                                                        width: '100%',
-                                                        fontSize: '0.875rem',
-                                                        '& .MuiSelect-select': {
-                                                            py: 1,
+                                                        color: THEME_COLOR,
+                                                        pointerEvents: 'none',
+                                                        p: isMobile ? 0.5 : 1,
+                                                        '&.Mui-checked': {
+                                                            color: THEME_COLOR,
                                                         },
                                                     }}
-                                                >
-                                                    <MenuItem value="BEGINNER">
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('BEGINNER') }} />
-                                                            <Typography variant="body2">{t('staff.skillLevels.beginner', 'Beginner')}</Typography>
-                                                        </Box>
-                                                    </MenuItem>
-                                                    <MenuItem value="INTERMEDIATE">
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('INTERMEDIATE') }} />
-                                                            <Typography variant="body2">{t('staff.skillLevels.intermediate', 'Intermediate')}</Typography>
-                                                        </Box>
-                                                    </MenuItem>
-                                                    <MenuItem value="EXPERT">
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('EXPERT') }} />
-                                                            <Typography variant="body2">{t('staff.skillLevels.expert', 'Expert')}</Typography>
-                                                        </Box>
-                                                    </MenuItem>
-                                                    <MenuItem value="MASTER">
-                                                        <Box display="flex" alignItems="center" gap={1}>
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('MASTER') }} />
-                                                            <Typography variant="body2">{t('staff.skillLevels.master', 'Master')}</Typography>
-                                                        </Box>
-                                                    </MenuItem>
-                                                </Select>
-                                            ) : (
-                                                <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                                                    {t('staff.notSelected', 'Not selected')}
-                                                </Typography>
-                                            )}
+                                                />
+                                                <Box flex={1} ml={isMobile ? 0.5 : 1}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+                                                        {service.name}
+                                                    </Typography>
+                                                    {service.categoryName && (
+                                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
+                                                            {service.categoryName}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </Box>
+                                            {/* 技能等级选择器 */}
+                                            <Box
+                                                sx={{
+                                                    minWidth: isMobile ? 'auto' : 160,
+                                                    mt: isMobile ? 1 : 0,
+                                                    ml: isMobile ? 3.5 : 0,
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {selectedServices.has(service.id) ? (
+                                                    <Select
+                                                        size="small"
+                                                        value={serviceExpertise[service.id]?.skillLevel || 'INTERMEDIATE'}
+                                                        onChange={(e) => {
+                                                            setServiceExpertise(prev => ({
+                                                                ...prev,
+                                                                [service.id]: {
+                                                                    skillLevel: e.target.value
+                                                                }
+                                                            }));
+                                                        }}
+                                                        sx={{
+                                                            width: isMobile ? '100%' : '100%',
+                                                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                                                            '& .MuiSelect-select': {
+                                                                py: isMobile ? 0.75 : 1,
+                                                            },
+                                                        }}
+                                                    >
+                                                        <MenuItem value="BEGINNER">
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('BEGINNER') }} />
+                                                                <Typography variant="body2" sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{t('staff.skillLevels.beginner', 'Beginner')}</Typography>
+                                                            </Box>
+                                                        </MenuItem>
+                                                        <MenuItem value="INTERMEDIATE">
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('INTERMEDIATE') }} />
+                                                                <Typography variant="body2" sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{t('staff.skillLevels.intermediate', 'Intermediate')}</Typography>
+                                                            </Box>
+                                                        </MenuItem>
+                                                        <MenuItem value="EXPERT">
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('EXPERT') }} />
+                                                                <Typography variant="body2" sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{t('staff.skillLevels.expert', 'Expert')}</Typography>
+                                                            </Box>
+                                                        </MenuItem>
+                                                        <MenuItem value="MASTER">
+                                                            <Box display="flex" alignItems="center" gap={1}>
+                                                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: getSkillLevelColor('MASTER') }} />
+                                                                <Typography variant="body2" sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}>{t('staff.skillLevels.master', 'Master')}</Typography>
+                                                            </Box>
+                                                        </MenuItem>
+                                                    </Select>
+                                                ) : (
+                                                    <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic', fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
+                                                        {t('staff.notSelected', 'Not selected')}
+                                                    </Typography>
+                                                )}
+                                            </Box>
                                         </Box>
-                                    </Box>
                                     );
                                 })}
                             </Box>
@@ -883,14 +906,18 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                 autoHideDuration={6000}
                 onClose={() => setError(null)}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                sx={isMobile ? { top: 70 } : undefined}
             >
                 <Alert
                     onClose={() => setError(null)}
                     severity="error"
                     sx={{
                         width: '100%',
-                        borderRadius: 2,
+                        borderRadius: isMobile ? 1.5 : 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: isMobile ? '0.8rem' : undefined,
+                        py: isMobile ? 0.5 : undefined,
+                        '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
                     }}
                 >
                     {error}

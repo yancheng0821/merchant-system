@@ -225,13 +225,13 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
             elevation={2}
             sx={{
               mt: 0.5,
-              maxHeight: 320,
+              maxHeight: { xs: 200, sm: 320 },
               overflow: 'hidden',
-              borderRadius: 1.5,
+              borderRadius: { xs: 1, sm: 1.5 },
               border: '1px solid #e8e8e8',
             }}
           >
-            <Box sx={{ maxHeight: 260, overflowY: 'auto' }}>
+            <Box sx={{ maxHeight: { xs: 160, sm: 260 }, overflowY: 'auto' }}>
               {predictions.map((prediction, index) => (
                 <Box
                   key={prediction.placeId || index}
@@ -239,20 +239,23 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    py: 1.25,
-                    px: 2,
+                    gap: { xs: 1, sm: 1.5 },
+                    py: { xs: 0.75, sm: 1.25 },
+                    px: { xs: 1.5, sm: 2 },
                     cursor: 'pointer',
                     transition: 'background-color 0.15s',
                     '&:hover': {
                       backgroundColor: '#f5f5f5',
                     },
+                    '&:active': {
+                      backgroundColor: '#f0f0f0',
+                    },
                   }}
                 >
                   <Box
                     sx={{
-                      width: 28,
-                      height: 28,
+                      width: { xs: 24, sm: 28 },
+                      height: { xs: 24, sm: 28 },
                       borderRadius: '50%',
                       backgroundColor: '#f0f0f0',
                       display: 'flex',
@@ -261,12 +264,12 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
                       flexShrink: 0,
                     }}
                   >
-                    <LocationIcon sx={{ color: '#888', fontSize: 16 }} />
+                    <LocationIcon sx={{ color: '#888', fontSize: { xs: 14, sm: 16 } }} />
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography
                       sx={{
-                        fontSize: '0.875rem',
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
                         fontWeight: 500,
                         color: '#333',
                         lineHeight: 1.4,
@@ -279,7 +282,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
                     </Typography>
                     <Typography
                       sx={{
-                        fontSize: '0.75rem',
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
                         color: '#999',
                         lineHeight: 1.3,
                         mt: 0.25,

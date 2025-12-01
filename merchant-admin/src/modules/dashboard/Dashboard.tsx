@@ -11,6 +11,7 @@ import {
   SelectChangeEvent,
   Paper,
   useTheme,
+  useMediaQuery,
   alpha,
   CircularProgress,
   Backdrop,
@@ -120,6 +121,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const { themeMode } = useAppTheme();
 
+  // 移动端检测
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   // Theme-aware colors
   const isMonochrome = themeMode === 'monochrome';
   const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#6366F1';
@@ -139,6 +144,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [lastNotificationTime, setLastNotificationTime] = useState<Date | null>(null);
   const [isNotificationExpanded, setIsNotificationExpanded] = useState(false);
+  const [isResourceExpanded, setIsResourceExpanded] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const handleTimeRangeChange = (event: SelectChangeEvent<TimeRange>) => {
@@ -798,11 +804,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+    <Box sx={{ overflowX: 'hidden', width: '100%' }}>
+      <Box
+        display="flex"
+        flexDirection={isMobile ? 'column' : 'row'}
+        justifyContent="space-between"
+        alignItems={isMobile ? 'flex-start' : 'center'}
+        gap={isMobile ? 1.5 : 0}
+        mb={isMobile ? 2 : 4}
+      >
         <Box>
           <Typography
-            variant="h5"
+            variant={isMobile ? 'h6' : 'h5'}
             component="h1"
             sx={{
               fontWeight: 600,
@@ -812,11 +825,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           >
             {t('nav.dashboard')}
           </Typography>
-          <Typography variant="body2" sx={{ color: '#888' }}>
-            {t('dashboard.subtitle')}
-          </Typography>
+          {!isMobile && (
+            <Typography variant="body2" sx={{ color: '#888' }}>
+              {t('dashboard.subtitle')}
+            </Typography>
+          )}
         </Box>
-        <FormControl size="small" sx={{ minWidth: 140 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 120 : 140 }}>
           <Select
             value={timeRange}
             onChange={handleTimeRangeChange}
@@ -843,24 +858,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </Box>
 
       {/* 简约统计卡片 */}
-      <Grid container spacing={2.5} mb={4}>
+      <Grid container spacing={isMobile ? 1 : 2.5} mb={isMobile ? 2 : 4} sx={{ mx: 0, width: '100%' }}>
         {metricsData.map((metric, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid item xs={6} sm={6} md={3} key={index}>
             <Card
               sx={{
-                borderRadius: 2.5,
+                borderRadius: isMobile ? 2 : 2.5,
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 border: '1px solid rgba(0,0,0,0.06)',
                 bgcolor: '#fff',
                 height: '100%',
               }}
             >
-              <CardContent sx={{ p: 2.5, height: '100%' }}>
-                <Box display="flex" alignItems="center" gap={2.5} height="100%">
+              <CardContent sx={{ p: isMobile ? 1.5 : 2.5, height: '100%' }}>
+                <Box display="flex" alignItems={isMobile ? 'flex-start' : 'center'} flexDirection={isMobile ? 'column' : 'row'} gap={isMobile ? 1 : 2.5} height="100%">
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
+                      width: isMobile ? 36 : 44,
+                      height: isMobile ? 36 : 44,
                       borderRadius: 1.5,
                       bgcolor: alpha(metric.color, 0.08),
                       display: 'flex',
@@ -870,7 +885,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       flexShrink: 0,
                     }}
                   >
-                    {React.cloneElement(metric.icon, { sx: { fontSize: 22 } })}
+                    {React.cloneElement(metric.icon, { sx: { fontSize: isMobile ? 18 : 22 } })}
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
@@ -924,18 +939,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </Grid>
 
       {/* 实时通知提醒和快捷操作 */}
-      <Grid container spacing={2.5} mb={3}>
+      <Grid container spacing={isMobile ? 1 : 2.5} mb={isMobile ? 2 : 3} sx={{ mx: 0, width: '100%' }}>
         {/* 实时通知提醒 */}
         <Grid item xs={12} md={8}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center">
                   <Box
@@ -1133,13 +1148,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} md={4}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   sx={{
@@ -1162,7 +1177,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </Box>
 
               {/* 快捷操作按钮 */}
-              <Grid container spacing={1.5}>
+              <Grid container spacing={isMobile ? 1 : 1.5}>
                 {[
                   {
                     icon: <CalendarTodayIcon />,
@@ -1220,20 +1235,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </Grid>
       </Grid>
 
-      {/* 图表区域 */}
-      <Grid container spacing={2.5} mt={0.5}>
+      {/* 图表区域 - 移动端只显示销售趋势，PC端显示全部 */}
+      <Grid container spacing={isMobile ? 1 : 2.5} mt={0.5} sx={{ mx: 0, width: '100%' }}>
         {/* 销售趋势折线图 */}
         <Grid item xs={12} lg={8}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" mb={2.5}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+              <Box display="flex" alignItems="center" mb={isMobile ? 1.5 : 2.5}>
                 <Box
                   sx={{
                     width: 4,
@@ -1248,13 +1263,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   sx={{
                     fontWeight: 600,
                     color: '#1a1a1a',
+                    fontSize: isMobile ? '0.9rem' : '1rem',
                   }}
                 >
                   {t('dashboard.salesTrend')}
                 </Typography>
               </Box>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={salesTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <Box sx={{ width: '100%', overflowX: 'hidden' }}>
+              <ResponsiveContainer width="100%" height={isMobile ? 180 : 350}>
+                <LineChart data={salesTrendData} margin={isMobile ? { top: 5, right: 5, left: -15, bottom: 5 } : { top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
                     <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366F1" stopOpacity={0.2}/>
@@ -1270,25 +1287,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     dataKey="date"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: '#999' }}
+                    tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
+                    interval={isMobile ? 'preserveStartEnd' : 0}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: '#999' }}
+                    tick={{ fontSize: isMobile ? 9 : 11, fill: '#999' }}
+                    width={isMobile ? 30 : 40}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    wrapperStyle={{
-                      paddingTop: '12px',
-                      fontSize: '11px',
-                    }}
-                  />
+                  {!isMobile && (
+                    <Legend
+                      wrapperStyle={{
+                        paddingTop: '12px',
+                        fontSize: '11px',
+                      }}
+                    />
+                  )}
                   <Area
                     type="monotone"
                     dataKey="sales"
                     stroke="#6366F1"
-                    strokeWidth={2}
+                    strokeWidth={isMobile ? 1.5 : 2}
                     fill="url(#salesGradient)"
                     name={t('dashboard.sales')}
                   />
@@ -1296,19 +1317,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     type="monotone"
                     dataKey="orders"
                     stroke="#10B981"
-                    strokeWidth={2}
+                    strokeWidth={isMobile ? 1.5 : 2}
                     name={t('dashboard.orders')}
                     dot={false}
-                    activeDot={{ r: 4, stroke: '#10B981', strokeWidth: 1.5 }}
+                    activeDot={{ r: isMobile ? 3 : 4, stroke: '#10B981', strokeWidth: 1.5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
+              </Box>
+              {/* 移动端图例 */}
+              {isMobile && (
+                <Box display="flex" justifyContent="center" gap={2} mt={1}>
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#6366F1' }} />
+                    <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>{t('dashboard.sales')}</Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10B981' }} />
+                    <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>{t('dashboard.orders')}</Typography>
+                  </Box>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* 产品分类饼状图 */}
-        <Grid item xs={12} lg={4}>
+        {/* 产品分类饼状图 - 移动端隐藏 */}
+        <Grid item xs={12} lg={4} sx={{ display: { xs: 'none', md: 'block' } }}>
           <Card
             sx={{
               borderRadius: 2.5,
@@ -1377,8 +1412,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </Card>
         </Grid>
 
-        {/* 访客流量面积图 */}
-        <Grid item xs={12} lg={8}>
+        {/* 访客流量面积图 - 移动端隐藏 */}
+        <Grid item xs={12} lg={8} sx={{ display: { xs: 'none', md: 'block' } }}>
           <Card
             sx={{
               borderRadius: 2.5,
@@ -1443,8 +1478,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </Card>
         </Grid>
 
-        {/* 热门产品条形图 */}
-        <Grid item xs={12} lg={4}>
+        {/* 热门产品条形图 - 移动端隐藏 */}
+        <Grid item xs={12} lg={4} sx={{ display: { xs: 'none', md: 'block' } }}>
           <Card
             sx={{
               borderRadius: 2.5,
@@ -1589,13 +1624,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center">
                   <Box
@@ -1632,10 +1667,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </Box>
 
               {/* 资源状态网格 */}
-              <Grid container spacing={1.5}>
+              <Grid container spacing={isMobile ? 1 : 1.5}>
                 {/* 合并员工和房间列表 */}
                 {([...staffStatusList, ...resourceStatusList].length > 0 ?
-                  [...staffStatusList, ...resourceStatusList] : [
+                  [...staffStatusList, ...resourceStatusList].slice(0, (isMobile && !isResourceExpanded) ? 6 : undefined) : [
                   { name: t('dashboard.noResourceData'), avatar: '', status: 'offline', currentService: null, endTime: null, type: 'staff' },
                 ]).map((resource, index) => {
                   const statusConfig = {
@@ -1648,48 +1683,45 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   { color: '#6B7280', label: t('dashboard.offline'), icon: '⚫' };
 
                   return (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid item xs={6} sm={6} md={3} key={index}>
                       <Box
                         sx={{
-                          py: 1.5,
-                          px: 2,
+                          py: isMobile ? 1 : 1.5,
+                          px: isMobile ? 1 : 2,
                           borderBottom: '1px solid rgba(0,0,0,0.06)',
+                          borderRadius: isMobile ? 1 : 0,
+                          bgcolor: isMobile ? 'rgba(0,0,0,0.02)' : 'transparent',
                           '&:hover': {
-                            bgcolor: 'rgba(0,0,0,0.02)',
+                            bgcolor: 'rgba(0,0,0,0.04)',
                           },
                         }}
                       >
-                        <Box display="flex" alignItems="center" gap={1.5}>
+                        <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5}>
                           <Avatar
                             src={getFullImageUrl(resource.avatar)}
                             sx={{
-                              width: 36,
-                              height: 36,
+                              width: isMobile ? 28 : 36,
+                              height: isMobile ? 28 : 36,
                               bgcolor: '#f5f5f5',
                               color: '#666',
-                              fontSize: '0.875rem',
+                              fontSize: isMobile ? '0.75rem' : '0.875rem',
                               fontWeight: 600,
                             }}
                           >
-                            {resource.type === 'room' ? <RoomIcon sx={{ fontSize: 18 }} /> : (resource.name?.[0] || '?')}
+                            {resource.type === 'room' ? <RoomIcon sx={{ fontSize: isMobile ? 14 : 18 }} /> : (resource.name?.[0] || '?')}
                           </Avatar>
                           <Box flex={1} sx={{ minWidth: 0 }}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.75rem' : '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {resource.name}
                               </Typography>
-                              {resource.type === 'room' && (
-                                <Typography variant="caption" sx={{ color: '#999' }}>
-                                  ({t('dashboard.room')})
-                                </Typography>
-                              )}
                             </Box>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusConfig.color }} />
-                              <Typography variant="caption" sx={{ color: '#666' }}>
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                              <Box sx={{ width: isMobile ? 5 : 6, height: isMobile ? 5 : 6, borderRadius: '50%', bgcolor: statusConfig.color, flexShrink: 0 }} />
+                              <Typography variant="caption" sx={{ color: '#666', fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                 {statusConfig.label}
                               </Typography>
-                              {resource.currentService && (
+                              {!isMobile && resource.currentService && (
                                 <>
                                   <Typography variant="caption" sx={{ color: '#999' }}>•</Typography>
                                   <Typography
@@ -1707,7 +1739,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               )}
                             </Box>
                           </Box>
-                          {resource.endTime && (
+                          {!isMobile && resource.endTime && (
                             <Typography variant="caption" sx={{ color: '#999', flexShrink: 0 }}>
                               {resource.endTime}
                             </Typography>
@@ -1718,9 +1750,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   );
                 })}
               </Grid>
+              {/* 移动端展开/收起按钮 */}
+              {isMobile && [...staffStatusList, ...resourceStatusList].length > 6 && (
+                <Box textAlign="center" mt={1.5}>
+                  <Button
+                    size="small"
+                    onClick={() => setIsResourceExpanded(!isResourceExpanded)}
+                    sx={{ color: '#666', fontSize: '0.75rem', textTransform: 'none' }}
+                  >
+                    {isResourceExpanded
+                      ? t('common.showLess')
+                      : `${t('common.showMore')} (${[...staffStatusList, ...resourceStatusList].length - 6})`
+                    }
+                  </Button>
+                </Box>
+              )}
 
               {/* 状态统计 */}
-              <Box display="flex" justifyContent="center" gap={4} mt={2} pt={2} sx={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <Box display="flex" flexWrap="wrap" justifyContent="center" gap={isMobile ? 1.5 : 4} mt={2} pt={2} sx={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981' }} />
                   <Typography variant="caption" sx={{ color: '#666' }}>
@@ -1756,13 +1803,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   sx={{
@@ -1808,13 +1855,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <Box
                   sx={{
@@ -1862,14 +1909,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <Grid item xs={12}>
           <Card
             sx={{
-              borderRadius: 2.5,
+              borderRadius: isMobile ? 2 : 2.5,
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
               bgcolor: '#fff',
-              mt: 1,
+              mt: isMobile ? 0.5 : 1,
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box display="flex" alignItems="center">
                   <Box
@@ -1901,8 +1948,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 ref={timelineRef}
                 sx={{
                   position: 'relative',
-                  pl: 3,
-                  maxHeight: 500,
+                  pl: isMobile ? 1.5 : 3,
+                  maxHeight: isMobile ? 280 : 500,
                   overflowY: 'auto',
                   overflowX: 'hidden',
                   '&::-webkit-scrollbar': {
@@ -1922,7 +1969,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 {todayAppointments.length > 0 ? (
                   <Box sx={{
                     position: 'relative',
-                    paddingLeft: '32px',
+                    paddingLeft: isMobile ? '24px' : '32px',
                   }}>
                     {/* 时间节点内容 */}
                     {(() => {
@@ -1944,11 +1991,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         // 在适当位置插入当前时间指示器
                         if (!currentTimeInserted && appointmentTimeStr > currentTimeStr) {
                           elements.push(
-                          <Box key="current-time" sx={{ position: 'relative', mb: 2 }}>
+                          <Box key="current-time" sx={{ position: 'relative', mb: isMobile ? 1.5 : 2 }}>
                             {/* 垂直线段 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -28,
+                              left: isMobile ? -20 : -28,
                               top: -16,
                               bottom: -16,
                               width: 2,
@@ -1959,9 +2006,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             {/* 当前时间的点 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -32,
-                              width: 10,
-                              height: 10,
+                              left: isMobile ? -24 : -32,
+                              width: isMobile ? 8 : 10,
+                              height: isMobile ? 8 : 10,
                               borderRadius: '50%',
                               bgcolor: isMonochrome ? '#1a1a1a' : '#06B6D4',
                               border: '2px solid white',
@@ -1973,16 +2020,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <Box sx={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: 1,
+                              gap: isMobile ? 0.5 : 1,
                               py: 0.5,
-                              px: 1,
+                              px: isMobile ? 0.75 : 1,
                               borderRadius: 1,
                               bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#06B6D4', 0.08),
                             }}>
-                              <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
+                              <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600, fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                 {t('dashboard.currentTime')}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
+                              <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600, fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                                 {currentTimeStr}
                               </Typography>
                             </Box>
@@ -1996,15 +2043,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         const isCurrent = appointment.status === 'CHECKED_IN' || appointment.status === 'IN_PROGRESS';
                         const isCancelled = appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW';
                         const isPending = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
-                        
+
                         elements.push(
                         <React.Fragment key={appointment.id}>
-                          <Box sx={{ position: 'relative', mb: 2 }}>
+                          <Box sx={{ position: 'relative', mb: isMobile ? 1.5 : 2 }}>
                             {/* 垂直线段 */}
                             {(index === 0 || index < sortedAppointments.length - 1) && (
                               <Box sx={{
                                 position: 'absolute',
-                                left: -28,
+                                left: isMobile ? -20 : -28,
                                 top: index === 0 ? -16 : 5,
                                 bottom: -16,
                                 width: 2,
@@ -2016,9 +2063,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             {/* 时间点 */}
                             <Box sx={{
                               position: 'absolute',
-                              left: -32,
-                              width: 10,
-                              height: 10,
+                              left: isMobile ? -24 : -32,
+                              width: isMobile ? 8 : 10,
+                              height: isMobile ? 8 : 10,
                               borderRadius: '50%',
                               bgcolor: isMonochrome
                                 ? (isCompleted ? '#1a1a1a' : isCurrent ? '#666' : isCancelled ? '#999' : '#444')
@@ -2028,7 +2075,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                             {/* 预约信息 */}
                             <Box sx={{
-                              py: 1.5,
+                              py: isMobile ? 1 : 1.5,
                               borderBottom: '1px solid rgba(0,0,0,0.06)',
                               '&:hover': {
                                 bgcolor: 'rgba(0,0,0,0.02)',
@@ -2036,17 +2083,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             }}>
                               <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
                                 <Box display="flex" alignItems="center" gap={1}>
-                                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-                                    {appointment.appointmentTime}
+                                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+                                    {appointment.appointmentTime?.slice(0, 5)}
                                   </Typography>
                                 </Box>
                                 <Typography
                                   variant="caption"
                                   sx={{
-                                    px: 1,
+                                    px: isMobile ? 0.75 : 1,
                                     py: 0.25,
                                     borderRadius: 1,
-                                    fontSize: '0.65rem',
+                                    fontSize: isMobile ? '0.6rem' : '0.65rem',
                                     fontWeight: 500,
                                     bgcolor: isMonochrome
                                       ? (isCompleted ? 'rgba(26, 26, 26, 0.1)' : isCurrent ? 'rgba(102, 102, 102, 0.1)' : isCancelled ? 'rgba(153, 153, 153, 0.1)' : 'rgba(68, 68, 68, 0.1)')
@@ -2062,14 +2109,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                    t('dashboard.pending')}
                                 </Typography>
                               </Box>
-                              <Typography variant="caption" sx={{ color: '#1a1a1a', display: 'block' }}>
+                              <Typography variant="caption" sx={{ color: '#1a1a1a', display: 'block', fontSize: isMobile ? '0.7rem' : '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {/* 尝试多种方式获取服务名称 */}
                                 {appointment.services?.map((s: any) => s.serviceName).join(', ') ||
                                  appointment.appointmentServices?.map((s: any) => s.serviceName).join(', ') ||
                                  appointment.serviceName ||
                                  '服务'}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#999' }}>
+                              <Typography variant="caption" sx={{ color: '#999', fontSize: isMobile ? '0.65rem' : '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                               {/* 显示客户和资源（员工或房间） */}
                               {(() => {
                                 // 初始化变量
@@ -2134,12 +2181,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       // 如果当前时间在所有预约之后，在末尾添加当前时间指示器
                       if (!currentTimeInserted) {
                         elements.push(
-                        <Box key="current-time" sx={{ position: 'relative', mb: 2 }}>
+                        <Box key="current-time" sx={{ position: 'relative', mb: isMobile ? 1.5 : 2 }}>
                           {/* 垂直线段 */}
                           {sortedAppointments.length > 0 && (
                             <Box sx={{
                               position: 'absolute',
-                              left: -28,
+                              left: isMobile ? -20 : -28,
                               top: -16,
                               height: 16,
                               width: 2,
@@ -2151,9 +2198,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           {/* 当前时间的点 */}
                           <Box sx={{
                             position: 'absolute',
-                            left: -32,
-                            width: 10,
-                            height: 10,
+                            left: isMobile ? -24 : -32,
+                            width: isMobile ? 8 : 10,
+                            height: isMobile ? 8 : 10,
                             borderRadius: '50%',
                             bgcolor: isMonochrome ? '#1a1a1a' : '#06B6D4',
                             border: '2px solid white',
@@ -2165,16 +2212,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           <Box sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 1,
+                            gap: isMobile ? 0.5 : 1,
                             py: 0.5,
-                            px: 1,
+                            px: isMobile ? 0.75 : 1,
                             borderRadius: 1,
                             bgcolor: isMonochrome ? 'rgba(26, 26, 26, 0.08)' : alpha('#06B6D4', 0.08),
                           }}>
-                            <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600, fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                               {t('dashboard.currentTime')}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: isMonochrome ? '#1a1a1a' : '#06B6D4', fontWeight: 600, fontSize: isMobile ? '0.65rem' : '0.75rem' }}>
                               {currentTimeStr}
                             </Typography>
                           </Box>
