@@ -18,6 +18,8 @@ import {
   Chip,
   Button,
   Avatar,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   LineChart,
@@ -145,6 +147,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [lastNotificationTime, setLastNotificationTime] = useState<Date | null>(null);
   const [isNotificationExpanded, setIsNotificationExpanded] = useState(false);
   const [isResourceExpanded, setIsResourceExpanded] = useState(false);
+  const [showScheduleHint, setShowScheduleHint] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const handleTimeRangeChange = (event: SelectChangeEvent<TimeRange>) => {
@@ -1184,7 +1187,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     icon: <CalendarTodayIcon />,
                     label: t('dashboard.viewSchedule'),
                     color: isMonochrome ? '#1a1a1a' : '#3B82F6',
-                    onClick: () => onNavigate?.('schedule')
+                    onClick: () => {
+                      if (isMobile) {
+                        setShowScheduleHint(true);
+                      } else {
+                        onNavigate?.('schedule');
+                      }
+                    }
                   },
                   {
                     icon: <PersonPinIcon />,
@@ -2246,6 +2255,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* 移动端查看日程提示 */}
+      <Snackbar
+        open={showScheduleHint}
+        autoHideDuration={3000}
+        onClose={() => setShowScheduleHint(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: 70 }}
+      >
+        <Alert
+          onClose={() => setShowScheduleHint(false)}
+          severity="info"
+          sx={{
+            width: '100%',
+            borderRadius: 1.5,
+            fontSize: '0.8rem',
+            py: 0.5,
+            '& .MuiAlert-icon': { fontSize: 18 },
+          }}
+        >
+          {t('dashboard.scheduleWebOnly')}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

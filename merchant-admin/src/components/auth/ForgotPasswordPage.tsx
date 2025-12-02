@@ -10,6 +10,8 @@ import {
   CircularProgress,
   InputAdornment,
   Snackbar,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -25,6 +27,8 @@ interface ForgotPasswordPageProps {
 
 const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [tenantCode, setTenantCode] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -286,11 +290,18 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
         autoHideDuration={6000}
         onClose={() => setError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setError(null)}
           severity="error"
-          sx={{ width: '100%' }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {error}
         </Alert>

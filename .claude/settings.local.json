@@ -60,7 +60,8 @@
       "Bash(aws cloudfront create-invalidation:*)",
       "Bash(aws cloudfront get-invalidation:*)",
       "Bash(brew install:*)",
-      "Bash(sips -z 512 512:*)"
+      "Bash(sips -z 512 512:*)",
+      "Bash(aws s3api head-object:*)"
     ],
     "deny": [],
     "ask": []

@@ -2368,6 +2368,7 @@
     "quickActions": "Quick Actions",
     "createAppointment": "New Appointment",
     "viewSchedule": "View Schedule",
+    "scheduleWebOnly": "Please view schedule on web for the best experience",
     "addCustomer": "Add Customer",
     "manageServices": "Manage Services",
     "manageStaff": "Manage Staff",

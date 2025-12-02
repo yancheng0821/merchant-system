@@ -15,6 +15,8 @@ import {
   Snackbar,
   Chip,
   alpha,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Visibility,
@@ -53,6 +55,8 @@ interface RegisterData {
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { login, register, loading, error, clearError, setError } = useAuth();
 
   // 从 sessionStorage 恢复 pageMode，避免刷新后丢失状态
@@ -1448,11 +1452,18 @@ const LoginPage: React.FC = () => {
         autoHideDuration={6000}
         onClose={clearError}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={clearError}
           severity="error"
-          sx={{ width: '100%' }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {displayedError}
         </Alert>
@@ -1464,11 +1475,18 @@ const LoginPage: React.FC = () => {
         autoHideDuration={6000}
         onClose={() => setSuccess('')}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
       >
         <Alert
           onClose={() => setSuccess('')}
           severity="success"
-          sx={{ width: '100%' }}
+          sx={{
+            width: '100%',
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
         >
           {displayedSuccess}
         </Alert>

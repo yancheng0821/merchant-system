@@ -2660,6 +2660,7 @@
     "quickActions": "快捷操作",
     "createAppointment": "创建预约",
     "viewSchedule": "查看日程",
+    "scheduleWebOnly": "请在电脑网页端查看日程以获得最佳体验",
     "addCustomer": "添加客户",
     "manageServices": "管理服务",
     "manageStaff": "管理员工",

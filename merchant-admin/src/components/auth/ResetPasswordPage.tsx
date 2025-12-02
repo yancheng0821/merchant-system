@@ -12,6 +12,8 @@ import {
   IconButton,
   Snackbar,
   Fade,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Lock as LockIcon,
@@ -27,6 +29,8 @@ import { authApi, handleApiError } from '../../services/api';
 
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -501,11 +505,18 @@ const ResetPasswordPage: React.FC = () => {
             autoHideDuration={6000}
             onClose={() => setError(null)}
             anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            sx={isMobile ? { top: 70 } : undefined}
           >
             <Alert
               onClose={() => setError(null)}
               severity="error"
-              sx={{ width: '100%' }}
+              sx={{
+                width: '100%',
+                borderRadius: isMobile ? 1.5 : 2,
+                fontSize: isMobile ? '0.8rem' : undefined,
+                py: isMobile ? 0.5 : undefined,
+                '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+              }}
             >
               {error}
             </Alert>
