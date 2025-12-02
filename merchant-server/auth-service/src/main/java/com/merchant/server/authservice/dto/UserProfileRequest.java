@@ -26,6 +26,11 @@ public class UserProfileRequest {
     @Size(max = 20, message = "手机号长度不能超过20个字符")
     private String phone;
 
+    /**
+     * 是否开启短信二次验证（登录时）
+     */
+    private Boolean smsVerificationEnabled;
+
     // Getters and Setters
     public Long getUserId() {
         return userId;
@@ -67,6 +72,14 @@ public class UserProfileRequest {
         this.phone = phone;
     }
 
+    public Boolean getSmsVerificationEnabled() {
+        return smsVerificationEnabled;
+    }
+
+    public void setSmsVerificationEnabled(Boolean smsVerificationEnabled) {
+        this.smsVerificationEnabled = smsVerificationEnabled;
+    }
+
     @Override
     public String toString() {
         return "UserProfileRequest{" +
@@ -75,6 +88,7 @@ public class UserProfileRequest {
                 ", realName='" + realName + '\'' +
                 ", email='" + email + '\'' +
                 ", phone='" + phone + '\'' +
+                ", smsVerificationEnabled=" + smsVerificationEnabled +
                 '}';
     }
 } 

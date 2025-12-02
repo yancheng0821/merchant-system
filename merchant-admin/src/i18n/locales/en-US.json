@@ -395,6 +395,7 @@
     "accountDisabled": "Account is disabled",
     "accountLocked": "Account is locked",
     "basicInfo": "Basic Information",
+    "logout": "Logout",
     "changePassword": "Change Password",
     "passwordSecurityTip": "Please set a strong password to protect your account",
     "oldPassword": "Current Password",
@@ -465,7 +466,12 @@
     "incorrectCode": "Incorrect verification code",
     "attemptsRemaining": "Attempts remaining",
     "maxAttemptsExceeded": "Maximum verification attempts exceeded. Please request a new code.",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "securitySettings": "Security Settings",
+    "smsVerification": "Login SMS Verification",
+    "smsVerificationDescription": "When enabled, SMS verification is required for each login",
+    "smsVerificationUpdated": "SMS verification setting updated",
+    "phoneRequiredForSms": "Phone number required to enable SMS verification"
   },
   "session": {
     "expired": "Session Expired",
@@ -517,6 +523,7 @@
     "status": "Status",
     "actions": "Actions",
     "points": "Points",
+    "packages": "Packages",
     "firstName": "First Name",
     "lastName": "Last Name",
     "phone": "Phone",
@@ -1274,6 +1281,7 @@
       "mobile_pay": "Mobile Pay",
       "gift_card": "Gift Card"
     },
+    "noOrders": "No orders found",
     "todayOrders": "Today's Orders",
     "todayRevenue": "Today's Revenue",
     "pendingPayments": "Pending Payments",
@@ -2276,6 +2284,8 @@
     "pay": "Pay Now",
     "invoiceDetails": "Invoice Details",
     "noInvoices": "No invoices yet",
+    "mobilePaymentNotice": "Complete payment on desktop",
+    "mobilePaymentNoticeDesc": "For security reasons, please log in to your desktop browser to complete invoice payments.",
     "subscriptionPlan": "Subscription Plan",
     "currentPlan": "Current Plan",
     "trialPeriod": "Trial Period",
@@ -2299,6 +2309,7 @@
     "unpaidInvoiceCount": "Unpaid Invoices",
     "invoices": "invoice(s)",
     "viewAndPay": "View & Pay",
+    "viewInvoices": "View",
     "alertWillShowOnNextLogin": "This alert will show again on your next login",
     "paymentWarning": "Please complete payment within 7 days to avoid service interruption"
   },
@@ -4228,5 +4239,12 @@
     "confirmationCode": "Confirmation",
     "selectedServices": "{{count}} service selected",
     "selectedServices_plural": "{{count}} services selected"
+  },
+  "support": {
+    "title": "Support",
+    "needHelp": "Need Help?",
+    "description": "Our support team is here to help you with any questions or issues you may have.",
+    "emailUs": "Email Us",
+    "responseTime": "We typically respond within 24 hours"
   }
 }

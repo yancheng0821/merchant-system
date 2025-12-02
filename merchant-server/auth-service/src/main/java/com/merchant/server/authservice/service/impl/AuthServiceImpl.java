@@ -120,14 +120,20 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 检查是否需要二次验证（2FA）
-        if (user.getPhone() != null && !user.getPhone().trim().isEmpty()) {
+        // 只有当用户有电话号码且开启了短信验证时才需要 2FA
+        boolean hasSmsVerificationEnabled = user.getSmsVerificationEnabled() == null || user.getSmsVerificationEnabled();
+        if (user.getPhone() != null && !user.getPhone().trim().isEmpty() && hasSmsVerificationEnabled) {
             logger.info("用户{}需要进行二次验证", loginRequest.getUsername());
             // 返回需要2FA的响应，不生成JWT token
             return LoginResponse.needTwoFactorAuth(user, tenant.getId());
         }
 
-        // 如果用户没有电话号码，记录警告并继续登录流程
-        logger.warn("用户{}没有设置电话号码，跳过二次验证", loginRequest.getUsername());
+        // 如果用户没有电话号码或关闭了短信验证，跳过二次验证
+        if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
+            logger.warn("用户{}没有设置电话号码，跳过二次验证", loginRequest.getUsername());
+        } else if (!hasSmsVerificationEnabled) {
+            logger.info("用户{}已关闭短信验证，跳过二次验证", loginRequest.getUsername());
+        }
 
         // 更新最后登录信息
         logger.debug("更新用户登录信息 - IP: {}", clientIp);

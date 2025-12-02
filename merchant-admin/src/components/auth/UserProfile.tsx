@@ -16,6 +16,9 @@ import {
   Fade,
   Tooltip,
   Alert,
+  Switch,
+  FormControlLabel,
+  Snackbar,
   useMediaQuery,
   useTheme as useMuiTheme,
 } from '@mui/material';
@@ -31,6 +34,8 @@ import {
   Cancel as CancelIconMUI,
 } from '@mui/icons-material';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import SecurityIcon from '@mui/icons-material/Security';
 import InputAdornment from '@mui/material/InputAdornment';
 import LockIcon from '@mui/icons-material/Lock';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
@@ -43,7 +48,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { useNavigate } from 'react-router-dom';
-import { useSnackbar } from 'notistack';
 import { usePermission } from '../../hooks/usePermission';
 import InfoIcon from '@mui/icons-material/Info';
 
@@ -51,12 +55,22 @@ const UserProfile: React.FC = () => {
   const { t } = useTranslation();
   const { user, updateUserInfo, uploadAvatar, loading, logout, error: authError } = useAuth();
   const navigate = useNavigate();
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const { userPermissions, isSuperAdmin } = usePermission();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 通知状态
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -87,6 +101,42 @@ const UserProfile: React.FC = () => {
   // 新增密码可见性状态
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // 短信验证设置状态
+  const [smsVerificationEnabled, setSmsVerificationEnabled] = useState(user?.smsVerificationEnabled !== false);
+  const [smsVerificationLoading, setSmsVerificationLoading] = useState(false);
+
+  // 处理短信验证开关变更
+  const handleSmsVerificationChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.checked;
+    setSmsVerificationLoading(true);
+
+    try {
+      const updateData = {
+        username: user?.username || '',
+        email: user?.email || '',
+        realName: user?.realName || '',
+        phone: user?.phone || '',
+        userId: Number(user?.id),
+        smsVerificationEnabled: newValue,
+      };
+
+      const success = await updateUserInfo(updateData);
+
+      if (success) {
+        setSmsVerificationEnabled(newValue);
+      } else {
+        // 恢复原始值
+        setSmsVerificationEnabled(!newValue);
+      }
+    } catch (error) {
+      console.error('Failed to update SMS verification setting:', error);
+      // 恢复原始值
+      setSmsVerificationEnabled(!newValue);
+    } finally {
+      setSmsVerificationLoading(false);
+    }
+  };
 
   const handleOpenPasswordDialog = () => {
     setPasswordDialogOpen(true);
@@ -152,23 +202,10 @@ const UserProfile: React.FC = () => {
       const resp = await userApi.changePassword(passwordForm);
       if (resp.success) {
         setPasswordDialogOpen(false);
-        enqueueSnackbar(t('auth.passwordChanged'), {
-          variant: 'success',
-          autoHideDuration: 3000,
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          content: (key, message) => (
-            <Alert
-              severity="success"
-              onClose={() => closeSnackbar(key)}
-              sx={{
-                width: '100%',
-                minWidth: { xs: '280px', sm: '400px' },
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              }}
-            >
-              {message}
-            </Alert>
-          ),
+        setSnackbar({
+          open: true,
+          message: t('auth.passwordChanged'),
+          severity: 'success',
         });
         setTimeout(() => {
           logout();
@@ -237,23 +274,10 @@ const UserProfile: React.FC = () => {
   const handleSave = async () => {
     try {
       if (!user || !user.id) {
-        enqueueSnackbar(t('auth.userNotFound'), {
-          variant: 'error',
-          autoHideDuration: 3000,
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          content: (key, message) => (
-            <Alert
-              severity="error"
-              onClose={() => closeSnackbar(key)}
-              sx={{
-                width: '100%',
-                minWidth: { xs: '280px', sm: '400px' },
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              }}
-            >
-              {message}
-            </Alert>
-          ),
+        setSnackbar({
+          open: true,
+          message: t('auth.userNotFound'),
+          severity: 'error',
         });
         return;
       }
@@ -292,23 +316,10 @@ const UserProfile: React.FC = () => {
 
       if (success) {
         setEditing(false);
-        enqueueSnackbar(t('auth.profileUpdated'), {
-          variant: 'success',
-          autoHideDuration: 3000,
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          content: (key, message) => (
-            <Alert
-              severity="success"
-              onClose={() => closeSnackbar(key)}
-              sx={{
-                width: '100%',
-                minWidth: { xs: '280px', sm: '400px' },
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              }}
-            >
-              {message}
-            </Alert>
-          ),
+        setSnackbar({
+          open: true,
+          message: t('auth.profileUpdated'),
+          severity: 'success',
         });
       } else {
         setFormData({
@@ -317,25 +328,11 @@ const UserProfile: React.FC = () => {
           realName: user?.realName || '',
           phone: user?.phone || '',
         });
-        // Use the actual error message from AuthContext, or fallback to generic message
         const errorMessage = authError || t('auth.updateFailed');
-        enqueueSnackbar(errorMessage, {
-          variant: 'error',
-          autoHideDuration: 3000,
-          anchorOrigin: { vertical: 'top', horizontal: 'center' },
-          content: (key, message) => (
-            <Alert
-              severity="error"
-              onClose={() => closeSnackbar(key)}
-              sx={{
-                width: '100%',
-                minWidth: { xs: '280px', sm: '400px' },
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              }}
-            >
-              {message}
-            </Alert>
-          ),
+        setSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: 'error',
         });
       }
     } catch (error) {
@@ -346,25 +343,11 @@ const UserProfile: React.FC = () => {
         realName: user?.realName || '',
         phone: user?.phone || '',
       });
-      // Use the actual error message from AuthContext, or fallback to generic message
       const errorMessage = authError || t('auth.updateFailed');
-      enqueueSnackbar(errorMessage, {
-        variant: 'error',
-        autoHideDuration: 3000,
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        content: (key, message) => (
-          <Alert
-            severity="error"
-            onClose={() => closeSnackbar(key)}
-            sx={{
-              width: '100%',
-              minWidth: { xs: '280px', sm: '400px' },
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            {message}
-          </Alert>
-        ),
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
       });
     }
   };
@@ -375,46 +358,20 @@ const UserProfile: React.FC = () => {
 
     // 验证文件类型
     if (!file.type.startsWith('image/')) {
-      enqueueSnackbar(t('auth.invalidFileType'), {
-        variant: 'error',
-        autoHideDuration: 3000,
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        content: (key, message) => (
-          <Alert
-            severity="error"
-            onClose={() => closeSnackbar(key)}
-            sx={{
-              width: '100%',
-              minWidth: { xs: '280px', sm: '400px' },
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            {message}
-          </Alert>
-        ),
+      setSnackbar({
+        open: true,
+        message: t('auth.invalidFileType'),
+        severity: 'error',
       });
       return;
     }
 
     // 验证文件大小（5MB）
     if (file.size > 5 * 1024 * 1024) {
-      enqueueSnackbar(t('auth.fileTooLarge'), {
-        variant: 'error',
-        autoHideDuration: 3000,
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        content: (key, message) => (
-          <Alert
-            severity="error"
-            onClose={() => closeSnackbar(key)}
-            sx={{
-              width: '100%',
-              minWidth: { xs: '280px', sm: '400px' },
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            {message}
-          </Alert>
-        ),
+      setSnackbar({
+        open: true,
+        message: t('auth.fileTooLarge'),
+        severity: 'error',
       });
       return;
     }
@@ -422,42 +379,16 @@ const UserProfile: React.FC = () => {
     setAvatarUploading(true);
     try {
       await uploadAvatar(file);
-      enqueueSnackbar(t('auth.avatarUpdated'), {
-        variant: 'success',
-        autoHideDuration: 3000,
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        content: (key, message) => (
-          <Alert
-            severity="success"
-            onClose={() => closeSnackbar(key)}
-            sx={{
-              width: '100%',
-              minWidth: { xs: '280px', sm: '400px' },
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            {message}
-          </Alert>
-        ),
+      setSnackbar({
+        open: true,
+        message: t('auth.avatarUpdated'),
+        severity: 'success',
       });
     } catch (error) {
-      enqueueSnackbar(t('auth.avatarUploadFailed'), {
-        variant: 'error',
-        autoHideDuration: 3000,
-        anchorOrigin: { vertical: 'top', horizontal: 'center' },
-        content: (key, message) => (
-          <Alert
-            severity="error"
-            onClose={() => closeSnackbar(key)}
-            sx={{
-              width: '100%',
-              minWidth: { xs: '280px', sm: '400px' },
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            {message}
-          </Alert>
-        ),
+      setSnackbar({
+        open: true,
+        message: t('auth.avatarUploadFailed'),
+        severity: 'error',
       });
     } finally {
       setAvatarUploading(false);
@@ -540,23 +471,25 @@ const UserProfile: React.FC = () => {
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: isMobile ? 1.5 : 3 }}>
       {/* 页面标题 */}
-      <Box mb={isMobile ? 2 : 4}>
-        <Typography
-          variant={isMobile ? 'h6' : 'h5'}
-          component="h1"
-          sx={{
-            fontWeight: 500,
-            color: '#1a1a1a',
-            mb: 0.5,
-          }}
-        >
-          {t('auth.userProfile')}
-        </Typography>
-        {!isMobile && (
-          <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
-            {t('auth.userProfileSubtitle')}
+      <Box mb={isMobile ? 2 : 4} display="flex" justifyContent="space-between" alignItems="flex-start">
+        <Box>
+          <Typography
+            variant={isMobile ? 'h6' : 'h5'}
+            component="h1"
+            sx={{
+              fontWeight: 500,
+              color: '#1a1a1a',
+              mb: 0.5,
+            }}
+          >
+            {t('auth.userProfile')}
           </Typography>
-        )}
+          {!isMobile && (
+            <Typography sx={{ color: '#888', fontSize: '0.85rem' }}>
+              {t('auth.userProfileSubtitle')}
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* 无权限提示 */}
@@ -762,9 +695,10 @@ const UserProfile: React.FC = () => {
               )}
             </Box>
 
-            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={isMobile ? 2 : 3}>
+            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={isMobile ? 1.5 : 3}>
               <TextField
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
                 label={t('auth.username')}
                 name="username"
                 value={editing ? formData.username : user.username}
@@ -774,8 +708,9 @@ const UserProfile: React.FC = () => {
                 helperText={editing && usernameError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: isMobile ? 1.5 : 2,
                     bgcolor: '#fff',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '& fieldset': { borderColor: '#d0d0d0' },
                     '&:hover fieldset': { borderColor: '#bbb' },
                     '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
@@ -783,6 +718,7 @@ const UserProfile: React.FC = () => {
                   },
                   '& .MuiInputLabel-root': {
                     color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
@@ -790,6 +726,7 @@ const UserProfile: React.FC = () => {
 
               <TextField
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
                 label={t('auth.email')}
                 name="email"
                 type="email"
@@ -800,8 +737,9 @@ const UserProfile: React.FC = () => {
                 helperText={editing && emailError}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: isMobile ? 1.5 : 2,
                     bgcolor: '#fff',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '& fieldset': { borderColor: '#d0d0d0' },
                     '&:hover fieldset': { borderColor: '#bbb' },
                     '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
@@ -809,6 +747,7 @@ const UserProfile: React.FC = () => {
                   },
                   '& .MuiInputLabel-root': {
                     color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
@@ -816,6 +755,7 @@ const UserProfile: React.FC = () => {
 
               <TextField
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
                 label={t('auth.realName')}
                 name="realName"
                 value={editing ? formData.realName : (user.realName || '')}
@@ -823,8 +763,9 @@ const UserProfile: React.FC = () => {
                 disabled={!editing}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: isMobile ? 1.5 : 2,
                     bgcolor: '#fff',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '& fieldset': { borderColor: '#d0d0d0' },
                     '&:hover fieldset': { borderColor: '#bbb' },
                     '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
@@ -832,6 +773,7 @@ const UserProfile: React.FC = () => {
                   },
                   '& .MuiInputLabel-root': {
                     color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
@@ -839,6 +781,7 @@ const UserProfile: React.FC = () => {
 
               <TextField
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
                 label={t('auth.phone')}
                 name="phone"
                 value={editing ? formData.phone : (user.phone || '')}
@@ -846,8 +789,9 @@ const UserProfile: React.FC = () => {
                 disabled={!editing}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: isMobile ? 1.5 : 2,
                     bgcolor: '#fff',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '& fieldset': { borderColor: '#d0d0d0' },
                     '&:hover fieldset': { borderColor: '#bbb' },
                     '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
@@ -855,6 +799,7 @@ const UserProfile: React.FC = () => {
                   },
                   '& .MuiInputLabel-root': {
                     color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
@@ -862,17 +807,20 @@ const UserProfile: React.FC = () => {
 
               <TextField
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
                 label={t('auth.userId')}
                 value={user?.id ? user.id.toString() : ''}
                 disabled
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: isMobile ? 1.5 : 2,
                     bgcolor: '#fafafa',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '& fieldset': { borderColor: '#d0d0d0' },
                   },
                   '& .MuiInputLabel-root': {
                     color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                   },
                 }}
               />
@@ -881,31 +829,132 @@ const UserProfile: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 修改密码按钮 - 底部 */}
-      <Box sx={{ mt: isMobile ? 2 : 3 }}>
-        <Button
-          variant="contained"
-          size={isMobile ? 'medium' : 'large'}
-          fullWidth
-          startIcon={<LockResetIcon sx={{ fontSize: isMobile ? 18 : 22 }} />}
-          sx={{
-            py: isMobile ? 1.25 : 1.5,
-            textTransform: 'none',
-            fontWeight: 500,
-            fontSize: isMobile ? '0.875rem' : '1rem',
-            borderRadius: 2,
-            bgcolor: '#1a1a1a',
-            boxShadow: 'none',
-            '&:hover': {
-              bgcolor: '#333',
-              boxShadow: 'none',
-            },
-          }}
-          onClick={handleOpenPasswordDialog}
-        >
-          {t('auth.changePassword')}
-        </Button>
-      </Box>
+      {/* 安全设置卡片 */}
+      <Card
+        sx={{
+          mt: isMobile ? 2 : 3,
+          borderRadius: isMobile ? 2 : 3,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          border: '1px solid rgba(0,0,0,0.06)',
+        }}
+      >
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <SecurityIcon sx={{ color: '#666', fontSize: isMobile ? 20 : 22 }} />
+            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
+              {t('auth.securitySettings')}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: isMobile ? 1.5 : 2,
+              bgcolor: '#fafafa',
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.06)',
+            }}
+          >
+            <Box>
+              <Typography variant="body1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.875rem' : '0.95rem' }}>
+                {t('auth.smsVerification')}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#888', mt: 0.5, fontSize: isMobile ? '0.75rem' : '0.8rem' }}>
+                {t('auth.smsVerificationDescription')}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {smsVerificationLoading ? (
+                <CircularProgress size={24} sx={{ color: '#1a1a1a' }} />
+              ) : (
+                <Switch
+                  checked={smsVerificationEnabled}
+                  onChange={handleSmsVerificationChange}
+                  disabled={!user?.phone}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#1a1a1a',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#1a1a1a',
+                    },
+                  }}
+                />
+              )}
+            </Box>
+          </Box>
+          {!user?.phone && (
+            <Typography variant="caption" sx={{ color: '#f59e0b', mt: 1, display: 'block', fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
+              {t('auth.phoneRequiredForSms')}
+            </Typography>
+          )}
+
+          {/* 修改密码 */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: isMobile ? 1.5 : 2,
+              mt: 2,
+              bgcolor: '#fafafa',
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.06)',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              '&:hover': {
+                bgcolor: '#f0f0f0',
+              },
+            }}
+            onClick={handleOpenPasswordDialog}
+          >
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <LockResetIcon sx={{ color: '#666', fontSize: isMobile ? 20 : 22 }} />
+              <Box>
+                <Typography variant="body1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.875rem' : '0.95rem' }}>
+                  {t('auth.changePassword')}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#888', mt: 0.5, fontSize: isMobile ? '0.75rem' : '0.8rem' }}>
+                  {t('auth.passwordSecurityTip')}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ color: '#999' }}>
+              <Typography sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>›</Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* 退出按钮 - 仅移动端显示在底部 */}
+      {isMobile && (
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            size="medium"
+            fullWidth
+            startIcon={<ExitToAppIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              py: 1.25,
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '0.875rem',
+              borderRadius: 2,
+              borderColor: '#e0e0e0',
+              color: '#666',
+              '&:hover': {
+                borderColor: '#ccc',
+                bgcolor: 'rgba(0,0,0,0.02)',
+              },
+            }}
+            onClick={logout}
+          >
+            {t('auth.logout')}
+          </Button>
+        </Box>
+      )}
 
       {/* 修改密码弹窗 */}
       <Dialog
@@ -913,54 +962,56 @@ const UserProfile: React.FC = () => {
         onClose={handleClosePasswordDialog}
         maxWidth="sm"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: { xs: 2, sm: 3 },
-            m: { xs: 2, sm: 'auto' },
-            width: { xs: 'calc(100% - 32px)', sm: '100%' },
-            maxHeight: { xs: 'calc(100vh - 32px)', sm: 'none' },
+            borderRadius: isMobile ? 0 : 3,
+            m: isMobile ? 0 : 'auto',
           }
         }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ py: isMobile ? 1.5 : 2, px: isMobile ? 2 : 3 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600, color: '#1a1a1a' }}>
               {t('auth.changePassword')}
             </Typography>
-            <IconButton onClick={handleClosePasswordDialog} sx={{ color: '#888' }}>
-              <CancelIcon />
+            <IconButton onClick={handleClosePasswordDialog} sx={{ color: '#888' }} size={isMobile ? 'small' : 'medium'}>
+              <CancelIcon fontSize={isMobile ? 'small' : 'medium'} />
             </IconButton>
           </Box>
         </DialogTitle>
 
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 3 }}>
+        <DialogContent dividers sx={{ px: isMobile ? 2 : 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 2 : 2.5, mt: isMobile ? 2 : 3 }}>
             <TextField
               label={t('auth.oldPassword')}
               name="oldPassword"
               type="password"
               fullWidth
+              size={isMobile ? 'small' : 'medium'}
               value={passwordForm.oldPassword}
               onChange={handlePasswordInputChange}
               autoComplete="current-password"
               variant="outlined"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: isMobile ? 1.5 : 2,
                   bgcolor: '#fff',
+                  fontSize: isMobile ? '0.875rem' : undefined,
                   '& fieldset': { borderColor: '#d0d0d0' },
                   '&:hover fieldset': { borderColor: '#bbb' },
                   '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                 },
                 '& .MuiInputLabel-root': {
                   color: '#999',
+                  fontSize: isMobile ? '0.875rem' : undefined,
                   '&.Mui-focused': { color: '#1a1a1a' },
                 },
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <VpnKeyIcon sx={{ color: '#bbb' }} />
+                    <VpnKeyIcon sx={{ color: '#bbb', fontSize: isMobile ? 20 : 24 }} />
                   </InputAdornment>
                 ),
               }}
@@ -972,6 +1023,7 @@ const UserProfile: React.FC = () => {
                 name="newPassword"
                 type={showNewPassword ? 'text' : 'password'}
                 fullWidth
+                size={isMobile ? 'small' : 'medium'}
                 value={passwordForm.newPassword}
                 onChange={handlePasswordInputChange}
                 onFocus={() => setPasswordTouchedFields(prev => ({ ...prev, newPassword: true }))}
@@ -979,21 +1031,23 @@ const UserProfile: React.FC = () => {
                 variant="outlined"
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: isMobile ? 1.5 : 2,
                     bgcolor: '#fff',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '& fieldset': { borderColor: '#d0d0d0' },
                     '&:hover fieldset': { borderColor: '#bbb' },
                     '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                   },
                   '& .MuiInputLabel-root': {
                     color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
                     '&.Mui-focused': { color: '#1a1a1a' },
                   },
                 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockIcon sx={{ color: '#bbb' }} />
+                      <LockIcon sx={{ color: '#bbb', fontSize: isMobile ? 20 : 24 }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -1002,9 +1056,10 @@ const UserProfile: React.FC = () => {
                         onClick={() => setShowNewPassword((v) => !v)}
                         edge="end"
                         tabIndex={-1}
+                        size={isMobile ? 'small' : 'medium'}
                         sx={{ color: '#888' }}
                       >
-                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                        {showNewPassword ? <VisibilityOff fontSize={isMobile ? 'small' : 'medium'} /> : <Visibility fontSize={isMobile ? 'small' : 'medium'} />}
                       </IconButton>
                     </InputAdornment>
                   ),
@@ -1121,6 +1176,7 @@ const UserProfile: React.FC = () => {
               name="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               fullWidth
+              size={isMobile ? 'small' : 'medium'}
               value={passwordForm.confirmPassword}
               onChange={handlePasswordInputChange}
               onFocus={() => setPasswordTouchedFields(prev => ({ ...prev, confirmPassword: true }))}
@@ -1128,21 +1184,23 @@ const UserProfile: React.FC = () => {
               variant="outlined"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                  borderRadius: isMobile ? 1.5 : 2,
                   bgcolor: '#fff',
+                  fontSize: isMobile ? '0.875rem' : undefined,
                   '& fieldset': { borderColor: '#d0d0d0' },
                   '&:hover fieldset': { borderColor: '#bbb' },
                   '&.Mui-focused fieldset': { borderColor: '#1a1a1a', borderWidth: '1px' },
                 },
                 '& .MuiInputLabel-root': {
                   color: '#999',
+                  fontSize: isMobile ? '0.875rem' : undefined,
                   '&.Mui-focused': { color: '#1a1a1a' },
                 },
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockIcon sx={{ color: '#bbb' }} />
+                    <LockIcon sx={{ color: '#bbb', fontSize: isMobile ? 20 : 24 }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -1151,9 +1209,10 @@ const UserProfile: React.FC = () => {
                       onClick={() => setShowConfirmPassword((v) => !v)}
                       edge="end"
                       tabIndex={-1}
+                      size={isMobile ? 'small' : 'medium'}
                       sx={{ color: '#888' }}
                     >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      {showConfirmPassword ? <VisibilityOff fontSize={isMobile ? 'small' : 'medium'} /> : <Visibility fontSize={isMobile ? 'small' : 'medium'} />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -1161,52 +1220,122 @@ const UserProfile: React.FC = () => {
             />
 
             {passwordError && (
-              <Alert severity="error" sx={{ borderRadius: 2 }}>
+              <Alert severity="error" sx={{ borderRadius: isMobile ? 1.5 : 2, fontSize: isMobile ? '0.8rem' : undefined }}>
                 {passwordError}
               </Alert>
             )}
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button
-            onClick={handleClosePasswordDialog}
-            disabled={passwordLoading}
-            sx={{
-              color: '#666',
-              borderColor: '#d0d0d0',
-              borderRadius: 2,
-              textTransform: 'none',
-              '&:hover': {
-                bgcolor: 'rgba(0,0,0,0.04)',
-              },
-            }}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleChangePassword}
-            disabled={passwordLoading}
-            variant="contained"
-            sx={{
-              bgcolor: '#1a1a1a',
-              color: '#fff',
-              borderRadius: 2,
-              textTransform: 'none',
-              boxShadow: 'none',
-              '&:hover': {
-                bgcolor: '#333',
-                boxShadow: 'none',
-              },
-              '&:disabled': {
-                bgcolor: '#ccc',
-              },
-            }}
-          >
-            {passwordLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('common.confirm')}
-          </Button>
+        <DialogActions sx={{ p: isMobile ? 2 : 2.5, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+          {isMobile ? (
+            <>
+              <Button
+                onClick={handleChangePassword}
+                disabled={passwordLoading}
+                variant="contained"
+                fullWidth
+                sx={{
+                  bgcolor: '#1a1a1a',
+                  color: '#fff',
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  py: 1.25,
+                  fontSize: '0.875rem',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: '#333',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    bgcolor: '#ccc',
+                  },
+                }}
+              >
+                {passwordLoading ? <CircularProgress size={18} sx={{ color: 'white' }} /> : t('common.confirm')}
+              </Button>
+              <Button
+                onClick={handleClosePasswordDialog}
+                disabled={passwordLoading}
+                fullWidth
+                sx={{
+                  color: '#666',
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  py: 1,
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                  },
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={handleClosePasswordDialog}
+                disabled={passwordLoading}
+                sx={{
+                  color: '#666',
+                  borderColor: '#d0d0d0',
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                  },
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={passwordLoading}
+                variant="contained"
+                sx={{
+                  bgcolor: '#1a1a1a',
+                  color: '#fff',
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: '#333',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    bgcolor: '#ccc',
+                  },
+                }}
+              >
+                {passwordLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('common.confirm')}
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
+
+      {/* 通知组件 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={isMobile ? { top: 70 } : undefined}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{
+            borderRadius: isMobile ? 1.5 : 2,
+            fontSize: isMobile ? '0.8rem' : undefined,
+            py: isMobile ? 0.5 : undefined,
+            '& .MuiAlert-icon': isMobile ? { fontSize: 18 } : undefined,
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

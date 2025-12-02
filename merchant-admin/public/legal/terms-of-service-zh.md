@@ -2,13 +2,13 @@
 
 **最后更新：2025年11月22日**
 
-使用SwiftmindSystems的企业管理平台（"服务"），即表示您同意本服务条款。请仔细阅读。
+使用VAMerchant的企业管理平台（"服务"），即表示您同意本服务条款。请仔细阅读。
 
 ---
 
 ## 1. 关于本条款
 
-**我们是谁：** SwiftmindSystems，在加拿大不列颠哥伦比亚省注册的公司。
+**我们是谁：** SwiftmindSystems Inc.，在加拿大不列颠哥伦比亚省注册的公司，运营 VAMerchant 平台。
 
 **本条款涵盖内容：** 您对我们基于网络的企业管理平台及所有相关服务的使用。
 
@@ -213,14 +213,13 @@
 ## 14. 联系我们
 
 **有关本条款的问题：**
-- 电子邮件：info@swiftmindsystems.com
-- 地址：3476 Henderson Rd, Victoria，不列颠哥伦比亚省，加拿大
+- 电子邮件：support@vamerchant.app
 
 **客户支持：**
-- 电子邮件：info@swiftmindsystems.com
+- 电子邮件：support@vamerchant.app
 
 **隐私事项：**
-- 电子邮件：info@swiftmindsystems.com
+- 电子邮件：support@vamerchant.app
 
 ---
 

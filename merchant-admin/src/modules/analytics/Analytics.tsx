@@ -558,15 +558,15 @@ const Analytics: React.FC = () => {
     <Box>
       {/* 页面标题 */}
       <Box mb={isMobile ? 2 : 4}>
-        <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} gap={isMobile ? 1.5 : 0}>
-          <Box>
+        <Box display="flex" flexDirection="row" justifyContent="space-between" alignItems="center" gap={1}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant={isMobile ? 'h6' : 'h5'}
               component="h1"
               sx={{
                 fontWeight: 600,
                 color: THEME_COLOR,
-                mb: 0.5,
+                mb: isMobile ? 0 : 0.5,
                 fontSize: isMobile ? '1.1rem' : undefined,
               }}
             >
@@ -579,8 +579,8 @@ const Analytics: React.FC = () => {
             )}
           </Box>
 
-          <Box display="flex" gap={2}>
-            <FormControl size="small" sx={{ minWidth: isMobile ? 120 : 140 }}>
+          <Box display="flex" gap={2} sx={{ flexShrink: 0 }}>
+            <FormControl size="small" sx={{ minWidth: isMobile ? 100 : 140 }}>
             <Select
               value={timeRange}
               onChange={handleTimeRangeChange}

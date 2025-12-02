@@ -19,11 +19,12 @@
         <result column="locked_until" property="lockedUntil" jdbcType="TIMESTAMP"/>
         <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
         <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+        <result column="sms_verification_enabled" property="smsVerificationEnabled" jdbcType="BOOLEAN"/>
     </resultMap>
     
     <sql id="Base_Column_List">
-        id, tenant_id, username, email, phone, password_hash, salt, real_name, avatar_url, 
-        status, last_login_at, last_login_ip, login_attempts, locked_until, created_at, updated_at
+        id, tenant_id, username, email, phone, password_hash, salt, real_name, avatar_url,
+        status, last_login_at, last_login_ip, login_attempts, locked_until, created_at, updated_at, sms_verification_enabled
     </sql>
     
     <select id="selectById" parameterType="java.lang.Long" resultMap="UserResultMap">
@@ -65,10 +66,11 @@
     <insert id="insert" parameterType="com.merchant.server.authservice.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (
             tenant_id, username, email, phone, password_hash, salt, real_name, avatar_url,
-            status, last_login_at, last_login_ip, login_attempts, locked_until, created_at, updated_at
+            status, last_login_at, last_login_ip, login_attempts, locked_until, created_at, updated_at, sms_verification_enabled
         ) VALUES (
             #{tenantId}, #{username}, #{email}, #{phone}, #{passwordHash}, #{salt}, #{realName}, #{avatarUrl},
-            #{status}, #{lastLoginAt}, #{lastLoginIp}, #{loginAttempts}, #{lockedUntil}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+            #{status}, #{lastLoginAt}, #{lastLoginIp}, #{loginAttempts}, #{lockedUntil}, UTC_TIMESTAMP(), UTC_TIMESTAMP(),
+            IFNULL(#{smsVerificationEnabled}, 1)
         )
     </insert>
     
@@ -87,6 +89,7 @@
             last_login_ip = #{lastLoginIp},
             login_attempts = #{loginAttempts},
             locked_until = #{lockedUntil},
+            sms_verification_enabled = #{smsVerificationEnabled},
             updated_at = UTC_TIMESTAMP()
         WHERE id = #{id}
     </update>

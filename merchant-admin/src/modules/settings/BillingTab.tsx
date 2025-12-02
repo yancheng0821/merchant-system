@@ -23,12 +23,14 @@ import {
   alpha,
   Divider,
   Stack,
+  Snackbar,
   useMediaQuery,
   useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Receipt as ReceiptIcon,
   Payment as PaymentIcon,
+  Computer as ComputerIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
@@ -76,6 +78,7 @@ const BillingTab: React.FC = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null);
+  const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
 
   useEffect(() => {
     if (user?.tenantId) {
@@ -348,31 +351,6 @@ const BillingTab: React.FC = () => {
                     </Box>
                   </Box>
 
-                  {/* 切换计费周期按钮 */}
-                  {subscription.status === 'ACTIVE' && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      onClick={handleChangeBillingCycle}
-                      disabled={changingBillingCycle}
-                      sx={{
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
-                        py: 0.75,
-                        borderColor: '#D1D5DB',
-                        color: '#6B7280',
-                        '&:hover': {
-                          borderColor: '#9CA3AF',
-                          bgcolor: '#F9FAFB',
-                        }
-                      }}
-                    >
-                      {changingBillingCycle
-                        ? t('common.loading')
-                        : t('billing.switchTo') + ' ' + (subscription.billingCycle === 'MONTHLY' ? t('billing.yearly') : t('billing.monthly'))}
-                    </Button>
-                  )}
                 </Box>
               ) : (
                 // 桌面端布局
@@ -525,6 +503,74 @@ const BillingTab: React.FC = () => {
           ) : isMobile ? (
             // 移动端卡片视图
             <Stack spacing={1.5}>
+              {/* 移动端待付款提醒 */}
+              {invoices.some(inv => inv.status === 'PENDING') && (
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: '#f5f5f5',
+                    border: '1px solid rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                    <ComputerIcon sx={{ fontSize: 18, color: '#666', mt: 0.25 }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#1a1a1a', mb: 0.25 }}>
+                        {t('billing.mobilePaymentNotice')}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.7rem', color: '#888', lineHeight: 1.4 }}>
+                        {t('billing.mobilePaymentNoticeDesc')}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {/* 网址复制区域 */}
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      p: 1,
+                      borderRadius: 1.5,
+                      bgcolor: '#fff',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        flex: 1,
+                        fontSize: '0.8rem',
+                        fontWeight: 500,
+                        color: '#1a1a1a',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      vamerchant.app
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        navigator.clipboard.writeText('https://vamerchant.app');
+                        setCopySnackbarOpen(true);
+                      }}
+                      sx={{
+                        minWidth: 'auto',
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: '0.7rem',
+                        textTransform: 'none',
+                        borderColor: '#d0d0d0',
+                        color: '#666',
+                        '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
+                      }}
+                    >
+                      {t('common.copy')}
+                    </Button>
+                  </Box>
+                </Box>
+              )}
               {invoices.map((invoice) => (
                 <Box
                   key={invoice.id}
@@ -583,25 +629,6 @@ const BillingTab: React.FC = () => {
                     >
                       {t('common.viewDetails')}
                     </Button>
-                    {invoice.status === 'PENDING' && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        fullWidth
-                        startIcon={<PaymentIcon sx={{ fontSize: 16 }} />}
-                        onClick={() => handlePay(invoice)}
-                        sx={{
-                          textTransform: 'none',
-                          fontSize: '0.75rem',
-                          py: 0.5,
-                          bgcolor: '#1a1a1a',
-                          boxShadow: 'none',
-                          '&:hover': { bgcolor: '#333', boxShadow: 'none' },
-                        }}
-                      >
-                        {t('billing.pay')}
-                      </Button>
-                    )}
                   </Box>
                 </Box>
               ))}
@@ -811,7 +838,8 @@ const BillingTab: React.FC = () => {
           >
             {t('common.close')}
           </Button>
-          {selectedInvoice?.status === 'PENDING' && (
+          {/* 移动端不显示支付按钮（用户需要在Web端支付） */}
+          {!isMobile && selectedInvoice?.status === 'PENDING' && (
             <Button
               variant="contained"
               startIcon={<PaymentIcon />}
@@ -886,6 +914,31 @@ const BillingTab: React.FC = () => {
         onClose={handlePaymentClose}
         onSuccess={handlePaymentSuccess}
       />
+
+      {/* 复制成功提示 */}
+      <Snackbar
+        open={copySnackbarOpen}
+        autoHideDuration={2000}
+        onClose={() => setCopySnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ top: isMobile ? 70 : 24 }}
+      >
+        <Alert
+          onClose={() => setCopySnackbarOpen(false)}
+          severity="success"
+          sx={{
+            width: 'auto',
+            minWidth: 120,
+            borderRadius: 1.5,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: '0.8rem',
+            py: 0.5,
+            '& .MuiAlert-icon': { fontSize: 18 },
+          }}
+        >
+          {t('common.copied')}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 };

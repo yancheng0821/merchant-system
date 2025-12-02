@@ -682,13 +682,13 @@ const CustomerReminders: React.FC = () => {
       <Dialog
         open={dialogOpen}
         onClose={handleCloseDialog}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 3,
-            maxWidth: isMobile ? '100%' : 720,
+            borderRadius: isMobile ? 2 : 3,
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            m: isMobile ? 2 : 3,
           }
         }}
       >
@@ -1063,10 +1063,11 @@ const CustomerReminders: React.FC = () => {
         onClose={() => setPreviewOpen(false)}
         maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 2.5,
+            borderRadius: isMobile ? 2 : 2.5,
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            m: isMobile ? 2 : 3,
           }
         }}
       >

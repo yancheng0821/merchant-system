@@ -2,7 +2,7 @@
 
 **Last Updated: November 22, 2025**
 
-At SwiftmindSystems, we take your privacy seriously. This Privacy Policy explains how we handle your information when you use our business management platform.
+At VAMerchant, we take your privacy seriously. This Privacy Policy explains how we handle your information when you use our business management platform.
 
 ---
 
@@ -116,7 +116,7 @@ Our servers are in Canada (AWS ca-central-1). If you're outside this region, you
 - Withdraw consent
 - File complaints with the Privacy Commissioner
 
-**Exercise Your Rights:** Contact info@swiftmindsystems.com or use your account settings.
+**Exercise Your Rights:** Contact support@vamerchant.app or use your account settings.
 
 ---
 
@@ -161,11 +161,10 @@ We comply with:
 ## 13. Contact Us
 
 **Privacy Questions:**
-Email: info@swiftmindsystems.com
-Address: 3476 Henderson Rd, Victoria, British Columbia, Canada
+Email: support@vamerchant.app
 
 **Customer Support:**
-Email: info@swiftmindsystems.com
+Email: support@vamerchant.app
 
 **Regulatory Complaints:**
 - **Canada:** Privacy Commissioner of Canada - www.priv.gc.ca

@@ -266,6 +266,7 @@ public class UserServiceImpl implements UserService {
         response.setTenantName(tenant != null ? tenant.getTenantName() : null);
         response.setLastLoginTime(user.getLastLoginAt());
         response.setUpdateTime(user.getUpdatedAt());
+        response.setSmsVerificationEnabled(user.getSmsVerificationEnabled() != null ? user.getSmsVerificationEnabled() : true);
 
         // 填充完整信息（角色、权限、时区）
         fillUserProfileDetails(user, response);
@@ -274,7 +275,7 @@ public class UserServiceImpl implements UserService {
                     user.getId(), response.getRoles().size(), response.getPermissions().size());
         return response;
     }
-    
+
     @Override
     public UserProfileResponse updateUserProfile(String token, UserProfileRequest request) {
         try {
@@ -338,6 +339,10 @@ public class UserServiceImpl implements UserService {
             user.setRealName(request.getRealName());
             user.setEmail(request.getEmail());
             user.setPhone(request.getPhone());
+            // 更新短信验证设置（如果请求中包含此字段）
+            if (request.getSmsVerificationEnabled() != null) {
+                user.setSmsVerificationEnabled(request.getSmsVerificationEnabled());
+            }
             user.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC));
 
             logger.debug("保存用户信息到数据库");
@@ -357,6 +362,7 @@ public class UserServiceImpl implements UserService {
             response.setTenantName(tenant != null ? tenant.getTenantName() : null);
             response.setLastLoginTime(user.getLastLoginAt());
             response.setUpdateTime(user.getUpdatedAt());
+            response.setSmsVerificationEnabled(user.getSmsVerificationEnabled() != null ? user.getSmsVerificationEnabled() : true);
 
             // 填充完整信息（角色、权限、时区） - 使用公共方法避免重复代码
             fillUserProfileDetails(user, response);

@@ -855,7 +855,8 @@ const LoginPage: React.FC = () => {
                     sx={{
                       mt: 4,
                       mb: 1.5,
-                      py: 1.5,
+                      py: { xs: 1.75, sm: 1.5 },
+                      minHeight: { xs: 48, sm: 44 },
                       textTransform: 'none',
                       fontWeight: 500,
                       fontSize: '0.9rem',

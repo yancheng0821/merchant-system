@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # ============================================
-# 前端快速部署脚本
+# 前端快速部署脚本 (CloudFront + S3)
 # ============================================
-# 用途：构建前端并上传到EC2
+# 用途：构建前端并部署到 S3 + CloudFront
 # 使用场景：日常前端代码更新部署
-# 前提条件：已运行过 setup-nginx.sh
 # ============================================
 
 # 设置 Node.js 路径（使用 Homebrew 安装的版本）
@@ -19,10 +18,9 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Configuration
-EC2_HOST="35.182.43.233"
-SSH_KEY="/Users/aisenyc/merchant-system/deployment/merchant-system-key.pem"
-EC2_USER="ubuntu"
 FRONTEND_DIR="/Users/aisenyc/merchant-system/merchant-admin"
+S3_BUCKET="vamerchant-frontend"
+CLOUDFRONT_DISTRIBUTION_ID="ERNJRMBE6WRQN"
 DOMAIN="vamerchant.app"
 
 # Function to print step header
@@ -93,112 +91,62 @@ build_frontend() {
     fi
 }
 
-# Step 2: Upload frontend files
-upload_frontend() {
-    print_step "步骤 2/3: 上传前端文件到EC2"
+# Step 2: Upload to S3
+upload_to_s3() {
+    print_step "步骤 2/3: 上传到 S3"
 
     cd "$FRONTEND_DIR"
 
-    # 检查nginx目录是否存在
-    print_info "检查EC2环境..."
-    NGINX_DIR_EXISTS=$(ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "[ -d /var/www/merchant-admin ] && echo 'yes' || echo 'no'")
+    print_info "同步静态资源到 S3（长期缓存）..."
+    # 静态资源（JS/CSS/图片）有hash，可以长期缓存（1年）
+    aws s3 sync ./build s3://${S3_BUCKET} \
+        --exclude "index.html" \
+        --exclude "*.json" \
+        --cache-control "public, max-age=31536000, immutable" \
+        --delete
 
-    if [ "$NGINX_DIR_EXISTS" = "no" ]; then
-        print_error "EC2上未找到 /var/www/merchant-admin 目录"
-        print_warning "请先运行 ./setup-nginx.sh 初始化Nginx配置"
-        exit 1
+    print_info "上传 index.html（禁止缓存）..."
+    # index.html 不缓存，每次都从服务器获取最新版本
+    aws s3 cp ./build/index.html s3://${S3_BUCKET}/index.html \
+        --cache-control "no-cache, no-store, must-revalidate"
+
+    # 上传其他JSON配置文件（短期缓存）
+    if ls ./build/*.json 1> /dev/null 2>&1; then
+        print_info "上传配置文件..."
+        for file in ./build/*.json; do
+            aws s3 cp "$file" s3://${S3_BUCKET}/$(basename "$file") \
+                --cache-control "no-cache, no-store, must-revalidate"
+        done
     fi
-
-    # 创建临时目录
-    print_info "准备上传..."
-    ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "rm -rf /tmp/frontend && mkdir -p /tmp/frontend"
-
-    # 上传build目录
-    print_info "上传前端文件（这可能需要几秒钟）..."
-    scp -i "$SSH_KEY" -r build/* ${EC2_USER}@${EC2_HOST}:/tmp/frontend/
 
     if [ $? -eq 0 ]; then
         print_success "文件上传成功"
+
+        # 显示 S3 文件数量
+        FILE_COUNT=$(aws s3 ls s3://${S3_BUCKET} --recursive | wc -l)
+        print_info "S3 文件数量: $FILE_COUNT"
     else
         print_error "文件上传失败"
         exit 1
     fi
-
-    # 移动到nginx目录（原子操作）
-    print_info "部署新版本..."
-    ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "
-        sudo rm -rf /var/www/merchant-admin.old && \
-        sudo mv /var/www/merchant-admin /var/www/merchant-admin.old && \
-        sudo mv /tmp/frontend /var/www/merchant-admin && \
-        sudo chown -R www-data:www-data /var/www/merchant-admin && \
-        sudo chmod -R 755 /var/www/merchant-admin
-    "
-
-    if [ $? -eq 0 ]; then
-        print_success "新版本部署成功"
-        print_info "旧版本已备份到 /var/www/merchant-admin.old"
-    else
-        print_error "部署失败"
-        # 尝试回滚
-        print_warning "尝试回滚到旧版本..."
-        ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "
-            sudo rm -rf /var/www/merchant-admin && \
-            sudo mv /var/www/merchant-admin.old /var/www/merchant-admin
-        "
-        exit 1
-    fi
 }
 
-# Step 3: Reload Nginx and verify
-reload_and_verify() {
-    print_step "步骤 3/3: 重载Nginx并验证"
+# Step 3: Invalidate CloudFront cache
+invalidate_cloudfront() {
+    print_step "步骤 3/3: 刷新 CloudFront 缓存"
 
-    # 测试nginx配置
-    print_info "测试Nginx配置..."
-    ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "sudo nginx -t" 2>&1
-
-    if [ $? -eq 0 ]; then
-        print_success "Nginx配置正确"
-    else
-        print_error "Nginx配置错误"
-        exit 1
-    fi
-
-    # 重载nginx
-    print_info "重载Nginx..."
-    ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "sudo systemctl reload nginx"
+    print_info "创建缓存失效请求..."
+    INVALIDATION_OUTPUT=$(aws cloudfront create-invalidation \
+        --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
+        --paths "/*" 2>&1)
 
     if [ $? -eq 0 ]; then
-        print_success "Nginx已重载"
+        INVALIDATION_ID=$(echo "$INVALIDATION_OUTPUT" | jq -r '.Invalidation.Id')
+        print_success "缓存失效请求已创建"
+        print_info "Invalidation ID: $INVALIDATION_ID"
+        print_info "缓存刷新通常需要 1-2 分钟完成"
     else
-        print_error "Nginx重载失败"
-        exit 1
-    fi
-
-    # 验证部署
-    echo ""
-    print_info "验证部署..."
-
-    # 测试HTTP访问
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${EC2_HOST} 2>/dev/null)
-    if [ "$HTTP_CODE" = "200" ]; then
-        print_success "HTTP访问正常 (${HTTP_CODE})"
-    else
-        print_warning "HTTP访问返回 ${HTTP_CODE}"
-    fi
-
-    # 检查index.html
-    INDEX_EXISTS=$(ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "[ -f /var/www/merchant-admin/index.html ] && echo 'yes' || echo 'no'")
-    if [ "$INDEX_EXISTS" = "yes" ]; then
-        print_success "index.html 已部署"
-    else
-        print_error "index.html 未找到"
-    fi
-
-    # 显示部署时间
-    DEPLOY_TIME=$(ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "stat -c '%y' /var/www/merchant-admin/index.html 2>/dev/null" | cut -d'.' -f1)
-    if [ -n "$DEPLOY_TIME" ]; then
-        print_info "部署时间: $DEPLOY_TIME"
+        print_warning "缓存失效请求可能失败: $INVALIDATION_OUTPUT"
     fi
 }
 
@@ -210,36 +158,36 @@ show_deployment_info() {
     echo -e "${BLUE}==========================================${NC}"
     echo ""
     echo "访问地址:"
-    echo -e "${BLUE}  IP访问:   http://${EC2_HOST}${NC}"
-    echo -e "${BLUE}  域名访问: http://${DOMAIN}${NC}"
-    echo -e "${BLUE}  HTTPS:    https://${DOMAIN}${NC} (Cloudflare)"
+    echo -e "${BLUE}  CloudFront: https://d3iuivehbbqzii.cloudfront.net${NC}"
+    echo -e "${BLUE}  域名访问:   https://${DOMAIN}${NC}"
     echo ""
     echo "部署信息:"
     BUILD_SIZE=$(du -sh "$FRONTEND_DIR/build/" 2>/dev/null | awk '{print $1}')
     echo "  构建大小: $BUILD_SIZE"
-    echo "  部署位置: /var/www/merchant-admin"
-    echo "  备份位置: /var/www/merchant-admin.old"
+    echo "  S3 桶:    s3://${S3_BUCKET}"
+    echo "  分发 ID:  ${CLOUDFRONT_DISTRIBUTION_ID}"
     echo ""
     echo "常用命令:"
-    echo "  # 查看访问日志"
-    echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'sudo tail -f /var/log/nginx/merchant-admin.access.log'"
+    echo "  # 查看 S3 文件"
+    echo "  aws s3 ls s3://${S3_BUCKET} --recursive"
     echo ""
-    echo "  # 查看错误日志"
-    echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'sudo tail -f /var/log/nginx/merchant-admin.error.log'"
+    echo "  # 手动刷新缓存"
+    echo "  aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths '/*'"
     echo ""
-    echo "  # 回滚到上一版本"
-    echo "  ssh -i $SSH_KEY ${EC2_USER}@${EC2_HOST} 'sudo rm -rf /var/www/merchant-admin && sudo mv /var/www/merchant-admin.old /var/www/merchant-admin && sudo systemctl reload nginx'"
+    echo "  # 查看分发状态"
+    echo "  aws cloudfront get-distribution --id ${CLOUDFRONT_DISTRIBUTION_ID} --query 'Distribution.Status'"
     echo ""
 }
 
 # Main deployment function
 deploy() {
     echo -e "${BLUE}==========================================${NC}"
-    echo -e "${BLUE}        前端快速部署${NC}"
+    echo -e "${BLUE}     前端部署 (CloudFront + S3)${NC}"
     echo -e "${BLUE}==========================================${NC}"
     echo ""
-    echo "EC2地址: ${EC2_HOST}"
-    echo "前端目录: ${FRONTEND_DIR}"
+    echo "S3 桶:     ${S3_BUCKET}"
+    echo "CloudFront: ${CLOUDFRONT_DISTRIBUTION_ID}"
+    echo "前端目录:  ${FRONTEND_DIR}"
     echo ""
 
     # 检查是否需要确认
@@ -256,8 +204,8 @@ deploy() {
     START_TIME=$(date +%s)
 
     build_frontend
-    upload_frontend
-    reload_and_verify
+    upload_to_s3
+    invalidate_cloudfront
 
     # 计算耗时
     END_TIME=$(date +%s)

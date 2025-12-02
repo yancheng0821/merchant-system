@@ -108,7 +108,7 @@ const prodConfig: CapacitorConfig = {
 };
 
 // 切换配置：开发时用 devConfig，发布时改为 prodConfig
-const config = devConfig;
-// const config = prodConfig;
+// const config = devConfig;
+const config = prodConfig;
 
 export default config;

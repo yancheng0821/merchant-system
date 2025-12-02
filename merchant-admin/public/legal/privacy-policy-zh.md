@@ -2,7 +2,7 @@
 
 **最后更新：2025年11月22日**
 
-在SwiftmindSystems，我们认真对待您的隐私。本隐私政策说明了当您使用我们的企业管理平台时，我们如何处理您的信息。
+在VAMerchant，我们认真对待您的隐私。本隐私政策说明了当您使用我们的企业管理平台时，我们如何处理您的信息。
 
 ---
 
@@ -116,7 +116,7 @@
 - 撤回同意
 - 向隐私专员投诉
 
-**行使您的权利：** 联系 info@swiftmindsystems.com 或使用您的账户设置。
+**行使您的权利：** 联系 support@vamerchant.app 或使用您的账户设置。
 
 ---
 
@@ -161,11 +161,10 @@
 ## 13. 联系我们
 
 **隐私问题：**
-电子邮件：info@swiftmindsystems.com
-地址：3476 Henderson Rd, Victoria，不列颠哥伦比亚省，加拿大
+电子邮件：support@vamerchant.app
 
 **客户支持：**
-电子邮件：info@swiftmindsystems.com
+电子邮件：support@vamerchant.app
 
 **监管投诉：**
 - **加拿大：** 加拿大隐私专员 - www.priv.gc.ca

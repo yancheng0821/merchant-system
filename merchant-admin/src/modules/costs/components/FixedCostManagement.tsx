@@ -629,16 +629,17 @@ const FixedCostManagement: React.FC = () => {
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
         TransitionProps={{
           onExited: handleDialogExited,
         }}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 2.5,
-            boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: isMobile ? 2 : 2.5,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            m: isMobile ? 2 : 3,
           }
         }}
       >

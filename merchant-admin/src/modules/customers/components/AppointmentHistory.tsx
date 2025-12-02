@@ -22,6 +22,10 @@ import {
   CircularProgress,
   Alert,
   alpha,
+  Card,
+  CardContent,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -50,6 +54,8 @@ const AppointmentHistory: React.FC<{
 }) => {
     const { t } = useTranslation();
     const { themeMode } = useTheme();
+    const muiTheme = useMuiTheme();
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
     // 根据主题模式动态设置主题色
     const isMonochrome = themeMode === 'monochrome';
@@ -183,9 +189,11 @@ const AppointmentHistory: React.FC<{
         disableAutoFocus
         PaperProps={{
           sx: {
-            minHeight: '80vh',
-            borderRadius: 2.5,
+            minHeight: isMobile ? 'auto' : '80vh',
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            borderRadius: isMobile ? 2 : 2.5,
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            m: isMobile ? 2 : 3,
           }
         }}
       >
@@ -194,8 +202,8 @@ const AppointmentHistory: React.FC<{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            py: 2,
-            px: 3,
+            py: isMobile ? 1.5 : 2,
+            px: isMobile ? 2 : 3,
           }}
         >
           <Box display="flex" alignItems="center" gap={1.5}>
@@ -235,7 +243,7 @@ const AppointmentHistory: React.FC<{
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ p: 3 }}>
+        <DialogContent dividers sx={{ p: isMobile ? 2 : 3 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" py={8}>
               <CircularProgress size={48} sx={{ color: THEME_COLOR }} />
@@ -247,18 +255,18 @@ const AppointmentHistory: React.FC<{
           ) : (
             <>
               {/* 简约统计信息卡片 */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: isMobile ? 2 : 3 }}>
                 <Grid item xs={6} sm={3}>
-                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
-                    <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_1, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <GroupsIcon sx={{ fontSize: 18, color: STATS_COLOR_1 }} />
+                  <Box sx={{ p: isMobile ? 1.5 : 2, bgcolor: '#fafafa', borderRadius: isMobile ? 1.5 : 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5}>
+                      <Box sx={{ width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, borderRadius: isMobile ? 1 : 1.5, bgcolor: alpha(STATS_COLOR_1, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <GroupsIcon sx={{ fontSize: isMobile ? 14 : 18, color: STATS_COLOR_1 }} />
                       </Box>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : '1.1rem', lineHeight: 1.2 }}>
                           {stats?.totalAppointments || 0}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#888' }}>
+                        <Typography variant="caption" sx={{ color: '#888', fontSize: isMobile ? '0.65rem' : '0.75rem', display: 'block', lineHeight: 1.2 }}>
                           {t('customers.totalAppointments')}
                         </Typography>
                       </Box>
@@ -266,16 +274,16 @@ const AppointmentHistory: React.FC<{
                   </Box>
                 </Grid>
                 <Grid item xs={6} sm={3}>
-                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
-                    <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_2, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <TrendingUpIcon sx={{ fontSize: 18, color: STATS_COLOR_2 }} />
+                  <Box sx={{ p: isMobile ? 1.5 : 2, bgcolor: '#fafafa', borderRadius: isMobile ? 1.5 : 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5}>
+                      <Box sx={{ width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, borderRadius: isMobile ? 1 : 1.5, bgcolor: alpha(STATS_COLOR_2, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUpIcon sx={{ fontSize: isMobile ? 14 : 18, color: STATS_COLOR_2 }} />
                       </Box>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : '1.1rem', lineHeight: 1.2 }}>
                           {stats?.completedAppointments || 0}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#888' }}>
+                        <Typography variant="caption" sx={{ color: '#888', fontSize: isMobile ? '0.65rem' : '0.75rem', display: 'block', lineHeight: 1.2 }}>
                           {t('customers.completedAppointments')}
                         </Typography>
                       </Box>
@@ -283,16 +291,16 @@ const AppointmentHistory: React.FC<{
                   </Box>
                 </Grid>
                 <Grid item xs={6} sm={3}>
-                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
-                    <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_3, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <WalletIcon sx={{ fontSize: 18, color: STATS_COLOR_3 }} />
+                  <Box sx={{ p: isMobile ? 1.5 : 2, bgcolor: '#fafafa', borderRadius: isMobile ? 1.5 : 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5}>
+                      <Box sx={{ width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, borderRadius: isMobile ? 1 : 1.5, bgcolor: alpha(STATS_COLOR_3, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <WalletIcon sx={{ fontSize: isMobile ? 14 : 18, color: STATS_COLOR_3 }} />
                       </Box>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : '1.1rem', lineHeight: 1.2 }}>
                           {formatCurrency(stats?.totalSpent || 0)}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#888' }}>
+                        <Typography variant="caption" sx={{ color: '#888', fontSize: isMobile ? '0.65rem' : '0.75rem', display: 'block', lineHeight: 1.2 }}>
                           {t('customers.totalSpent')}
                         </Typography>
                       </Box>
@@ -300,16 +308,16 @@ const AppointmentHistory: React.FC<{
                   </Box>
                 </Grid>
                 <Grid item xs={6} sm={3}>
-                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid rgba(0,0,0,0.04)' }}>
-                    <Box display="flex" alignItems="center" gap={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: alpha(STATS_COLOR_4, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ReviewIcon sx={{ fontSize: 18, color: STATS_COLOR_4 }} />
+                  <Box sx={{ p: isMobile ? 1.5 : 2, bgcolor: '#fafafa', borderRadius: isMobile ? 1.5 : 2, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <Box display="flex" alignItems="center" gap={isMobile ? 1 : 1.5}>
+                      <Box sx={{ width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, borderRadius: isMobile ? 1 : 1.5, bgcolor: alpha(STATS_COLOR_4, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ReviewIcon sx={{ fontSize: isMobile ? 14 : 18, color: STATS_COLOR_4 }} />
                       </Box>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: '1.1rem', lineHeight: 1.2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : '1.1rem', lineHeight: 1.2 }}>
                           {(stats?.avgRating || 0).toFixed(1)}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#888' }}>
+                        <Typography variant="caption" sx={{ color: '#888', fontSize: isMobile ? '0.65rem' : '0.75rem', display: 'block', lineHeight: 1.2 }}>
                           {t('customers.avgRating')}
                         </Typography>
                       </Box>
@@ -321,19 +329,22 @@ const AppointmentHistory: React.FC<{
           )}
 
           {/* 标签页 */}
-          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', mb: 2.5 }}>
+          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', mb: isMobile ? 1.5 : 2.5 }}>
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
+              variant={isMobile ? 'scrollable' : 'standard'}
+              scrollButtons={isMobile ? 'auto' : false}
               sx={{
-                minHeight: 40,
+                minHeight: isMobile ? 36 : 40,
                 '& .MuiTab-root': {
                   textTransform: 'none',
                   fontWeight: 500,
-                  fontSize: '0.875rem',
-                  minHeight: 40,
-                  py: 1,
-                  px: 2,
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  minHeight: isMobile ? 36 : 40,
+                  minWidth: isMobile ? 'auto' : 90,
+                  py: isMobile ? 0.75 : 1,
+                  px: isMobile ? 1.5 : 2,
                   color: '#666',
                   '&.Mui-selected': {
                     color: THEME_COLOR,
@@ -352,99 +363,44 @@ const AppointmentHistory: React.FC<{
             </Tabs>
           </Box>
 
-          {/* 预约记录表格 */}
-          <Box
-            sx={{
-              borderRadius: 2,
-              border: '1px solid rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-              bgcolor: '#fff',
-            }}
-          >
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.dateTime')}</TableCell>
-                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.resource')}</TableCell>
-                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.status')}</TableCell>
-                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.price')}</TableCell>
-                    <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.rating')}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedAppointments.map((appointment) => (
-                    <TableRow
-                      key={appointment.id}
-                      sx={{
-                        '&:hover': {
-                          backgroundColor: '#fafafa',
-                        },
-                      }}
-                    >
-                      <TableCell>
+          {/* 预约记录 - 移动端使用卡片，桌面端使用表格 */}
+          {isMobile ? (
+            // 移动端卡片视图
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {paginatedAppointments.length === 0 ? (
+                <Box py={4} textAlign="center">
+                  <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
+                    {t('customers.noAppointmentRecords')}
+                  </Typography>
+                </Box>
+              ) : (
+                paginatedAppointments.map((appointment) => (
+                  <Card
+                    key={appointment.id}
+                    sx={{
+                      borderRadius: 2,
+                      border: '1px solid rgba(0,0,0,0.08)',
+                      boxShadow: 'none',
+                      '&:hover': { bgcolor: '#fafafa' },
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                      {/* 顶部：日期时间 + 状态 */}
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
                         <Box>
-                          {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
-                            <Box display="flex" flexWrap="wrap" gap={0.5}>
-                              {appointment.appointmentServices.map((service, index) => (
-                                <Chip
-                                  key={index}
-                                  label={service.serviceName}
-                                  size="small"
-                                  sx={{
-                                    height: 24,
-                                    fontSize: '0.75rem',
-                                    bgcolor: '#fafafa',
-                                    color: '#1a1a1a',
-                                    border: '1px solid #e0e0e0',
-                                  }}
-                                />
-                              ))}
-                            </Box>
-                          ) : (
-                            <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
-                              {t('customers.noServiceDetails')}
-                            </Typography>
-                          )}
-                          <Typography sx={{ fontSize: '0.75rem', color: '#888', mt: 0.5 }}>
-                            {appointment.duration} {t('customers.minutesUnit')}
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
+                            {formatDate(appointment.appointmentDate)}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                            {formatTime(appointment.appointmentTime)} · {appointment.duration} {t('customers.minutesUnit')}
                           </Typography>
                         </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
-                          {formatDate(appointment.appointmentDate)}
-                        </Typography>
-                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                          {formatTime(appointment.appointmentTime)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {appointment.appointmentResources && appointment.appointmentResources.length > 0 ? (
-                          <Box display="flex" flexDirection="column" gap={0.25}>
-                            {appointment.appointmentResources.map((resource, idx) => (
-                              <Typography key={idx} sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
-                                {resource.resourceName || t('customers.unassigned')}
-                                <Typography component="span" sx={{ fontSize: '0.75rem', color: '#888', ml: 0.5 }}>
-                                  ({resource.resourceType === 'STAFF' ? t('customers.staff') : t('customers.room')})
-                                </Typography>
-                              </Typography>
-                            ))}
-                          </Box>
-                        ) : (
-                          <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
-                            {t('customers.unassigned')}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
                         <Chip
                           label={t(`customers.appointmentStatus.${appointment.status.toLowerCase()}`)}
                           size="small"
                           sx={{
-                            height: 24,
-                            fontSize: '0.75rem',
+                            height: 22,
+                            fontSize: '0.7rem',
                             fontWeight: 500,
                             bgcolor: appointment.status === 'COMPLETED' ? alpha('#10B981', 0.1) :
                                     appointment.status === 'CONFIRMED' ? alpha('#3B82F6', 0.1) :
@@ -457,58 +413,242 @@ const AppointmentHistory: React.FC<{
                             border: 'none',
                           }}
                         />
-                      </TableCell>
-                      <TableCell>
-                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
-                          {formatCurrency(appointment.totalAmount || 0)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {appointment.rating ? (
-                          <Box display="flex" alignItems="center" gap={0.5}>
-                            <StarIcon sx={{ fontSize: 14, color: '#F59E0B' }} />
-                            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
-                              {appointment.rating}
-                            </Typography>
+                      </Box>
+
+                      {/* 服务列表 */}
+                      <Box mb={1.5}>
+                        {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
+                          <Box display="flex" flexWrap="wrap" gap={0.5}>
+                            {appointment.appointmentServices.map((service, index) => (
+                              <Chip
+                                key={index}
+                                label={service.serviceName}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '0.7rem',
+                                  bgcolor: '#fafafa',
+                                  color: '#1a1a1a',
+                                  border: '1px solid #e0e0e0',
+                                }}
+                              />
+                            ))}
                           </Box>
                         ) : (
-                          <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
-                            -
+                          <Typography sx={{ fontSize: '0.75rem', color: '#999' }}>
+                            {t('customers.noServiceDetails')}
                           </Typography>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {paginatedAppointments.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center">
-                        <Box py={4}>
-                          <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
-                            {t('customers.noAppointmentRecords')}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                      </Box>
 
-            <TablePagination
-              component="div"
-              count={filteredAppointments.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25]}
-              labelRowsPerPage={t('common.rowsPerPage')}
+                      {/* 底部：员工/房间 + 价格 + 评分 */}
+                      <Box display="flex" justifyContent="space-between" alignItems="center" pt={1} borderTop="1px solid rgba(0,0,0,0.06)">
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          {appointment.appointmentResources && appointment.appointmentResources.length > 0 ? (
+                            <Typography sx={{ fontSize: '0.75rem', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {appointment.appointmentResources.map(r => r.resourceName || t('customers.unassigned')).join(', ')}
+                            </Typography>
+                          ) : (
+                            <Typography sx={{ fontSize: '0.75rem', color: '#999' }}>
+                              {t('customers.unassigned')}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1a1a1a' }}>
+                            {formatCurrency(appointment.totalAmount || 0)}
+                          </Typography>
+                          {appointment.rating ? (
+                            <Box display="flex" alignItems="center" gap={0.25}>
+                              <StarIcon sx={{ fontSize: 12, color: '#F59E0B' }} />
+                              <Typography sx={{ fontSize: '0.75rem', fontWeight: 500, color: '#1a1a1a' }}>
+                                {appointment.rating}
+                              </Typography>
+                            </Box>
+                          ) : null}
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+              {/* 移动端分页 */}
+              <TablePagination
+                component="div"
+                count={filteredAppointments.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+                labelRowsPerPage=""
+                sx={{
+                  borderTop: '1px solid rgba(0,0,0,0.08)',
+                  mt: 1,
+                  '& .MuiTablePagination-selectLabel': { display: 'none' },
+                  '& .MuiTablePagination-displayedRows': { fontSize: '0.75rem' },
+                }}
+              />
+            </Box>
+          ) : (
+            // 桌面端表格视图
+            <Box
               sx={{
-                borderTop: '1px solid rgba(0,0,0,0.08)',
-                backgroundColor: '#fafafa',
+                borderRadius: 2,
+                border: '1px solid rgba(0,0,0,0.08)',
+                overflow: 'hidden',
+                bgcolor: '#fff',
               }}
-            />
-          </Box>
+            >
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                      <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.service')}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.dateTime')}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.resource')}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.status')}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.price')}</TableCell>
+                      <TableCell sx={{ fontWeight: 500, color: '#666', fontSize: '0.8125rem', py: 1.5 }}>{t('customers.rating')}</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedAppointments.map((appointment) => (
+                      <TableRow
+                        key={appointment.id}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: '#fafafa',
+                          },
+                        }}
+                      >
+                        <TableCell>
+                          <Box>
+                            {appointment.appointmentServices && appointment.appointmentServices.length > 0 ? (
+                              <Box display="flex" flexWrap="wrap" gap={0.5}>
+                                {appointment.appointmentServices.map((service, index) => (
+                                  <Chip
+                                    key={index}
+                                    label={service.serviceName}
+                                    size="small"
+                                    sx={{
+                                      height: 24,
+                                      fontSize: '0.75rem',
+                                      bgcolor: '#fafafa',
+                                      color: '#1a1a1a',
+                                      border: '1px solid #e0e0e0',
+                                    }}
+                                  />
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
+                                {t('customers.noServiceDetails')}
+                              </Typography>
+                            )}
+                            <Typography sx={{ fontSize: '0.75rem', color: '#888', mt: 0.5 }}>
+                              {appointment.duration} {t('customers.minutesUnit')}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                            {formatDate(appointment.appointmentDate)}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
+                            {formatTime(appointment.appointmentTime)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {appointment.appointmentResources && appointment.appointmentResources.length > 0 ? (
+                            <Box display="flex" flexDirection="column" gap={0.25}>
+                              {appointment.appointmentResources.map((resource, idx) => (
+                                <Typography key={idx} sx={{ fontSize: '0.8125rem', color: '#1a1a1a' }}>
+                                  {resource.resourceName || t('customers.unassigned')}
+                                  <Typography component="span" sx={{ fontSize: '0.75rem', color: '#888', ml: 0.5 }}>
+                                    ({resource.resourceType === 'STAFF' ? t('customers.staff') : t('customers.room')})
+                                  </Typography>
+                                </Typography>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
+                              {t('customers.unassigned')}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={t(`customers.appointmentStatus.${appointment.status.toLowerCase()}`)}
+                            size="small"
+                            sx={{
+                              height: 24,
+                              fontSize: '0.75rem',
+                              fontWeight: 500,
+                              bgcolor: appointment.status === 'COMPLETED' ? alpha('#10B981', 0.1) :
+                                      appointment.status === 'CONFIRMED' ? alpha('#3B82F6', 0.1) :
+                                      appointment.status === 'CANCELLED' ? alpha('#EF4444', 0.1) :
+                                      alpha('#F59E0B', 0.1),
+                              color: appointment.status === 'COMPLETED' ? '#059669' :
+                                     appointment.status === 'CONFIRMED' ? '#2563EB' :
+                                     appointment.status === 'CANCELLED' ? '#DC2626' :
+                                     '#D97706',
+                              border: 'none',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
+                            {formatCurrency(appointment.totalAmount || 0)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {appointment.rating ? (
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                              <StarIcon sx={{ fontSize: 14, color: '#F59E0B' }} />
+                              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1a1a1a' }}>
+                                {appointment.rating}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {paginatedAppointments.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          <Box py={4}>
+                            <Typography sx={{ fontSize: '0.875rem', color: '#999' }}>
+                              {t('customers.noAppointmentRecords')}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <TablePagination
+                component="div"
+                count={filteredAppointments.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+                labelRowsPerPage={t('common.rowsPerPage')}
+                sx={{
+                  borderTop: '1px solid rgba(0,0,0,0.08)',
+                  backgroundColor: '#fafafa',
+                }}
+              />
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>

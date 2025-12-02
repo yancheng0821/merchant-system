@@ -788,6 +788,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.merchantName')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.merchantName}
                           onChange={(e) => handleMerchantInfoChange('merchantName', e.target.value)}
                           required
@@ -810,12 +811,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.merchantAddress')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.address}
                           onChange={(e) => handleMerchantInfoChange('address', e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
-                                <LocationIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                <LocationIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -834,7 +836,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth sx={inputFieldStyles} required>
+                        <FormControl fullWidth sx={inputFieldStyles} required size={isMobile ? 'small' : 'medium'}>
                           <InputLabel required>{t('settings.country')}</InputLabel>
                           <Select
                             value={merchantInfo.country}
@@ -850,7 +852,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             required
                             startAdornment={
                               <InputAdornment position="start">
-                                <Public sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
+                                <Public sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20, ml: 1 }} />
                               </InputAdornment>
                             }
                             sx={{
@@ -878,6 +880,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             fullWidth
                             label={t('settings.province')}
                             variant="outlined"
+                            size={isMobile ? 'small' : 'medium'}
                             value={merchantInfo.province}
                             onChange={(e) => handleMerchantInfoChange('province', e.target.value)}
                             placeholder={t('auth.merchantRegisterPage.merchantInfo.provinceFreeFill')}
@@ -885,7 +888,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                             InputProps={{
                               startAdornment: (
                                 <InputAdornment position="start">
-                                  <ProvinceIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                  <ProvinceIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                                 </InputAdornment>
                               ),
                             }}
@@ -904,7 +907,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           />
                         ) : (
                           // 如果有预定义的省份列表，显示下拉框
-                          <FormControl fullWidth sx={inputFieldStyles} required>
+                          <FormControl fullWidth sx={inputFieldStyles} required size={isMobile ? 'small' : 'medium'}>
                             <InputLabel required>{t('settings.province')}</InputLabel>
                             <Select
                               value={merchantInfo.province}
@@ -914,7 +917,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                               required
                               startAdornment={
                                 <InputAdornment position="start">
-                                  <ProvinceIcon sx={{ color: 'text.secondary', fontSize: 20, ml: 1 }} />
+                                  <ProvinceIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20, ml: 1 }} />
                                 </InputAdornment>
                               }
                               sx={{
@@ -945,12 +948,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.city')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.city}
                           onChange={(e) => handleMerchantInfoChange('city', e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
-                                <CityIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                <CityIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -973,12 +977,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.postCode')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.postCode}
                           onChange={(e) => handleMerchantInfoChange('postCode', e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
-                                <PostCodeIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                <PostCodeIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -1001,12 +1006,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.contactPhone')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.contactPhone}
                           onChange={(e) => handleMerchantInfoChange('contactPhone', e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
-                                <PhoneIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                <PhoneIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -1029,12 +1035,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.contactPerson')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.contactPerson}
                           onChange={(e) => handleMerchantInfoChange('contactPerson', e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
-                                <PersonIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                <PersonIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -1057,12 +1064,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                           fullWidth
                           label={t('settings.contactEmail')}
                           variant="outlined"
+                          size={isMobile ? 'small' : 'medium'}
                           value={merchantInfo.contactEmail}
                           onChange={(e) => handleMerchantInfoChange('contactEmail', e.target.value)}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
-                                <EmailIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                                <EmailIcon sx={{ color: 'text.secondary', fontSize: isMobile ? 18 : 20 }} />
                               </InputAdornment>
                             ),
                           }}
@@ -1620,9 +1628,9 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                     </Typography>
                   </Box>
 
-                  <Grid container spacing={3}>
+                  <Grid container spacing={isMobile ? 2 : 3}>
                     <Grid item xs={12}>
-                      <FormControl fullWidth sx={inputFieldStyles}>
+                      <FormControl fullWidth sx={inputFieldStyles} size={isMobile ? 'small' : 'medium'}>
                         <InputLabel>{t('settings.timezone')}</InputLabel>
                         <Select
                           value={merchantInfo.timezone}
@@ -1691,6 +1699,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
                         fullWidth
                         label={t('settings.sessionTimeout')}
                         variant="outlined"
+                        size={isMobile ? 'small' : 'medium'}
                         value={sessionTimeoutDisplay}
                         onChange={(e) => handleSystemSettingsChange('sessionTimeout', e.target.value)}
                         error={!!sessionError}

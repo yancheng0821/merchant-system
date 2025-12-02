@@ -18,7 +18,8 @@ public class UserProfileResponse {
     private List<String> permissions;
     private LocalDateTime lastLoginTime;
     private LocalDateTime updateTime;
-    
+    private Boolean smsVerificationEnabled;
+
     // Getters and Setters
     public Long getUserId() {
         return userId;
@@ -123,7 +124,15 @@ public class UserProfileResponse {
     public void setUpdateTime(LocalDateTime updateTime) {
         this.updateTime = updateTime;
     }
-    
+
+    public Boolean getSmsVerificationEnabled() {
+        return smsVerificationEnabled;
+    }
+
+    public void setSmsVerificationEnabled(Boolean smsVerificationEnabled) {
+        this.smsVerificationEnabled = smsVerificationEnabled;
+    }
+
     @Override
     public String toString() {
         return "UserProfileResponse{" +
@@ -140,6 +149,7 @@ public class UserProfileResponse {
                 ", permissions=" + permissions +
                 ", lastLoginTime=" + lastLoginTime +
                 ", updateTime=" + updateTime +
+                ", smsVerificationEnabled=" + smsVerificationEnabled +
                 '}';
     }
 } 

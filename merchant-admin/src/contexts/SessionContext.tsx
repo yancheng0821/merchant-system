@@ -223,8 +223,20 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     // 每30秒检查一次会话状态
     const interval = setInterval(checkSession, 30000);
 
+    // 监听页面可见性变化（移动端从后台恢复时触发）
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Page became visible, checking session...');
+        // 延迟一小段时间检查，确保状态已更新
+        setTimeout(checkSession, 100);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user, sessionTimeout, isSessionExpired, lastActivity]);
 

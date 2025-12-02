@@ -1235,25 +1235,56 @@ const CustomerManagement: React.FC = () => {
                   key={customer.id}
                   sx={{
                     mb: 1.5,
-                    borderRadius: 1.5,
+                    borderRadius: 2,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                     border: '1px solid rgba(0,0,0,0.06)',
                   }}
                 >
-                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    {/* 第一行：姓名、电话、操作按钮 */}
-                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                      <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {customer.fullName || `${customer.firstName} ${customer.lastName}`}
-                        </Typography>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    {/* 头部：头像、姓名、会员等级、操作按钮 */}
+                    <Box display="flex" alignItems="flex-start" gap={1.5}>
+                      {/* 头像 */}
+                      <Avatar
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          bgcolor: alpha(THEME_COLOR, 0.1),
+                          color: THEME_COLOR,
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {(customer.fullName || customer.firstName || '?')[0].toUpperCase()}
+                      </Avatar>
+
+                      {/* 客户信息 */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        {/* 姓名和会员等级 */}
+                        <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                          <Typography sx={{
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            color: '#1a1a1a',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '120px',
+                          }}>
+                            {customer.fullName || `${customer.firstName} ${customer.lastName}`}
+                          </Typography>
+                          {getMembershipChip(customer.membershipTier)}
+                        </Box>
+
+                        {/* 联系方式 */}
                         <Box display="flex" alignItems="center" gap={0.5}>
-                          <PhoneIcon sx={{ fontSize: 12, color: '#999' }} />
-                          <Typography sx={{ fontSize: '0.7rem', color: '#666' }}>
+                          <PhoneIcon sx={{ fontSize: 13, color: '#999' }} />
+                          <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
                             {customer.phone}
                           </Typography>
                         </Box>
                       </Box>
+
+                      {/* 操作按钮 */}
                       {!isWalkInCustomer(customer) && (hasPermission('customers:update') ||
                         hasPermission('customers:delete') ||
                         hasPermission('appointments:view')) && (
@@ -1263,38 +1294,52 @@ const CustomerManagement: React.FC = () => {
                             setMenuAnchorEl(e.currentTarget);
                             setSelectedCustomer(customer);
                           }}
-                          sx={{ color: '#999', p: 0.5 }}
+                          sx={{ color: '#999', p: 0.5, mt: -0.5 }}
                         >
-                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                          <MoreVertIcon sx={{ fontSize: 20 }} />
                         </IconButton>
                       )}
                     </Box>
 
-                    {/* 第二行：会员等级、积分、消费金额 */}
-                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {getMembershipChip(customer.membershipTier)}
-                        <Box display="flex" alignItems="center" gap={0.5}>
+                    {/* 底部：统计信息 */}
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{
+                        mt: 1.5,
+                        pt: 1.5,
+                        borderTop: '1px solid rgba(0,0,0,0.06)',
+                      }}
+                    >
+                      {/* 消费金额 */}
+                      <Box>
+                        <Typography sx={{ fontSize: '0.65rem', color: '#999', mb: 0.25 }}>
+                          {t('customers.totalSpent')}
+                        </Typography>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1a1a1a' }}>
+                          {CurrencyUtils.formatAmount(customer.totalSpent || 0)}
+                        </Typography>
+                      </Box>
+
+                      {/* 积分 */}
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '0.65rem', color: '#999', mb: 0.25 }}>
+                          {t('customers.points')}
+                        </Typography>
+                        <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
                           <StarIcon sx={{ fontSize: 14, color: POINTS_COLOR }} />
-                          <Typography sx={{ fontWeight: 600, color: POINTS_COLOR, fontSize: '0.75rem' }}>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: POINTS_COLOR }}>
                             {customer.points || 0}
                           </Typography>
                         </Box>
                       </Box>
-                      <Typography sx={{ fontWeight: 600, fontSize: '0.8rem', color: '#1a1a1a' }}>
-                        {CurrencyUtils.formatAmount(customer.totalSpent || 0)}
-                      </Typography>
-                    </Box>
 
-                    {/* 第三行：套餐数量、最后访问 */}
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                      <Box>
-                        {(customer.activePackageCount || 0) > 0 && (
+                      {/* 套餐或最后访问 */}
+                      <Box sx={{ textAlign: 'right' }}>
+                        {(customer.activePackageCount || 0) > 0 ? (
                           <Box
                             sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5,
                               cursor: hasPermission('customer_packages:view') ? 'pointer' : 'default',
                             }}
                             onClick={() => {
@@ -1304,27 +1349,37 @@ const CustomerManagement: React.FC = () => {
                               }
                             }}
                           >
+                            <Typography sx={{ fontSize: '0.65rem', color: '#999', mb: 0.25 }}>
+                              {t('customers.packages')}
+                            </Typography>
                             <Chip
-                              icon={<PackageIcon sx={{ fontSize: 14 }} />}
+                              icon={<PackageIcon sx={{ fontSize: 12 }} />}
                               label={customer.activePackageCount}
                               size="small"
                               sx={{
-                                height: 22,
+                                height: 20,
                                 fontSize: '0.7rem',
                                 backgroundColor: alpha(PACKAGE_COLOR, 0.1),
                                 color: PACKAGE_COLOR_DARK,
                                 fontWeight: 600,
-                                '& .MuiChip-icon': { color: PACKAGE_COLOR },
+                                '& .MuiChip-icon': { color: PACKAGE_COLOR, ml: 0.5 },
+                                '& .MuiChip-label': { px: 0.75 },
                               }}
                             />
                           </Box>
+                        ) : (
+                          <>
+                            <Typography sx={{ fontSize: '0.65rem', color: '#999', mb: 0.25 }}>
+                              {t('customers.lastVisit')}
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.75rem', color: '#666' }}>
+                              {customer.lastVisit
+                                ? formatUtcToMerchantTime(customer.lastVisit, 'MM-dd')
+                                : '-'}
+                            </Typography>
+                          </>
                         )}
                       </Box>
-                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
-                        {customer.lastVisit
-                          ? formatUtcToMerchantTime(customer.lastVisit, 'yyyy-MM-dd')
-                          : t('customers.neverVisited')}
-                      </Typography>
                     </Box>
                   </CardContent>
                 </Card>

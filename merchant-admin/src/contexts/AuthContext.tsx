@@ -29,6 +29,7 @@ export interface User {
   permissions?: string[] | UserPermissions;
   lastLoginTime?: string;
   createdAt?: string;
+  smsVerificationEnabled?: boolean;
 }
 
 interface AuthContextType {

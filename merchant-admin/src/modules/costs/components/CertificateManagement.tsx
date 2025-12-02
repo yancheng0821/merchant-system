@@ -577,14 +577,15 @@ const CertificateManagement: React.FC = () => {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
         TransitionProps={{
           onExited: handleDialogExited,
         }}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 2.5,
-            boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
+            borderRadius: isMobile ? 2 : 2.5,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            m: isMobile ? 2 : 3,
           }
         }}
       >

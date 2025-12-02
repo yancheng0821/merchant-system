@@ -190,7 +190,7 @@ const UnpaidInvoiceAlert: React.FC = () => {
                   '&:hover': { opacity: 0.7 },
                 }}
               >
-                {t('billing.viewAndPay')}
+                {t('billing.viewInvoices')}
                 <span style={{ fontSize: '0.9rem', marginLeft: 2 }}>→</span>
               </Box>
             </Box>

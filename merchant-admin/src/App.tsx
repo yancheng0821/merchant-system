@@ -59,6 +59,7 @@ import ScheduleManagement from './modules/schedule/components/ShiftManagement';
 import { RBACManagement } from './modules/rbac';
 import { TenantActivation } from './modules/admin';
 import { PublicBooking } from './modules/public-booking';
+import LegalPage from './components/public/LegalPage';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
 import { getFullImageUrl, subscriptionApi, TenantSubscription } from './services/api';
@@ -594,6 +595,8 @@ const MainAppContent: React.FC = () => {
               boxShadow: 'none',
               borderBottom: '1px solid rgba(0,0,0,0.06)',
               transition: 'width 0.3s ease, margin 0.3s ease',
+              // iOS Safe Area 支持 - 防止与状态栏重叠
+              paddingTop: 'env(safe-area-inset-top)',
             }}
           >
             <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 56 } }}>
@@ -677,13 +680,14 @@ const MainAppContent: React.FC = () => {
                   </Typography>
                 </Box>
 
-                {/* 退出按钮 */}
+                {/* 退出按钮 - 移动端隐藏，在 UserProfile 中显示 */}
                 <IconButton
                   onClick={handleLogout}
                   sx={{
                     color: '#999',
                     width: 32,
                     height: 32,
+                    display: { xs: 'none', sm: 'flex' },
                     '&:hover': {
                       color: '#666',
                       bgcolor: 'rgba(0,0,0,0.04)',
@@ -751,6 +755,8 @@ const MainAppContent: React.FC = () => {
             sx={{
               flexGrow: 1,
               p: { xs: 1, sm: 2, md: 3 },
+              // iOS Safe Area 支持 - 顶部留出状态栏空间
+              pt: { xs: `calc(8px + env(safe-area-inset-top))`, sm: 2, md: 3 },
               width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
               minHeight: '100vh',
               background: '#f8fafc',
@@ -837,6 +843,10 @@ const MainApp: React.FC = () => {
       <Routes>
         {/* 公开预约页面 - 不需要登录 */}
         <Route path="/booking/:slug" element={<PublicBookingWrapper />} />
+        {/* 公开法律页面 - 不需要登录 */}
+        <Route path="/privacy" element={<LegalPage type="privacy" />} />
+        <Route path="/terms" element={<LegalPage type="terms" />} />
+        <Route path="/support" element={<LegalPage type="support" />} />
         {/* 其他所有路由走主应用 */}
         <Route path="*" element={
           <NavigationProvider>

@@ -530,9 +530,9 @@ const AuditLogs: React.FC = () => {
                     onScroll={handleScroll('old')}
                     sx={{
                       backgroundColor: '#fff',
-                      px: 2,
+                      px: isMobile ? 1.5 : 2,
                       py: 1.5,
-                      maxHeight: 320,
+                      maxHeight: isMobile ? 180 : 250,
                       overflow: 'auto',
                     }}
                   >
@@ -605,9 +605,9 @@ const AuditLogs: React.FC = () => {
                     onScroll={handleScroll('new')}
                     sx={{
                       backgroundColor: '#fff',
-                      px: 2,
+                      px: isMobile ? 1.5 : 2,
                       py: 1.5,
-                      maxHeight: 320,
+                      maxHeight: isMobile ? 180 : 250,
                       overflow: 'auto',
                     }}
                   >
@@ -1202,13 +1202,14 @@ const AuditLogs: React.FC = () => {
       <Dialog
         open={changeDialogOpen}
         onClose={() => setChangeDialogOpen(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 2.5,
-            boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.12)',
+            borderRadius: isMobile ? 2 : 2.5,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            m: isMobile ? 2 : 'auto',
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '80vh',
           },
         }}
       >
@@ -1223,7 +1224,7 @@ const AuditLogs: React.FC = () => {
             </Typography>
           )}
         </Box>
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
+        <DialogContent sx={{ px: isMobile ? 2 : 3, py: 2, maxHeight: isMobile ? '50vh' : '60vh', overflow: 'auto' }}>
           {selectedLog && renderChanges(selectedLog)}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>

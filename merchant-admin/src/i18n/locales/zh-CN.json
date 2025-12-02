@@ -384,6 +384,7 @@
     "accountDisabled": "账户已被禁用",
     "accountLocked": "账户已被锁定",
     "basicInfo": "基本信息",
+    "logout": "退出登录",
     "changePassword": "修改密码",
     "passwordSecurityTip": "请设置一个强密码保护您的账户",
     "oldPassword": "原密码",
@@ -461,7 +462,12 @@
     "sendCodeFailed": "发送验证码失败",
     "sendCodeError": "发送验证码出错",
     "verificationFailed": "验证失败",
-    "verificationError": "验证出错"
+    "verificationError": "验证出错",
+    "securitySettings": "安全设置",
+    "smsVerification": "登录短信验证",
+    "smsVerificationDescription": "开启后，每次登录时需要通过手机短信验证身份",
+    "smsVerificationUpdated": "短信验证设置已更新",
+    "phoneRequiredForSms": "需要先设置手机号码才能开启短信验证"
   },
   "session": {
     "expired": "会话已过期",
@@ -513,6 +519,7 @@
     "status": "状态",
     "actions": "操作",
     "points": "积分",
+    "packages": "套餐",
     "firstName": "名",
     "lastName": "姓",
     "phone": "电话",
@@ -1521,6 +1528,7 @@
       "mobile_pay": "移动支付",
       "gift_card": "礼品卡"
     },
+    "noOrders": "暂无订单",
     "todayOrders": "今日订单",
     "todayRevenue": "今日收入",
     "pendingPayments": "待支付",
@@ -2569,6 +2577,8 @@
     "pay": "支付",
     "invoiceDetails": "账单详情",
     "noInvoices": "暂无账单记录",
+    "mobilePaymentNotice": "请在电脑端完成支付",
+    "mobilePaymentNoticeDesc": "为确保支付安全，请使用电脑浏览器登录系统完成账单支付。",
     "subscriptionPlan": "订阅计划",
     "currentPlan": "当前计划",
     "trialPeriod": "试用期",
@@ -2592,6 +2602,7 @@
     "unpaidInvoiceCount": "待支付账单",
     "invoices": "笔",
     "viewAndPay": "查看并支付",
+    "viewInvoices": "查看",
     "alertWillShowOnNextLogin": "此提醒将在下次登录时再次显示",
     "paymentWarning": "为避免影响使用，请在7天内完成支付"
   },
@@ -4314,5 +4325,12 @@
     "bookAnother": "继续预约",
     "confirmationCode": "确认码",
     "selectedServices": "已选{{count}}项服务"
+  },
+  "support": {
+    "title": "支持",
+    "needHelp": "需要帮助？",
+    "description": "我们的支持团队随时为您解答任何问题。",
+    "emailUs": "发送邮件",
+    "responseTime": "我们通常会在24小时内回复"
   }
 }

@@ -807,10 +807,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     <Box sx={{ overflowX: 'hidden', width: '100%' }}>
       <Box
         display="flex"
-        flexDirection={isMobile ? 'column' : 'row'}
+        flexDirection="row"
         justifyContent="space-between"
-        alignItems={isMobile ? 'flex-start' : 'center'}
-        gap={isMobile ? 1.5 : 0}
+        alignItems="center"
+        gap={1}
         mb={isMobile ? 2 : 4}
       >
         <Box>
@@ -821,6 +821,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               fontWeight: 600,
               color: THEME_COLOR,
               mb: 0.5,
+              fontSize: isMobile ? '1rem' : undefined,
             }}
           >
             {t('nav.dashboard')}
@@ -831,7 +832,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </Typography>
           )}
         </Box>
-        <FormControl size="small" sx={{ minWidth: isMobile ? 120 : 140 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 100 : 140 }}>
           <Select
             value={timeRange}
             onChange={handleTimeRangeChange}

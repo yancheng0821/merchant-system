@@ -634,14 +634,15 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
             <Dialog
                 open={open}
                 onClose={onClose}
-                maxWidth="md"
+                maxWidth="sm"
                 fullWidth
-                fullScreen={isMobile}
                 PaperProps={{
                     sx: {
-                        borderRadius: isMobile ? 0 : 2.5,
-                        boxShadow: isMobile ? 'none' : '0 4px 20px rgba(0,0,0,0.1)',
+                        borderRadius: isMobile ? 2 : 2.5,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                         bgcolor: '#fff',
+                        maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+                        m: isMobile ? 2 : 3,
                     },
                 }}
             >
@@ -676,7 +677,7 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
                 </Box>
 
                 {/* 内容 */}
-                <DialogContent sx={{ p: 0 }}>
+                <DialogContent sx={{ p: 0, overflowY: 'auto' }}>
                     <Box sx={{ px: isMobile ? 2 : 3, py: isMobile ? 1.5 : 2 }}>
                         {/* 快捷操作栏 */}
                         <Box

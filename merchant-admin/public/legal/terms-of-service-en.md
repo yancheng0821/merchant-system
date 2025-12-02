@@ -2,13 +2,13 @@
 
 **Last Updated: November 22, 2025**
 
-By using SwiftmindSystems' business management platform ("Service"), you agree to these Terms of Service. Please read them carefully.
+By using VAMerchant's business management platform ("Service"), you agree to these Terms of Service. Please read them carefully.
 
 ---
 
 ## 1. About These Terms
 
-**Who We Are:** SwiftmindSystems, a company registered in British Columbia, Canada.
+**Who We Are:** SwiftmindSystems Inc., a company registered in British Columbia, Canada, operating the VAMerchant platform.
 
 **What This Covers:** Your use of our web-based business management platform and all related services.
 
@@ -213,14 +213,13 @@ See our Privacy Policy for details on exercising these rights.
 ## 14. Contact Us
 
 **Questions about these Terms:**
-- Email: info@swiftmindsystems.com
-- Address: 3476 Henderson Rd, Victoria, British Columbia, Canada
+- Email: support@vamerchant.app
 
 **Customer Support:**
-- Email: info@swiftmindsystems.com
+- Email: support@vamerchant.app
 
 **Privacy Matters:**
-- Email: info@swiftmindsystems.com
+- Email: support@vamerchant.app
 
 ---
 
