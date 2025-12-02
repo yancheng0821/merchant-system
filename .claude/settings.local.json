@@ -59,7 +59,8 @@
       "Bash(../mvnw clean package:*)",
       "Bash(aws cloudfront create-invalidation:*)",
       "Bash(aws cloudfront get-invalidation:*)",
-      "Bash(brew install:*)"
+      "Bash(brew install:*)",
+      "Bash(sips -z 512 512:*)"
     ],
     "deny": [],
     "ask": []

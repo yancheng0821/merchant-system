@@ -16,7 +16,7 @@ import remarkGfm from 'remark-gfm';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 
 interface LegalPageProps {
-  type: 'privacy' | 'terms' | 'support';
+  type: 'privacy' | 'terms' | 'support' | 'delete-account';
 }
 
 const LegalPage: React.FC<LegalPageProps> = ({ type }) => {
@@ -38,7 +38,12 @@ const LegalPage: React.FC<LegalPageProps> = ({ type }) => {
       try {
         setLoading(true);
         const lang = i18n.language === 'zh-CN' ? 'zh' : 'en';
-        const fileName = type === 'terms' ? 'terms-of-service' : 'privacy-policy';
+        const fileNameMap: Record<string, string> = {
+          'terms': 'terms-of-service',
+          'privacy': 'privacy-policy',
+          'delete-account': 'delete-account',
+        };
+        const fileName = fileNameMap[type] || 'privacy-policy';
         const response = await fetch(`/legal/${fileName}-${lang}.md`);
         const text = await response.text();
         setContent(text);
@@ -61,6 +66,8 @@ const LegalPage: React.FC<LegalPageProps> = ({ type }) => {
         return t('auth.termsOfService');
       case 'support':
         return t('support.title', 'Support');
+      case 'delete-account':
+        return t('legal.deleteAccount', 'Delete Account');
       default:
         return '';
     }

@@ -4246,5 +4246,8 @@
     "description": "Our support team is here to help you with any questions or issues you may have.",
     "emailUs": "Email Us",
     "responseTime": "We typically respond within 24 hours"
+  },
+  "legal": {
+    "deleteAccount": "Delete Account"
   }
 }

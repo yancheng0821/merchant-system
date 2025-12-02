@@ -847,6 +847,7 @@ const MainApp: React.FC = () => {
         <Route path="/privacy" element={<LegalPage type="privacy" />} />
         <Route path="/terms" element={<LegalPage type="terms" />} />
         <Route path="/support" element={<LegalPage type="support" />} />
+        <Route path="/delete-account" element={<LegalPage type="delete-account" />} />
         {/* 其他所有路由走主应用 */}
         <Route path="*" element={
           <NavigationProvider>

@@ -4332,5 +4332,8 @@
     "description": "我们的支持团队随时为您解答任何问题。",
     "emailUs": "发送邮件",
     "responseTime": "我们通常会在24小时内回复"
+  },
+  "legal": {
+    "deleteAccount": "删除账户"
   }
 }
