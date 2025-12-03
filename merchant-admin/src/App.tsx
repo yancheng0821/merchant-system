@@ -74,7 +74,7 @@ import { Capacitor } from '@capacitor/core';
 const drawerWidth = 260;
 // 检测是否是 Android 原生平台
 const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
-const mobileDrawerWidth = 280; // 移动端稍宽一点，更好点击
+const mobileDrawerWidth = 220; // 移动端收窄，减少屏幕占用
 
 const MainAppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -598,9 +598,9 @@ const MainAppContent: React.FC = () => {
               boxShadow: 'none',
               borderBottom: '1px solid rgba(0,0,0,0.06)',
               transition: 'width 0.3s ease, margin 0.3s ease',
-              // Safe Area 支持 - 防止与状态栏重叠
-              // Android 原生使用固定 padding，iOS 使用 env(safe-area-inset-top)
-              paddingTop: isAndroidNative ? '48px' : 'env(safe-area-inset-top)',
+              // Safe Area 支持 - Android用margin避免覆盖状态栏
+              marginTop: isAndroidNative ? '36px' : 0,
+              paddingTop: isAndroidNative ? 0 : 'env(safe-area-inset-top)',
             }}
           >
             <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 56 } }}>
@@ -657,6 +657,7 @@ const MainAppContent: React.FC = () => {
                     borderRadius: 1.5,
                     cursor: 'pointer',
                     transition: 'background 0.2s',
+                    WebkitTapHighlightColor: 'transparent',
                     '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                   }}
                 >
@@ -723,8 +724,9 @@ const MainAppContent: React.FC = () => {
                   width: mobileDrawerWidth,
                   background: '#ffffff',
                   boxShadow: '0 0 20px rgba(0,0,0,0.15)',
-                  // Safe Area 支持
-                  paddingTop: isAndroidNative ? '48px' : 'env(safe-area-inset-top)',
+                  // Safe Area 支持 - Android用margin避免覆盖状态栏
+                  marginTop: isAndroidNative ? '36px' : 0,
+                  paddingTop: isAndroidNative ? 0 : 'env(safe-area-inset-top)',
                   paddingBottom: 'env(safe-area-inset-bottom)',
                 },
               }}
@@ -760,7 +762,7 @@ const MainAppContent: React.FC = () => {
               flexGrow: 1,
               p: { xs: 1, sm: 2, md: 3 },
               // Safe Area 支持 - 顶部留出状态栏空间
-              pt: { xs: isAndroidNative ? 'calc(8px + 48px)' : 'calc(8px + env(safe-area-inset-top))', sm: 2, md: 3 },
+              pt: { xs: isAndroidNative ? 'calc(8px + 36px)' : 'calc(8px + env(safe-area-inset-top))', sm: 2, md: 3 },
               width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
               minHeight: '100vh',
               background: '#f8fafc',
@@ -768,7 +770,7 @@ const MainAppContent: React.FC = () => {
               overflowX: 'hidden',
             }}
           >
-            <Toolbar />
+            <Toolbar sx={{ mb: isAndroidNative ? 2 : 0 }} />
 
             {/* 移动端通知栏 - 可关闭 */}
             {!mobileNotificationDismissed && (
@@ -802,7 +804,7 @@ const MainAppContent: React.FC = () => {
               </Box>
             )}
 
-            <Container maxWidth={false} sx={{ px: { xs: 0, sm: 2, md: 3 }, overflowX: 'hidden' }}>
+            <Container maxWidth={false} sx={{ px: { xs: 0, sm: 2, md: 3 }, pt: { xs: isAndroidNative ? 1.5 : 0 }, overflowX: 'hidden' }}>
               {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
               {selectedItem === 'products' && <ServiceManagement />}
               {selectedItem === 'orders' && <PaymentManagement onNavigate={setSelectedItem} />}

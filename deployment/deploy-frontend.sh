@@ -107,15 +107,20 @@ upload_to_s3() {
 
     print_info "上传 index.html（禁止缓存）..."
     # index.html 不缓存，每次都从服务器获取最新版本
+    # 使用 --metadata-directive REPLACE 确保缓存头被正确设置
     aws s3 cp ./build/index.html s3://${S3_BUCKET}/index.html \
-        --cache-control "no-cache, no-store, must-revalidate"
+        --cache-control "no-cache, no-store, must-revalidate" \
+        --content-type "text/html" \
+        --metadata-directive REPLACE
 
-    # 上传其他JSON配置文件（短期缓存）
+    # 上传其他JSON配置文件（禁止缓存）
     if ls ./build/*.json 1> /dev/null 2>&1; then
         print_info "上传配置文件..."
         for file in ./build/*.json; do
             aws s3 cp "$file" s3://${S3_BUCKET}/$(basename "$file") \
-                --cache-control "no-cache, no-store, must-revalidate"
+                --cache-control "no-cache, no-store, must-revalidate" \
+                --content-type "application/json" \
+                --metadata-directive REPLACE
         done
     fi
 

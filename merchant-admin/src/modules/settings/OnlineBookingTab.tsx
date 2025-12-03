@@ -554,6 +554,9 @@ const OnlineBookingTab: React.FC = () => {
                         py: 0.5,
                         borderColor: '#ddd',
                         color: '#666',
+                        WebkitTapHighlightColor: 'transparent',
+                        '&:focus': { outline: 'none', boxShadow: 'none' },
+                        '&.Mui-focusVisible': { boxShadow: 'none' },
                       }}
                     >
                       {t('common.copy')}
@@ -568,6 +571,9 @@ const OnlineBookingTab: React.FC = () => {
                         py: 0.5,
                         borderColor: '#ddd',
                         color: '#666',
+                        WebkitTapHighlightColor: 'transparent',
+                        '&:focus': { outline: 'none', boxShadow: 'none' },
+                        '&.Mui-focusVisible': { boxShadow: 'none' },
                       }}
                     >
                       {t('settings.onlineBooking.regenerate')}
@@ -591,7 +597,15 @@ const OnlineBookingTab: React.FC = () => {
                     }}
                   />
                   <Tooltip title={t('common.copy')}>
-                    <IconButton onClick={copyBookingUrl} size="small">
+                    <IconButton
+                      onClick={copyBookingUrl}
+                      size="small"
+                      sx={{
+                        WebkitTapHighlightColor: 'transparent',
+                        '&:focus': { outline: 'none', boxShadow: 'none' },
+                        '&.Mui-focusVisible': { boxShadow: 'none' },
+                      }}
+                    >
                       <CopyIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                   </Tooltip>

@@ -579,7 +579,7 @@ const Analytics: React.FC = () => {
             )}
           </Box>
 
-          <Box display="flex" gap={2} sx={{ flexShrink: 0 }}>
+          <Box display="flex" gap={2} sx={{ flexShrink: 0, mt: isMobile ? 0.5 : 0 }}>
             <FormControl size="small" sx={{ minWidth: isMobile ? 100 : 140 }}>
             <Select
               value={timeRange}

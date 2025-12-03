@@ -629,7 +629,7 @@ const FixedCostManagement: React.FC = () => {
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
         TransitionProps={{
           onExited: handleDialogExited,

@@ -32,8 +32,12 @@ import {
     Info as InfoIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { resourceApi } from '../../../services/api';
 import { useTheme } from '../../../contexts/ThemeContext';
+
+// 检测是否是原生应用
+const isNativeApp = Capacitor.isNativePlatform();
 
 interface TimeSegment {
     id?: number;
@@ -634,8 +638,14 @@ const StaffAvailabilityEditor: React.FC<StaffAvailabilityEditorProps> = ({
             <Dialog
                 open={open}
                 onClose={onClose}
-                maxWidth="sm"
+                maxWidth={isMobile ? 'sm' : 'md'}
                 fullWidth
+                sx={isNativeApp ? {
+                    '& .MuiDialog-container': {
+                        alignItems: 'flex-start',
+                        pt: '60px',
+                    }
+                } : undefined}
                 PaperProps={{
                     sx: {
                         borderRadius: isMobile ? 2 : 2.5,

@@ -37,12 +37,8 @@ const devConfig: CapacitorConfig = {
       backgroundColor: '#1a1a1a',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
-      splashFullScreen: true,
-      splashImmersive: true
-    },
-    StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#1a1a1a'
+      splashFullScreen: false,
+      splashImmersive: false
     },
     Keyboard: {
       resize: 'body',
@@ -89,14 +85,8 @@ const prodConfig: CapacitorConfig = {
       backgroundColor: '#1a1a1a',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
-      splashFullScreen: true,
-      splashImmersive: true
-    },
-
-    // 状态栏
-    StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#1a1a1a'
+      splashFullScreen: false,
+      splashImmersive: false
     },
 
     // 键盘

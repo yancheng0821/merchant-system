@@ -110,9 +110,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // Build WebSocket URL
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // 本地开发环境连接到 Gateway (8080)，生产环境使用相同 host
     const hostname = window.location.hostname;
     const isDev = hostname === 'localhost' || hostname === '127.0.0.1';
+    // 生产环境通过 CloudFront 代理 WebSocket（已配置 /ws/* behavior）
     const wsHost = process.env.REACT_APP_WS_HOST || (isDev ? 'localhost:8080' : window.location.host);
     const wsUrl = `${wsProtocol}//${wsHost}/ws/notifications?token=${encodeURIComponent(token)}`;
 

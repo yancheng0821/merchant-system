@@ -53,6 +53,7 @@ import {
   FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { notificationApi } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -83,6 +84,7 @@ const NotificationLogManagement: React.FC = () => {
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  const isNativeApp = Capacitor.isNativePlatform();
 
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -951,8 +953,14 @@ const NotificationLogManagement: React.FC = () => {
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 2.5,

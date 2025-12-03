@@ -67,6 +67,7 @@ import {
   Psychology as PsychologyIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { Package } from '../../../services/api';
 import { useTheme } from '../../../contexts/ThemeContext';
 
@@ -175,6 +176,7 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { themeMode } = useTheme();
+  const isNativeApp = Capacitor.isNativePlatform();
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -372,6 +374,12 @@ const PackageDialog: React.FC<PackageDialogProps> = ({
       TransitionProps={{
         onExited: onExited,
       }}
+      sx={isNativeApp ? {
+        '& .MuiDialog-container': {
+          alignItems: 'flex-start',
+          pt: '60px',
+        }
+      } : undefined}
       PaperProps={{
         sx: {
           borderRadius: 3,

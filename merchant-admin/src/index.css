@@ -66,16 +66,33 @@ code {
 
 /* ===== 移动端适配样式 ===== */
 
-/* iOS Safe Area 支持 */
-body {
+/* iOS Safe Area 支持 - 仅iOS需要 */
+body.ios-native {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
 
-/* iOS 状态栏固定白色背景 - 防止内容滚动到状态栏下 */
-body::before {
+/* Android 状态栏固定深色背景，防止内容滚动到状态栏区域 */
+body.android-native {
+  padding-top: 0 !important;
+}
+
+body.android-native::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px; /* 状态栏高度 */
+  background-color: #FFFFFF; /* 白色背景，与原生状态栏一致 */
+  z-index: 9999;
+}
+
+/* iOS 状态栏固定背景 - 仅在 iOS 原生应用上生效 */
+/* Android 不需要这个，由原生控制状态栏 */
+body.ios-native::before {
   content: '';
   position: fixed;
   top: 0;

@@ -715,7 +715,7 @@ const TenantActivation: React.FC = () => {
       <Dialog
         open={detailsDialogOpen}
         onClose={handleCloseDetailsDialog}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
         TransitionProps={{ onExited: handleDetailsDialogExited }}
         PaperProps={{

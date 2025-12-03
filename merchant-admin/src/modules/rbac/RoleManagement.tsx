@@ -663,7 +663,7 @@ const RoleManagement: React.FC = () => {
       <Dialog
         open={dialogOpen}
         onClose={() => !saving && setDialogOpen(false)}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
         PaperProps={{
           sx: {

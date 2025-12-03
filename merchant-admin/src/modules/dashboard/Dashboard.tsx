@@ -835,7 +835,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </Typography>
           )}
         </Box>
-        <FormControl size="small" sx={{ minWidth: isMobile ? 100 : 140 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 100 : 140, mt: isMobile ? 0.5 : 0 }}>
           <Select
             value={timeRange}
             onChange={handleTimeRangeChange}

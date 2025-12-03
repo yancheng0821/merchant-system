@@ -46,6 +46,7 @@ import {
   PowerSettingsNew as ToggleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -86,6 +87,7 @@ const CustomerReminders: React.FC = () => {
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  const isNativeApp = Capacitor.isNativePlatform();
 
   const isMonochrome = themeMode === 'monochrome';
   const THEME_COLOR = isMonochrome ? '#1a1a1a' : '#059669';
@@ -682,8 +684,14 @@ const CustomerReminders: React.FC = () => {
       <Dialog
         open={dialogOpen}
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 3,
@@ -1010,6 +1018,12 @@ const CustomerReminders: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: 2.5,
@@ -1061,8 +1075,14 @@ const CustomerReminders: React.FC = () => {
       <Dialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 2.5,
@@ -1140,8 +1160,14 @@ const CustomerReminders: React.FC = () => {
       <Dialog
         open={matchedCustomersOpen}
         onClose={() => setMatchedCustomersOpen(false)}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: 2.5,

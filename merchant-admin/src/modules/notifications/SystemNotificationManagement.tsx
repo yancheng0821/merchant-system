@@ -34,9 +34,13 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
+
+// 检测是否是原生应用
+const isNativeApp = Capacitor.isNativePlatform();
 
 interface SystemNotification {
   id?: number;
@@ -512,8 +516,14 @@ const SystemNotificationManagement: React.FC = () => {
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 2.5,
@@ -711,6 +721,12 @@ const SystemNotificationManagement: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: 2.5,

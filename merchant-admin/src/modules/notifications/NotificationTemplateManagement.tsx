@@ -49,10 +49,14 @@ import {
   Description as DescriptionIcon,
   Visibility as VisibilityIcon,
 } from '@mui/icons-material';
+import { Capacitor } from '@capacitor/core';
 import { notificationApi } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
+
+// 检测是否是原生应用
+const isNativeApp = Capacitor.isNativePlatform();
 
 interface NotificationTemplate {
   id: number;
@@ -662,11 +666,17 @@ const NotificationTemplateManagement: React.FC = () => {
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
         TransitionProps={{
           onExited: handleDialogExited,
         }}
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 2.5,
@@ -1034,6 +1044,12 @@ const NotificationTemplateManagement: React.FC = () => {
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: 2.5,
@@ -1084,8 +1100,14 @@ const NotificationTemplateManagement: React.FC = () => {
       <Dialog
         open={openInitDialog}
         onClose={() => setOpenInitDialog(false)}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: 2.5,
@@ -1139,8 +1161,14 @@ const NotificationTemplateManagement: React.FC = () => {
       <Dialog
         open={openPreviewDialog}
         onClose={() => setOpenPreviewDialog(false)}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 2.5,

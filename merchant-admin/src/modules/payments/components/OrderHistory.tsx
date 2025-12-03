@@ -645,6 +645,7 @@ const OrderHistory: React.FC = () => {
                                     onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
                                     fullWidth
                                     sx={{
+                                        WebkitTapHighlightColor: 'transparent',
                                         '& .MuiOutlinedInput-root': {
                                             borderRadius: 1.5,
                                             bgcolor: '#fafafa',
@@ -674,6 +675,7 @@ const OrderHistory: React.FC = () => {
                                     onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
                                     fullWidth
                                     sx={{
+                                        WebkitTapHighlightColor: 'transparent',
                                         '& .MuiOutlinedInput-root': {
                                             borderRadius: 1.5,
                                             bgcolor: '#fafafa',
@@ -821,6 +823,7 @@ const OrderHistory: React.FC = () => {
                         onClick={(e) => setStartDateAnchorEl(e.currentTarget)}
                         sx={{
                             minWidth: 140,
+                            WebkitTapHighlightColor: 'transparent',
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
                                 bgcolor: '#fafafa',
@@ -848,6 +851,7 @@ const OrderHistory: React.FC = () => {
                         onClick={(e) => setEndDateAnchorEl(e.currentTarget)}
                         sx={{
                             minWidth: 140,
+                            WebkitTapHighlightColor: 'transparent',
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
                                 bgcolor: '#fafafa',

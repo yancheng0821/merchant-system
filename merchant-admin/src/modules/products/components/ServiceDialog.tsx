@@ -28,6 +28,7 @@ import {
   Category as CategoryIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { CurrencyUtils } from '../../../config/constants';
 import { ServiceManagement as ServiceManagementType, ServiceCategory, merchantConfigApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -55,6 +56,7 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const isNativeApp = Capacitor.isNativePlatform();
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -222,6 +224,12 @@ const ServiceDialog: React.FC<ServiceDialogProps> = ({
       TransitionProps={{
         onExited: onExited,
       }}
+      sx={isNativeApp ? {
+        '& .MuiDialog-container': {
+          alignItems: 'flex-start',
+          pt: '60px',
+        }
+      } : undefined}
       PaperProps={{
         sx: {
           borderRadius: 3,

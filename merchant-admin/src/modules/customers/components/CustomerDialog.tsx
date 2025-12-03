@@ -40,6 +40,7 @@ import {
   Verified as VerifiedIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { Customer, Service, serviceApi, membershipTierApi, MembershipTier } from '../../../services/api';
 import CountryCodeSelector from '../../../components/common/CountryCodeSelector';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -80,6 +81,7 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  const isNativeApp = Capacitor.isNativePlatform();
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -298,6 +300,12 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({
       maxWidth="md"
       fullWidth
       TransitionProps={{ onExited }}
+      sx={isNativeApp ? {
+        '& .MuiDialog-container': {
+          alignItems: 'flex-start',
+          pt: '60px',
+        }
+      } : undefined}
       PaperProps={{ sx: { borderRadius: 2.5, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}
     >
       {/* 简约标题 */}

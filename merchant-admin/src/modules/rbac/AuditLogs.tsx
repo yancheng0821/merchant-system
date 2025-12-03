@@ -1202,7 +1202,7 @@ const AuditLogs: React.FC = () => {
       <Dialog
         open={changeDialogOpen}
         onClose={() => setChangeDialogOpen(false)}
-        maxWidth="sm"
+        maxWidth={isMobile ? 'sm' : 'md'}
         fullWidth
         PaperProps={{
           sx: {

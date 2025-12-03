@@ -36,10 +36,14 @@ import {
 import ImageUploader from '../../../components/common/ImageUploader';
 import CountryCodeSelector from '../../../components/common/CountryCodeSelector';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { StaffResource } from '../types';
 import { getFullImageUrl } from '../../../services/api';
 import { getMerchantToday } from '../../../utils/timezoneUtils';
 import { useTheme } from '../../../contexts/ThemeContext';
+
+// 检测是否是原生应用
+const isNativeApp = Capacitor.isNativePlatform();
 
 interface StaffDialogProps {
     open: boolean;
@@ -322,11 +326,17 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
         <Dialog
             open={open}
             onClose={onClose}
-            maxWidth="sm"
+            maxWidth={isMobile ? 'sm' : 'md'}
             fullWidth
             TransitionProps={{
                 onExited: onExited,
             }}
+            sx={isNativeApp ? {
+                '& .MuiDialog-container': {
+                    alignItems: 'flex-start',
+                    pt: '60px',
+                }
+            } : undefined}
             PaperProps={{
                 sx: {
                     borderRadius: isMobile ? 2 : 2.5,

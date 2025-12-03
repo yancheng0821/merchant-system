@@ -4,7 +4,6 @@ import {
   Checkbox,
   FormControlLabel,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -14,6 +13,10 @@ import {
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Capacitor } from '@capacitor/core';
+
+// 检测是否是原生应用
+const isNativeApp = Capacitor.isNativePlatform();
 
 interface TermsOfServiceCheckboxProps {
   checked: boolean;
@@ -35,7 +38,6 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
   const handleOpenModal = async (e: React.MouseEvent, type: 'terms' | 'privacy') => {
     e.preventDefault();
     setModalType(type);
-    // 先加载内容，加载完成后再打开弹框
     setLoading(true);
     try {
       const lang = i18n.language === 'zh-CN' ? 'zh' : 'en';
@@ -43,7 +45,6 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
       const response = await fetch(`/legal/${fileName}-${lang}.md`);
       const text = await response.text();
       setContent(text);
-      // 内容加载完成后才打开弹框
       setShowModal(true);
     } catch (error) {
       console.error(`Failed to load ${type}:`, error);
@@ -113,22 +114,24 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
       <Dialog
         open={showModal}
         onClose={handleCloseModal}
-        maxWidth="sm"
+        maxWidth={isNativeApp ? 'sm' : 'lg'}
         fullWidth
         scroll="paper"
+        sx={isNativeApp ? {
+          '& .MuiDialog-container': {
+            alignItems: 'flex-start',
+            pt: '60px',
+          }
+        } : undefined}
         PaperProps={{
           sx: {
-            maxHeight: { xs: '65vh', sm: '75vh' },
-            m: { xs: 3, sm: 4 },
-            mt: { xs: 8, sm: 4 },
+            maxHeight: isNativeApp ? '70vh' : '85vh',
+            m: isNativeApp ? 2 : 3,
             borderRadius: 3,
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600 }}>
-          {modalType === 'terms' ? t('auth.termsOfService') : t('auth.privacyPolicy')}
-        </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ p: isNativeApp ? 2 : 4 }}>
           {loading ? (
             <Typography variant="body2" color="text.secondary">
               {t('common.loading')}...

@@ -43,6 +43,8 @@ import { Capacitor } from '@capacitor/core';
 
 // 检测是否是原生平台（用于隐藏商户注册入口以符合应用商店审核要求）
 const isNativeApp = Capacitor.isNativePlatform();
+// 检测是否是 Android 原生平台（用于状态栏适配）
+const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 
 
 interface RegisterData {
@@ -590,6 +592,8 @@ const LoginPage: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         p: { xs: 1.5, sm: 2 },
+        // Android 状态栏适配 - 给顶部留出空间
+        pt: isAndroidNative ? '52px' : { xs: 1.5, sm: 2 },
         position: 'relative',
       }}
     >
