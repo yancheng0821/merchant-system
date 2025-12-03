@@ -6,6 +6,7 @@ import com.merchant.server.authservice.dto.UserProfileRequest;
 import com.merchant.server.authservice.dto.UserProfileResponse;
 import com.merchant.server.authservice.dto.AvatarUploadResponse;
 import com.merchant.server.authservice.dto.ChangePasswordRequest;
+import com.merchant.server.authservice.dto.DeleteAccountRequest;
 import com.merchant.server.authservice.entity.User;
 import com.merchant.server.authservice.entity.User.UserStatus;
 import com.merchant.server.authservice.entity.Role;
@@ -316,6 +317,24 @@ public class UserController {
             errorResponse.put("success", false);
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    /**
+     * 注销账户（用户删除自己的账户）
+     */
+    @DeleteMapping("/account")
+    public ApiResponse<Void> deleteAccount(
+            @RequestHeader("Authorization") String token,
+            @Valid @RequestBody DeleteAccountRequest request) {
+        logger.info("收到注销账户请求");
+        try {
+            userService.deleteAccount(token, request.getPassword());
+            logger.info("注销账户成功");
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            logger.error("注销账户失败: {}", e.getMessage(), e);
+            throw e;
         }
     }
 } 

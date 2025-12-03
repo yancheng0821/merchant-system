@@ -1,8 +1,8 @@
 # Privacy Policy
 
-**Last Updated: November 22, 2025**
+**Last Updated: December 2, 2025**
 
-At VAMerchant, we take your privacy seriously. This Privacy Policy explains how we handle your information when you use our business management platform.
+At VAMerchant, we take your privacy seriously. This Privacy Policy explains how we handle your information when you use our business management platform (including web, iOS, and Android applications).
 
 ---
 
@@ -15,7 +15,8 @@ At VAMerchant, we take your privacy seriously. This Privacy Policy explains how 
 
 ### Information We Collect Automatically
 - **Usage Data:** IP address, browser type, device information, pages visited
-- **Cookies:** We use cookies for authentication, preferences, and analytics
+- **Cookies and Local Storage:** We use cookies (web) and local storage (mobile apps) for authentication, preferences, and analytics
+- **Mobile App Specific Data:** Device identifiers, operating system version, app version, crash logs, push notification tokens (if you opt-in to receive push notifications)
 
 ---
 
@@ -120,14 +121,22 @@ Our servers are in Canada (AWS ca-central-1). If you're outside this region, you
 
 ---
 
-## 9. Cookies
+## 9. Cookies and Local Storage
 
+### Web Application
 We use cookies for:
 - **Essential:** Authentication and security (required)
 - **Preferences:** Remember your settings
 - **Analytics:** Understand how you use the Service (e.g., Google Analytics)
 
 **Control Cookies:** Manage cookies through your browser settings. Note: Disabling essential cookies may affect Service functionality.
+
+### Mobile Applications
+Mobile apps do not use traditional cookies. Instead, they use:
+- **Local Storage:** Securely stores authentication tokens and user preferences
+- **Device Identifiers:** Used for push notifications and crash reporting
+
+You can manage app permissions through your device settings or delete locally stored data by uninstalling the app.
 
 ---
 
@@ -175,4 +184,4 @@ Email: support@vamerchant.app
 
 **By using the Service, you acknowledge that you have read and understood this Privacy Policy.**
 
-*Last Updated: November 22, 2025*
+*Last Updated: December 2, 2025*

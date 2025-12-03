@@ -1,0 +1,1 @@
+ALTER TABLE tenants ADD COLUMN owner_user_id BIGINT DEFAULT NULL COMMENT '租户所有者用户ID';

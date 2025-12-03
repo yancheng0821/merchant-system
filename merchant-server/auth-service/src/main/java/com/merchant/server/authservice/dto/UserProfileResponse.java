@@ -19,6 +19,7 @@ public class UserProfileResponse {
     private LocalDateTime lastLoginTime;
     private LocalDateTime updateTime;
     private Boolean smsVerificationEnabled;
+    private Boolean isTenantOwner;
 
     // Getters and Setters
     public Long getUserId() {
@@ -131,6 +132,14 @@ public class UserProfileResponse {
 
     public void setSmsVerificationEnabled(Boolean smsVerificationEnabled) {
         this.smsVerificationEnabled = smsVerificationEnabled;
+    }
+
+    public Boolean getIsTenantOwner() {
+        return isTenantOwner;
+    }
+
+    public void setIsTenantOwner(Boolean isTenantOwner) {
+        this.isTenantOwner = isTenantOwner;
     }
 
     @Override

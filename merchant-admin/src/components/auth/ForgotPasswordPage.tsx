@@ -202,7 +202,7 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
                     endAdornment: (
                       <InputAdornment position="end">
                         <HelpTooltip
-                          title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
+                          title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')} ${t('auth.demoMerchantCodeTip')}`}
                           placement="top"
                           size="small"
                           color="default"
@@ -234,7 +234,8 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack }) => {
                   sx={{
                     mt: 4,
                     mb: 1.5,
-                    py: 1.5,
+                    py: { xs: 1.75, sm: 1.5 },
+                    minHeight: { xs: 48, sm: 44 },
                     textTransform: 'none',
                     fontWeight: 500,
                     fontSize: '0.9rem',

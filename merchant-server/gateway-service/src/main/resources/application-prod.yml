@@ -22,8 +22,10 @@ spring:
               - "https://vamerchant.app"
               - "https://www.vamerchant.app"
               - "https://api.vamerchant.app"
-              - "capacitor://localhost"
+              - "capacitor://localhost"    # iOS Capacitor
               - "ionic://localhost"
+              - "http://localhost"         # Android Capacitor WebView
+              - "https://localhost"        # Android Capacitor WebView (HTTPS)
             allowedMethods:
               - GET
               - POST

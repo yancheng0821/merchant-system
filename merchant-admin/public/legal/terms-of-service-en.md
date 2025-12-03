@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Last Updated: November 22, 2025**
+**Last Updated: December 2, 2025**
 
 By using VAMerchant's business management platform ("Service"), you agree to these Terms of Service. Please read them carefully.
 
@@ -10,7 +10,11 @@ By using VAMerchant's business management platform ("Service"), you agree to the
 
 **Who We Are:** SwiftmindSystems Inc., a company registered in British Columbia, Canada, operating the VAMerchant platform.
 
-**What This Covers:** Your use of our web-based business management platform and all related services.
+**What This Covers:** Your use of our business management platform, including:
+- Web application (vamerchant.app)
+- iOS mobile application (available on Apple App Store)
+- Android mobile application (available on Google Play)
+- All related services and features
 
 **Your Agreement:** By creating an account or using our Service, you confirm that:
 - You are at least 18 years old
@@ -225,4 +229,4 @@ See our Privacy Policy for details on exercising these rights.
 
 **By using the Service, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.**
 
-*Last Updated: November 22, 2025*
+*Last Updated: December 2, 2025*

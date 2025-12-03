@@ -36,14 +36,15 @@ const UnpaidInvoiceAlert: React.FC = () => {
   const sessionKey = `unpaid-invoice-alert-closed-${user?.id}`;
 
   useEffect(() => {
-    if (user?.tenantId) {
+    // 只对租户所有者获取未支付账单
+    if (user?.tenantId && user?.isTenantOwner) {
       fetchUnpaidInvoices();
     }
-  }, [user?.tenantId]);
+  }, [user?.tenantId, user?.isTenantOwner]);
 
   useEffect(() => {
     const handleInvoicePaid = () => {
-      if (user?.tenantId) {
+      if (user?.tenantId && user?.isTenantOwner) {
         fetchUnpaidInvoices();
       }
     };
@@ -52,7 +53,7 @@ const UnpaidInvoiceAlert: React.FC = () => {
     return () => {
       window.removeEventListener('invoice-paid', handleInvoicePaid);
     };
-  }, [user?.tenantId]);
+  }, [user?.tenantId, user?.isTenantOwner]);
 
   const fetchUnpaidInvoices = async () => {
     try {
@@ -90,7 +91,8 @@ const UnpaidInvoiceAlert: React.FC = () => {
     navigate('/settings?tab=billing');
   };
 
-  if (loading || unpaidInvoices.length === 0 || !visible) {
+  // 只对租户所有者显示未支付账单提醒
+  if (loading || unpaidInvoices.length === 0 || !visible || !user?.isTenantOwner) {
     return null;
   }
 

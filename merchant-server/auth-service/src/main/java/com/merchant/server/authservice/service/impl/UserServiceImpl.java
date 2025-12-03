@@ -267,6 +267,8 @@ public class UserServiceImpl implements UserService {
         response.setLastLoginTime(user.getLastLoginAt());
         response.setUpdateTime(user.getUpdatedAt());
         response.setSmsVerificationEnabled(user.getSmsVerificationEnabled() != null ? user.getSmsVerificationEnabled() : true);
+        // 设置是否为租户所有者
+        response.setIsTenantOwner(tenant != null && tenant.getOwnerUserId() != null && tenant.getOwnerUserId().equals(user.getId()));
 
         // 填充完整信息（角色、权限、时区）
         fillUserProfileDetails(user, response);
@@ -514,5 +516,35 @@ public class UserServiceImpl implements UserService {
         user.setStatus(status);
         user.setUpdatedAt(java.time.LocalDateTime.now(ZoneOffset.UTC));
         userMapper.update(user);
+    }
+
+    @Override
+    public void deleteAccount(String token, String password) {
+        logger.info("收到注销账户请求");
+
+        // 1. 从token获取用户信息
+        String jwtToken = token.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(jwtToken);
+
+        if (userId == null) {
+            throw new RuntimeException(messageUtil.getMessage("error.token.user.info.extract"));
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException(messageUtil.getMessage("user.not.found"));
+        }
+
+        // 2. 验证密码
+        if (!passwordUtil.verifyPassword(password, user.getPasswordHash(), user.getSalt())) {
+            throw new RuntimeException(messageUtil.getMessage("user.password.invalid"));
+        }
+
+        // 3. 删除用户（软删除：设置状态为 DELETED）
+        user.setStatus(User.UserStatus.DELETED);
+        user.setUpdatedAt(java.time.LocalDateTime.now(ZoneOffset.UTC));
+        userMapper.update(user);
+
+        logger.info("用户账户注销成功 - 用户ID: {}", userId);
     }
 } 

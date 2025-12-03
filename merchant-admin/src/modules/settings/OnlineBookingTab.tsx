@@ -40,6 +40,7 @@ import ImageUploader from '../../components/common/ImageUploader';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { onlineBookingApi } from '../../services/api';
+import { Capacitor } from '@capacitor/core';
 
 interface OnlineBookingConfig {
   enabled: boolean;
@@ -355,7 +356,18 @@ const OnlineBookingTab: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
-  const bookingUrl = `${window.location.origin}/booking/${config.bookingPageSlug}`;
+  // 在原生 App 或 localhost 开发环境中使用生产域名
+  const getBookingBaseUrl = () => {
+    if (Capacitor.isNativePlatform()) {
+      return 'https://vamerchant.app';
+    }
+    const origin = window.location.origin;
+    if (origin.includes('localhost') || origin.includes('capacitor://')) {
+      return 'https://vamerchant.app';
+    }
+    return origin;
+  };
+  const bookingUrl = `${getBookingBaseUrl()}/booking/${config.bookingPageSlug}`;
 
   const copyBookingUrl = () => {
     navigator.clipboard.writeText(bookingUrl);
@@ -545,22 +557,6 @@ const OnlineBookingTab: React.FC = () => {
                       }}
                     >
                       {t('common.copy')}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
-                      onClick={() => window.open(bookingUrl, '_blank')}
-                      sx={{
-                        flex: 1,
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        borderColor: '#ddd',
-                        color: '#666',
-                      }}
-                    >
-                      {t('common.openInNewTab')}
                     </Button>
                     <Button
                       size="small"
@@ -1167,7 +1163,7 @@ const OnlineBookingTab: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setNotification({ ...notification, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ top: isMobile ? 16 : 24 }}
+        sx={{ top: isMobile ? 92 : 24 }}
       >
         <Alert
           onClose={() => setNotification({ ...notification, open: false })}

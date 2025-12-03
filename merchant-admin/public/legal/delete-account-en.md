@@ -1,22 +1,29 @@
-# Account Deletion Request
+# Account Deletion
 
 ## How to Delete Your Account
 
-If you wish to delete your VA Merchant account and all associated data, you can do so through the following methods:
+You can delete your VAMerchant account directly within the app at any time.
 
-### Method 1: In-App Deletion
+### In-App Deletion (Recommended)
 
-1. Log in to your VA Merchant account
-2. Go to **Settings** → **User Profile**
-3. Contact your administrator to request account deletion
+1. Log in to your VAMerchant account
+2. Tap on your profile avatar in the top right corner to go to **User Profile**
+3. Scroll down to the **Security Settings** section
+4. Tap **Delete Account**
+5. Enter your account password to confirm
+6. Tap **Confirm Delete** to complete the deletion
 
-### Method 2: Email Request
+**Note:** Account deletion is immediate and irreversible. Please ensure you have backed up any important data before proceeding.
 
-Send an email to **support@vamerchant.app** with:
+### Alternative Method: Email Request
+
+If you are unable to delete your account through the app, you can send an email to **support@vamerchant.app** with:
 
 - Subject: "Account Deletion Request"
 - Your registered email address
-- Your username (if known)
+- Your username
+
+Account deletion requests via email are typically processed within **30 days**.
 
 ---
 
@@ -24,10 +31,11 @@ Send an email to **support@vamerchant.app** with:
 
 Upon account deletion, the following data will be permanently removed:
 
-- Your user profile information (name, email, phone number)
-- Your login credentials
+- Your user profile information (name, email, phone number, avatar)
+- Your login credentials and authentication information
 - Your personal preferences and settings
-- Your activity logs
+- Your activity logs and session records
+- Push notification settings associated with your account
 
 ---
 
@@ -35,14 +43,16 @@ Upon account deletion, the following data will be permanently removed:
 
 Some data may be retained for legal and business purposes:
 
-- **Business records:** Transaction and appointment records may be retained for up to 7 years for tax and legal compliance
-- **Anonymized data:** Aggregated, non-identifiable analytics data may be retained
+- **Business records:** Transaction, appointment, and order records related to you may be retained for up to 7 years for tax and legal compliance
+- **Anonymized data:** Aggregated, non-identifiable statistical data may be retained for service improvement
 
 ---
 
-## Processing Time
+## Important Notes
 
-Account deletion requests are typically processed within **30 days**. You will receive a confirmation email once your account has been deleted.
+- **Irreversible:** Once deleted, your account cannot be recovered. If you wish to use VAMerchant in the future, you will need to create a new account.
+- **Tenant Owners:** If you are the owner of a merchant account (the account created when registering the merchant), please ensure you have properly handled merchant data and other employees' access before deleting your account.
+- **Pending Transactions:** Please ensure all pending transactions or appointments are completed before deleting your account.
 
 ---
 
@@ -55,4 +65,4 @@ If you have any questions about account deletion, please contact us:
 
 ---
 
-*Last updated: December 2024*
+*Last Updated: December 2, 2025*

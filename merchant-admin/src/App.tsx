@@ -69,8 +69,11 @@ import UnpaidInvoiceAlert from './components/common/UnpaidInvoiceAlert';
 import { filterMenus } from './utils/menuFilter';
 import { usePermission } from './hooks/usePermission';
 import { canAccessRoute, ROUTE_PERMISSIONS } from './utils/routePermissions';
+import { Capacitor } from '@capacitor/core';
 
 const drawerWidth = 260;
+// 检测是否是 Android 原生平台
+const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 const mobileDrawerWidth = 280; // 移动端稍宽一点，更好点击
 
 const MainAppContent: React.FC = () => {
@@ -595,8 +598,9 @@ const MainAppContent: React.FC = () => {
               boxShadow: 'none',
               borderBottom: '1px solid rgba(0,0,0,0.06)',
               transition: 'width 0.3s ease, margin 0.3s ease',
-              // iOS Safe Area 支持 - 防止与状态栏重叠
-              paddingTop: 'env(safe-area-inset-top)',
+              // Safe Area 支持 - 防止与状态栏重叠
+              // Android 原生使用固定 padding，iOS 使用 env(safe-area-inset-top)
+              paddingTop: isAndroidNative ? '48px' : 'env(safe-area-inset-top)',
             }}
           >
             <Toolbar sx={{ justifyContent: 'space-between', minHeight: { xs: 56, sm: 56 } }}>
@@ -604,11 +608,11 @@ const MainAppContent: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
                 {/* 移动端菜单按钮 */}
                 <IconButton
-                  edge="start"
                   onClick={handleDrawerToggle}
                   sx={{
                     display: { sm: 'none' },
                     color: '#666',
+                    ml: 0.5,
                     '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
                   }}
                 >
@@ -719,8 +723,8 @@ const MainAppContent: React.FC = () => {
                   width: mobileDrawerWidth,
                   background: '#ffffff',
                   boxShadow: '0 0 20px rgba(0,0,0,0.15)',
-                  // iOS Safe Area 支持
-                  paddingTop: 'env(safe-area-inset-top)',
+                  // Safe Area 支持
+                  paddingTop: isAndroidNative ? '48px' : 'env(safe-area-inset-top)',
                   paddingBottom: 'env(safe-area-inset-bottom)',
                 },
               }}
@@ -755,8 +759,8 @@ const MainAppContent: React.FC = () => {
             sx={{
               flexGrow: 1,
               p: { xs: 1, sm: 2, md: 3 },
-              // iOS Safe Area 支持 - 顶部留出状态栏空间
-              pt: { xs: `calc(8px + env(safe-area-inset-top))`, sm: 2, md: 3 },
+              // Safe Area 支持 - 顶部留出状态栏空间
+              pt: { xs: isAndroidNative ? 'calc(8px + 48px)' : 'calc(8px + env(safe-area-inset-top))', sm: 2, md: 3 },
               width: { sm: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
               minHeight: '100vh',
               background: '#f8fafc',

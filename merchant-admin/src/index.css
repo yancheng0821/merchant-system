@@ -74,6 +74,18 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* iOS 状态栏固定白色背景 - 防止内容滚动到状态栏下 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background-color: #FFFFFF;
+  z-index: 9999;
+}
+
 /* 移动端媒体查询 (< 600px) */
 @media (max-width: 599px) {
   /* 表格水平滚动 */

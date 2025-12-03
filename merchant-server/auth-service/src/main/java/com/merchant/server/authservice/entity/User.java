@@ -45,7 +45,7 @@ public class User {
     private Boolean smsVerificationEnabled = true;
 
     public enum UserStatus {
-        ACTIVE, INACTIVE, LOCKED
+        ACTIVE, INACTIVE, LOCKED, DELETED
     }
     
     // 为了兼容性，添加 getAvatar 方法

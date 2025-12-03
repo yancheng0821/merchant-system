@@ -1,5 +1,6 @@
 package com.merchant.server.authservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.merchant.server.authservice.entity.User;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -28,6 +29,10 @@ public class LoginResponse {
     // 2FA相关字段
     private Boolean need2FA;
     private String phone;
+
+    // 租户所有者标识
+    @JsonProperty("isTenantOwner")
+    private Boolean isTenantOwner;
 
     public LoginResponse() {}
 

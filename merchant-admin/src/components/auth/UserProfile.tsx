@@ -32,6 +32,7 @@ import {
   VisibilityOff,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIconMUI,
+  DeleteForever as DeleteForeverIcon,
 } from '@mui/icons-material';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
@@ -106,6 +107,13 @@ const UserProfile: React.FC = () => {
   const [smsVerificationEnabled, setSmsVerificationEnabled] = useState(user?.smsVerificationEnabled !== false);
   const [smsVerificationLoading, setSmsVerificationLoading] = useState(false);
 
+  // 注销账户弹窗状态
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+  const [showDeleteAccountPassword, setShowDeleteAccountPassword] = useState(false);
+
   // 处理短信验证开关变更
   const handleSmsVerificationChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.checked;
@@ -135,6 +143,52 @@ const UserProfile: React.FC = () => {
       setSmsVerificationEnabled(!newValue);
     } finally {
       setSmsVerificationLoading(false);
+    }
+  };
+
+  // 注销账户相关处理
+  const handleOpenDeleteAccountDialog = () => {
+    setDeleteAccountDialogOpen(true);
+    setDeleteAccountPassword('');
+    setDeleteAccountError(null);
+  };
+
+  const handleCloseDeleteAccountDialog = () => {
+    setDeleteAccountDialogOpen(false);
+    setDeleteAccountPassword('');
+    setDeleteAccountError(null);
+    setShowDeleteAccountPassword(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deleteAccountPassword) {
+      setDeleteAccountError(t('auth.passwordRequired'));
+      return;
+    }
+
+    setDeleteAccountLoading(true);
+    setDeleteAccountError(null);
+
+    try {
+      const resp = await userApi.deleteAccount(deleteAccountPassword);
+      if (resp.success) {
+        setDeleteAccountDialogOpen(false);
+        setSnackbar({
+          open: true,
+          message: t('auth.accountDeleted'),
+          severity: 'success',
+        });
+        setTimeout(() => {
+          logout();
+          navigate('/login');
+        }, 1500);
+      } else {
+        setDeleteAccountError(resp.message || t('auth.deleteAccountFailed'));
+      }
+    } catch (e: any) {
+      setDeleteAccountError(e.message || t('auth.deleteAccountFailed'));
+    } finally {
+      setDeleteAccountLoading(false);
     }
   };
 
@@ -829,103 +883,102 @@ const UserProfile: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 安全设置卡片 */}
+      {/* 安全设置卡片 - 简洁列表样式 */}
       <Card
         sx={{
           mt: isMobile ? 2 : 3,
           borderRadius: isMobile ? 2 : 3,
           boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           border: '1px solid rgba(0,0,0,0.06)',
+          overflow: 'hidden',
         }}
       >
-        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-          <Box display="flex" alignItems="center" gap={1} mb={2}>
-            <SecurityIcon sx={{ color: '#666', fontSize: isMobile ? 20 : 22 }} />
-            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600 }}>
-              {t('auth.securitySettings')}
-            </Typography>
-          </Box>
+        {/* 标题 */}
+        <Box sx={{ px: isMobile ? 2 : 3, pt: isMobile ? 2 : 2.5, pb: 1 }}>
+          <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+            {t('auth.securitySettings')}
+          </Typography>
+        </Box>
 
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              p: isMobile ? 1.5 : 2,
-              bgcolor: '#fafafa',
-              borderRadius: 2,
-              border: '1px solid rgba(0,0,0,0.06)',
-            }}
-          >
-            <Box>
-              <Typography variant="body1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.875rem' : '0.95rem' }}>
-                {t('auth.smsVerification')}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#888', mt: 0.5, fontSize: isMobile ? '0.75rem' : '0.8rem' }}>
-                {t('auth.smsVerificationDescription')}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {smsVerificationLoading ? (
-                <CircularProgress size={24} sx={{ color: '#1a1a1a' }} />
-              ) : (
-                <Switch
-                  checked={smsVerificationEnabled}
-                  onChange={handleSmsVerificationChange}
-                  disabled={!user?.phone}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#1a1a1a',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#1a1a1a',
-                    },
-                  }}
-                />
-              )}
-            </Box>
-          </Box>
-          {!user?.phone && (
-            <Typography variant="caption" sx={{ color: '#f59e0b', mt: 1, display: 'block', fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
-              {t('auth.phoneRequiredForSms')}
+        {/* 短信验证 */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1.5 : 2,
+            borderBottom: '1px solid rgba(0,0,0,0.06)',
+          }}
+        >
+          <Box sx={{ flex: 1, mr: 2 }}>
+            <Typography sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.875rem' : '0.9rem' }}>
+              {t('auth.smsVerification')}
             </Typography>
+            <Typography sx={{ color: '#888', fontSize: isMobile ? '0.7rem' : '0.75rem', mt: 0.25 }}>
+              {!user?.phone ? t('auth.phoneRequiredForSms') : t('auth.smsVerificationDescription')}
+            </Typography>
+          </Box>
+          {smsVerificationLoading ? (
+            <CircularProgress size={20} sx={{ color: '#1a1a1a' }} />
+          ) : (
+            <Switch
+              checked={smsVerificationEnabled}
+              onChange={handleSmsVerificationChange}
+              disabled={!user?.phone}
+              size="small"
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': { color: '#1a1a1a' },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#1a1a1a' },
+              }}
+            />
           )}
+        </Box>
 
-          {/* 修改密码 */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              p: isMobile ? 1.5 : 2,
-              mt: 2,
-              bgcolor: '#fafafa',
-              borderRadius: 2,
-              border: '1px solid rgba(0,0,0,0.06)',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-              '&:hover': {
-                bgcolor: '#f0f0f0',
-              },
-            }}
-            onClick={handleOpenPasswordDialog}
-          >
-            <Box display="flex" alignItems="center" gap={1.5}>
-              <LockResetIcon sx={{ color: '#666', fontSize: isMobile ? 20 : 22 }} />
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.875rem' : '0.95rem' }}>
-                  {t('auth.changePassword')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#888', mt: 0.5, fontSize: isMobile ? '0.75rem' : '0.8rem' }}>
-                  {t('auth.passwordSecurityTip')}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ color: '#999' }}>
-              <Typography sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }}>›</Typography>
-            </Box>
-          </Box>
-        </CardContent>
+        {/* 修改密码 */}
+        <Box
+          onClick={handleOpenPasswordDialog}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1.5 : 2,
+            borderBottom: '1px solid rgba(0,0,0,0.06)',
+            cursor: 'pointer',
+            transition: 'background-color 0.15s',
+            WebkitTapHighlightColor: 'transparent',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+            '&:active': { bgcolor: 'rgba(0,0,0,0.04)' },
+          }}
+        >
+          <Typography sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.875rem' : '0.9rem' }}>
+            {t('auth.changePassword')}
+          </Typography>
+          <Typography sx={{ color: '#ccc', fontSize: '1.1rem' }}>›</Typography>
+        </Box>
+
+        {/* 注销账户 */}
+        <Box
+          onClick={handleOpenDeleteAccountDialog}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1.5 : 2,
+            cursor: 'pointer',
+            transition: 'background-color 0.15s',
+            WebkitTapHighlightColor: 'transparent',
+            '&:hover': { bgcolor: 'rgba(239,68,68,0.04)' },
+            '&:active': { bgcolor: 'rgba(239,68,68,0.08)' },
+          }}
+        >
+          <Typography sx={{ fontWeight: 500, color: '#ef4444', fontSize: isMobile ? '0.875rem' : '0.9rem' }}>
+            {t('auth.deleteAccount')}
+          </Typography>
+          <Typography sx={{ color: '#fca5a5', fontSize: '1.1rem' }}>›</Typography>
+        </Box>
       </Card>
 
       {/* 退出按钮 - 仅移动端显示在底部 */}
@@ -962,11 +1015,11 @@ const UserProfile: React.FC = () => {
         onClose={handleClosePasswordDialog}
         maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 3,
-            m: isMobile ? 0 : 'auto',
+            borderRadius: isMobile ? 2 : 3,
+            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            m: isMobile ? 2 : 'auto',
           }
         }}
       >
@@ -1309,6 +1362,179 @@ const UserProfile: React.FC = () => {
                 }}
               >
                 {passwordLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('common.confirm')}
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* 注销账户弹窗 */}
+      <Dialog
+        open={deleteAccountDialogOpen}
+        onClose={handleCloseDeleteAccountDialog}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: isMobile ? 2 : 3,
+            m: isMobile ? 2 : 'auto',
+          }
+        }}
+      >
+        <DialogTitle sx={{ py: isMobile ? 1.5 : 2, px: isMobile ? 2 : 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant={isMobile ? 'subtitle1' : 'h6'} sx={{ fontWeight: 600, color: '#ef4444' }}>
+              {t('auth.deleteAccount')}
+            </Typography>
+            <IconButton onClick={handleCloseDeleteAccountDialog} sx={{ color: '#888' }} size={isMobile ? 'small' : 'medium'}>
+              <CancelIcon fontSize={isMobile ? 'small' : 'medium'} />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ px: isMobile ? 2 : 3 }}>
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 1.5, fontSize: isMobile ? '0.8rem' : undefined }}>
+            {t('auth.deleteAccountWarning')}
+          </Alert>
+
+          <Typography variant="body2" sx={{ color: '#666', mb: 2, fontSize: isMobile ? '0.8rem' : undefined }}>
+            {t('auth.deleteAccountConfirmText')}
+          </Typography>
+
+          <TextField
+            label={t('auth.password')}
+            type={showDeleteAccountPassword ? 'text' : 'password'}
+            fullWidth
+            size={isMobile ? 'small' : 'medium'}
+            value={deleteAccountPassword}
+            onChange={(e) => setDeleteAccountPassword(e.target.value)}
+            autoComplete="current-password"
+            variant="outlined"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: isMobile ? 1.5 : 2,
+                bgcolor: '#fff',
+                fontSize: isMobile ? '0.875rem' : undefined,
+                '& fieldset': { borderColor: '#d0d0d0' },
+                '&:hover fieldset': { borderColor: '#bbb' },
+                '&.Mui-focused fieldset': { borderColor: '#ef4444', borderWidth: '1px' },
+              },
+              '& .MuiInputLabel-root': {
+                color: '#999',
+                fontSize: isMobile ? '0.875rem' : undefined,
+                '&.Mui-focused': { color: '#ef4444' },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockIcon sx={{ color: '#bbb', fontSize: isMobile ? 20 : 24 }} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowDeleteAccountPassword(!showDeleteAccountPassword)}
+                    edge="end"
+                    tabIndex={-1}
+                    size={isMobile ? 'small' : 'medium'}
+                    sx={{ color: '#888' }}
+                  >
+                    {showDeleteAccountPassword ? <VisibilityOff fontSize={isMobile ? 'small' : 'medium'} /> : <Visibility fontSize={isMobile ? 'small' : 'medium'} />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {deleteAccountError && (
+            <Alert severity="error" sx={{ mt: 2, borderRadius: isMobile ? 1.5 : 2, fontSize: isMobile ? '0.8rem' : undefined }}>
+              {deleteAccountError}
+            </Alert>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: isMobile ? 2 : 2.5, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+          {isMobile ? (
+            <>
+              <Button
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountLoading}
+                variant="contained"
+                fullWidth
+                sx={{
+                  bgcolor: '#ef4444',
+                  color: '#fff',
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  py: 1.25,
+                  fontSize: '0.875rem',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: '#dc2626',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    bgcolor: '#fca5a5',
+                  },
+                }}
+              >
+                {deleteAccountLoading ? <CircularProgress size={18} sx={{ color: 'white' }} /> : t('auth.confirmDeleteAccount')}
+              </Button>
+              <Button
+                onClick={handleCloseDeleteAccountDialog}
+                disabled={deleteAccountLoading}
+                fullWidth
+                sx={{
+                  color: '#666',
+                  borderRadius: 1.5,
+                  textTransform: 'none',
+                  py: 1,
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                  },
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={handleCloseDeleteAccountDialog}
+                disabled={deleteAccountLoading}
+                sx={{
+                  color: '#666',
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                  },
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountLoading}
+                variant="contained"
+                sx={{
+                  bgcolor: '#ef4444',
+                  color: '#fff',
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: '#dc2626',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    bgcolor: '#fca5a5',
+                  },
+                }}
+              >
+                {deleteAccountLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('auth.confirmDeleteAccount')}
               </Button>
             </>
           )}

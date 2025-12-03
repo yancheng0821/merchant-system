@@ -16,11 +16,12 @@
         <result column="business_license" property="businessLicense" jdbcType="VARCHAR"/>
         <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
         <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+        <result column="owner_user_id" property="ownerUserId" jdbcType="BIGINT"/>
     </resultMap>
     
     <sql id="Base_Column_List">
-        id, tenant_code, tenant_name, tenant_type, parent_tenant_id, status, 
-        contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at
+        id, tenant_code, tenant_name, tenant_type, parent_tenant_id, status,
+        contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at, owner_user_id
     </sql>
     
     <select id="selectById" parameterType="java.lang.Long" resultMap="TenantResultMap">
@@ -49,10 +50,10 @@
     <insert id="insert" parameterType="com.merchant.server.authservice.entity.Tenant" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tenants (
             tenant_code, tenant_name, tenant_type, parent_tenant_id, status,
-            contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at
+            contact_person, contact_phone, contact_email, address, business_license, created_at, updated_at, owner_user_id
         ) VALUES (
             #{tenantCode}, #{tenantName}, #{tenantType}, #{parentTenantId}, #{status},
-            #{contactPerson}, #{contactPhone}, #{contactEmail}, #{address}, #{businessLicense}, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+            #{contactPerson}, #{contactPhone}, #{contactEmail}, #{address}, #{businessLicense}, UTC_TIMESTAMP(), UTC_TIMESTAMP(), #{ownerUserId}
         )
     </insert>
     
@@ -68,6 +69,7 @@
             contact_email = #{contactEmail},
             address = #{address},
             business_license = #{businessLicense},
+            owner_user_id = #{ownerUserId},
             updated_at = UTC_TIMESTAMP()
         WHERE id = #{id}
     </update>

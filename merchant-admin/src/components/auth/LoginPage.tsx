@@ -39,6 +39,10 @@ import HelpTooltip from '../common/HelpTooltip';
 import CountryCodeSelector from '../common/CountryCodeSelector';
 import { authApi } from '../../services/api';
 import TermsOfServiceCheckbox from './TermsOfServiceCheckbox';
+import { Capacitor } from '@capacitor/core';
+
+// 检测是否是原生平台（用于隐藏商户注册入口以符合应用商店审核要求）
+const isNativeApp = Capacitor.isNativePlatform();
 
 
 interface RegisterData {
@@ -493,6 +497,7 @@ const LoginPage: React.FC = () => {
           roles: result.data.roles || [],
           permissions: result.data.permissions || [],
           lastLoginTime: result.data.lastLoginTime,
+          isTenantOwner: result.data.isTenantOwner,
         };
         localStorage.setItem('user', JSON.stringify(user));
 
@@ -764,7 +769,7 @@ const LoginPage: React.FC = () => {
                       endAdornment: (
                         <InputAdornment position="end">
                           <HelpTooltip
-                            title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')}`}
+                            title={`${t('auth.tenantCodeHelp')} ${t('auth.tenantCodeTip')} ${t('auth.demoMerchantCodeTip')}`}
                             placement="top"
                             size="small"
                             color="default"
@@ -936,7 +941,8 @@ const LoginPage: React.FC = () => {
                     sx={{
                       mt: 4,
                       mb: 1.5,
-                      py: 1.5,
+                      py: { xs: 1.75, sm: 1.5 },
+                      minHeight: { xs: 48, sm: 44 },
                       textTransform: 'none',
                       fontWeight: 500,
                       fontSize: '0.9rem',
@@ -1109,7 +1115,7 @@ const LoginPage: React.FC = () => {
                       endAdornment: (
                         <InputAdornment position="end">
                           <HelpTooltip
-                            title={t('auth.invitationCodeHelp')}
+                            title={`${t('auth.invitationCodeHelp')} ${t('auth.demoInvitationCodeTip')}`}
                             placement="top"
                             size="small"
                             color="default"
@@ -1333,7 +1339,8 @@ const LoginPage: React.FC = () => {
                     sx={{
                       mt: 4,
                       mb: 1.5,
-                      py: 1.5,
+                      py: { xs: 1.75, sm: 1.5 },
+                      minHeight: { xs: 48, sm: 44 },
                       textTransform: 'none',
                       fontWeight: 500,
                       fontSize: '0.9rem',
@@ -1388,8 +1395,8 @@ const LoginPage: React.FC = () => {
                     </Button>
                   </Typography>
 
-                  {/* 商户注册链接 - 简约风格 */}
-                  {pageMode === 'login' && (
+                  {/* 商户注册链接 - 简约风格 (iOS 原生 App 中隐藏以符合 App Store 审核要求) */}
+                  {pageMode === 'login' && !isNativeApp && (
                     <Typography sx={{ textAlign: 'center', fontSize: '0.8rem', color: '#999', pt: 1 }}>
                       {t('auth.noMerchantAccount')}{' '}
                       <Button
@@ -1436,8 +1443,81 @@ const LoginPage: React.FC = () => {
           </Grid>
         </Grid>
 
+        {/* App 下载按钮 - 仅在 Web 端显示 */}
+        {!isNativeApp && (
+          <Box sx={{ mt: { xs: 3, sm: 4 }, textAlign: 'center' }}>
+            <Typography sx={{ color: '#999', fontSize: '0.75rem', mb: 1.5 }}>
+              {t('auth.downloadApp')}
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5 }}>
+              <Box
+                component="a"
+                href="#"
+                onClick={(e: React.MouseEvent) => e.preventDefault()}
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  px: 2,
+                  py: 1,
+                  bgcolor: '#000',
+                  color: '#fff',
+                  borderRadius: 1.5,
+                  textDecoration: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  transition: 'opacity 0.2s',
+                  '&:hover': { opacity: 0.8 },
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/apple-logo.svg"
+                  alt="Apple"
+                  sx={{ width: 16, height: 16, filter: 'invert(1)' }}
+                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                App Store
+              </Box>
+              <Box
+                component="a"
+                href="#"
+                onClick={(e: React.MouseEvent) => e.preventDefault()}
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  px: 2,
+                  py: 1,
+                  bgcolor: '#000',
+                  color: '#fff',
+                  borderRadius: 1.5,
+                  textDecoration: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  transition: 'opacity 0.2s',
+                  '&:hover': { opacity: 0.8 },
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/google-play-logo.svg"
+                  alt="Google Play"
+                  sx={{ width: 16, height: 16 }}
+                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                Google Play
+              </Box>
+            </Box>
+          </Box>
+        )}
+
         {/* 页面底部版权信息 */}
-        <Box sx={{ mt: { xs: 3, sm: 4, md: 6 }, textAlign: 'center' }}>
+        <Box sx={{ mt: { xs: 2, sm: 3, md: 4 }, textAlign: 'center' }}>
           <Typography sx={{ color: '#999', fontSize: '0.7rem', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
             © {new Date().getFullYear()}
             <Box component="img" src="/s-logo.png" alt="Swiftmind" sx={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.7 }} />

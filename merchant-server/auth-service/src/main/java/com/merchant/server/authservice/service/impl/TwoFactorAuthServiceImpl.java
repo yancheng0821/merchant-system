@@ -7,9 +7,11 @@ import com.merchant.server.authservice.dto.Send2FACodeResponse;
 import com.merchant.server.authservice.dto.Verify2FACodeRequest;
 import com.merchant.server.authservice.entity.Permission;
 import com.merchant.server.authservice.entity.Role;
+import com.merchant.server.authservice.entity.Tenant;
 import com.merchant.server.authservice.entity.User;
 import com.merchant.server.authservice.mapper.PermissionMapper;
 import com.merchant.server.authservice.mapper.RoleMapper;
+import com.merchant.server.authservice.mapper.TenantMapper;
 import com.merchant.server.authservice.mapper.UserMapper;
 import com.merchant.server.authservice.service.TwoFactorAuthService;
 import com.merchant.server.authservice.util.JwtUtil;
@@ -30,6 +32,7 @@ public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final PermissionMapper permissionMapper;
+    private final TenantMapper tenantMapper;
     private final JwtUtil jwtUtil;
 
     @Override
@@ -195,8 +198,18 @@ public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
                 loginResponse.setRoles(roleCodes);
                 loginResponse.setPermissions(permissionCodes);
 
-                log.info("2FA verification successful for user: {}, roles: {}, permissions: {}",
-                         user.getUsername(), roleCodes.size(), permissionCodes.size());
+                // 设置租户所有者标识
+                Tenant tenant = tenantMapper.selectById(request.getTenantId());
+                if (tenant != null) {
+                    loginResponse.setTenantName(tenant.getTenantName());
+                    loginResponse.setTenantCode(tenant.getTenantCode());
+                    loginResponse.setIsTenantOwner(tenant.getOwnerUserId() != null && tenant.getOwnerUserId().equals(user.getId()));
+                } else {
+                    loginResponse.setIsTenantOwner(false);
+                }
+
+                log.info("2FA verification successful for user: {}, roles: {}, permissions: {}, isTenantOwner: {}",
+                         user.getUsername(), roleCodes.size(), permissionCodes.size(), loginResponse.getIsTenantOwner());
                 return loginResponse;
             } else {
                 String errorMessage = response.getBody() != null ? response.getBody().message : "Invalid verification code";

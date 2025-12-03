@@ -82,4 +82,11 @@ public interface UserService {
      * @param status 新状态
      */
     void updateUserStatus(Long userId, User.UserStatus status);
+
+    /**
+     * 注销账户（用户自己删除账户）
+     * @param token JWT令牌
+     * @param password 用户密码（用于验证）
+     */
+    void deleteAccount(String token, String password);
 } 

@@ -30,6 +30,7 @@ export interface User {
   lastLoginTime?: string;
   createdAt?: string;
   smsVerificationEnabled?: boolean;
+  isTenantOwner?: boolean;
 }
 
 interface AuthContextType {
@@ -85,6 +86,7 @@ const mapApiUserToUser = (apiUser: LoginResponse): User => {
     permissions: apiUser.permissions,
     lastLoginTime: apiUser.lastLoginTime,
     createdAt: apiUser.createdAt,
+    isTenantOwner: apiUser.isTenantOwner,
   };
 };
 

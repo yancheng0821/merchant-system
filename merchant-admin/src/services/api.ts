@@ -552,6 +552,8 @@ export interface LoginResponse {
   tokenExpireTime?: string;
   lastLoginTime?: string;
   createdAt?: string;
+  // 租户所有者标识
+  isTenantOwner?: boolean;
   // 2FA related fields - present when 2FA is required
   need2FA?: boolean;
   phone?: string;
@@ -714,6 +716,14 @@ export const userApi = {
     return createRequest('/api/auth/users/password', {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+
+  // 注销账户
+  deleteAccount: async (password: string): Promise<ApiResponse<void>> => {
+    return createRequest('/api/auth/users/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
     });
   },
 };

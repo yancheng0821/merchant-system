@@ -61,7 +61,17 @@
       "Bash(aws cloudfront get-invalidation:*)",
       "Bash(brew install:*)",
       "Bash(sips -z 512 512:*)",
-      "Bash(aws s3api head-object:*)"
+      "Bash(aws s3api head-object:*)",
+      "Bash(export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home)",
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(for dir in android/app/src/main/res/drawable*/)",
+      "Bash(do if [ -f \"$dirsplash.png\" ])",
+      "Bash(then cp public/app-icon-512.png \"$dirsplash.png\")",
+      "Bash(echo:*)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(../mvnw clean compile:*)",
+      "Bash(docker ps:*)"
     ],
     "deny": [],
     "ask": []

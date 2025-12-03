@@ -133,6 +133,10 @@ public class MerchantRegisterServiceImpl implements MerchantRegisterService {
             User adminUser;
             try {
                 adminUser = createAdminUser(tenant.getId(), request);
+                // 更新租户的所有者用户ID
+                tenant.setOwnerUserId(adminUser.getId());
+                tenantService.save(tenant);
+                log.info("已更新租户所有者 - 租户ID: {}, 所有者用户ID: {}", tenant.getId(), adminUser.getId());
             } catch (Exception e) {
                 log.error("创建管理员用户失败，开始补偿回滚 - 租户ID: {}", tenant.getId(), e);
                 // 补偿：删除商户和设置

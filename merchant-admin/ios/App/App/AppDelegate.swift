@@ -6,9 +6,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    var statusBarView: UIView?
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         return true
+    }
+
+    func setupStatusBarBackground() {
+        // 移除旧的状态栏背景视图
+        statusBarView?.removeFromSuperview()
+
+        // 获取状态栏高度
+        var statusBarHeight: CGFloat = 20
+        if #available(iOS 13.0, *) {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                statusBarHeight = windowScene.statusBarManager?.statusBarFrame.height ?? 44
+            }
+        }
+
+        // 创建状态栏背景视图
+        statusBarView = UIView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: statusBarHeight))
+        statusBarView?.backgroundColor = UIColor.white
+        statusBarView?.tag = 999
+
+        if let keyWindow = window {
+            keyWindow.addSubview(statusBarView!)
+            keyWindow.bringSubviewToFront(statusBarView!)
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -27,6 +52,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+
+        // 设置状态栏背景
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.setupStatusBarBackground()
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

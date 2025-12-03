@@ -178,19 +178,38 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({
       disableFocusListener
       disableHoverListener
       disableTouchListener
+      PopperProps={{
+        modifiers: [
+          {
+            name: 'preventOverflow',
+            options: {
+              boundary: 'viewport',
+              padding: 8,
+            },
+          },
+          {
+            name: 'flip',
+            options: {
+              fallbackPlacements: ['bottom', 'left', 'right'],
+            },
+          },
+        ],
+      }}
       sx={{
         '& .MuiTooltip-tooltip': {
           backgroundColor: colorConfig.tooltipBg,
           backdropFilter: 'blur(8px)',
           color: 'white',
           fontSize: '0.875rem',
-          maxWidth: 320,
+          maxWidth: { xs: 280, sm: 350 },
           padding: '12px 16px',
           borderRadius: '12px',
-          lineHeight: 1.5,
+          lineHeight: 1.6,
           fontWeight: 400,
           boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
+          wordBreak: 'keep-all',
+          whiteSpace: 'pre-wrap',
           '&::before': {
             content: '""',
             position: 'absolute',

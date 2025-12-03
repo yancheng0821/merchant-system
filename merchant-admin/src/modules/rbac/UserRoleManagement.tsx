@@ -716,7 +716,7 @@ const UserRoleManagement: React.FC = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ top: isMobile ? 16 : 24 }}
+        sx={{ top: isMobile ? 92 : 24 }}
       >
         <Alert
           severity={snackbar.severity}

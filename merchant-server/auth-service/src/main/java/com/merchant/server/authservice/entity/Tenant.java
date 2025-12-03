@@ -29,9 +29,14 @@ public class Tenant {
     private String businessLicense;
     
     private LocalDateTime createdAt;
-    
+
     private LocalDateTime updatedAt;
-    
+
+    /**
+     * 租户所有者用户ID（商户注册时创建的管理员账户）
+     */
+    private Long ownerUserId;
+
     public enum TenantType {
         CHAIN, BRANCH, INDEPENDENT
     }

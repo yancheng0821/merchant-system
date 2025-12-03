@@ -113,9 +113,17 @@ const TermsOfServiceCheckbox: React.FC<TermsOfServiceCheckboxProps> = ({
       <Dialog
         open={showModal}
         onClose={handleCloseModal}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
         scroll="paper"
+        PaperProps={{
+          sx: {
+            maxHeight: { xs: '65vh', sm: '75vh' },
+            m: { xs: 3, sm: 4 },
+            mt: { xs: 8, sm: 4 },
+            borderRadius: 3,
+          }
+        }}
       >
         <DialogTitle sx={{ fontWeight: 600 }}>
           {modalType === 'terms' ? t('auth.termsOfService') : t('auth.privacyPolicy')}

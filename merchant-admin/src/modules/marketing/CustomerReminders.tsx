@@ -687,7 +687,7 @@ const CustomerReminders: React.FC = () => {
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 2 : 3,
-            maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+            maxHeight: isMobile ? '70vh' : '90vh',
             m: isMobile ? 2 : 3,
           }
         }}

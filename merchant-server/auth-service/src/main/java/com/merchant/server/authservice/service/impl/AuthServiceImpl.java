@@ -194,6 +194,11 @@ public class AuthServiceImpl implements AuthService {
         response.setPermissions(permissionCodes);
         response.setTenantName(tenant.getTenantName());
         response.setTenantCode(tenant.getTenantCode());
+        // 设置租户所有者标识
+        boolean isOwner = tenant.getOwnerUserId() != null && tenant.getOwnerUserId().equals(user.getId());
+        response.setIsTenantOwner(isOwner);
+        logger.info("设置租户所有者标识 - userId: {}, ownerUserId: {}, isTenantOwner: {}",
+                    user.getId(), tenant.getOwnerUserId(), isOwner);
 
         // 获取商户时区信息
         try {

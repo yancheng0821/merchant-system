@@ -9,6 +9,35 @@ import { AuthProvider } from './contexts/AuthContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { AppThemeProvider } from './contexts/ThemeContext';
 import './i18n/config';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+
+// 初始化 Capacitor 原生功能
+const initializeCapacitor = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // iOS: 使用 overlay 模式，通过 CSS 控制安全区域
+      // Android: 不使用 overlay，状态栏有自己的空间
+      const isIOS = Capacitor.getPlatform() === 'ios';
+
+      if (isIOS) {
+        // iOS: overlay 模式，让 CSS safe-area 生效
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.setStyle({ style: Style.Light }); // 深色图标
+      } else {
+        // Android: 不 overlay，状态栏有自己的空间
+        await StatusBar.setOverlaysWebView({ overlay: false });
+        await StatusBar.setBackgroundColor({ color: '#FFFFFF' });
+        await StatusBar.setStyle({ style: Style.Light }); // 深色图标
+      }
+    } catch (error) {
+      console.error('Failed to initialize StatusBar:', error);
+    }
+  }
+};
+
+// 在应用启动时初始化
+initializeCapacitor();
 
 // Suppress MetaMask and browser extension errors in React error overlay
 if (process.env.NODE_ENV === 'development') {

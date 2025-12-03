@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../contexts/AuthContext';
 import { invoiceApi, subscriptionApi, TenantSubscription } from '../../services/api';
 import StripePaymentDialog from '../../components/payment/StripePaymentDialog';
@@ -68,6 +69,8 @@ const BillingTab: React.FC = () => {
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  // 原生应用检测（iOS/Android）
+  const isNativeApp = Capacitor.isNativePlatform();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -503,8 +506,8 @@ const BillingTab: React.FC = () => {
           ) : isMobile ? (
             // 移动端卡片视图
             <Stack spacing={1.5}>
-              {/* 移动端待付款提醒 */}
-              {invoices.some(inv => inv.status === 'PENDING') && (
+              {/* 移动端待付款提醒 - 仅租户所有者显示，原生App不显示外部支付引导 */}
+              {!isNativeApp && user?.isTenantOwner && invoices.some(inv => inv.status === 'PENDING') && (
                 <Box
                   sx={{
                     p: 1.5,
@@ -692,7 +695,7 @@ const BillingTab: React.FC = () => {
                           >
                             {t('common.viewDetails')}
                           </Button>
-                          {invoice.status === 'PENDING' && (
+                          {invoice.status === 'PENDING' && user?.isTenantOwner && (
                             <Button
                               size="small"
                               variant="contained"
@@ -838,8 +841,8 @@ const BillingTab: React.FC = () => {
           >
             {t('common.close')}
           </Button>
-          {/* 移动端不显示支付按钮（用户需要在Web端支付） */}
-          {!isMobile && selectedInvoice?.status === 'PENDING' && (
+          {/* 仅租户所有者显示支付按钮，移动端不显示（用户需要在Web端支付） */}
+          {!isMobile && selectedInvoice?.status === 'PENDING' && user?.isTenantOwner && (
             <Button
               variant="contained"
               startIcon={<PaymentIcon />}
@@ -921,7 +924,7 @@ const BillingTab: React.FC = () => {
         autoHideDuration={2000}
         onClose={() => setCopySnackbarOpen(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ top: isMobile ? 70 : 24 }}
+        sx={{ top: isMobile ? 92 : 24 }}
       >
         <Alert
           onClose={() => setCopySnackbarOpen(false)}
