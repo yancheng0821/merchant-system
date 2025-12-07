@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.notificationservice.mapper.DeviceTokenMapper">
+
+    <resultMap id="DeviceTokenResultMap" type="com.merchant.server.notificationservice.entity.DeviceToken">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="token" column="token"/>
+        <result property="platform" column="platform"/>
+        <result property="deviceInfo" column="device_info"/>
+        <result property="isActive" column="is_active"/>
+        <result property="lastUsedAt" column="last_used_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 根据token查找设备（不限制is_active，因为token有唯一约束） -->
+    <select id="findByToken" resultMap="DeviceTokenResultMap">
+        SELECT * FROM device_tokens
+        WHERE token = #{token}
+    </select>
+
+    <!-- 获取用户的所有有效设备token -->
+    <select id="findActiveByUserId" resultMap="DeviceTokenResultMap">
+        SELECT * FROM device_tokens
+        WHERE user_id = #{userId} AND is_active = 1
+    </select>
+
+    <!-- 获取租户下所有有效设备token -->
+    <select id="findActiveByTenantId" resultMap="DeviceTokenResultMap">
+        SELECT * FROM device_tokens
+        WHERE tenant_id = #{tenantId} AND is_active = 1
+    </select>
+
+    <!-- 插入设备token -->
+    <insert id="insert" parameterType="com.merchant.server.notificationservice.entity.DeviceToken" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO device_tokens (user_id, tenant_id, token, platform, device_info, is_active, last_used_at, created_at, updated_at)
+        VALUES (#{userId}, #{tenantId}, #{token}, #{platform}, #{deviceInfo}, #{isActive}, #{lastUsedAt}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <!-- 更新设备token -->
+    <update id="updateById" parameterType="com.merchant.server.notificationservice.entity.DeviceToken">
+        UPDATE device_tokens
+        SET user_id = #{userId},
+            tenant_id = #{tenantId},
+            platform = #{platform},
+            device_info = #{deviceInfo},
+            is_active = #{isActive},
+            last_used_at = #{lastUsedAt},
+            updated_at = UTC_TIMESTAMP()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 将token标记为失效 -->
+    <update id="deactivateToken">
+        UPDATE device_tokens
+        SET is_active = 0, updated_at = UTC_TIMESTAMP()
+        WHERE token = #{token}
+    </update>
+
+    <!-- 将用户的所有token标记为失效 -->
+    <update id="deactivateAllByUserId">
+        UPDATE device_tokens
+        SET is_active = 0, updated_at = UTC_TIMESTAMP()
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 将用户的其他token标记为失效（排除指定ID） -->
+    <update id="deactivateOtherTokens">
+        UPDATE device_tokens
+        SET is_active = 0, updated_at = UTC_TIMESTAMP()
+        WHERE user_id = #{userId} AND id != #{excludeId} AND is_active = 1
+    </update>
+
+    <!-- 将用户同平台的其他token标记为失效（排除指定ID） -->
+    <update id="deactivateOtherTokensByPlatform">
+        UPDATE device_tokens
+        SET is_active = 0, updated_at = UTC_TIMESTAMP()
+        WHERE user_id = #{userId} AND platform = #{platform} AND id != #{excludeId} AND is_active = 1
+    </update>
+
+    <!-- 将用户同平台的所有token标记为失效 -->
+    <update id="deactivateAllByUserIdAndPlatform">
+        UPDATE device_tokens
+        SET is_active = 0, updated_at = UTC_TIMESTAMP()
+        WHERE user_id = #{userId} AND platform = #{platform} AND is_active = 1
+    </update>
+
+    <!-- 更新最后使用时间 -->
+    <update id="updateLastUsedAt">
+        UPDATE device_tokens
+        SET last_used_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

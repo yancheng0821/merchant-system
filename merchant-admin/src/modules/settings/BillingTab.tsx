@@ -4,177 +4,259 @@ import {
   Typography,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   CircularProgress,
   Alert,
-  Paper,
   Grid,
-  alpha,
   Divider,
-  Stack,
-  Snackbar,
+  Chip,
   useMediaQuery,
   useTheme as useMuiTheme,
+  Backdrop,
+  LinearProgress,
+  IconButton,
 } from '@mui/material';
 import {
-  Receipt as ReceiptIcon,
-  Payment as PaymentIcon,
-  Computer as ComputerIcon,
+  ArrowForward as ArrowForwardIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useSnackbar } from 'notistack';
-import { Capacitor } from '@capacitor/core';
+import { useNavigate } from 'react-router-dom';
+import { useSnackbar, SnackbarKey } from 'notistack';
 import { useAuth } from '../../contexts/AuthContext';
-import { invoiceApi, subscriptionApi, TenantSubscription } from '../../services/api';
-import StripePaymentDialog from '../../components/payment/StripePaymentDialog';
+import { useRef } from 'react';
+import { subscriptionApi, stripeSubscriptionApi, usageStatsApi, resourceApi, TenantSubscription, TenantUsageStats, parsePlanFeatures } from '../../services/api';
+import { Capacitor } from '@capacitor/core';
+// 注：invoiceApi 已移除，账单由 Stripe 自动管理，用户通过 Customer Portal 查看
 
-interface Invoice {
-  id: number;
-  invoiceNumber: string;
-  tenantId: number;
-  tenantName: string;
-  subtotal?: number;
-  taxRate?: number;
-  taxAmount?: number;
-  amount: number;
-  currency: string;
-  taxRegion?: string;
-  billingPeriodStart: string;
-  billingPeriodEnd: string;
-  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
-  paymentMethod?: string;
-  paymentDate?: string;
-  description?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// 检测是否是原生平台（用于隐藏支付相关按钮以符合应用商店审核要求）
+const isNativeApp = Capacitor.isNativePlatform();
 
 const BillingTab: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, refreshSubscriptionStatus } = useAuth();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+
+  // 用于防止重复触发订阅状态检查
+  const hasTriggeredRefresh = useRef(false);
+
+  // 统一的 snackbar 显示函数
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
+    enqueueSnackbar(message, {
+      variant: severity,
+      autoHideDuration: 3000,
+      anchorOrigin: { vertical: 'top', horizontal: 'center' },
+      content: (key: SnackbarKey) => (
+        <Alert
+          severity={severity}
+          onClose={() => closeSnackbar(key)}
+          sx={{
+            width: '100%',
+            minWidth: '300px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          }}
+        >
+          {message}
+        </Alert>
+      ),
+    });
+  };
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
-  // 原生应用检测（iOS/Android）
-  const isNativeApp = Capacitor.isNativePlatform();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
+  const [usageStats, setUsageStats] = useState<TenantUsageStats | null>(null);
+  const [staffCount, setStaffCount] = useState<number>(0);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [loading, setLoading] = useState(true);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [changingBillingCycle, setChangingBillingCycle] = useState(false);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [payingInvoice, setPayingInvoice] = useState<Invoice | null>(null);
-  const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
+  const [cancellingChange, setCancellingChange] = useState(false);
+
+  // 从 Stripe Subscription Schedule 获取的待生效变更信息
+  const [scheduledChanges, setScheduledChanges] = useState<{
+    pendingPlanCode: string;
+    pendingPlanNameEn: string;
+    pendingPlanNameZh: string;
+    pendingBillingCycle: string;
+    effectiveDate: string;
+  } | null>(null);
+
+  // 从 Stripe 获取的订阅取消状态
+  const [cancellationStatus, setCancellationStatus] = useState<{
+    cancelAtPeriodEnd: boolean;
+    cancelAt: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user?.tenantId) {
-      fetchInvoices();
       fetchSubscription();
+      fetchStaffCount();
     }
   }, [user?.tenantId]);
 
-  const fetchInvoices = async () => {
+  useEffect(() => {
+    if (user?.tenantId && selectedMonth) {
+      fetchUsageStats(selectedMonth);
+    }
+  }, [user?.tenantId, selectedMonth]);
+
+  const fetchStaffCount = async () => {
+    try {
+      const response = await resourceApi.getStaffCount(user!.tenantId);
+      setStaffCount(response.staffCount || 0);
+    } catch (err: any) {
+      console.error('获取员工数量失败:', err);
+    }
+  };
+
+  const fetchUsageStats = async (month: string) => {
+    try {
+      const response = await usageStatsApi.getStatsByMonth(user!.tenantId, month);
+      if (response.success && response.data) {
+        setUsageStats(response.data);
+      }
+    } catch (err: any) {
+      console.error('获取使用量统计失败:', err);
+    }
+  };
+
+  // 获取当前月份
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // 切换月份
+  const handlePrevMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const date = new Date(year, month - 2, 1);
+    setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const handleNextMonth = () => {
+    const currentMonth = getCurrentMonth();
+    if (selectedMonth >= currentMonth) return;
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const date = new Date(year, month, 1);
+    setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  // 格式化月份显示
+  const formatMonth = (monthStr: string) => {
+    const [year, month] = monthStr.split('-');
+    if (i18n.language === 'zh-CN') {
+      return `${year}年${parseInt(month)}月`;
+    }
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+  };
+
+  const fetchSubscription = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await invoiceApi.getInvoicesByTenantId(user!.tenantId);
-      if (response.success) {
-        setInvoices(response.data || []);
+      const response = await subscriptionApi.getActiveSubscription(user!.tenantId);
+      if (response.success && response.data) {
+        setSubscription(response.data);
+
+        // 如果有 Stripe 订阅，获取已安排的变更信息和取消状态
+        if (response.data.stripeSubscriptionId) {
+          fetchScheduledChanges();
+          fetchCancellationStatus();
+        }
       } else {
-        setError(response.message || '获取账单列表失败');
+        // 没有获取到订阅数据，可能是后端状态已变更（如 PAST_DUE）
+        // 主动触发一次订阅状态检查，让前端同步最新状态
+        if (!hasTriggeredRefresh.current) {
+          hasTriggeredRefresh.current = true;
+          console.log('[BillingTab] No subscription data, triggering subscription status refresh');
+          refreshSubscriptionStatus();
+        }
       }
     } catch (err: any) {
-      console.error('获取账单列表失败:', err);
-      setError(err.message || '获取账单列表失败');
+      console.error('获取订阅信息失败:', err);
+      setError(err.message || '获取订阅信息失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSubscription = async () => {
+  const fetchScheduledChanges = async () => {
     try {
-      const response = await subscriptionApi.getActiveSubscription(user!.tenantId);
+      const response = await stripeSubscriptionApi.getScheduledChanges(user!.tenantId);
       if (response.success && response.data) {
-        setSubscription(response.data);
+        setScheduledChanges(response.data);
+      } else {
+        setScheduledChanges(null);
       }
-    } catch (err: any) {
-      console.error('获取订阅信息失败:', err);
+    } catch (err) {
+      console.error('获取计划变更信息失败:', err);
+      setScheduledChanges(null);
     }
   };
 
-  const handleChangeBillingCycle = () => {
-    setConfirmDialogOpen(true);
+  const fetchCancellationStatus = async () => {
+    try {
+      const response = await stripeSubscriptionApi.getCancellationStatus(user!.tenantId);
+      if (response.success && response.data) {
+        setCancellationStatus(response.data);
+      } else {
+        setCancellationStatus(null);
+      }
+    } catch (err) {
+      console.error('获取取消状态失败:', err);
+      setCancellationStatus(null);
+    }
   };
 
-  const handleConfirmChangeBillingCycle = async () => {
-    if (!subscription) return;
-
-    const newCycle = subscription.billingCycle === 'MONTHLY' ? 'YEARLY' : 'MONTHLY';
+  const handleCancelScheduledChange = async () => {
+    if (!user?.tenantId) return;
 
     try {
-      setChangingBillingCycle(true);
-      setConfirmDialogOpen(false);
-      const response = await subscriptionApi.changeBillingCycle(subscription.id, newCycle);
-
+      setCancellingChange(true);
+      const response = await stripeSubscriptionApi.cancelScheduledDowngrade(user.tenantId);
       if (response.success) {
-        // 刷新订阅信息和账单列表
-        await fetchSubscription();
-        await fetchInvoices();
+        showSnackbar(t('billing.cancelScheduledChangeSuccess', '已取消待生效的变更'), 'success');
+        setScheduledChanges(null);
+        // 刷新数据
+        fetchSubscription();
       } else {
-        setError(response.message || '修改计费周期失败');
+        showSnackbar(response.message || t('billing.cancelScheduledChangeError', '取消失败，请稍后重试'), 'error');
       }
     } catch (err: any) {
-      console.error('修改计费周期失败:', err);
-      setError(err.message || '修改计费周期失败');
+      console.error('取消计划变更失败:', err);
+      showSnackbar(err.message || t('billing.cancelScheduledChangeError', '取消失败，请稍后重试'), 'error');
     } finally {
-      setChangingBillingCycle(false);
+      setCancellingChange(false);
     }
   };
 
-  const getStatusColor = (status: Invoice['status']) => {
-    switch (status) {
-      case 'PAID':
-        return 'success';
-      case 'PENDING':
-        return 'warning';
-      case 'CANCELLED':
-        return 'default';
-      case 'REFUNDED':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
+  const handleOpenCustomerPortal = async () => {
+    if (!user?.tenantId) return;
 
-  const getStatusText = (status: Invoice['status']) => {
-    switch (status) {
-      case 'PAID':
-        return t('billing.status.paid');
-      case 'PENDING':
-        return t('billing.status.pending');
-      case 'CANCELLED':
-        return t('billing.status.cancelled');
-      case 'REFUNDED':
-        return t('billing.status.refunded');
-      default:
-        return status;
+    try {
+      setOpeningPortal(true);
+      const returnUrl = `${window.location.origin}/settings?tab=billing`;
+      const response = await stripeSubscriptionApi.createCustomerPortal(user.tenantId, returnUrl);
+
+      if (response.success && response.data?.portalUrl) {
+        window.location.href = response.data.portalUrl;
+      } else {
+        setOpeningPortal(false);
+        showSnackbar(response.message || t('billing.portalError', '无法打开账单管理'), 'error');
+      }
+    } catch (err: any) {
+      setOpeningPortal(false);
+      console.error('打开 Customer Portal 失败:', err);
+      showSnackbar(err.message || t('billing.portalError', '无法打开账单管理'), 'error');
     }
   };
 
@@ -198,84 +280,6 @@ const BillingTab: React.FC = () => {
     return t(`subscription.status.${status.toLowerCase()}`);
   };
 
-  const handleViewDetails = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
-    setDetailDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setDetailDialogOpen(false);
-    // 延迟清空selectedInvoice，避免关闭动画时显示空内容
-    setTimeout(() => {
-      setSelectedInvoice(null);
-    }, 200);
-  };
-
-  const handlePay = (invoice: Invoice) => {
-    setPayingInvoice(invoice);
-    setPaymentDialogOpen(true);
-  };
-
-  const handlePaymentSuccess = async () => {
-    setPaymentDialogOpen(false);
-    const paidInvoiceId = payingInvoice?.id;
-    setPayingInvoice(null);
-
-    // 显示成功消息
-    enqueueSnackbar(t('payment.paymentSuccessful'), {
-      variant: 'success',
-      autoHideDuration: 4000,
-      anchorOrigin: { vertical: 'top', horizontal: 'center' },
-      content: (key, message) => (
-        <Alert
-          severity="success"
-          onClose={() => closeSnackbar(key)}
-          sx={{
-            width: '100%',
-            minWidth: '400px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          }}
-        >
-          {message}
-        </Alert>
-      ),
-    });
-
-    // 等待2秒让webhook处理完成，然后只刷新支付的账单
-    setTimeout(async () => {
-      if (paidInvoiceId) {
-        try {
-          // 只获取更新后的账单数据
-          const response = await invoiceApi.getInvoiceById(paidInvoiceId);
-          if (response.success && response.data) {
-            // 更新 invoices 列表中的这条账单
-            setInvoices(prevInvoices =>
-              prevInvoices.map(inv =>
-                inv.id === paidInvoiceId ? response.data : inv
-              )
-            );
-          }
-
-          // 刷新订阅状态（如果订阅从 PAST_DUE 恢复为 ACTIVE）
-          await fetchSubscription();
-
-          // 触发未支付订单浮框刷新
-          window.dispatchEvent(new CustomEvent('invoice-paid'));
-        } catch (err) {
-          console.error('刷新账单数据失败:', err);
-        }
-      }
-    }, 2000);
-  };
-
-  const handlePaymentClose = () => {
-    setPaymentDialogOpen(false);
-    // 延迟清空支付账单，避免关闭动画时显示空内容
-    setTimeout(() => {
-      setPayingInvoice(null);
-    }, 200);
-  };
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -286,6 +290,12 @@ const BillingTab: React.FC = () => {
 
   return (
     <Grid container spacing={isMobile ? 2 : 4}>
+      {error && (
+        <Grid item xs={12}>
+          <Alert severity="error">{error}</Alert>
+        </Grid>
+      )}
+
       {/* 订阅计划信息卡片 */}
       {subscription && subscription.plan && (
         <Grid item xs={12}>
@@ -324,6 +334,82 @@ const BillingTab: React.FC = () => {
                       : `${subscription.currentPeriodStart} ~ ${subscription.currentPeriodEnd}`}
                   </Typography>
 
+                  {/* 待生效降级/计费周期切换提示 (从 Stripe Schedule 读取) */}
+                  {scheduledChanges && (
+                    <Box
+                      sx={{
+                        p: 1,
+                        mb: 1.5,
+                        borderRadius: 1,
+                        bgcolor: '#FEF3C7',
+                        border: '1px solid #FDE68A',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ fontSize: '0.7rem', color: '#92400E', flex: 1 }}>
+                          {scheduledChanges.pendingPlanCode === subscription.plan?.planCode
+                            ? t('billing.pendingBillingCycleSwitch', {
+                                billingCycle: scheduledChanges.pendingBillingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly'),
+                                date: scheduledChanges.effectiveDate,
+                              })
+                            : t('billing.pendingDowngrade', {
+                                planName: i18n.language === 'zh-CN' ? scheduledChanges.pendingPlanNameZh : scheduledChanges.pendingPlanNameEn,
+                                billingCycle: scheduledChanges.pendingBillingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly'),
+                                date: scheduledChanges.effectiveDate,
+                              })}
+                        </Typography>
+                        {/* 原生 App 中隐藏取消变更按钮 */}
+                        {!isNativeApp && (
+                          <Button
+                            size="small"
+                            onClick={handleCancelScheduledChange}
+                            disabled={cancellingChange}
+                            sx={{
+                              ml: 1,
+                              minWidth: 'auto',
+                              px: 1,
+                              py: 0.25,
+                              fontSize: '0.65rem',
+                              color: '#92400E',
+                              borderColor: '#92400E',
+                              '&:hover': {
+                                bgcolor: 'rgba(146, 64, 14, 0.08)',
+                                borderColor: '#92400E',
+                              },
+                            }}
+                            variant="outlined"
+                          >
+                            {cancellingChange ? (
+                              <CircularProgress size={12} sx={{ color: '#92400E' }} />
+                            ) : (
+                              t('billing.cancelScheduledChange', '取消变更')
+                            )}
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* 订阅取消预告提示 (从 Stripe 读取) */}
+                  {cancellationStatus && cancellationStatus.cancelAtPeriodEnd && (
+                    <Box
+                      sx={{
+                        p: 1,
+                        mb: 1.5,
+                        borderRadius: 1,
+                        bgcolor: '#FEE2E2',
+                        border: '1px solid #FECACA',
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '0.7rem', color: '#991B1B' }}>
+                        {t('billing.subscriptionCancelling', {
+                          date: cancellationStatus.cancelAt,
+                          defaultValue: '订阅将于 {{date}} 取消',
+                        })}
+                      </Typography>
+                    </Box>
+                  )}
+
                   {/* 配额信息 - 网格布局 */}
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 1.5 }}>
                     <Box>
@@ -352,107 +438,259 @@ const BillingTab: React.FC = () => {
                         {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly')}
                       </Typography>
                     </Box>
+                    {(() => {
+                      const planFeatures = parsePlanFeatures(subscription.plan.features);
+                      if (!planFeatures) return null;
+                      return (
+                        <>
+                          <Box>
+                            <Typography sx={{ fontSize: '0.65rem', color: '#6B7280' }}>{t('billing.maxEmails')}</Typography>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                              {planFeatures.limits.maxEmailsPerMonth === -1
+                                ? t('billing.unlimited')
+                                : `${planFeatures.limits.maxEmailsPerMonth}/${t('billing.month')}`}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography sx={{ fontSize: '0.65rem', color: '#6B7280' }}>{t('billing.maxSms')}</Typography>
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                              {planFeatures.limits.maxSmsPerMonth === -1
+                                ? t('billing.unlimited')
+                                : planFeatures.limits.maxSmsPerMonth === 0
+                                ? t('billing.notIncluded')
+                                : `${planFeatures.limits.maxSmsPerMonth}/${t('billing.month')}`}
+                            </Typography>
+                          </Box>
+                        </>
+                      );
+                    })()}
                   </Box>
 
                 </Box>
               ) : (
-                // 桌面端布局
-                <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
-                  {/* 左侧：计划名称和日期 */}
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
-                      {i18n.language === 'zh-CN' ? subscription.plan.planNameZh : subscription.plan.planNameEn}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {subscription.status === 'TRIAL' && subscription.trialEndDate
-                        ? `${t('billing.trialPeriod')} · ${t('billing.endsOn')} ${subscription.trialEndDate}`
-                        : `${subscription.currentPeriodStart} ~ ${subscription.currentPeriodEnd}`}
-                    </Typography>
+                // 桌面端布局 - 两行
+                <Box>
+                  {/* 第一行：计划名称、状态、日期 + 操作按钮 */}
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
+                        {i18n.language === 'zh-CN' ? subscription.plan.planNameZh : subscription.plan.planNameEn}
+                      </Typography>
+                      <Chip
+                        label={getSubscriptionStatusText(subscription.status)}
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          height: 20,
+                          fontSize: '0.7rem',
+                          ...getSubscriptionStatusColor(subscription.status)
+                        }}
+                      />
+                      <Typography variant="caption" color="text.secondary">
+                        {subscription.status === 'TRIAL' && subscription.trialEndDate
+                          ? `${t('billing.trialPeriod')} · ${t('billing.endsOn')} ${subscription.trialEndDate}`
+                          : `${subscription.currentPeriodStart} ~ ${subscription.currentPeriodEnd}`}
+                      </Typography>
+                      {/* 待生效降级/计费周期切换提示 (从 Stripe Schedule 读取) */}
+                      {scheduledChanges && (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Chip
+                            label={
+                              scheduledChanges.pendingPlanCode === subscription.plan?.planCode
+                                ? t('billing.pendingBillingCycleSwitch', {
+                                    billingCycle: scheduledChanges.pendingBillingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly'),
+                                    date: scheduledChanges.effectiveDate,
+                                  })
+                                : t('billing.pendingDowngrade', {
+                                    planName: i18n.language === 'zh-CN' ? scheduledChanges.pendingPlanNameZh : scheduledChanges.pendingPlanNameEn,
+                                    billingCycle: scheduledChanges.pendingBillingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly'),
+                                    date: scheduledChanges.effectiveDate,
+                                  })
+                            }
+                            size="small"
+                            sx={{
+                              fontWeight: 500,
+                              height: 22,
+                              fontSize: '0.7rem',
+                              bgcolor: '#FEF3C7',
+                              color: '#92400E',
+                              border: '1px solid #FDE68A',
+                            }}
+                          />
+                          {/* 原生 App 中隐藏取消变更按钮 */}
+                          {!isNativeApp && (
+                            <Button
+                              size="small"
+                              onClick={handleCancelScheduledChange}
+                              disabled={cancellingChange}
+                              sx={{
+                                minWidth: 'auto',
+                                px: 1,
+                                py: 0.25,
+                                fontSize: '0.7rem',
+                                color: '#92400E',
+                                borderColor: '#92400E',
+                                '&:hover': {
+                                  bgcolor: 'rgba(146, 64, 14, 0.08)',
+                                  borderColor: '#92400E',
+                                },
+                              }}
+                              variant="outlined"
+                            >
+                              {cancellingChange ? (
+                                <CircularProgress size={12} sx={{ color: '#92400E' }} />
+                              ) : (
+                                t('billing.cancelScheduledChange', '取消变更')
+                              )}
+                            </Button>
+                          )}
+                        </Box>
+                      )}
+                      {/* 订阅取消预告提示 (从 Stripe 读取) */}
+                      {cancellationStatus && cancellationStatus.cancelAtPeriodEnd && (
+                        <Chip
+                          label={t('billing.subscriptionCancelling', {
+                            date: cancellationStatus.cancelAt,
+                            defaultValue: '订阅将于 {{date}} 取消',
+                          })}
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            height: 22,
+                            fontSize: '0.7rem',
+                            bgcolor: '#FEE2E2',
+                            color: '#991B1B',
+                            border: '1px solid #FECACA',
+                          }}
+                        />
+                      )}
+                    </Box>
+                    {/* 操作按钮 - 原生 App 中隐藏（符合应用商店审核要求） */}
+                    {!isNativeApp && (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={subscription.stripeSubscriptionId ? handleOpenCustomerPortal : () => {
+                            showSnackbar(t('billing.subscribeFirst'), 'info');
+                          }}
+                          disabled={openingPortal}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.8rem',
+                            fontWeight: 500,
+                            color: '#666',
+                            borderColor: '#D1D5DB',
+                            minWidth: 'auto',
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1,
+                            '&:hover': {
+                              bgcolor: '#f5f5f5',
+                              borderColor: '#9CA3AF',
+                            },
+                          }}
+                        >
+                          {openingPortal ? t('common.loading') : t('billing.manageBilling', '管理账单')}
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => navigate('/plans')}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.8rem',
+                            fontWeight: 500,
+                            color: '#666',
+                            minWidth: 'auto',
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 1,
+                            '&:hover': {
+                              bgcolor: '#f5f5f5',
+                              color: '#1a1a1a',
+                            },
+                          }}
+                        >
+                          {subscription.status === 'TRIAL'
+                            ? t('billing.subscribe')
+                            : t('billing.upgradePlan')}
+                          <ArrowForwardIcon sx={{ fontSize: 14, ml: 0.5 }} />
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
 
-                  {/* 中间：配额信息 */}
-                  <Box display="flex" gap={3} alignItems="center">
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                        {t('billing.maxUsers')}:
+                  {/* 第二行：配额信息 - 网格布局 */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 2 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 0.25 }}>
+                        {t('billing.maxUsers')}
                       </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
                         {subscription.plan.maxUsers === -1 ? t('billing.unlimited') : subscription.plan.maxUsers}
                       </Typography>
                     </Box>
 
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                        {t('billing.maxStaff')}:
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 0.25 }}>
+                        {t('billing.maxStaff')}
                       </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
                         {subscription.plan.maxStaff === -1 ? t('billing.unlimited') : subscription.plan.maxStaff}
                       </Typography>
                     </Box>
 
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                        {t('billing.maxAppointments')}:
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 0.25 }}>
+                        {t('billing.maxAppointments')}
                       </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
                         {subscription.plan.maxAppointmentsPerMonth === -1
                           ? t('billing.unlimited')
                           : `${subscription.plan.maxAppointmentsPerMonth}/${t('billing.month')}`}
                       </Typography>
                     </Box>
 
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                        {t('billing.billingCycle')}:
+                    {(() => {
+                      const planFeatures = parsePlanFeatures(subscription.plan.features);
+                      if (!planFeatures) return null;
+                      return (
+                        <>
+                          <Box>
+                            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 0.25 }}>
+                              {t('billing.maxEmails')}
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+                              {planFeatures.limits.maxEmailsPerMonth === -1
+                                ? t('billing.unlimited')
+                                : `${planFeatures.limits.maxEmailsPerMonth}/${t('billing.month')}`}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 0.25 }}>
+                              {t('billing.maxSms')}
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+                              {planFeatures.limits.maxSmsPerMonth === -1
+                                ? t('billing.unlimited')
+                                : planFeatures.limits.maxSmsPerMonth === 0
+                                ? t('billing.notIncluded')
+                                : `${planFeatures.limits.maxSmsPerMonth}/${t('billing.month')}`}
+                            </Typography>
+                          </Box>
+                        </>
+                      );
+                    })()}
+
+                    <Box>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 0.25 }}>
+                        {t('billing.billingCycle')}
                       </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                      <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
                         {subscription.billingCycle === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly')}
                       </Typography>
-                      {subscription.status === 'ACTIVE' && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={handleChangeBillingCycle}
-                          disabled={changingBillingCycle}
-                          sx={{
-                            textTransform: 'none',
-                            fontSize: '0.7rem',
-                            py: 0.25,
-                            px: 1,
-                            ml: 1,
-                            minWidth: 'auto',
-                            height: '22px',
-                            borderColor: '#D1D5DB',
-                            color: '#6B7280',
-                            '&:hover': {
-                              borderColor: '#9CA3AF',
-                              bgcolor: '#F9FAFB',
-                            }
-                          }}
-                        >
-                          {changingBillingCycle
-                            ? t('common.loading')
-                            : t('billing.switchTo') + ' ' + (subscription.billingCycle === 'MONTHLY' ? t('billing.yearly') : t('billing.monthly'))}
-                        </Button>
-                      )}
                     </Box>
-                  </Box>
-
-                  {/* 分隔线 */}
-                  <Divider orientation="vertical" flexItem sx={{ mx: 1, borderColor: '#E5E7EB' }} />
-
-                  {/* 右侧：状态 */}
-                  <Box display="flex" alignItems="center" gap={1.5}>
-                    <Chip
-                      label={getSubscriptionStatusText(subscription.status)}
-                      size="small"
-                      sx={{
-                        fontWeight: 500,
-                        height: 20,
-                        fontSize: '0.7rem',
-                        ...getSubscriptionStatusColor(subscription.status)
-                      }}
-                    />
                   </Box>
                 </Box>
               )}
@@ -461,487 +699,246 @@ const BillingTab: React.FC = () => {
         </Grid>
       )}
 
-      <Grid item xs={12}>
-        <Card
-          sx={{
-            borderRadius: 2,
-            border: '1px solid rgba(0,0,0,0.06)',
-            boxShadow: 'none',
-          }}
-        >
-          <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-            <Box display="flex" alignItems="center" mb={isMobile ? 2 : 3}>
-              <Box
-                sx={{
-                  width: isMobile ? 32 : 36,
-                  height: isMobile ? 32 : 36,
-                  borderRadius: 2,
-                  bgcolor: '#f5f5f5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mr: 1.5,
-                }}
-              >
-                <ReceiptIcon sx={{ fontSize: isMobile ? 16 : 18, color: '#666' }} />
-              </Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 500, color: '#1a1a1a', fontSize: isMobile ? '0.9rem' : undefined }}>
-                {t('billing.title')}
-              </Typography>
-            </Box>
-
-            {error && (
-              <Alert severity="error" sx={{ mb: isMobile ? 2 : 3, fontSize: isMobile ? '0.75rem' : undefined }}>
-                {error}
-              </Alert>
-            )}
-
-          {invoices.length === 0 ? (
-            <Box textAlign="center" py={isMobile ? 4 : 8}>
-              <ReceiptIcon sx={{ fontSize: isMobile ? 48 : 60, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="body1" color="text.secondary" sx={{ fontSize: isMobile ? '0.85rem' : undefined }}>
-                {t('billing.noInvoices')}
-              </Typography>
-            </Box>
-          ) : isMobile ? (
-            // 移动端卡片视图
-            <Stack spacing={1.5}>
-              {/* 移动端待付款提醒 - 仅租户所有者显示，原生App不显示外部支付引导 */}
-              {!isNativeApp && user?.isTenantOwner && invoices.some(inv => inv.status === 'PENDING') && (
-                <Box
+      {/* 本月用量统计卡片 */}
+      {subscription && subscription.plan && usageStats && (
+        <Grid item xs={12}>
+          <Card
+            sx={{
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow: 'none',
+            }}
+          >
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isMobile ? 1.5 : 2 }}>
+                <Typography
                   sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    bgcolor: '#f5f5f5',
-                    border: '1px solid rgba(0,0,0,0.08)',
+                    fontSize: isMobile ? '0.8rem' : '0.85rem',
+                    fontWeight: 600,
+                    color: '#111827',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                    <ComputerIcon sx={{ fontSize: 18, color: '#666', mt: 0.25 }} />
-                    <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#1a1a1a', mb: 0.25 }}>
-                        {t('billing.mobilePaymentNotice')}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.7rem', color: '#888', lineHeight: 1.4 }}>
-                        {t('billing.mobilePaymentNoticeDesc')}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  {/* 网址复制区域 */}
-                  <Box
+                  {t('billing.usageStats.title', '本月用量')}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton
+                    size="small"
+                    onClick={handlePrevMonth}
+                    sx={{ p: 0.25, color: '#6B7280' }}
+                  >
+                    <ChevronLeftIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                  <Typography
                     sx={{
-                      mt: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      p: 1,
-                      borderRadius: 1.5,
-                      bgcolor: '#fff',
-                      border: '1px solid rgba(0,0,0,0.06)',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      color: '#6B7280',
+                      minWidth: isMobile ? 65 : 75,
+                      textAlign: 'center',
                     }}
                   >
-                    <Typography
-                      sx={{
-                        flex: 1,
-                        fontSize: '0.8rem',
-                        fontWeight: 500,
-                        color: '#1a1a1a',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      vamerchant.app
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => {
-                        navigator.clipboard.writeText('https://vamerchant.app');
-                        setCopySnackbarOpen(true);
-                      }}
-                      sx={{
-                        minWidth: 'auto',
-                        px: 1.5,
-                        py: 0.5,
-                        fontSize: '0.7rem',
-                        textTransform: 'none',
-                        borderColor: '#d0d0d0',
-                        color: '#666',
-                        '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
-                      }}
-                    >
-                      {t('common.copy')}
-                    </Button>
-                  </Box>
-                </Box>
-              )}
-              {invoices.map((invoice) => (
-                <Box
-                  key={invoice.id}
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    bgcolor: '#fafafa',
-                  }}
-                >
-                  {/* 顶部：发票号 + 状态 */}
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#1a1a1a' }}>
-                      {invoice.invoiceNumber}
-                    </Typography>
-                    <Chip
-                      label={getStatusText(invoice.status)}
-                      color={getStatusColor(invoice.status)}
-                      size="small"
-                      sx={{ height: 20, fontSize: '0.65rem' }}
-                    />
-                  </Box>
-
-                  {/* 账单周期 */}
-                  <Typography sx={{ fontSize: '0.7rem', color: '#666', mb: 1 }}>
-                    {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
+                    {formatMonth(selectedMonth)}
                   </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={handleNextMonth}
+                    disabled={selectedMonth >= getCurrentMonth()}
+                    sx={{ p: 0.25, color: selectedMonth >= getCurrentMonth() ? '#D1D5DB' : '#6B7280' }}
+                  >
+                    <ChevronRightIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Box>
+              </Box>
 
-                  {/* 金额 + 支付日期 */}
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                    <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>
-                      ${invoice.amount.toFixed(2)} {invoice.currency}
-                    </Typography>
-                    {invoice.paymentDate && (
-                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
-                        {t('billing.paymentDate')}: {invoice.paymentDate}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 1.5 : 2 }}>
+                {/* 预约用量 */}
+                {(() => {
+                  const planFeatures = parsePlanFeatures(subscription.plan.features);
+                  const maxAppointments = subscription.plan.maxAppointmentsPerMonth;
+                  const currentAppointments = usageStats.appointmentCount || 0;
+                  const isUnlimited = maxAppointments === -1;
+                  const percentage = isUnlimited ? 0 : Math.min((currentAppointments / maxAppointments) * 100, 100);
+                  const isNearLimit = !isUnlimited && percentage >= 80;
+
+                  return (
+                    <Box sx={{ p: isMobile ? 1.25 : 1.5, bgcolor: '#fafafa', borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: isMobile ? '0.65rem' : '0.7rem', color: '#6B7280', mb: 0.5 }}>
+                        {t('billing.usageStats.appointments', '预约')}
                       </Typography>
-                    )}
-                  </Box>
-
-                  {/* 操作按钮 */}
-                  <Box display="flex" gap={1}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      fullWidth
-                      onClick={() => handleViewDetails(invoice)}
-                      sx={{
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        color: '#666',
-                        borderColor: '#d0d0d0',
-                        '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
-                      }}
-                    >
-                      {t('common.viewDetails')}
-                    </Button>
-                  </Box>
-                </Box>
-              ))}
-            </Stack>
-          ) : (
-            // 桌面端表格视图
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>{t('billing.invoiceNumber')}</TableCell>
-                    <TableCell>{t('billing.billingPeriod')}</TableCell>
-                    <TableCell align="right">{t('billing.amount')}</TableCell>
-                    <TableCell>{t('billing.statusLabel')}</TableCell>
-                    <TableCell>{t('billing.paymentDate')}</TableCell>
-                    <TableCell align="center">{t('common.actions')}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {invoice.invoiceNumber}
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                        <Typography sx={{ fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: 600, color: isNearLimit ? '#DC2626' : '#111827' }}>
+                          {currentAppointments}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
+                        <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 400, color: '#9CA3AF' }}>
+                          / {isUnlimited ? t('billing.unlimited') : maxAppointments}
                         </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" fontWeight={600}>
-                          ${invoice.amount.toFixed(2)} {invoice.currency}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusText(invoice.status)}
-                          color={getStatusColor(invoice.status)}
-                          size="small"
+                      </Box>
+                      {!isUnlimited && (
+                        <LinearProgress
+                          variant="determinate"
+                          value={percentage}
+                          sx={{
+                            mt: 1,
+                            height: 3,
+                            borderRadius: 1.5,
+                            bgcolor: '#e5e5e5',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 1.5,
+                              bgcolor: isNearLimit ? '#DC2626' : '#1a1a1a',
+                            },
+                          }}
                         />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {invoice.paymentDate || '-'}
+                      )}
+                    </Box>
+                  );
+                })()}
+
+                {/* 邮件用量 */}
+                {(() => {
+                  const planFeatures = parsePlanFeatures(subscription.plan.features);
+                  const maxEmails = planFeatures?.limits.maxEmailsPerMonth ?? 0;
+                  const currentEmails = usageStats.emailCount || 0;
+                  const isUnlimited = maxEmails === -1;
+                  const percentage = isUnlimited ? 0 : Math.min((currentEmails / maxEmails) * 100, 100);
+                  const isNearLimit = !isUnlimited && percentage >= 80;
+
+                  return (
+                    <Box sx={{ p: isMobile ? 1.25 : 1.5, bgcolor: '#fafafa', borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: isMobile ? '0.65rem' : '0.7rem', color: '#6B7280', mb: 0.5 }}>
+                        {t('billing.usageStats.emails', '邮件')}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                        <Typography sx={{ fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: 600, color: isNearLimit ? '#DC2626' : '#111827' }}>
+                          {currentEmails}
                         </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleViewDetails(invoice)}
-                            sx={{
-                              textTransform: 'none',
-                              color: '#666',
-                              borderColor: '#d0d0d0',
-                              '&:hover': { borderColor: '#bbb', bgcolor: 'rgba(0,0,0,0.02)' },
-                            }}
-                          >
-                            {t('common.viewDetails')}
-                          </Button>
-                          {invoice.status === 'PENDING' && user?.isTenantOwner && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<PaymentIcon />}
-                              onClick={() => handlePay(invoice)}
-                              sx={{
-                                textTransform: 'none',
-                                bgcolor: '#1a1a1a',
-                                boxShadow: 'none',
-                                '&:hover': { bgcolor: '#333', boxShadow: 'none' },
-                              }}
-                            >
-                              {t('billing.pay')}
-                            </Button>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-          </CardContent>
-        </Card>
-      </Grid>
+                        <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 400, color: '#9CA3AF' }}>
+                          / {isUnlimited ? t('billing.unlimited') : maxEmails}
+                        </Typography>
+                      </Box>
+                      {!isUnlimited && (
+                        <LinearProgress
+                          variant="determinate"
+                          value={percentage}
+                          sx={{
+                            mt: 1,
+                            height: 3,
+                            borderRadius: 1.5,
+                            bgcolor: '#e5e5e5',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 1.5,
+                              bgcolor: isNearLimit ? '#DC2626' : '#1a1a1a',
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })()}
 
-      {/* 账单详情弹窗 */}
-      <Dialog
-        open={detailDialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            mx: isMobile ? 2 : 0,
-          }
+                {/* 短信用量 */}
+                {(() => {
+                  const planFeatures = parsePlanFeatures(subscription.plan.features);
+                  const maxSms = planFeatures?.limits.maxSmsPerMonth ?? 0;
+                  const currentSms = usageStats.smsCount || 0;
+                  const isUnlimited = maxSms === -1;
+                  const notIncluded = maxSms === 0;
+                  const percentage = isUnlimited || notIncluded ? 0 : Math.min((currentSms / maxSms) * 100, 100);
+                  const isNearLimit = !isUnlimited && !notIncluded && percentage >= 80;
+
+                  return (
+                    <Box sx={{ p: isMobile ? 1.25 : 1.5, bgcolor: '#fafafa', borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: isMobile ? '0.65rem' : '0.7rem', color: '#6B7280', mb: 0.5 }}>
+                        {t('billing.usageStats.sms', '短信')}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                        <Typography sx={{ fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: 600, color: isNearLimit ? '#DC2626' : notIncluded ? '#D1D5DB' : '#111827' }}>
+                          {notIncluded ? '-' : currentSms}
+                        </Typography>
+                        <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 400, color: '#9CA3AF' }}>
+                          {notIncluded ? t('billing.notIncluded') : `/ ${isUnlimited ? t('billing.unlimited') : maxSms}`}
+                        </Typography>
+                      </Box>
+                      {!isUnlimited && !notIncluded && (
+                        <LinearProgress
+                          variant="determinate"
+                          value={percentage}
+                          sx={{
+                            mt: 1,
+                            height: 3,
+                            borderRadius: 1.5,
+                            bgcolor: '#e5e5e5',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 1.5,
+                              bgcolor: isNearLimit ? '#DC2626' : '#1a1a1a',
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })()}
+
+                {/* 员工数量 - 使用实时数据 */}
+                {(() => {
+                  const maxStaff = subscription.plan.maxStaff;
+                  const currentStaff = staffCount;
+                  const isUnlimited = maxStaff === -1;
+                  const percentage = isUnlimited ? 0 : Math.min((currentStaff / maxStaff) * 100, 100);
+                  const isNearLimit = !isUnlimited && percentage >= 80;
+
+                  return (
+                    <Box sx={{ p: isMobile ? 1.25 : 1.5, bgcolor: '#fafafa', borderRadius: 1.5 }}>
+                      <Typography sx={{ fontSize: isMobile ? '0.65rem' : '0.7rem', color: '#6B7280', mb: 0.5 }}>
+                        {t('billing.usageStats.staff', '员工')}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                        <Typography sx={{ fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: 600, color: isNearLimit ? '#DC2626' : '#111827' }}>
+                          {currentStaff}
+                        </Typography>
+                        <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 400, color: '#9CA3AF' }}>
+                          / {isUnlimited ? t('billing.unlimited') : maxStaff}
+                        </Typography>
+                      </Box>
+                      {!isUnlimited && (
+                        <LinearProgress
+                          variant="determinate"
+                          value={percentage}
+                          sx={{
+                            mt: 1,
+                            height: 3,
+                            borderRadius: 1.5,
+                            bgcolor: '#e5e5e5',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 1.5,
+                              bgcolor: isNearLimit ? '#DC2626' : '#1a1a1a',
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })()}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      )}
+
+      {/* 全屏加载遮罩 - 正在跳转到 Stripe */}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: 'column',
+          gap: 2,
         }}
+        open={openingPortal}
       >
-        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : undefined }}>
-          {t('billing.invoiceDetails')}
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedInvoice && (
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('billing.invoiceNumber')}
-                </Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  {selectedInvoice.invoiceNumber}
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('billing.statusLabel')}
-                </Typography>
-                <Chip
-                  label={getStatusText(selectedInvoice.status)}
-                  color={getStatusColor(selectedInvoice.status)}
-                  size="small"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('billing.billingPeriod')}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedInvoice.billingPeriodStart} ~ {selectedInvoice.billingPeriodEnd}
-                </Typography>
-              </Grid>
-              <Grid item xs={selectedInvoice.taxAmount !== undefined ? 6 : 12}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('billing.subtotal')}
-                </Typography>
-                <Typography variant="body1" fontWeight={500}>
-                  ${(selectedInvoice.subtotal || selectedInvoice.amount).toFixed(2)} {selectedInvoice.currency}
-                </Typography>
-              </Grid>
-              {selectedInvoice.taxAmount !== undefined && (
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('billing.tax')} {selectedInvoice.taxRegion && `(${selectedInvoice.taxRegion})`}
-                  </Typography>
-                  <Typography variant="body1" fontWeight={500}>
-                    ${selectedInvoice.taxAmount.toFixed(2)} {selectedInvoice.currency}
-                    {selectedInvoice.taxRate !== undefined && selectedInvoice.taxRate > 0 && ` (${(selectedInvoice.taxRate * 100).toFixed(2)}%)`}
-                  </Typography>
-                </Grid>
-              )}
-              <Grid item xs={12}>
-                <Box sx={{
-                  borderTop: '1px solid',
-                  borderColor: 'divider',
-                  pt: 1.5,
-                  mt: 0.5
-                }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {t('billing.totalAmount')}
-                  </Typography>
-                  <Typography variant="h6" fontWeight={600} sx={{ color: '#1a1a1a' }}>
-                    ${selectedInvoice.amount.toFixed(2)} {selectedInvoice.currency}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('billing.paymentMethod')}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedInvoice.paymentMethod || '-'}
-                </Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary">
-                  {t('billing.paymentDate')}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedInvoice.paymentDate || '-'}
-                </Typography>
-              </Grid>
-              {selectedInvoice.description && (
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('billing.description')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedInvoice.description}
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCloseDialog}
-            sx={{
-              textTransform: 'none',
-              color: '#666',
-            }}
-          >
-            {t('common.close')}
-          </Button>
-          {/* 仅租户所有者显示支付按钮，移动端不显示（用户需要在Web端支付） */}
-          {!isMobile && selectedInvoice?.status === 'PENDING' && user?.isTenantOwner && (
-            <Button
-              variant="contained"
-              startIcon={<PaymentIcon />}
-              onClick={() => {
-                handleCloseDialog();
-                handlePay(selectedInvoice);
-              }}
-              sx={{
-                textTransform: 'none',
-                bgcolor: '#1a1a1a',
-                boxShadow: 'none',
-                '&:hover': { bgcolor: '#333', boxShadow: 'none' },
-              }}
-            >
-              {t('billing.pay')}
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      {/* 确认切换计费周期对话框 */}
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            mx: isMobile ? 2 : 0,
-          }
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 600, color: '#1a1a1a', fontSize: isMobile ? '1rem' : undefined }}>
-          {t('billing.confirmChangeCycle')}
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            {subscription?.billingCycle === 'MONTHLY'
-              ? t('billing.confirmChangeToYearly')
-              : t('billing.confirmChangeToMonthly')}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setConfirmDialogOpen(false)}
-            sx={{ textTransform: 'none', color: '#666' }}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmChangeBillingCycle}
-            disabled={changingBillingCycle}
-            sx={{
-              textTransform: 'none',
-              bgcolor: '#1a1a1a',
-              boxShadow: 'none',
-              '&:hover': { bgcolor: '#333', boxShadow: 'none' },
-              '&:disabled': { bgcolor: '#e5e5e5', color: '#999' },
-            }}
-          >
-            {changingBillingCycle ? t('common.loading') : t('common.confirm')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Stripe支付对话框 */}
-      <StripePaymentDialog
-        open={paymentDialogOpen}
-        invoice={payingInvoice}
-        onClose={handlePaymentClose}
-        onSuccess={handlePaymentSuccess}
-      />
-
-      {/* 复制成功提示 */}
-      <Snackbar
-        open={copySnackbarOpen}
-        autoHideDuration={2000}
-        onClose={() => setCopySnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ top: isMobile ? 92 : 24 }}
-      >
-        <Alert
-          onClose={() => setCopySnackbarOpen(false)}
-          severity="success"
-          sx={{
-            width: 'auto',
-            minWidth: 120,
-            borderRadius: 1.5,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            fontSize: '0.8rem',
-            py: 0.5,
-            '& .MuiAlert-icon': { fontSize: 18 },
-          }}
-        >
-          {t('common.copied')}
-        </Alert>
-      </Snackbar>
+        <CircularProgress color="inherit" size={48} />
+        <Typography variant="h6">
+          {t('billing.redirectingToStripe', '正在跳转到账单管理...')}
+        </Typography>
+      </Backdrop>
     </Grid>
   );
 };

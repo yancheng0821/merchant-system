@@ -163,22 +163,23 @@ public class TenantController {
     }
 
     /**
-     * 停用租户（仅超级管理员可访问）
+     * 禁用租户（仅超级管理员可访问）
+     * 设置为 SUSPENDED 状态，完全禁止登录
      */
     @RequiresPermission("SUPER_ADMIN")
-    @Auditable(resource = "TENANT", action = "UPDATE", resourceIdParam = "tenantId", recordOldValue = true, description = "Deactivate tenant")
+    @Auditable(resource = "TENANT", action = "UPDATE", resourceIdParam = "tenantId", recordOldValue = true, description = "Suspend tenant")
     @PutMapping("/{tenantId}/deactivate")
-    public ApiResponse<Void> deactivateTenant(@PathVariable Long tenantId) {
-        log.info("Deactivating tenant with id: {}", tenantId);
+    public ApiResponse<Void> suspendTenant(@PathVariable Long tenantId) {
+        log.info("Suspending tenant with id: {}", tenantId);
 
         try {
-            tenantService.deactivateTenant(tenantId);
-            log.info("Tenant deactivated successfully: {}", tenantId);
+            tenantService.suspendTenant(tenantId);
+            log.info("Tenant suspended successfully: {}", tenantId);
             return ApiResponse.success(null);
 
         } catch (Exception e) {
-            log.error("Error deactivating tenant: {}", tenantId, e);
-            return ApiResponse.error("停用商户失败");
+            log.error("Error suspending tenant: {}", tenantId, e);
+            return ApiResponse.error("禁用商户失败");
         }
     }
 } 

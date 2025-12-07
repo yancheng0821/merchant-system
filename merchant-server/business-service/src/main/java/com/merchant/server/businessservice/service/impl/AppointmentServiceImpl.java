@@ -28,7 +28,13 @@ import java.util.Map;
 import java.util.ArrayList;
 import org.springframework.transaction.annotation.Transactional;
 import com.merchant.server.businessservice.client.MerchantServiceClient;
+import com.merchant.server.businessservice.client.GatewayWebSocketClient;
+import com.merchant.server.businessservice.client.NotificationClient;
+import com.merchant.server.businessservice.service.BusinessNotificationService;
 import com.merchant.server.common.util.TimeZoneUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +53,12 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final com.merchant.server.businessservice.service.StaffNotificationService staffNotificationService;
     private final MerchantServiceClient merchantServiceClient;
     private final MessageUtil messageUtil;
+    private final GatewayWebSocketClient gatewayWebSocketClient;
+    private final NotificationClient notificationClient;
+
+    @Autowired
+    @Lazy
+    private BusinessNotificationService businessNotificationService;
 
     @Override
     public List<Appointment> getAllAppointmentsByTenantId(Long tenantId) {
@@ -175,6 +187,15 @@ public class AppointmentServiceImpl implements AppointmentService {
             // 注意：这个方法是旧的API，新的预约应该使用createAppointmentWithServices
             // 这里不创建资源关联，因为没有传入资源信息
 
+            // 增加租户月预约计数
+            try {
+                merchantServiceClient.incrementAppointmentCount(appointment.getTenantId());
+                log.debug("Incremented appointment count for tenant: {}", appointment.getTenantId());
+            } catch (Exception e) {
+                // 计数失败不影响预约创建
+                log.warn("Failed to increment appointment count for tenant: {}", appointment.getTenantId(), e);
+            }
+
             // 发送预约确认通知（只有已确认状态才发送）
             if (appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
                 try {
@@ -295,6 +316,15 @@ public class AppointmentServiceImpl implements AppointmentService {
                 appointment.setAppointmentServices(appointmentServices);
             }
 
+            // 3.5 增加租户月预约计数
+            try {
+                merchantServiceClient.incrementAppointmentCount(appointment.getTenantId());
+                log.debug("Incremented appointment count for tenant: {}", appointment.getTenantId());
+            } catch (Exception e) {
+                // 计数失败不影响预约创建
+                log.warn("Failed to increment appointment count for tenant: {}", appointment.getTenantId(), e);
+            }
+
             // 4. 填充customer信息（前端需要显示客户姓名）
             try {
                 Customer customer = customerMapper.selectById(appointment.getCustomerId());
@@ -316,6 +346,20 @@ public class AppointmentServiceImpl implements AppointmentService {
                 log.info("Skipping confirmation notification for appointment {} with status {}",
                     appointment.getId(), appointment.getStatus());
             }
+
+            // 6. 保存业务通知到数据库
+            try {
+                String serviceName = "Unknown Service";
+                if (appointment.getAppointmentServices() != null && !appointment.getAppointmentServices().isEmpty()) {
+                    serviceName = appointment.getAppointmentServices().get(0).getServiceName();
+                }
+                businessNotificationService.createNewAppointmentNotification(appointment, appointment.getCustomer(), serviceName, "en-US");
+            } catch (Exception e) {
+                log.warn("Failed to create business notification for appointment {}: {}", appointment.getId(), e.getMessage());
+            }
+
+            // 7. 发送 Firebase 推送通知给商户 (移动端)
+            sendNewAppointmentPushNotification(appointment);
 
             return appointment;
         } catch (Exception e) {
@@ -355,6 +399,21 @@ public class AppointmentServiceImpl implements AppointmentService {
                     log.info("Sent confirmation notification for appointment {} (status changed from PENDING_CONFIRMATION to CONFIRMED)", id);
                 } else if (newStatus == Appointment.AppointmentStatus.CANCELLED && oldStatus != Appointment.AppointmentStatus.CANCELLED) {
                     notificationService.sendCancellationNotification(appointment);
+                    // 保存业务通知到数据库
+                    try {
+                        Customer customer = customerMapper.selectById(appointment.getCustomerId());
+                        String serviceName = "Unknown Service";
+                        List<com.merchant.server.businessservice.entity.AppointmentService> services =
+                            appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
+                        if (services != null && !services.isEmpty()) {
+                            serviceName = services.get(0).getServiceName();
+                        }
+                        businessNotificationService.createAppointmentCancelledNotification(appointment, customer, serviceName, "en-US");
+                    } catch (Exception e) {
+                        log.warn("Failed to create cancellation notification for appointment {}: {}", id, e.getMessage());
+                    }
+                    // 发送 Firebase 推送通知 (移动端)
+                    sendCancellationPushNotification(appointment);
                 } else if (newStatus == Appointment.AppointmentStatus.COMPLETED && oldStatus != Appointment.AppointmentStatus.COMPLETED) {
                     notificationService.sendCompletionNotification(appointment);
                 }
@@ -463,9 +522,21 @@ public class AppointmentServiceImpl implements AppointmentService {
         log.info("[BUSINESS] Appointment deleted - appointmentId: {}", id);
 
         // 发送取消通知（异步，在事务外，失败不影响删除流程）
-        if (appointment != null) {
+        // 注意：如果预约已经是 CANCELLED 状态，说明取消通知已在 updateAppointmentStatus 中发送过，这里不再重复发送
+        if (appointment != null && appointment.getStatus() != Appointment.AppointmentStatus.CANCELLED) {
             try {
                 notificationService.sendCancellationNotification(appointment);
+                // 保存业务通知到数据库
+                Customer customer = customerMapper.selectById(appointment.getCustomerId());
+                String serviceName = "Unknown Service";
+                List<com.merchant.server.businessservice.entity.AppointmentService> services =
+                    appointmentMapper.findAppointmentServicesByAppointmentId(appointment.getId());
+                if (services != null && !services.isEmpty()) {
+                    serviceName = services.get(0).getServiceName();
+                }
+                businessNotificationService.createAppointmentCancelledNotification(appointment, customer, serviceName, "en-US");
+                // 发送 Firebase 推送通知 (移动端)
+                sendCancellationPushNotification(appointment);
             } catch (Exception e) {
                 log.error("Failed to send cancellation notification for appointment {}: {}",
                     id, e.getMessage());
@@ -933,5 +1004,127 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         return order;
+    }
+
+    /**
+     * 发送新预约的 Firebase 推送通知给商户 (移动端)
+     */
+    private void sendNewAppointmentPushNotification(Appointment appointment) {
+        try {
+            // 获取客户名称
+            String customerName = "";
+            if (appointment.getCustomer() != null) {
+                Customer customer = appointment.getCustomer();
+                customerName = (customer.getFirstName() != null ? customer.getFirstName() : "") +
+                              " " +
+                              (customer.getLastName() != null ? customer.getLastName() : "");
+                customerName = customerName.trim();
+            }
+
+            // 获取服务名称
+            String serviceName = "";
+            if (appointment.getAppointmentServices() != null && !appointment.getAppointmentServices().isEmpty()) {
+                serviceName = appointment.getAppointmentServices().get(0).getServiceName();
+            }
+
+            // 构建推送通知请求
+            Map<String, Object> pushRequest = new HashMap<>();
+            pushRequest.put("title", "New Appointment");
+            pushRequest.put("body", String.format("%s booked %s on %s at %s",
+                customerName.isEmpty() ? "A customer" : customerName,
+                serviceName.isEmpty() ? "a service" : serviceName,
+                appointment.getAppointmentDate().toString(),
+                appointment.getAppointmentTime().toString()));
+
+            // 添加通知数据（用于点击通知后的跳转）
+            Map<String, String> data = new HashMap<>();
+            data.put("type", "NEW_APPOINTMENT");
+            data.put("appointmentId", String.valueOf(appointment.getId()));
+            data.put("date", appointment.getAppointmentDate().toString());
+            data.put("time", appointment.getAppointmentTime().toString());
+
+            // 获取未读通知数作为 iOS badge
+            try {
+                Integer unreadCount = businessNotificationService.getUnreadCount(appointment.getTenantId());
+                data.put("badge", String.valueOf(unreadCount != null ? unreadCount : 1));
+            } catch (Exception e) {
+                log.warn("Failed to get unread count for badge: {}", e.getMessage());
+                data.put("badge", "1");
+            }
+            pushRequest.put("data", data);
+
+            // 发送 Firebase 推送给租户下的所有用户
+            notificationClient.sendPushToTenant(appointment.getTenantId(), pushRequest);
+            log.info("[Firebase] Push notification sent for new appointment - tenantId: {}, appointmentId: {}, badge: {}",
+                appointment.getTenantId(), appointment.getId(), data.get("badge"));
+
+        } catch (Exception e) {
+            // 通知失败不影响预约创建
+            log.warn("[Firebase] Failed to send push notification for appointment {}: {}", appointment.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * 发送预约取消的 Firebase 推送通知给商户 (移动端)
+     */
+    private void sendCancellationPushNotification(Appointment appointment) {
+        try {
+            // 获取客户名称
+            String customerName = "";
+            if (appointment.getCustomer() != null) {
+                Customer customer = appointment.getCustomer();
+                customerName = (customer.getFirstName() != null ? customer.getFirstName() : "") +
+                              " " +
+                              (customer.getLastName() != null ? customer.getLastName() : "");
+                customerName = customerName.trim();
+            } else {
+                // 尝试从数据库获取客户信息
+                try {
+                    Customer customer = customerMapper.selectById(appointment.getCustomerId());
+                    if (customer != null) {
+                        customerName = (customer.getFirstName() != null ? customer.getFirstName() : "") +
+                                      " " +
+                                      (customer.getLastName() != null ? customer.getLastName() : "");
+                        customerName = customerName.trim();
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to get customer name for push notification: {}", e.getMessage());
+                }
+            }
+
+            // 构建推送通知请求
+            Map<String, Object> pushRequest = new HashMap<>();
+            pushRequest.put("title", "Appointment Cancelled");
+            pushRequest.put("body", String.format("%s cancelled appointment on %s at %s",
+                customerName.isEmpty() ? "A customer" : customerName,
+                appointment.getAppointmentDate().toString(),
+                appointment.getAppointmentTime().toString()));
+
+            // 添加通知数据（用于点击通知后的跳转）
+            Map<String, String> data = new HashMap<>();
+            data.put("type", "APPOINTMENT_CANCELLED");
+            data.put("appointmentId", String.valueOf(appointment.getId()));
+            data.put("date", appointment.getAppointmentDate().toString());
+            data.put("time", appointment.getAppointmentTime().toString());
+
+            // 获取未读通知数作为 iOS badge
+            try {
+                Integer unreadCount = businessNotificationService.getUnreadCount(appointment.getTenantId());
+                data.put("badge", String.valueOf(unreadCount != null ? unreadCount : 1));
+            } catch (Exception e) {
+                log.warn("Failed to get unread count for badge: {}", e.getMessage());
+                data.put("badge", "1");
+            }
+            pushRequest.put("data", data);
+
+            // 发送 Firebase 推送给租户下的所有用户
+            notificationClient.sendPushToTenant(appointment.getTenantId(), pushRequest);
+            log.info("[Firebase] Cancellation push notification sent - tenantId: {}, appointmentId: {}, badge: {}",
+                appointment.getTenantId(), appointment.getId(), data.get("badge"));
+
+        } catch (Exception e) {
+            // 通知失败不影响取消流程
+            log.warn("[Firebase] Failed to send cancellation push notification for appointment {}: {}", appointment.getId(), e.getMessage());
+        }
     }
 }

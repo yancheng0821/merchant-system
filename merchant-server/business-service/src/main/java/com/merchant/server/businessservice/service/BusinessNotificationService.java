@@ -439,28 +439,31 @@ public class BusinessNotificationService {
                 thirtyMinutesLater.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))
             );
             
-            for (Appointment appointment : upcomingAppointments) {
-                // 检查是否已经发送过提醒
-                if (!hasRecentReminder(appointment.getId())) {
-                    Customer customer = appointmentService.getCustomerById(appointment.getCustomerId());
-                    // 获取服务名称（预约可能包含多个服务，取第一个）
-                    List<com.merchant.server.businessservice.entity.AppointmentService> services = appointment.getAppointmentServices();
-                    String serviceName = "Unknown Service";
-                    if (services != null && !services.isEmpty()) {
-                        // 直接从appointment_services表中获取已经保存的服务名称
-                        serviceName = services.get(0).getServiceName();
-                        if (serviceName == null || serviceName.isEmpty()) {
-                            // 如果服务名称为空，尝试通过服务ID获取
-                            Long serviceId = services.get(0).getServiceId();
-                            if (serviceId != null) {
-                                serviceName = appointmentService.getServiceName(serviceId);
-                            }
-                        }
-                    }
-                    // 定时任务默认使用中文
-                    createAppointmentReminderNotification(appointment, customer, serviceName, "zh-CN");
-                }
-            }
+            // 已禁用：不再创建 APPOINTMENT_REMINDER 业务通知
+            // 预约提醒只通过 notification-service 发送给客户（邮件/短信），不在商户端小铃铛显示
+            // for (Appointment appointment : upcomingAppointments) {
+            //     // 检查是否已经发送过提醒
+            //     if (!hasRecentReminder(appointment.getId())) {
+            //         Customer customer = appointmentService.getCustomerById(appointment.getCustomerId());
+            //         // 获取服务名称（预约可能包含多个服务，取第一个）
+            //         List<com.merchant.server.businessservice.entity.AppointmentService> services = appointment.getAppointmentServices();
+            //         String serviceName = "Unknown Service";
+            //         if (services != null && !services.isEmpty()) {
+            //             // 直接从appointment_services表中获取已经保存的服务名称
+            //             serviceName = services.get(0).getServiceName();
+            //             if (serviceName == null || serviceName.isEmpty()) {
+            //                 // 如果服务名称为空，尝试通过服务ID获取
+            //                 Long serviceId = services.get(0).getServiceId();
+            //                 if (serviceId != null) {
+            //                     serviceName = appointmentService.getServiceName(serviceId);
+            //                 }
+            //             }
+            //         }
+            //         // 定时任务默认使用中文
+            //         createAppointmentReminderNotification(appointment, customer, serviceName, "zh-CN");
+            //     }
+            // }
+            log.debug("Skipped creating APPOINTMENT_REMINDER business notifications - feature disabled");
         } catch (Exception e) {
             log.error("Error checking upcoming appointments", e);
         }

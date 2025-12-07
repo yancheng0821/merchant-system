@@ -45,6 +45,8 @@
             <result property="phone" column="customer_phone"/>
             <result property="email" column="customer_email"/>
             <result property="countryCode" column="customer_country_code"/>
+            <result property="communicationPreference" column="customer_communication_preference"
+                    javaType="com.merchant.server.businessservice.entity.Customer$CommunicationPreference"/>
             <association property="membershipTier" javaType="com.merchant.server.businessservice.entity.MembershipTier">
                 <id property="id" column="membership_tier_id"/>
                 <result property="name" column="membership_tier_name"/>
@@ -83,6 +85,7 @@
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.booking_source, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
             c.email as customer_email, c.country_code as customer_country_code,
+            c.communication_preference as customer_communication_preference,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
             mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
@@ -106,6 +109,7 @@
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.booking_source, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
             c.email as customer_email, c.country_code as customer_country_code,
+            c.communication_preference as customer_communication_preference,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
             mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
@@ -274,6 +278,7 @@
             a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name,
             c.phone as customer_phone, c.email as customer_email, c.country_code as customer_country_code,
+            c.communication_preference as customer_communication_preference,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
             mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
@@ -298,7 +303,8 @@
         SELECT 
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
-            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
+            c.communication_preference as customer_communication_preference
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
         WHERE a.appointment_date BETWEEN #{startDate} AND #{endDate}
@@ -311,7 +317,8 @@
         SELECT 
             a.id, a.tenant_id, a.customer_id, a.appointment_date, a.appointment_time,
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
-            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email
+            c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone, c.email as customer_email,
+            c.communication_preference as customer_communication_preference
         FROM appointments a
         LEFT JOIN customers c ON a.customer_id = c.id
         WHERE a.appointment_date = #{date}
@@ -342,6 +349,7 @@
             a.duration, a.total_amount, a.status, a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name, c.phone as customer_phone,
             c.email as customer_email, c.country_code as customer_country_code,
+            c.communication_preference as customer_communication_preference,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
             mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
@@ -368,6 +376,7 @@
             a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name,
             c.phone as customer_phone, c.email as customer_email, c.country_code as customer_country_code,
+            c.communication_preference as customer_communication_preference,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
             mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,
@@ -399,6 +408,7 @@
             a.notes, a.rating, a.review, a.created_at, a.updated_at,
             c.first_name as customer_first_name, c.last_name as customer_last_name,
             c.phone as customer_phone, c.email as customer_email, c.country_code as customer_country_code,
+            c.communication_preference as customer_communication_preference,
             mt.id as membership_tier_id, mt.name as membership_tier_name,
             mt.color as membership_tier_color, mt.icon as membership_tier_icon,
             aps.id as appointment_service_id, aps.service_id as appointment_service_service_id,

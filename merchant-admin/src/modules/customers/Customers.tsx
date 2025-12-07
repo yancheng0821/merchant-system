@@ -60,6 +60,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   FilterList as FilterListIcon,
+  Lock as LockIcon,
   // 会员等级图标
   StarHalf as StarHalfIcon,
   StarRate as StarRateIcon,
@@ -84,6 +85,8 @@ import CustomerPackages from './components/CustomerPackages';
 import PackagePurchase from './components/PackagePurchase';
 import { CustomerImport } from './components/CustomerImport';
 import { ImportHistory } from './components/ImportHistory';
+import { useFeature } from '../../contexts/FeatureContext';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 
 // 使用API中定义的Customer接口
 
@@ -92,6 +95,10 @@ const CustomerManagement: React.FC = () => {
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
   const muiTheme = useMuiTheme();
+  const { hasFeature } = useFeature();
+
+  // 检查是否有客户导入功能
+  const canImportCustomers = hasFeature('customerImport');
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
@@ -139,6 +146,7 @@ const CustomerManagement: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerImportOpen, setCustomerImportOpen] = useState(false);
   const [importHistoryOpen, setImportHistoryOpen] = useState(false);
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -246,6 +254,18 @@ const CustomerManagement: React.FC = () => {
   useEffect(() => {
     loadMembershipTiers();
   }, [loadMembershipTiers]);
+
+  // 监听下拉刷新事件
+  useEffect(() => {
+    const handlePullToRefresh = () => {
+      console.log('[Customers] Pull to refresh triggered');
+      fetchCustomers(buildQueryParams());
+      loadCustomerStats();
+    };
+
+    window.addEventListener('pullToRefresh', handlePullToRefresh);
+    return () => window.removeEventListener('pullToRefresh', handlePullToRefresh);
+  }, [fetchCustomers, buildQueryParams, loadCustomerStats]);
 
   // 下载导入样例
   const handleDownloadTemplate = () => {
@@ -1158,7 +1178,14 @@ const CustomerManagement: React.FC = () => {
                     size="small"
                     variant="text"
                     startIcon={<UploadIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => setCustomerImportOpen(true)}
+                    endIcon={!canImportCustomers ? <LockIcon sx={{ fontSize: 14, color: '#999' }} /> : undefined}
+                    onClick={() => {
+                      if (canImportCustomers) {
+                        setCustomerImportOpen(true);
+                      } else {
+                        setUpgradeDialogOpen(true);
+                      }
+                    }}
                     sx={{
                       borderRadius: 1.5,
                       py: 0.75,
@@ -2079,6 +2106,29 @@ const CustomerManagement: React.FC = () => {
           {error}
         </Alert>
       )}
+
+      {/* 升级提示对话框 */}
+      <Dialog
+        open={upgradeDialogOpen}
+        onClose={() => setUpgradeDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2.5,
+            maxWidth: 360,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }
+        }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <UpgradePrompt
+            feature="customerImport"
+            featureNameKey="upgrade.features.customerImport"
+            requiredPlan="PRO"
+            variant="dialog"
+            onClose={() => setUpgradeDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

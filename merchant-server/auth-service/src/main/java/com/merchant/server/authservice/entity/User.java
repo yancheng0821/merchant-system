@@ -40,9 +40,9 @@ public class User {
 
     /**
      * 是否开启短信二次验证（登录时）
-     * 默认为 true，用户可以在个人设置中关闭
+     * 数据库默认为 1（开启），用户可以在个人设置中关闭
      */
-    private Boolean smsVerificationEnabled = true;
+    private Boolean smsVerificationEnabled;
 
     public enum UserStatus {
         ACTIVE, INACTIVE, LOCKED, DELETED

@@ -5,6 +5,7 @@ import {
   Security as SecurityIcon,
   Assignment as AuditIcon,
   AdminPanelSettings as RoleIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UserRoleManagement from './UserRoleManagement';
@@ -13,6 +14,7 @@ import RolePermissionManagement from './RolePermissionManagement';
 import AuditLogs from './AuditLogs';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
 
 type TabType = 'users' | 'roles' | 'permissions' | 'audit';
 
@@ -20,10 +22,14 @@ const RBACManagement: React.FC = () => {
   const { t } = useTranslation();
   const { isSuperAdmin, hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const { hasFeature } = useFeature();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 检查审计日志功能是否锁定
+  const isAuditLogLocked = !hasFeature('auditLog');
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -127,9 +133,15 @@ const RBACManagement: React.FC = () => {
           {/* 店长和超管都能查看审计日志 */}
           {hasPermission('audit:view') && (
             <Tab
-              icon={<AuditIcon sx={{ fontSize: isMobile ? 18 : 24 }} />}
+              icon={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <AuditIcon sx={{ fontSize: isMobile ? 18 : 24, color: isAuditLogLocked ? '#bbb' : 'inherit' }} />
+                  {isAuditLogLocked && <LockIcon sx={{ fontSize: 12, color: '#bbb' }} />}
+                </Box>
+              }
               iconPosition="start"
               label={isMobile ? t('rbac.audit') : t('rbac.auditLogs')}
+              sx={isAuditLogLocked ? { color: '#999 !important' } : {}}
             />
           )}
         </Tabs>

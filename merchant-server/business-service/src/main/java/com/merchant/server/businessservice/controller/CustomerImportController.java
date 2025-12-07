@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.controller;
 import com.merchant.server.businessservice.dto.CustomerImportDTO;
 import com.merchant.server.businessservice.service.CustomerImportService;
 import com.merchant.server.businessservice.util.MessageUtil;
+import com.merchant.server.common.annotation.RequiresFeature;
 import com.merchant.server.common.annotation.RequiresPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/business/customers/import")
 @RequiresPermission("customers:import")
+@RequiresFeature(value = "customerImport", message = "客户批量导入功能需要升级到PRO版本")
 public class CustomerImportController {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerImportController.class);

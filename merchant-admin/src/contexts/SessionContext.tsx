@@ -26,14 +26,30 @@ interface SessionProviderProps {
   children: ReactNode;
 }
 
+// localStorage key for last activity
+const LAST_ACTIVITY_KEY = 'session_last_activity';
+
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [sessionTimeout, setSessionTimeout] = useState(30); // 默认30分钟
-  const [lastActivity, setLastActivity] = useState<number | null>(null);
+  const [lastActivity, setLastActivity] = useState<number | null>(() => {
+    // 从 localStorage 恢复 lastActivity
+    const saved = localStorage.getItem(LAST_ACTIVITY_KEY);
+    return saved ? parseInt(saved, 10) : null;
+  });
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [warningShown, setWarningShown] = useState(false);
+
+  // 同步 lastActivity 到 localStorage
+  useEffect(() => {
+    if (lastActivity !== null) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, lastActivity.toString());
+    } else {
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+    }
+  }, [lastActivity]);
 
   // 监听API触发的session过期事件
   useEffect(() => {
@@ -81,12 +97,44 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     fetchSessionTimeout();
   }, [user?.tenantId]);
 
-  // 当用户登录时初始化lastActivity并重置过期状态
+  // 当用户登录时检查会话状态
   useEffect(() => {
     if (user) {
-      // 如果是新登录（lastActivity为null）或者之前已过期，重置状态
-      if (lastActivity === null || isSessionExpired) {
-        console.log('User logged in, resetting session state');
+      // 检查是否有从 localStorage 恢复的 lastActivity
+      const savedLastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+
+      if (savedLastActivity) {
+        const savedTime = parseInt(savedLastActivity, 10);
+        const now = Date.now();
+        const timeSinceLastActivity = now - savedTime;
+        const timeoutMs = sessionTimeout * 60 * 1000;
+
+        // 检查保存的会话是否已过期
+        if (timeSinceLastActivity > timeoutMs) {
+          console.log('Session expired on page load:', {
+            inactiveMinutes: Math.round(timeSinceLastActivity / 1000 / 60),
+            sessionTimeoutMinutes: sessionTimeout,
+            lastActivity: new Date(savedTime).toLocaleString()
+          });
+          // 会话已过期，显示过期对话框
+          setLastActivity(null);
+          setIsSessionExpired(true);
+          setShowSessionDialog(true);
+          setWarningShown(false);
+          return;
+        }
+
+        // 会话未过期，使用恢复的时间（不重置为当前时间）
+        if (lastActivity === null) {
+          console.log('Restored session from localStorage, lastActivity:', new Date(savedTime).toLocaleString());
+          setLastActivity(savedTime);
+          setIsSessionExpired(false);
+          setShowSessionDialog(false);
+          setWarningShown(false);
+        }
+      } else if (lastActivity === null || isSessionExpired) {
+        // 新登录（没有保存的 lastActivity），初始化为当前时间
+        console.log('User logged in, initializing session state');
         setLastActivity(Date.now());
         setIsSessionExpired(false);
         setShowSessionDialog(false);
@@ -99,7 +147,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       setShowSessionDialog(false);
       setWarningShown(false);
     }
-  }, [user]); // 只依赖user，避免循环依赖
+  }, [user, sessionTimeout]); // 添加 sessionTimeout 依赖
 
   // 刷新会话活动时间
   const refreshSession = useCallback(() => {

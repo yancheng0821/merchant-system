@@ -1,7 +1,9 @@
 package com.merchant.server.notificationservice.processor;
 
+import com.merchant.server.common.dto.ApiResponse;
 import com.merchant.server.common.dto.NotificationRequest;
 import com.merchant.server.common.enums.NotificationScene;
+import com.merchant.server.notificationservice.client.MerchantServiceClient;
 import com.merchant.server.notificationservice.entity.NotificationLog;
 import com.merchant.server.notificationservice.entity.NotificationTemplate;
 import com.merchant.server.notificationservice.mapper.NotificationLogMapper;
@@ -29,6 +31,7 @@ public class NotificationProcessor {
     private final SmsService smsService;
     private final TemplateService templateService;
     private final NotificationLogMapper notificationLogMapper;
+    private final MerchantServiceClient merchantServiceClient;
 
     /**
      * 处理通知请求
@@ -71,9 +74,19 @@ public class NotificationProcessor {
                     ? request.getTemplateCode()
                     : scene.getDefaultTemplateCode();
 
-            // 创建日志记录
+            // 创建日志记录（先创建，以便记录所有发送尝试）
             notificationLog = createNotificationLog(request, scene, NotificationTemplate.NotificationType.EMAIL,
                     effectiveTenantId, templateCode != null ? templateCode : scene.name());
+
+            // 检查是否是 Walk-in 客户的邮箱，如果是则跳过发送
+            if (isWalkInCustomerEmail(request.getRecipient().getEmail())) {
+                notificationLog.setContent("Walk-in Customer - Email skipped");
+                notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
+                notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
+                notificationLogMapper.insert(notificationLog);
+                log.info("⏭️  Skip Walk-in Customer email - email: {}", request.getRecipient().getEmail());
+                return;
+            }
 
             String subject;
             String content;
@@ -108,6 +121,18 @@ public class NotificationProcessor {
             notificationLog.setSubject(subject);
             notificationLog.setContent(content);
 
+            // 检查邮件数量限制（仅对需要计入用量的场景）
+            // 放在内容生成之后，这样即使超限也能保存原始内容用于重试
+            if (scene.shouldCountUsage() && request.getTenantId() != null) {
+                if (!checkEmailLimit(request.getTenantId())) {
+                    log.warn("⚠️ Email limit reached - tenantId: {}, scene: {}", request.getTenantId(), scene.getCode());
+                    notificationLog.setStatus(NotificationLog.NotificationStatus.FAILED);
+                    notificationLog.setErrorMessage("Monthly email quota exceeded");
+                    notificationLogMapper.insert(notificationLog);
+                    return;
+                }
+            }
+
             // 发送邮件（日历按钮链接已嵌入邮件模板中，无需附件）
             // 如果请求中指定了fromName（如商户名称），使用它；否则使用系统默认
             boolean sent = emailService.sendEmail(request.getRecipient().getEmail(), subject, content, request.getFromName());
@@ -116,6 +141,16 @@ public class NotificationProcessor {
             if (sent) {
                 notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
                 notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
+
+                // 增加邮件计数（仅对需要计入用量的场景）
+                if (scene.shouldCountUsage() && request.getTenantId() != null) {
+                    try {
+                        merchantServiceClient.incrementEmailCount(request.getTenantId());
+                        log.debug("📧 增加邮件计数 - 租户ID: {}", request.getTenantId());
+                    } catch (Exception ex) {
+                        log.warn("增加邮件计数失败 - 租户ID: {}", request.getTenantId(), ex);
+                    }
+                }
             } else {
                 notificationLog.setStatus(NotificationLog.NotificationStatus.FAILED);
                 notificationLog.setErrorMessage("邮件发送失败");
@@ -163,11 +198,11 @@ public class NotificationProcessor {
 
             // 检查是否是 Walk-in Customer 的特殊号码，直接标记为成功
             if (isWalkInCustomerPhone(request.getRecipient().getPhone())) {
-                notificationLog.setContent("Walk-in Customer - 无需发送短信");
+                notificationLog.setContent("Walk-in Customer - SMS skipped");
                 notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
                 notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
                 notificationLogMapper.insert(notificationLog);
-                log.info("⏭️  跳过Walk-in Customer短信");
+                log.info("⏭️  Skip Walk-in Customer SMS - phone: {}", request.getRecipient().getPhone());
                 return;
             }
 
@@ -199,6 +234,19 @@ public class NotificationProcessor {
 
             notificationLog.setContent(message);
 
+            // 检查短信数量限制（仅对需要计入用量的场景）
+            // Basic套餐的maxSmsPerMonth=0，表示不包含短信功能
+            // 放在内容生成之后，这样即使超限也能保存原始内容用于重试
+            if (scene.shouldCountUsage() && request.getTenantId() != null) {
+                if (!checkSmsLimit(request.getTenantId())) {
+                    log.warn("⚠️ SMS limit reached or not included - tenantId: {}, scene: {}", request.getTenantId(), scene.getCode());
+                    notificationLog.setStatus(NotificationLog.NotificationStatus.FAILED);
+                    notificationLog.setErrorMessage("SMS not included in plan or monthly quota exceeded");
+                    notificationLogMapper.insert(notificationLog);
+                    return;
+                }
+            }
+
             // 将渲染后的message放入variables，供AWS SNS使用（阿里云使用场景和变量）
             Map<String, Object> variables = new java.util.HashMap<>(request.getVariables());
             variables.put("message", message);
@@ -214,6 +262,16 @@ public class NotificationProcessor {
             if (sent) {
                 notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
                 notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
+
+                // 增加短信计数（仅对需要计入用量的场景）
+                if (scene.shouldCountUsage() && request.getTenantId() != null) {
+                    try {
+                        merchantServiceClient.incrementSmsCount(request.getTenantId());
+                        log.debug("📱 增加短信计数 - 租户ID: {}", request.getTenantId());
+                    } catch (Exception ex) {
+                        log.warn("增加短信计数失败 - 租户ID: {}", request.getTenantId(), ex);
+                    }
+                }
             } else {
                 notificationLog.setStatus(NotificationLog.NotificationStatus.FAILED);
                 notificationLog.setErrorMessage("短信发送失败");
@@ -267,6 +325,7 @@ public class NotificationProcessor {
     /**
      * 检查是否是 Walk-in Customer 的特殊号码
      * Walk-in Customer 使用 0000000000 作为占位符号码
+     * 支持格式: 0000000000, +10000000000, 10000000000
      */
     private boolean isWalkInCustomerPhone(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
@@ -276,7 +335,109 @@ public class NotificationProcessor {
         // 清理号码，只保留数字
         String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
 
-        // 检查是否全是0（长度至少10位）
-        return cleanNumber.matches("0{10,}");
+        // 检查是否全是0（长度至少10位）或者以10个0结尾（带国家代码的情况）
+        return cleanNumber.matches("0{10,}") || cleanNumber.endsWith("0000000000");
+    }
+
+    /**
+     * 检查是否是 Walk-in Customer 的邮箱
+     * Walk-in Customer 邮箱格式: walkinXX@vamerchant.app（XX是商户ID）
+     */
+    private boolean isWalkInCustomerEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        // 检查邮箱格式: walkinXX@vamerchant.app
+        return email.toLowerCase().matches("walkin\\d+@vamerchant\\.app");
+    }
+
+    /**
+     * 检查邮件数量是否在限制内
+     * @param tenantId 租户ID
+     * @return true 如果可以发送（未达上限或无限制），false 如果已达上限
+     */
+    private boolean checkEmailLimit(Long tenantId) {
+        try {
+            // 获取邮件限制
+            ApiResponse<Integer> limitResponse = merchantServiceClient.getTenantMaxEmailsPerMonth(tenantId);
+            if (limitResponse == null || limitResponse.getData() == null) {
+                log.warn("获取邮件限制失败，默认允许发送 - 租户ID: {}", tenantId);
+                return true;
+            }
+            Integer maxEmails = limitResponse.getData();
+
+            // -1 表示无限制
+            if (maxEmails == -1) {
+                return true;
+            }
+
+            // 获取当月使用量
+            ApiResponse<Map<String, Object>> statsResponse = merchantServiceClient.getCurrentMonthStats(tenantId);
+            int currentCount = 0;
+            if (statsResponse != null && statsResponse.getData() != null) {
+                Object countObj = statsResponse.getData().get("emailCount");
+                if (countObj instanceof Number) {
+                    currentCount = ((Number) countObj).intValue();
+                }
+            }
+
+            boolean withinLimit = currentCount < maxEmails;
+            if (!withinLimit) {
+                log.info("邮件数量已达上限 - 租户ID: {}, 当前: {}, 限制: {}", tenantId, currentCount, maxEmails);
+            }
+            return withinLimit;
+
+        } catch (Exception e) {
+            log.warn("检查邮件限制时出错，默认允许发送 - 租户ID: {}", tenantId, e);
+            return true;
+        }
+    }
+
+    /**
+     * 检查短信数量是否在限制内
+     * @param tenantId 租户ID
+     * @return true 如果可以发送（未达上限或无限制），false 如果已达上限或套餐不包含短信
+     */
+    private boolean checkSmsLimit(Long tenantId) {
+        try {
+            // 获取短信限制
+            ApiResponse<Integer> limitResponse = merchantServiceClient.getTenantMaxSmsPerMonth(tenantId);
+            if (limitResponse == null || limitResponse.getData() == null) {
+                log.warn("获取短信限制失败，默认不允许发送 - 租户ID: {}", tenantId);
+                return false;  // 短信功能默认关闭
+            }
+            Integer maxSms = limitResponse.getData();
+
+            // 0 表示套餐不包含短信功能（如Basic套餐）
+            if (maxSms == 0) {
+                log.info("套餐不包含短信功能 - 租户ID: {}", tenantId);
+                return false;
+            }
+
+            // -1 表示无限制
+            if (maxSms == -1) {
+                return true;
+            }
+
+            // 获取当月使用量
+            ApiResponse<Map<String, Object>> statsResponse = merchantServiceClient.getCurrentMonthStats(tenantId);
+            int currentCount = 0;
+            if (statsResponse != null && statsResponse.getData() != null) {
+                Object countObj = statsResponse.getData().get("smsCount");
+                if (countObj instanceof Number) {
+                    currentCount = ((Number) countObj).intValue();
+                }
+            }
+
+            boolean withinLimit = currentCount < maxSms;
+            if (!withinLimit) {
+                log.info("短信数量已达上限 - 租户ID: {}, 当前: {}, 限制: {}", tenantId, currentCount, maxSms);
+            }
+            return withinLimit;
+
+        } catch (Exception e) {
+            log.warn("检查短信限制时出错，默认不允许发送 - 租户ID: {}", tenantId, e);
+            return false;  // 短信功能出错时默认关闭
+        }
     }
 }

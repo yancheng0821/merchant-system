@@ -63,12 +63,13 @@ import { useTax } from '../../contexts/TaxContext';
 import { useSession } from '../../contexts/SessionContext';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme, ThemeMode } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
 import { merchantConfigApi } from '../../services/api';
 import StripeConnectTab from './StripeConnectTab';
 import BillingTab from './BillingTab';
 import OnlineBookingTab from './OnlineBookingTab';
 import { COUNTRIES, getProvincesByCountry } from '../../data/countries';
-import { CalendarMonth as OnlineBookingIcon } from '@mui/icons-material';
+import { CalendarMonth as OnlineBookingIcon, Lock as LockIcon } from '@mui/icons-material';
 
 // 时间字符串转Date对象 (如 "09:00" -> Date)
 const timeStringToDate = (timeStr: string): Date | null => {
@@ -151,11 +152,12 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
-  const { user } = useAuth();
+  const { user, subscriptionExpired } = useAuth();
   const { refreshTaxSettings } = useTax();
   const { updateSessionTimeout } = useSession();
   const { hasPermission } = usePermission();
   const { themeMode, setThemeMode } = useTheme();
+  const { hasFeature } = useFeature();
   const location = useLocation();
   const muiTheme = useMuiTheme();
 
@@ -198,6 +200,7 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
       icon: <OnlineBookingIcon />,
       color: '#3B82F6',
       permissions: ['settings:view_online_booking', 'settings:update_online_booking'] as const,
+      featureKey: 'onlineBooking' as const,
     },
     // {
     //   key: 'payment',
@@ -209,6 +212,11 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
   ];
 
   const tabsConfig = allTabsConfig.filter(tab => {
+    // 订阅过期时，只显示 billing tab
+    if (subscriptionExpired && tab.key !== 'billing') {
+      return false;
+    }
+
     // 如果有 permissions 数组（多个权限），必须全部满足
     if ('permissions' in tab && tab.permissions) {
       return tab.permissions.every(p => hasPermission(p));
@@ -233,9 +241,13 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
   // 初始化selectedTab - 在useState初始化时就读取localStorage，避免闪烁
   const [selectedTab, setSelectedTab] = useState(() => {
-    // 优先检查URL参数（例如从UnpaidInvoiceAlert跳转过来）
+    // 优先检查URL参数（例如从其他页面跳转过来）
     const searchParams = new URLSearchParams(location.search);
-    const urlTab = searchParams.get('tab');
+    let urlTab = searchParams.get('tab');
+    // pricing 是 billing tab 的别名（pricing 页面在 billing tab 内部）
+    if (urlTab === 'pricing') {
+      urlTab = 'billing';
+    }
     if (urlTab) {
       const filteredTabs = allTabsConfig.filter(hasTabPermission);
       const urlTabIndex = filteredTabs.findIndex(tab => tab.key === urlTab);
@@ -274,6 +286,14 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
 
     return 0;
   });
+
+  // 当 subscriptionExpired 变化导致 tabsConfig 变化时，重置 selectedTab
+  // 避免 MUI Tabs 组件出现 "invalid value" 错误
+  useEffect(() => {
+    if (tabsConfig.length > 0 && selectedTab >= tabsConfig.length) {
+      setSelectedTab(0);
+    }
+  }, [tabsConfig.length, selectedTab]);
 
   // 主题色
   const primaryColor = '#1a1a1a';
@@ -727,19 +747,29 @@ const Settings: React.FC<SettingsProps> = ({ initialTab: propInitialTab }) => {
               },
             }}
           >
-            {tabsConfig.map((tab, index) => (
-              <Tab
-                key={index}
-                icon={React.cloneElement(tab.icon, {
-                  sx: {
-                    fontSize: isMobile ? 16 : 18,
-                    color: selectedTab === index ? '#1a1a1a' : '#999',
+            {tabsConfig.map((tab, index) => {
+              const isFeatureLocked = 'featureKey' in tab && tab.featureKey && !hasFeature(tab.featureKey);
+              return (
+                <Tab
+                  key={index}
+                  icon={React.cloneElement(tab.icon, {
+                    sx: {
+                      fontSize: isMobile ? 16 : 18,
+                      color: selectedTab === index ? '#1a1a1a' : '#999',
+                    }
+                  })}
+                  iconPosition="start"
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {tab.label}
+                      {isFeatureLocked && (
+                        <LockIcon sx={{ fontSize: isMobile ? 12 : 14, color: '#999' }} />
+                      )}
+                    </Box>
                   }
-                })}
-                iconPosition="start"
-                label={tab.label}
-              />
-            ))}
+                />
+              );
+            })}
           </Tabs>
         </Box>
 

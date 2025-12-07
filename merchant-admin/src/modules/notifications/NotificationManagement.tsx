@@ -9,13 +9,16 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from '@mui/material';
+import { Lock as LockIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
 import NotificationTemplateManagement from './NotificationTemplateManagement';
 import NotificationLogManagement from './NotificationLogManagement';
 import SystemNotificationManagement from './SystemNotificationManagement';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 
 const NotificationManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -23,6 +26,10 @@ const NotificationManagement: React.FC = () => {
   const { user } = useAuth();
   const { themeMode } = useTheme();
   const muiTheme = useMuiTheme();
+  const { hasFeature } = useFeature();
+
+  // 检查是否有模板编辑功能
+  const canEditTemplates = hasFeature('notificationTemplateEdit');
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
@@ -145,7 +152,17 @@ const NotificationManagement: React.FC = () => {
           }}
         >
           {tabsConfig.map((tab, index) => (
-            <Tab key={index} label={tab.label} />
+            <Tab
+              key={index}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {tab.label}
+                  {tab.key === 'templates' && !canEditTemplates && (
+                    <LockIcon sx={{ fontSize: 14, color: '#999' }} />
+                  )}
+                </Box>
+              }
+            />
           ))}
         </Tabs>
       </Box>
@@ -154,7 +171,18 @@ const NotificationManagement: React.FC = () => {
       {currentTabKey === 'templates' && (
         <Fade in={currentTabKey === 'templates'} timeout={300}>
           <Box>
-            <NotificationTemplateManagement />
+            {canEditTemplates ? (
+              <NotificationTemplateManagement />
+            ) : (
+              <Box sx={{ maxWidth: 500, mx: 'auto', mt: 4 }}>
+                <UpgradePrompt
+                  feature="notificationTemplateEdit"
+                  featureNameKey="upgrade.features.notificationTemplate"
+                  requiredPlan="PRO"
+                  variant="card"
+                />
+              </Box>
+            )}
           </Box>
         </Fade>
       )}

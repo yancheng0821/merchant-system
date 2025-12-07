@@ -554,6 +554,13 @@ export interface LoginResponse {
   createdAt?: string;
   // 租户所有者标识
   isTenantOwner?: boolean;
+  // 订阅过期标识 - 用于限制用户只能访问订阅/支付页面
+  subscriptionExpired?: boolean;
+  subscriptionStatus?: string;
+  tenantStatus?: string;
+  planCode?: string;
+  // 短信验证设置
+  smsVerificationEnabled?: boolean;
   // 2FA related fields - present when 2FA is required
   need2FA?: boolean;
   phone?: string;
@@ -1956,6 +1963,14 @@ export const resourceApi = {
     });
     return response;
   },
+
+  // 获取租户的员工数量（不含已删除的）
+  getStaffCount: async (tenantId: number): Promise<{ staffCount: number }> => {
+    const response = await createRequest(`/api/business/resources/tenant/${tenantId}/staff-count`, {
+      method: 'GET',
+    });
+    return response;
+  },
 };
 
 // 员工签到签退管理API
@@ -3330,69 +3345,48 @@ export const tenantApi = {
   },
 };
 
-// 账单管理API
-export interface Invoice {
-  id: number;
-  invoiceNumber: string;
-  tenantId: number;
-  tenantName: string;
-  amount: number;
-  currency: string;
-  billingPeriodStart: string;
-  billingPeriodEnd: string;
-  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
-  paymentMethod?: string;
-  paymentDate?: string;
-  stripeInvoiceId?: string;
-  stripePaymentIntentId?: string;
-  description?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export const invoiceApi = {
-  // 根据租户ID获取账单列表
-  getInvoicesByTenantId: async (tenantId: number): Promise<ApiResponse<Invoice[]>> => {
-    return createRequest(`/api/merchant/invoice/tenant/${tenantId}`, {
-      method: 'GET',
-    });
-  },
-
-  // 根据ID获取账单详情
-  getInvoiceById: async (id: number): Promise<ApiResponse<Invoice>> => {
-    return createRequest(`/api/merchant/invoice/${id}`, {
-      method: 'GET',
-    });
-  },
-
-  // 创建账单
-  createInvoice: async (invoice: Partial<Invoice>): Promise<ApiResponse<Invoice>> => {
-    return createRequest('/api/merchant/invoice', {
-      method: 'POST',
-      body: JSON.stringify(invoice),
-    });
-  },
-
-  // 更新账单
-  updateInvoice: async (id: number, invoice: Partial<Invoice>): Promise<ApiResponse<Invoice>> => {
-    return createRequest(`/api/merchant/invoice/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(invoice),
-    });
-  },
-
-  // 删除账单
-  deleteInvoice: async (id: number): Promise<ApiResponse<boolean>> => {
-    return createRequest(`/api/merchant/invoice/${id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
 // ============================================================================
 // 订阅管理 API
 // ============================================================================
+// 注：本地账单管理 API (invoiceApi) 已移除，由 Stripe Subscriptions 自动处理
+
+// 订阅计划功能配置
+export interface PlanFeatures {
+  limits: {
+    maxStaff: number;
+    maxAppointmentsPerMonth: number;
+    maxEmailsPerMonth: number;
+    maxSmsPerMonth: number;
+  };
+  modules: {
+    dashboard: boolean;
+    appointments: boolean;
+    schedule: boolean;
+    customers: boolean;
+    orders: boolean;
+    products: boolean;
+    resources: boolean;
+    settings: boolean;
+    notifications: boolean;
+    marketing: boolean;
+    analytics: boolean;
+    costs: boolean;
+    rbac: boolean;
+  };
+  features: {
+    appLogin: boolean;
+    onlineBooking: boolean;
+    notificationTemplateEdit: boolean;
+    customerImport: boolean;
+    smsNotification: boolean;
+    auditLog: boolean;
+    removeBranding: boolean;
+    futureFeatures: boolean;
+    multiLocation?: boolean;
+    aiInsights?: boolean;
+    stripeTerminal?: boolean;
+  };
+}
 
 export interface SubscriptionPlan {
   id: number;
@@ -3406,9 +3400,20 @@ export interface SubscriptionPlan {
   maxAppointmentsPerMonth: number;
   trialDays: number;
   isActive: boolean;
+  features?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+// 解析 features JSON 字符串
+export const parsePlanFeatures = (featuresJson?: string): PlanFeatures | null => {
+  if (!featuresJson) return null;
+  try {
+    return JSON.parse(featuresJson) as PlanFeatures;
+  } catch {
+    return null;
+  }
+};
 
 export interface TenantSubscription {
   id: number;
@@ -3455,50 +3460,275 @@ export const subscriptionApi = {
       method: 'PUT',
     });
   },
+
+  // 更改订阅计划（升级/降级）
+  changePlan: async (
+    subscriptionId: number,
+    planCode: string,
+    billingCycle?: 'MONTHLY' | 'YEARLY'
+  ): Promise<ApiResponse<TenantSubscription>> => {
+    const params = new URLSearchParams({ planCode });
+    if (billingCycle) {
+      params.append('billingCycle', billingCycle);
+    }
+    return createRequest(`/api/merchant/subscription/${subscriptionId}/change-plan?${params.toString()}`, {
+      method: 'PUT',
+    });
+  },
 };
 
 // ============================================================================
-// 支付管理 API
+// 使用量统计 API
 // ============================================================================
 
-export interface PaymentConfig {
-  publishableKey: string;
+export interface TenantUsageStats {
+  id?: number;
+  tenantId: number;
+  statMonth: string;
+  appointmentCount: number;
+  emailCount: number;
+  smsCount: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface PaymentIntent {
-  clientSecret: string;
-  invoiceId: string;
-}
-
-export const paymentApi = {
-  // 获取Stripe支付配置
-  getPaymentConfig: async (): Promise<ApiResponse<PaymentConfig>> => {
-    return createRequest('/api/merchant/subscription-payment/config', {
+export const usageStatsApi = {
+  // 获取当月使用量统计
+  getCurrentMonthStats: async (tenantId: number): Promise<ApiResponse<TenantUsageStats>> => {
+    return createRequest(`/api/merchant/usage-stats/tenant/${tenantId}/current`, {
       method: 'GET',
     });
   },
 
-  // 创建Payment Intent
-  createPaymentIntent: async (invoiceId: number): Promise<ApiResponse<PaymentIntent>> => {
-    return createRequest(`/api/merchant/subscription-payment/create-payment-intent/${invoiceId}`, {
-      method: 'POST',
-    });
-  },
-
-  // 取消Payment Intent
-  cancelPaymentIntent: async (invoiceId: number): Promise<ApiResponse<void>> => {
-    return createRequest(`/api/merchant/subscription-payment/cancel-payment-intent/${invoiceId}`, {
-      method: 'POST',
-    });
-  },
-
-  // 查询账单详情（带支付信息）
-  getInvoice: async (invoiceId: number): Promise<ApiResponse<Invoice>> => {
-    return createRequest(`/api/merchant/subscription-payment/invoice/${invoiceId}`, {
+  // 获取指定月份使用量统计
+  getStatsByMonth: async (tenantId: number, statMonth: string): Promise<ApiResponse<TenantUsageStats>> => {
+    return createRequest(`/api/merchant/usage-stats/tenant/${tenantId}/month/${statMonth}`, {
       method: 'GET',
     });
   },
 };
+
+// ============================================================================
+// Stripe 订阅 API (自动扣款)
+// ============================================================================
+
+export interface StripeCheckoutResponse {
+  url: string;
+}
+
+export interface StripePortalResponse {
+  portalUrl: string;
+}
+
+export const stripeSubscriptionApi = {
+  // 创建 Hosted Checkout Session (用于新订阅支付，跳转到 Stripe 托管页面)
+  createCheckoutSession: async (
+    tenantId: number,
+    planCode: string,
+    billingCycle: 'MONTHLY' | 'YEARLY',
+    successUrl: string,
+    cancelUrl?: string,
+    customerEmail?: string
+  ): Promise<ApiResponse<StripeCheckoutResponse>> => {
+    const params = new URLSearchParams({
+      tenantId: tenantId.toString(),
+      planCode,
+      billingCycle,
+      successUrl,
+    });
+    if (cancelUrl) {
+      params.append('cancelUrl', cancelUrl);
+    }
+    if (customerEmail) {
+      params.append('customerEmail', customerEmail);
+    }
+    return createRequest(`/api/merchant/stripe/subscription/checkout-session?${params.toString()}`, {
+      method: 'POST',
+    });
+  },
+
+  // 创建 Customer Portal Session (用户管理支付方式、账单)
+  createCustomerPortal: async (
+    tenantId: number,
+    returnUrl: string
+  ): Promise<ApiResponse<StripePortalResponse>> => {
+    const params = new URLSearchParams({
+      tenantId: tenantId.toString(),
+      returnUrl,
+    });
+    return createRequest(`/api/merchant/stripe/subscription/customer-portal?${params.toString()}`, {
+      method: 'POST',
+    });
+  },
+
+  // 预览订阅升级/降级的费用（不实际扣款）
+  previewSubscriptionUpdate: async (
+    stripeSubscriptionId: string,
+    newPlanCode: string,
+    newBillingCycle: 'MONTHLY' | 'YEARLY'
+  ): Promise<ApiResponse<{
+    subtotal: number;
+    tax: number;
+    immediateTotal: number;
+    currency: string;
+    newPlanPrice: number;
+    newPlanName: string;
+    newPlanNameZh: string;
+    paymentMethod?: {
+      id: string;
+      type: string;
+      brand?: string;
+      last4?: string;
+      expMonth?: number;
+      expYear?: number;
+    };
+  }>> => {
+    const params = new URLSearchParams({
+      stripeSubscriptionId,
+      newPlanCode,
+      newBillingCycle,
+    });
+    return createRequest(`/api/merchant/stripe/subscription/preview-update?${params.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // 更新 Stripe 订阅 (升级/降级)
+  updateSubscription: async (
+    stripeSubscriptionId: string,
+    newPlanCode: string,
+    newBillingCycle: 'MONTHLY' | 'YEARLY',
+    prorationBehavior: 'create_prorations' | 'none' | 'always_invoice' = 'create_prorations'
+  ): Promise<ApiResponse<boolean>> => {
+    const params = new URLSearchParams({
+      stripeSubscriptionId,
+      newPlanCode,
+      newBillingCycle,
+      prorationBehavior,
+    });
+    return createRequest(`/api/merchant/stripe/subscription/update?${params.toString()}`, {
+      method: 'PUT',
+    });
+  },
+
+  // 取消 Stripe 订阅
+  cancelSubscription: async (
+    stripeSubscriptionId: string,
+    cancelAtPeriodEnd: boolean = true
+  ): Promise<ApiResponse<boolean>> => {
+    const params = new URLSearchParams({
+      stripeSubscriptionId,
+      cancelAtPeriodEnd: cancelAtPeriodEnd.toString(),
+    });
+    return createRequest(`/api/merchant/stripe/subscription/cancel?${params.toString()}`, {
+      method: 'PUT',
+    });
+  },
+
+  // 恢复已取消的订阅
+  resumeSubscription: async (
+    stripeSubscriptionId: string
+  ): Promise<ApiResponse<boolean>> => {
+    const params = new URLSearchParams({
+      stripeSubscriptionId,
+    });
+    return createRequest(`/api/merchant/stripe/subscription/resume?${params.toString()}`, {
+      method: 'PUT',
+    });
+  },
+
+  // 同步 Stripe 订阅状态
+  syncSubscriptionStatus: async (
+    stripeSubscriptionId: string
+  ): Promise<ApiResponse<boolean>> => {
+    const params = new URLSearchParams({
+      stripeSubscriptionId,
+    });
+    return createRequest(`/api/merchant/stripe/subscription/sync?${params.toString()}`, {
+      method: 'POST',
+    });
+  },
+
+  // 初始化 Stripe Products (管理员)
+  initializeStripeProducts: async (): Promise<ApiResponse<boolean>> => {
+    return createRequest('/api/merchant/stripe/subscription/admin/init-products', {
+      method: 'POST',
+    });
+  },
+
+  // 安排订阅降级（不立即生效，下个计费周期开始时生效）
+  scheduleDowngrade: async (
+    tenantId: number,
+    newPlanCode: string,
+    newBillingCycle: 'MONTHLY' | 'YEARLY'
+  ): Promise<ApiResponse<{
+    success: boolean;
+    pendingPlanId: number;
+    pendingPlanCode: string;
+    pendingPlanNameEn: string;
+    pendingPlanNameZh: string;
+    effectiveDate: string;
+  }>> => {
+    const params = new URLSearchParams({
+      tenantId: tenantId.toString(),
+      newPlanCode,
+      newBillingCycle,
+    });
+    return createRequest(`/api/merchant/stripe/subscription/schedule-downgrade?${params.toString()}`, {
+      method: 'POST',
+    });
+  },
+
+  // 取消已安排的降级
+  cancelScheduledDowngrade: async (
+    tenantId: number
+  ): Promise<ApiResponse<boolean>> => {
+    const params = new URLSearchParams({
+      tenantId: tenantId.toString(),
+    });
+    return createRequest(`/api/merchant/stripe/subscription/schedule-downgrade?${params.toString()}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 获取已安排的计划变更信息（从 Stripe Subscription Schedule 读取）
+  getScheduledChanges: async (
+    tenantId: number
+  ): Promise<ApiResponse<{
+    scheduleId: string;
+    pendingPlanCode: string;
+    pendingPlanNameEn: string;
+    pendingPlanNameZh: string;
+    pendingBillingCycle: string;
+    effectiveDate: string;
+  } | null>> => {
+    const params = new URLSearchParams({
+      tenantId: tenantId.toString(),
+    });
+    return createRequest(`/api/merchant/stripe/subscription/scheduled-changes?${params.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // 获取订阅取消状态（从 Stripe 读取 cancel_at_period_end 和 cancel_at）
+  getCancellationStatus: async (
+    tenantId: number
+  ): Promise<ApiResponse<{
+    cancelAtPeriodEnd: boolean;
+    cancelAt: string;
+  } | null>> => {
+    const params = new URLSearchParams({
+      tenantId: tenantId.toString(),
+    });
+    return createRequest(`/api/merchant/stripe/subscription/cancellation-status?${params.toString()}`, {
+      method: 'GET',
+    });
+  },
+};
+
+// ============================================================================
+// 支付管理 API - 已移除，由 Stripe Subscriptions 自动处理
+// paymentApi 已删除，手动账单支付不再需要
 
 // 在线预约配置 API
 export const onlineBookingApi = {

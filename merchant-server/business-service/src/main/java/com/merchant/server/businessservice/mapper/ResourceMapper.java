@@ -109,4 +109,9 @@ public interface ResourceMapper {
      */
     void deleteAvailabilitiesByResourceIdAndDay(@Param("resourceId") Long resourceId,
                                                  @Param("dayOfWeek") Integer dayOfWeek);
+
+    /**
+     * 获取租户下所有活跃员工资源（用于检查员工数量限制）
+     */
+    List<Resource> findActiveStaffByTenantId(@Param("tenantId") Long tenantId);
 }

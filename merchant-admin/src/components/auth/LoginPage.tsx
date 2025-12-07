@@ -28,12 +28,14 @@ import {
   Notifications as NotificationIcon,
   Speed as SpeedIcon,
   Security as SecurityIcon,
-  Analytics as AnalyticsIcon,
+  People as PeopleIcon,
+  Devices as DevicesIcon,
 } from '@mui/icons-material';
 import MerchantRegisterPage from './MerchantRegisterPage';
 import ForgotPasswordPage from './ForgotPasswordPage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import HelpTooltip from '../common/HelpTooltip';
 import CountryCodeSelector from '../common/CountryCodeSelector';
@@ -62,6 +64,7 @@ interface RegisterData {
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { login, register, loading, error, clearError, setError } = useAuth();
 
@@ -337,7 +340,13 @@ const LoginPage: React.FC = () => {
       // 自动发送2FA验证码
       await send2FACode(result.userId, result.phone, result.tenantId);
     } else if (result === true) {
-      setSuccess(t('auth.loginSuccess') || '登录成功');
+      // 检查是否有指定的跳转地址（如从 pricing 页面过来）
+      const redirectUrl = localStorage.getItem('redirectAfterLogin');
+      localStorage.removeItem('redirectAfterLogin');
+      // 清除可能残留的旧导航状态，避免干扰跳转
+      localStorage.removeItem('navigateTo');
+      // 立即跳转，避免先显示默认页面再跳转
+      window.location.href = redirectUrl || '/dashboard';
     }
   };
 
@@ -493,22 +502,32 @@ const LoginPage: React.FC = () => {
           username: result.data.username,
           realName: result.data.realName,
           email: result.data.email,
+          phone: result.data.phone,
           avatar: result.data.avatar,
           tenantId: result.data.tenantId,
+          tenantCode: result.data.tenantCode,
           tenantName: result.data.tenantName,
+          timezone: result.data.timezone,
           roles: result.data.roles || [],
           permissions: result.data.permissions || [],
           lastLoginTime: result.data.lastLoginTime,
+          createdAt: result.data.createdAt,
           isTenantOwner: result.data.isTenantOwner,
+          smsVerificationEnabled: result.data.smsVerificationEnabled,
+          subscriptionExpired: result.data.subscriptionExpired,
+          subscriptionStatus: result.data.subscriptionStatus,
+          tenantStatus: result.data.tenantStatus,
+          planCode: result.data.planCode,
         };
         localStorage.setItem('user', JSON.stringify(user));
 
-        setSuccess(t('auth.loginSuccess') || '登录成功');
-
-        // 延迟刷新，让用户看到成功消息
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 500);
+        // 检查是否有指定的跳转地址（如从 pricing 页面过来）
+        const redirectUrl = localStorage.getItem('redirectAfterLogin');
+        localStorage.removeItem('redirectAfterLogin');
+        // 清除可能残留的旧导航状态，避免干扰跳转
+        localStorage.removeItem('navigateTo');
+        // 立即跳转，避免先显示默认页面再跳转
+        window.location.href = redirectUrl || '/dashboard';
       } else {
         // 优化错误消息显示
         let errorMessage = result.message || t('auth.verificationFailed');
@@ -558,18 +577,18 @@ const LoginPage: React.FC = () => {
     },
     {
       icon: <EventIcon sx={{ fontSize: 24 }} />,
-      title: t('auth.features.unlimitedAppointments'),
-      description: t('auth.features.unlimitedAppointmentsDesc'),
+      title: t('auth.features.simpleScheduling'),
+      description: t('auth.features.simpleSchedulingDesc'),
     },
     {
       icon: <NotificationIcon sx={{ fontSize: 24 }} />,
-      title: t('auth.features.unlimitedNotifications'),
-      description: t('auth.features.unlimitedNotificationsDesc'),
+      title: t('auth.features.autoNotifications'),
+      description: t('auth.features.autoNotificationsDesc'),
     },
     {
-      icon: <AnalyticsIcon sx={{ fontSize: 24 }} />,
-      title: t('auth.features.smartOperations'),
-      description: t('auth.features.smartOperationsDesc'),
+      icon: <PeopleIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.customerManagement'),
+      description: t('auth.features.customerManagementDesc'),
     },
     {
       icon: <SpeedIcon sx={{ fontSize: 24 }} />,
@@ -577,9 +596,9 @@ const LoginPage: React.FC = () => {
       description: t('auth.features.fastSetupDesc'),
     },
     {
-      icon: <SecurityIcon sx={{ fontSize: 24 }} />,
-      title: t('auth.features.secureReliable'),
-      description: t('auth.features.secureReliableDesc'),
+      icon: <DevicesIcon sx={{ fontSize: 24 }} />,
+      title: t('auth.features.multiPlatform'),
+      description: t('auth.features.multiPlatformDesc'),
     },
   ];
 
@@ -635,7 +654,23 @@ const LoginPage: React.FC = () => {
                   lineHeight: 1.6,
                 }}
               >
-                {t('auth.heroSubtitle')}
+                {t('auth.heroSubtitle')}{' '}
+                <Box
+                  component="span"
+                  onClick={() => navigate('/pricing')}
+                  sx={{
+                    color: '#1a1a1a',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #ccc',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: '#1a1a1a',
+                    },
+                  }}
+                >
+                  {t('auth.viewPricing')} →
+                </Box>
               </Typography>
 
               {/* 优势列表 */}
@@ -768,7 +803,6 @@ const LoginPage: React.FC = () => {
                     onChange={handleLoginChange}
                     margin="normal"
                     required
-                    autoFocus
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -998,7 +1032,6 @@ const LoginPage: React.FC = () => {
                     onChange={handleRegisterChange}
                     margin="normal"
                     required
-                    autoFocus
                     helperText={t('auth.usernameHelp')}
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -1456,8 +1489,9 @@ const LoginPage: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5 }}>
               <Box
                 component="a"
-                href="#"
-                onClick={(e: React.MouseEvent) => e.preventDefault()}
+                href="https://apps.apple.com/us/app/vamerchant/id6755952828"
+                target="_blank"
+                rel="noopener noreferrer"
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1487,8 +1521,9 @@ const LoginPage: React.FC = () => {
               </Box>
               <Box
                 component="a"
-                href="#"
-                onClick={(e: React.MouseEvent) => e.preventDefault()}
+                href="https://play.google.com/store/apps/details?id=com.vamerchant.app"
+                target="_blank"
+                rel="noopener noreferrer"
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',

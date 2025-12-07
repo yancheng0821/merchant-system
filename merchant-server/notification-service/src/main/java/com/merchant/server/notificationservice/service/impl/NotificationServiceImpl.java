@@ -1,5 +1,7 @@
 package com.merchant.server.notificationservice.service.impl;
 
+import com.merchant.server.common.dto.ApiResponse;
+import com.merchant.server.notificationservice.client.MerchantServiceClient;
 import com.merchant.server.notificationservice.dto.SendNotificationRequest;
 import com.merchant.server.notificationservice.entity.NotificationLog;
 import com.merchant.server.notificationservice.entity.NotificationTemplate;
@@ -26,6 +28,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final EmailService emailService;
     private final SmsService smsService;
     private final NotificationLogMapper notificationLogMapper;
+    private final MerchantServiceClient merchantServiceClient;
 
     @Override
     public NotificationLog getNotificationLogById(Long id) {
@@ -198,15 +201,52 @@ public class NotificationServiceImpl implements NotificationService {
             throw new RuntimeException("Notification log not found: " + logId);
         }
 
-        // 检查是否是 Walk-in Customer 的特殊号码，直接标记为成功
-        if (isWalkInCustomerPhone(notificationLog.getRecipient())) {
-            log.info("跳过重试 Walk-in Customer 通知 (号码: {}), 直接标记为成功", notificationLog.getRecipient());
-            notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
-            notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
-            notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
-            notificationLog.setErrorMessage(null);
-            notificationLogMapper.update(notificationLog);
-            return notificationLog;
+        Long tenantId = notificationLog.getTenantId();
+
+        // 检查是否是 Walk-in Customer
+        if (notificationLog.getType() == NotificationTemplate.NotificationType.EMAIL) {
+            if (isWalkInCustomerEmail(notificationLog.getRecipient())) {
+                log.info("Skip retry Walk-in Customer email: {}", notificationLog.getRecipient());
+                notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
+                notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
+                notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
+                notificationLog.setErrorMessage(null);
+                notificationLog.setContent("Walk-in Customer - Email skipped");
+                notificationLogMapper.update(notificationLog);
+                return notificationLog;
+            }
+        } else if (notificationLog.getType() == NotificationTemplate.NotificationType.SMS) {
+            if (isWalkInCustomerPhone(notificationLog.getRecipient())) {
+                log.info("Skip retry Walk-in Customer SMS: {}", notificationLog.getRecipient());
+                notificationLog.setStatus(NotificationLog.NotificationStatus.SENT);
+                notificationLog.setSentAt(LocalDateTime.now(ZoneOffset.UTC));
+                notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
+                notificationLog.setErrorMessage(null);
+                notificationLog.setContent("Walk-in Customer - SMS skipped");
+                notificationLogMapper.update(notificationLog);
+                return notificationLog;
+            }
+        }
+
+        // 检查用量限制
+        if (tenantId != null) {
+            if (notificationLog.getType() == NotificationTemplate.NotificationType.EMAIL) {
+                if (!checkEmailLimit(tenantId)) {
+                    log.warn("Email limit exceeded for tenant: {}", tenantId);
+                    notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
+                    notificationLog.setErrorMessage("Monthly email quota exceeded");
+                    notificationLogMapper.update(notificationLog);
+                    return notificationLog;
+                }
+            } else if (notificationLog.getType() == NotificationTemplate.NotificationType.SMS) {
+                if (!checkSmsLimit(tenantId)) {
+                    log.warn("SMS limit exceeded for tenant: {}", tenantId);
+                    notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
+                    notificationLog.setErrorMessage("SMS not included in plan or monthly quota exceeded");
+                    notificationLogMapper.update(notificationLog);
+                    return notificationLog;
+                }
+            }
         }
 
         try {
@@ -224,6 +264,19 @@ public class NotificationServiceImpl implements NotificationService {
                 notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
                 notificationLog.setErrorMessage(null);
                 log.info("Successfully retried notification: {}", logId);
+
+                // 增加用量计数
+                if (tenantId != null) {
+                    try {
+                        if (notificationLog.getType() == NotificationTemplate.NotificationType.EMAIL) {
+                            merchantServiceClient.incrementEmailCount(tenantId);
+                        } else if (notificationLog.getType() == NotificationTemplate.NotificationType.SMS) {
+                            merchantServiceClient.incrementSmsCount(tenantId);
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to increment usage count for tenant: {}", tenantId, e);
+                    }
+                }
             } else {
                 notificationLog.setRetryCount(notificationLog.getRetryCount() + 1);
                 notificationLog.setErrorMessage("Retry failed");
@@ -290,6 +343,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * 检查是否是 Walk-in Customer 的特殊号码
      * Walk-in Customer 使用 0000000000 作为占位符号码
+     * 支持格式: 0000000000, +10000000000, 10000000000
      */
     private boolean isWalkInCustomerPhone(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
@@ -299,7 +353,73 @@ public class NotificationServiceImpl implements NotificationService {
         // 清理号码，只保留数字
         String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
 
-        // 检查是否全是0（长度至少10位）
-        return cleanNumber.matches("0{10,}");
+        // 检查是否全是0（长度至少10位）或者以10个0结尾（带国家代码的情况）
+        return cleanNumber.matches("0{10,}") || cleanNumber.endsWith("0000000000");
+    }
+
+    /**
+     * 检查是否是 Walk-in Customer 的邮箱
+     * Walk-in Customer 邮箱格式: walkinXX@vamerchant.app（XX是商户ID）
+     */
+    private boolean isWalkInCustomerEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        return email.toLowerCase().matches("walkin\\d+@vamerchant\\.app");
+    }
+
+    /**
+     * 检查邮件数量是否在限制内
+     */
+    private boolean checkEmailLimit(Long tenantId) {
+        try {
+            ApiResponse<Integer> limitResponse = merchantServiceClient.getTenantMaxEmailsPerMonth(tenantId);
+            if (limitResponse == null || limitResponse.getData() == null) {
+                return true; // 无法获取限制，允许发送
+            }
+            int maxEmails = limitResponse.getData();
+            if (maxEmails == -1) {
+                return true; // 无限制
+            }
+
+            ApiResponse<Map<String, Object>> statsResponse = merchantServiceClient.getCurrentMonthStats(tenantId);
+            if (statsResponse == null || statsResponse.getData() == null) {
+                return true;
+            }
+            int currentCount = ((Number) statsResponse.getData().getOrDefault("emailCount", 0)).intValue();
+            return currentCount < maxEmails;
+        } catch (Exception e) {
+            log.warn("Failed to check email limit for tenant: {}", tenantId, e);
+            return true; // 出错时允许发送
+        }
+    }
+
+    /**
+     * 检查短信数量是否在限制内
+     */
+    private boolean checkSmsLimit(Long tenantId) {
+        try {
+            ApiResponse<Integer> limitResponse = merchantServiceClient.getTenantMaxSmsPerMonth(tenantId);
+            if (limitResponse == null || limitResponse.getData() == null) {
+                return true;
+            }
+            int maxSms = limitResponse.getData();
+            if (maxSms == 0) {
+                return false; // 套餐不包含短信
+            }
+            if (maxSms == -1) {
+                return true; // 无限制
+            }
+
+            ApiResponse<Map<String, Object>> statsResponse = merchantServiceClient.getCurrentMonthStats(tenantId);
+            if (statsResponse == null || statsResponse.getData() == null) {
+                return true;
+            }
+            int currentCount = ((Number) statsResponse.getData().getOrDefault("smsCount", 0)).intValue();
+            return currentCount < maxSms;
+        } catch (Exception e) {
+            log.warn("Failed to check SMS limit for tenant: {}", tenantId, e);
+            return true;
+        }
     }
 }

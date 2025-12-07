@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi, userApi, tokenManager, handleApiError, LoginResponse } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { authApi, userApi, subscriptionApi, tokenManager, handleApiError, LoginResponse } from '../services/api';
 import { useSnackbar } from 'notistack';
+import { pushNotificationService } from '../services/pushNotification';
+import { Capacitor } from '@capacitor/core';
 
 export interface UserPermissions {
   permissionCodes: string[];
@@ -31,11 +33,19 @@ export interface User {
   createdAt?: string;
   smsVerificationEnabled?: boolean;
   isTenantOwner?: boolean;
+  // 订阅过期标识 - 用于限制用户只能访问订阅/支付页面
+  subscriptionExpired?: boolean;
+  // 订阅状态 - 用于区分不同的过期类型 (PAST_DUE, EXPIRED, CANCELLED 等)
+  subscriptionStatus?: string;
+  tenantStatus?: string;
+  // 当前订阅计划代码
+  planCode?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  subscriptionExpired: boolean;  // 订阅过期状态
   login: (username: string, password: string, tenantCode?: string) => Promise<boolean | { need2FA: boolean; userId: number; phone: string; tenantId: number }>;
   register: (userData: RegisterData) => Promise<boolean>;
   logout: () => void;
@@ -44,6 +54,7 @@ interface AuthContextType {
   error: string | null;
   clearError: () => void;
   setError: (error: string) => void;
+  refreshSubscriptionStatus: () => Promise<void>;  // 主动刷新订阅状态
 }
 
 export interface RegisterData {
@@ -77,6 +88,7 @@ const mapApiUserToUser = (apiUser: LoginResponse): User => {
     username: apiUser.username!,  // Non-null assertion - safe because this is only called for complete login responses
     realName: apiUser.realName!,
     email: apiUser.email!,
+    phone: apiUser.phone,
     avatar: apiUser.avatar,
     tenantId: apiUser.tenantId,
     tenantCode: apiUser.tenantCode,
@@ -87,6 +99,11 @@ const mapApiUserToUser = (apiUser: LoginResponse): User => {
     lastLoginTime: apiUser.lastLoginTime,
     createdAt: apiUser.createdAt,
     isTenantOwner: apiUser.isTenantOwner,
+    subscriptionExpired: apiUser.subscriptionExpired,
+    subscriptionStatus: apiUser.subscriptionStatus,
+    tenantStatus: apiUser.tenantStatus,
+    planCode: apiUser.planCode,
+    smsVerificationEnabled: apiUser.smsVerificationEnabled,
   };
 };
 
@@ -95,6 +112,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 计算订阅过期状态
+  const subscriptionExpired = user?.subscriptionExpired === true;
+
+  // 标记是否是初次加载（用于避免首次加载时的不必要刷新）
+  const isInitialLoad = React.useRef(true);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -108,8 +131,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData = JSON.parse(savedUser);
           setUser(userData);
 
-          // 验证令牌是否有效
-          await validateStoredToken(token);
+          // 移动端（iOS/Android）跳过服务器端 token 验证
+          // 原因：1. 用户可能离线  2. 延迟启动  3. JWT 本身有过期时间
+          // API 请求时如果 token 过期，会自动处理 401 错误并登出
+          if (!Capacitor.isNativePlatform()) {
+            // Web 端：验证令牌是否有效
+            await validateStoredToken(token);
+          } else {
+            console.log('[AuthContext] Native platform detected, skipping server-side token validation');
+          }
+
+          // 初始化推送通知服务（已登录用户）
+          pushNotificationService.initialize().catch(error => {
+            console.error('Failed to initialize push notifications:', error);
+          });
         } catch (error) {
           console.error('Failed to parse saved user data:', error);
           tokenManager.clearAll();
@@ -151,6 +186,143 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       window.removeEventListener('sessionExpired', handleSessionExpired);
     };
   }, []);
+
+  // 监听订阅变更事件，更新用户的订阅过期状态
+  const refreshSubscriptionStatus = useCallback(async () => {
+    console.log('[AuthContext] refreshSubscriptionStatus called, tenantId:', user?.tenantId);
+    if (!user?.tenantId) {
+      console.log('[AuthContext] No tenantId, skipping refresh');
+      return;
+    }
+
+    try {
+      console.log('[AuthContext] Fetching subscription for tenant:', user.tenantId);
+      const response = await subscriptionApi.getSubscriptions(user.tenantId);
+      console.log('[AuthContext] Subscription API response:', response);
+
+      if (response.success && response.data && response.data.length > 0) {
+        // 获取最新的订阅
+        const latestSub = response.data.sort((a: any, b: any) => b.id - a.id)[0];
+        console.log('[AuthContext] Latest subscription:', latestSub);
+        console.log('[AuthContext] Subscription status:', latestSub.status);
+
+        const status = latestSub.status?.toUpperCase();
+        let isExpired = false;
+
+        // 检查订阅状态是否为过期/取消/欠费
+        if (status === 'EXPIRED' || status === 'CANCELLED' || status === 'PAST_DUE') {
+          isExpired = true;
+        }
+        // 检查试用期是否已到期
+        else if (status === 'TRIAL' && latestSub.trialEndDate) {
+          const trialEndDate = new Date(latestSub.trialEndDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (trialEndDate < today) {
+            console.log('[AuthContext] Trial period has expired:', latestSub.trialEndDate);
+            isExpired = true;
+          }
+        }
+
+        console.log('[AuthContext] Is expired?:', isExpired, 'Current:', user.subscriptionExpired);
+
+        // 获取订阅的 planCode（从订阅的 plan 关联中提取）
+        const newPlanCode = latestSub.plan?.planCode;
+        const planChanged = newPlanCode && user.planCode !== newPlanCode;
+        const statusChanged = user.subscriptionStatus !== status;
+        console.log('[AuthContext] Plan code check - current:', user.planCode, 'new:', newPlanCode, 'changed:', planChanged);
+        console.log('[AuthContext] Status check - current:', user.subscriptionStatus, 'new:', status, 'changed:', statusChanged);
+
+        // 如果订阅状态或计划已改变，更新用户信息
+        if (user.subscriptionExpired !== isExpired || planChanged || statusChanged) {
+          console.log('[AuthContext] Status or plan changed, updating user...');
+          const updatedUser = {
+            ...user,
+            subscriptionExpired: isExpired,
+            subscriptionStatus: status,
+            ...(newPlanCode && { planCode: newPlanCode })
+          };
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          console.log('[AuthContext] User updated, new subscriptionExpired:', isExpired, 'subscriptionStatus:', status, 'planCode:', newPlanCode);
+
+          // 如果是初次加载，不触发刷新（只更新本地状态）
+          if (isInitialLoad.current) {
+            console.log('[AuthContext] Initial load, skipping reload (state updated locally)');
+            return;
+          }
+
+          // 如果订阅状态变化或计划变更，触发页面刷新以应用限制/恢复
+          if (isExpired && !user.subscriptionExpired) {
+            console.log('[AuthContext] Subscription expired, reloading page...');
+            window.location.reload();
+          } else if (!isExpired && user.subscriptionExpired) {
+            // 从过期恢复到激活状态，也需要刷新页面以恢复功能访问
+            console.log('[AuthContext] Subscription restored, reloading page...');
+            window.location.reload();
+          } else if (planChanged) {
+            // 计划变更也需要刷新页面以更新UI
+            console.log('[AuthContext] Plan changed, reloading page...');
+            window.location.reload();
+          }
+        } else {
+          console.log('[AuthContext] Status and plan unchanged, no update needed');
+        }
+      } else {
+        console.log('[AuthContext] No subscription data found');
+        // 没有订阅数据，视为过期
+        if (!user.subscriptionExpired) {
+          const updatedUser = { ...user, subscriptionExpired: true };
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          // 如果是初次加载，不触发刷新
+          if (!isInitialLoad.current) {
+            window.location.reload();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[AuthContext] Failed to refresh subscription status:', error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const handleSubscriptionChanged = () => {
+      console.log('Subscription changed event received, refreshing status...');
+      refreshSubscriptionStatus();
+    };
+
+    window.addEventListener('subscription-changed', handleSubscriptionChanged);
+    return () => {
+      window.removeEventListener('subscription-changed', handleSubscriptionChanged);
+    };
+  }, [refreshSubscriptionStatus]);
+
+  // 订阅检查（页面加载时执行一次 + 定期检查）
+  useEffect(() => {
+    if (!user?.tenantId) {
+      return;
+    }
+
+    // 立即检查一次（初次加载时不会触发刷新，因为 isInitialLoad.current = true）
+    refreshSubscriptionStatus().then(() => {
+      // 首次检查完成后，标记初次加载结束
+      setTimeout(() => {
+        isInitialLoad.current = false;
+        console.log('[AuthContext] Initial load completed, future changes will trigger reload');
+      }, 2000);
+    });
+
+    // 定期检查（1小时）
+    const intervalId = setInterval(() => {
+      console.log('[AuthContext] Periodic subscription status check...');
+      refreshSubscriptionStatus();
+    }, 60 * 60 * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [user?.tenantId]); // 只依赖 tenantId，避免 refreshSubscriptionStatus 变化导致重复执行
 
   // 注意：JWT过期时间设置为30天，无操作超时由SessionContext管理
   // Token刷新在API请求401时自动处理（见api.ts）
@@ -217,14 +389,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // 正常登录场景
         const userData = mapApiUserToUser(response.data);
 
-        // 保存令牌和用户信息
-        // Safe to use non-null assertion because we've already checked for 2FA above
+        // 保存令牌和用户信息到 localStorage
+        // 注意：不调用 setUser()，避免触发 React 状态更新导致的各种 useEffect 执行
+        // 页面跳转后会从 localStorage 恢复用户状态
         tokenManager.setToken(response.data.token!);
         tokenManager.setRefreshToken(response.data.refreshToken!);
-
-        // 使用登录响应的数据作为基础，登录响应已经包含所有必要字段（包括createdAt）
-        setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
+
+        // 初始化推送通知服务（异步，不阻塞登录流程）
+        pushNotificationService.initialize().catch(error => {
+          console.error('Failed to initialize push notifications:', error);
+        });
 
         return true;
       } else {
@@ -292,6 +467,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
+      // 注销推送通知
+      await pushNotificationService.unregister();
       // 调用后端登出接口
       await authApi.logout();
     } catch (error) {
@@ -345,12 +522,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: responseData.phone,
           avatar: responseData.avatar,
           tenantId: responseData.tenantId,
+          tenantCode: user.tenantCode, // 保留原有的tenantCode
           tenantName: responseData.tenantName,
           timezone: responseData.timezone,
           roles: responseData.roles,
           permissions: responseData.permissions,
           lastLoginTime: responseData.lastLoginTime,
           createdAt: user.createdAt, // 保留原有的createdAt
+          smsVerificationEnabled: responseData.smsVerificationEnabled,
+          // 保留订阅相关字段，避免触发不必要的页面刷新
+          isTenantOwner: user.isTenantOwner,
+          subscriptionExpired: user.subscriptionExpired,
+          subscriptionStatus: user.subscriptionStatus,
+          tenantStatus: user.tenantStatus,
+          planCode: user.planCode,
         };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -403,6 +588,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     loading,
+    subscriptionExpired,
     login,
     register,
     logout,
@@ -411,6 +597,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     clearError,
     setError,
+    refreshSubscriptionStatus,
   };
 
   return (

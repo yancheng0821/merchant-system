@@ -1,6 +1,8 @@
 package com.merchant.server.authservice.service.impl;
 
 import com.merchant.server.authservice.client.BusinessServiceClient;
+import com.merchant.server.authservice.client.MerchantServiceClient;
+import com.merchant.server.common.dto.ApiResponse;
 import com.merchant.server.authservice.dto.LoginResponse;
 import com.merchant.server.authservice.dto.Send2FACodeRequest;
 import com.merchant.server.authservice.dto.Send2FACodeResponse;
@@ -21,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,6 +32,7 @@ import java.util.stream.Collectors;
 public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
 
     private final BusinessServiceClient businessServiceClient;
+    private final MerchantServiceClient merchantServiceClient;
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final PermissionMapper permissionMapper;
@@ -191,6 +195,7 @@ public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
                 loginResponse.setUserId(user.getId());
                 loginResponse.setUsername(user.getUsername());
                 loginResponse.setEmail(user.getEmail());
+                loginResponse.setPhone(user.getPhone());
                 loginResponse.setRealName(user.getRealName());
                 loginResponse.setAvatar(user.getAvatarUrl());
                 loginResponse.setTenantId(request.getTenantId());
@@ -203,9 +208,29 @@ public class TwoFactorAuthServiceImpl implements TwoFactorAuthService {
                 if (tenant != null) {
                     loginResponse.setTenantName(tenant.getTenantName());
                     loginResponse.setTenantCode(tenant.getTenantCode());
+                    loginResponse.setTenantStatus(tenant.getStatus().name());
                     loginResponse.setIsTenantOwner(tenant.getOwnerUserId() != null && tenant.getOwnerUserId().equals(user.getId()));
+
+                    // 检查订阅过期状态
+                    if (tenant.getStatus() == Tenant.TenantStatus.INACTIVE) {
+                        loginResponse.setSubscriptionExpired(true);
+                    }
                 } else {
                     loginResponse.setIsTenantOwner(false);
+                }
+
+                // 获取订阅状态和计划代码
+                try {
+                    ApiResponse<Map<String, Object>> subscriptionResponse = merchantServiceClient.getSubscriptionStatus(request.getTenantId());
+                    if (subscriptionResponse != null && subscriptionResponse.isSuccess() && subscriptionResponse.getData() != null) {
+                        String subscriptionStatus = (String) subscriptionResponse.getData().get("status");
+                        String planCode = (String) subscriptionResponse.getData().get("planCode");
+                        loginResponse.setSubscriptionStatus(subscriptionStatus);
+                        loginResponse.setPlanCode(planCode);
+                        log.debug("设置订阅状态: {}, 计划代码: {}", subscriptionStatus, planCode);
+                    }
+                } catch (Exception e) {
+                    log.warn("获取订阅状态失败: {}", e.getMessage());
                 }
 
                 log.info("2FA verification successful for user: {}, roles: {}, permissions: {}, isTenantOwner: {}",

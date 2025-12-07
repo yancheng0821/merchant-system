@@ -177,26 +177,246 @@ public class TenantSubscriptionController {
         }
     }
 
+    // 注意：changeBillingCycle 已移除，由 Stripe Customer Portal 处理
+
     /**
-     * 修改订阅的计费周期
+     * 获取租户订阅功能配置（供内部服务调用）
+     * 返回租户当前订阅计划的 features JSON
      */
-    @PutMapping("/{id}/billing-cycle")
-    public ResponseEntity<ApiResponse<TenantSubscription>> changeBillingCycle(
-            @PathVariable Long id,
-            @RequestParam TenantSubscription.BillingCycle billingCycle) {
-        log.info("修改订阅计费周期 - 订阅ID: {}, 新周期: {}", id, billingCycle);
+    @GetMapping("/tenant/{tenantId}/features")
+    public ResponseEntity<ApiResponse<String>> getTenantFeatures(@PathVariable Long tenantId) {
+        log.debug("获取租户功能配置 - 租户ID: {}", tenantId);
         try {
-            boolean success = tenantSubscriptionService.changeBillingCycle(id, billingCycle);
-            if (success) {
-                TenantSubscription updatedSubscription = tenantSubscriptionService.getSubscriptionById(id);
-                return ResponseEntity.ok(ApiResponse.success(updatedSubscription));
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+            if (subscription != null && subscription.getPlan() != null) {
+                String features = subscription.getPlan().getFeatures();
+                return ResponseEntity.ok(ApiResponse.success(features));
             } else {
-                return ResponseEntity.ok(ApiResponse.error("修改计费周期失败"));
+                // 如果没有活跃订阅，返回空features
+                return ResponseEntity.ok(ApiResponse.success(null));
             }
         } catch (Exception e) {
-            log.error("修改订阅计费周期失败 - 订阅ID: {}, 新周期: {}", id, billingCycle, e);
+            log.error("获取租户功能配置失败 - 租户ID: {}", tenantId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("修改计费周期失败: " + e.getMessage()));
+                    .body(ApiResponse.error("获取功能配置失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 检查租户是否有特定功能
+     * @param tenantId 租户ID
+     * @param feature 功能代码（如: customerImport, smsNotification）
+     */
+    @GetMapping("/tenant/{tenantId}/features/{feature}/check")
+    public ResponseEntity<ApiResponse<Boolean>> checkTenantFeature(
+            @PathVariable Long tenantId,
+            @PathVariable String feature) {
+        log.debug("检查租户功能 - 租户ID: {}, 功能: {}", tenantId, feature);
+        try {
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+            if (subscription == null || subscription.getPlan() == null) {
+                // 没有活跃订阅，默认无权限
+                return ResponseEntity.ok(ApiResponse.success(false));
+            }
+
+            String featuresJson = subscription.getPlan().getFeatures();
+            if (featuresJson == null || featuresJson.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success(false));
+            }
+
+            // 解析features JSON并检查特定功能
+            boolean hasFeature = checkFeatureInJson(featuresJson, feature);
+            return ResponseEntity.ok(ApiResponse.success(hasFeature));
+        } catch (Exception e) {
+            log.error("检查租户功能失败 - 租户ID: {}, 功能: {}", tenantId, feature, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("检查功能失败: " + e.getMessage()));
+        }
+    }
+
+    // 注意：changePlan 已移除，由 StripeSubscriptionController.updateSubscription 处理
+
+    /**
+     * 获取租户订阅状态（供 auth-service 登录时调用）
+     * 返回订阅状态和是否过期
+     */
+    @GetMapping("/tenant/{tenantId}/status")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getSubscriptionStatus(@PathVariable Long tenantId) {
+        log.debug("获取租户订阅状态 - 租户ID: {}", tenantId);
+        try {
+            // 先查活跃订阅
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+
+            if (subscription != null) {
+                result.put("hasActiveSubscription", true);
+                result.put("subscriptionStatus", subscription.getStatus().name());
+                result.put("planCode", subscription.getPlan() != null ? subscription.getPlan().getPlanCode() : null);
+                result.put("expired", false);
+            } else {
+                // 没有活跃订阅，检查是否有过期订阅
+                List<TenantSubscription> allSubscriptions = tenantSubscriptionService.getSubscriptionsByTenantId(tenantId);
+                boolean hasExpiredSubscription = allSubscriptions.stream()
+                        .anyMatch(s -> s.getStatus() == TenantSubscription.SubscriptionStatus.EXPIRED);
+
+                result.put("hasActiveSubscription", false);
+                result.put("subscriptionStatus", hasExpiredSubscription ? "EXPIRED" : "NONE");
+                result.put("expired", true);
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取租户订阅状态失败 - 租户ID: {}", tenantId, e);
+            // 出错时默认返回未过期，避免阻止用户登录
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            result.put("hasActiveSubscription", true);
+            result.put("expired", false);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        }
+    }
+
+    /**
+     * 获取租户的员工数量限制
+     * @param tenantId 租户ID
+     * @return maxStaff 限制，-1表示无限制
+     */
+    @GetMapping("/tenant/{tenantId}/limits/maxStaff")
+    public ResponseEntity<ApiResponse<Integer>> getTenantMaxStaff(@PathVariable Long tenantId) {
+        log.debug("获取租户员工限制 - 租户ID: {}", tenantId);
+        try {
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+            if (subscription == null || subscription.getPlan() == null) {
+                // 没有活跃订阅，返回默认限制（如基础版限制）
+                return ResponseEntity.ok(ApiResponse.success(5)); // 默认5个员工
+            }
+            Integer maxStaff = subscription.getPlan().getMaxStaff();
+            // -1 表示无限制
+            return ResponseEntity.ok(ApiResponse.success(maxStaff != null ? maxStaff : -1));
+        } catch (Exception e) {
+            log.error("获取租户员工限制失败 - 租户ID: {}", tenantId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("获取员工限制失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取租户的月预约数量限制
+     * @param tenantId 租户ID
+     * @return maxAppointmentsPerMonth 限制，-1表示无限制
+     */
+    @GetMapping("/tenant/{tenantId}/limits/maxAppointmentsPerMonth")
+    public ResponseEntity<ApiResponse<Integer>> getTenantMaxAppointmentsPerMonth(@PathVariable Long tenantId) {
+        log.debug("获取租户月预约限制 - 租户ID: {}", tenantId);
+        try {
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+            if (subscription == null || subscription.getPlan() == null) {
+                // 没有活跃订阅，返回默认限制
+                return ResponseEntity.ok(ApiResponse.success(50)); // 默认50个预约
+            }
+            Integer maxAppointments = subscription.getPlan().getMaxAppointmentsPerMonth();
+            // -1 表示无限制
+            return ResponseEntity.ok(ApiResponse.success(maxAppointments != null ? maxAppointments : -1));
+        } catch (Exception e) {
+            log.error("获取租户月预约限制失败 - 租户ID: {}", tenantId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("获取月预约限制失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取租户的月短信数量限制
+     * @param tenantId 租户ID
+     * @return maxSmsPerMonth 限制，0表示不包含短信功能，-1表示无限制
+     */
+    @GetMapping("/tenant/{tenantId}/limits/maxSmsPerMonth")
+    public ResponseEntity<ApiResponse<Integer>> getTenantMaxSmsPerMonth(@PathVariable Long tenantId) {
+        log.debug("获取租户月短信限制 - 租户ID: {}", tenantId);
+        try {
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+            if (subscription == null || subscription.getPlan() == null) {
+                // 没有活跃订阅，返回0（不包含短信）
+                return ResponseEntity.ok(ApiResponse.success(0));
+            }
+            // 从features JSON中获取maxSmsPerMonth
+            Integer maxSms = getLimitFromFeatures(subscription.getPlan().getFeatures(), "maxSmsPerMonth");
+            return ResponseEntity.ok(ApiResponse.success(maxSms != null ? maxSms : 0));
+        } catch (Exception e) {
+            log.error("获取租户月短信限制失败 - 租户ID: {}", tenantId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("获取月短信限制失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取租户的月邮件数量限制
+     * @param tenantId 租户ID
+     * @return maxEmailsPerMonth 限制，-1表示无限制
+     */
+    @GetMapping("/tenant/{tenantId}/limits/maxEmailsPerMonth")
+    public ResponseEntity<ApiResponse<Integer>> getTenantMaxEmailsPerMonth(@PathVariable Long tenantId) {
+        log.debug("获取租户月邮件限制 - 租户ID: {}", tenantId);
+        try {
+            TenantSubscription subscription = tenantSubscriptionService.getActiveSubscriptionByTenantId(tenantId);
+            if (subscription == null || subscription.getPlan() == null) {
+                // 没有活跃订阅，返回默认限制
+                return ResponseEntity.ok(ApiResponse.success(100)); // 默认100封邮件
+            }
+            // 从features JSON中获取maxEmailsPerMonth
+            Integer maxEmails = getLimitFromFeatures(subscription.getPlan().getFeatures(), "maxEmailsPerMonth");
+            return ResponseEntity.ok(ApiResponse.success(maxEmails != null ? maxEmails : -1));
+        } catch (Exception e) {
+            log.error("获取租户月邮件限制失败 - 租户ID: {}", tenantId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("获取月邮件限制失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 从features JSON中获取limit值
+     */
+    private Integer getLimitFromFeatures(String featuresJson, String limitKey) {
+        if (featuresJson == null || featuresJson.isEmpty()) {
+            return null;
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(featuresJson);
+            com.fasterxml.jackson.databind.JsonNode limitsNode = root.get("limits");
+            if (limitsNode != null && limitsNode.has(limitKey)) {
+                return limitsNode.get(limitKey).asInt();
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("解析features JSON失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 从features JSON中检查特定功能是否启用
+     */
+    private boolean checkFeatureInJson(String featuresJson, String feature) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(featuresJson);
+
+            // 检查 features 节点
+            com.fasterxml.jackson.databind.JsonNode featuresNode = root.get("features");
+            if (featuresNode != null && featuresNode.has(feature)) {
+                return featuresNode.get(feature).asBoolean(false);
+            }
+
+            // 检查 modules 节点（用于模块级别的功能）
+            com.fasterxml.jackson.databind.JsonNode modulesNode = root.get("modules");
+            if (modulesNode != null && modulesNode.has(feature)) {
+                return modulesNode.get(feature).asBoolean(false);
+            }
+
+            return false;
+        } catch (Exception e) {
+            log.warn("解析features JSON失败: {}", e.getMessage());
+            return false;
         }
     }
 }

@@ -222,9 +222,12 @@ public class VerificationCodeService {
         }
 
         // 验证手机号格式（简单验证）
+        // 允许6位以上的手机号，以支持不同国家的号码格式
         if ("PHONE".equals(request.getRecipientType())) {
             String phone = request.getRecipient().replaceAll("[^0-9]", "");
-            if (phone.length() < 10) {
+            if (phone.length() < 6) {
+                log.warn("手机号格式验证失败 - 原始: {}, 清理后: {}, 长度: {}",
+                    request.getRecipient(), phone, phone.length());
                 throw new IllegalArgumentException("Invalid phone number format");
             }
         }

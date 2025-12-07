@@ -34,6 +34,7 @@ export interface MenuItemType {
   role?: RoleCode;
   anyRole?: RoleCode[];
   requireSuperAdmin?: boolean;
+  locked?: boolean;  // 订阅计划不包含时标记为锁定
 }
 
 export interface MerchantConfig {

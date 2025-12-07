@@ -20,6 +20,7 @@
     </resultMap>
 
     <!-- Result Map with Plan -->
+    <!-- 注意：pending_plan_id 等字段已移除，现在由 Stripe Subscription Schedules 管理 -->
     <resultMap id="TenantSubscriptionWithPlanResultMap" type="com.merchant.server.merchantservice.entity.TenantSubscription">
         <id property="id" column="id"/>
         <result property="tenantId" column="tenant_id"/>
@@ -46,6 +47,7 @@
             <result property="maxAppointmentsPerMonth" column="max_appointments_per_month"/>
             <result property="trialDays" column="trial_days"/>
             <result property="isActive" column="is_active"/>
+            <result property="features" column="plan_features"/>
             <result property="createdAt" column="plan_created_at"/>
             <result property="updatedAt" column="plan_updated_at"/>
         </association>
@@ -63,24 +65,26 @@
         SELECT
             ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
             ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
-            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            ts.stripe_subscription_id, ts.stripe_customer_id,
+            ts.created_at, ts.updated_at,
             sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
             sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
-            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+            sp.features as plan_features, sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
         FROM tenant_subscriptions ts
         LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
         WHERE ts.id = #{id}
     </select>
 
-    <!-- 根据租户ID查询活跃订阅 -->
+    <!-- 根据租户ID查询活跃订阅（TRIAL和ACTIVE状态都算活跃） -->
     <select id="findActiveByTenantId" resultMap="TenantSubscriptionWithPlanResultMap">
         SELECT
             ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
             ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
-            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            ts.stripe_subscription_id, ts.stripe_customer_id,
+            ts.created_at, ts.updated_at,
             sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
             sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
-            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+            sp.features as plan_features, sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
         FROM tenant_subscriptions ts
         LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
         WHERE ts.tenant_id = #{tenantId}
@@ -89,13 +93,20 @@
         LIMIT 1
     </select>
 
-    <!-- 根据租户ID查询所有订阅 -->
-    <select id="findByTenantId" resultMap="TenantSubscriptionResultMap">
+    <!-- 根据租户ID查询所有订阅（包含计划信息） -->
+    <select id="findByTenantId" resultMap="TenantSubscriptionWithPlanResultMap">
         SELECT
-        <include refid="Base_Column_List"/>
-        FROM tenant_subscriptions
-        WHERE tenant_id = #{tenantId}
-        ORDER BY created_at DESC
+            ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
+            ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
+            ts.stripe_subscription_id, ts.stripe_customer_id,
+            ts.created_at, ts.updated_at,
+            sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
+            sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
+            sp.features as plan_features, sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+        FROM tenant_subscriptions ts
+        LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
+        WHERE ts.tenant_id = #{tenantId}
+        ORDER BY ts.created_at DESC
     </select>
 
     <!-- 创建订阅 -->
@@ -139,10 +150,11 @@
         SELECT
             ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
             ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
-            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            ts.stripe_subscription_id, ts.stripe_customer_id,
+            ts.created_at, ts.updated_at,
             sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
             sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
-            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+            sp.features as plan_features, sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
         FROM tenant_subscriptions ts
         LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
         WHERE ts.status = 'TRIAL'
@@ -154,14 +166,17 @@
         SELECT
             ts.id, ts.tenant_id, ts.plan_id, ts.billing_cycle, ts.status,
             ts.trial_start_date, ts.trial_end_date, ts.current_period_start, ts.current_period_end,
-            ts.stripe_subscription_id, ts.stripe_customer_id, ts.created_at, ts.updated_at,
+            ts.stripe_subscription_id, ts.stripe_customer_id,
+            ts.created_at, ts.updated_at,
             sp.plan_code, sp.plan_name_en, sp.plan_name_zh, sp.monthly_price, sp.yearly_price,
             sp.max_users, sp.max_staff, sp.max_appointments_per_month, sp.trial_days, sp.is_active,
-            sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
+            sp.features as plan_features, sp.created_at as plan_created_at, sp.updated_at as plan_updated_at
         FROM tenant_subscriptions ts
         LEFT JOIN subscription_plans sp ON ts.plan_id = sp.id
         WHERE ts.status = 'ACTIVE'
         ORDER BY ts.current_period_end ASC
     </select>
+
+    <!-- 注意：findAllPendingPlanChanges 已移除，计划变更现在由 Stripe Subscription Schedules 自动处理 -->
 
 </mapper>

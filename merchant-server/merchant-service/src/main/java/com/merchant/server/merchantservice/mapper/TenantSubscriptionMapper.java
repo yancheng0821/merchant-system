@@ -48,4 +48,9 @@ public interface TenantSubscriptionMapper {
      * 查询所有活跃订阅
      */
     List<TenantSubscription> findAllActiveSubscriptions();
+
+    /**
+     * 查询所有待生效的计划变更（用于定时任务）
+     */
+    List<TenantSubscription> findAllPendingPlanChanges();
 }

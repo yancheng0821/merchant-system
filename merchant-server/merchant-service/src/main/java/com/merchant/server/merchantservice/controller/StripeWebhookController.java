@@ -1,9 +1,8 @@
 package com.merchant.server.merchantservice.controller;
 
-import com.merchant.server.merchantservice.service.SubscriptionPaymentService;
+import com.merchant.server.merchantservice.service.StripeSubscriptionService;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
-import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Stripe Webhook控制器
- * 接收Stripe支付事件回调
+ * 接收Stripe支付事件回调（订阅事件）
  */
 @Slf4j
 @RestController
@@ -22,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class StripeWebhookController {
 
-    private final SubscriptionPaymentService paymentService;
+    private final StripeSubscriptionService stripeSubscriptionService;
 
     @Value("${stripe.webhook.secret:}")
     private String webhookSecret;
@@ -61,20 +60,23 @@ public class StripeWebhookController {
 
         try {
             switch (eventType) {
+                // ========== 订阅相关事件 ==========
+                case "checkout.session.completed":
+                case "customer.subscription.created":
+                case "customer.subscription.updated":
+                case "customer.subscription.deleted":
+                case "invoice.paid":
+                case "invoice.payment_failed":
+                    // 委托给 StripeSubscriptionService 处理
+                    stripeSubscriptionService.handleWebhookEvent(payload, sigHeader);
+                    break;
+
                 case "payment_intent.succeeded":
-                    handlePaymentIntentSucceeded(event);
-                    break;
-
                 case "payment_intent.payment_failed":
-                    handlePaymentIntentFailed(event);
-                    break;
-
                 case "payment_intent.canceled":
-                    handlePaymentIntentCanceled(event);
-                    break;
-
                 case "charge.refunded":
-                    handleChargeRefunded(event);
+                    // 订阅模式下这些事件由 invoice 事件处理，这里只记录日志
+                    log.info("收到支付事件: {} (由订阅自动处理)", eventType);
                     break;
 
                 default:
@@ -89,87 +91,5 @@ public class StripeWebhookController {
             // 返回200以避免Stripe重试，但记录错误
             return ResponseEntity.ok("Event logged with error");
         }
-    }
-
-    /**
-     * 处理支付成功事件
-     */
-    private void handlePaymentIntentSucceeded(Event event) {
-        log.info("处理支付成功事件");
-
-        try {
-            // 直接从event的data中获取PaymentIntent对象
-            PaymentIntent paymentIntent = (PaymentIntent) event.getData().getObject();
-
-            log.info("Payment Intent成功 - ID: {}, 金额: {}, 状态: {}",
-                    paymentIntent.getId(),
-                    paymentIntent.getAmount(),
-                    paymentIntent.getStatus());
-
-            try {
-                paymentService.handlePaymentSuccess(paymentIntent.getId());
-                log.info("支付成功处理完成 - Payment Intent ID: {}", paymentIntent.getId());
-            } catch (Exception e) {
-                log.error("处理支付成功回调失败: {}", e.getMessage(), e);
-            }
-        } catch (Exception e) {
-            log.error("无法获取PaymentIntent对象: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 处理支付失败事件
-     */
-    private void handlePaymentIntentFailed(Event event) {
-        log.warn("处理支付失败事件");
-
-        try {
-            // 直接从event的data中获取PaymentIntent对象
-            PaymentIntent paymentIntent = (PaymentIntent) event.getData().getObject();
-
-            String failureMessage = paymentIntent.getLastPaymentError() != null ?
-                    paymentIntent.getLastPaymentError().getMessage() : "Unknown error";
-
-            log.warn("Payment Intent失败 - ID: {}, 原因: {}",
-                    paymentIntent.getId(), failureMessage);
-
-            try {
-                paymentService.handlePaymentFailure(paymentIntent.getId(), failureMessage);
-                log.info("支付失败处理完成 - Payment Intent ID: {}", paymentIntent.getId());
-            } catch (Exception e) {
-                log.error("处理支付失败回调失败: {}", e.getMessage(), e);
-            }
-        } catch (Exception e) {
-            log.error("无法获取PaymentIntent对象: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 处理支付取消事件
-     */
-    private void handlePaymentIntentCanceled(Event event) {
-        log.info("处理支付取消事件");
-
-        try {
-            // 直接从event的data中获取PaymentIntent对象
-            PaymentIntent paymentIntent = (PaymentIntent) event.getData().getObject();
-            log.info("Payment Intent已取消 - ID: {}", paymentIntent.getId());
-
-            // 可以在这里添加取消后的处理逻辑
-            // 例如：通知用户、更新账单备注等
-        } catch (Exception e) {
-            log.error("无法获取PaymentIntent对象: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 处理退款事件
-     */
-    private void handleChargeRefunded(Event event) {
-        log.info("处理退款事件");
-
-        // 这里可以添加退款的处理逻辑
-        // 例如：更新账单状态为REFUNDED
-        log.info("退款事件处理（待实现）");
     }
 }

@@ -89,10 +89,16 @@ public class AuthServiceImpl implements AuthService {
         Tenant tenant = tenantOpt.get();
         logger.debug("找到租户: tenantId={}, tenantName={}, status={}", tenant.getId(), tenant.getTenantName(), tenant.getStatus());
 
-        // 检查租户状态
-        if (tenant.getStatus() != Tenant.TenantStatus.ACTIVE) {
-            logger.warn("登录失败 - 租户状态非活跃: {} (状态: {})", tenant.getTenantCode(), tenant.getStatus());
-            throw new RuntimeException(messageUtil.getMessage("tenant.not.active"));
+        // 检查租户状态 - 只有 SUSPENDED 状态才完全禁止登录
+        // INACTIVE 状态（订阅过期）允许登录，但会标记为受限模式
+        boolean subscriptionExpired = false;
+        if (tenant.getStatus() == Tenant.TenantStatus.SUSPENDED) {
+            logger.warn("登录失败 - 租户已被暂停: {} (状态: {})", tenant.getTenantCode(), tenant.getStatus());
+            throw new RuntimeException(messageUtil.getMessage("tenant.suspended"));
+        } else if (tenant.getStatus() == Tenant.TenantStatus.INACTIVE) {
+            // 订阅过期，允许登录但标记为受限模式
+            logger.info("租户订阅已过期，进入受限登录模式: {} (状态: {})", tenant.getTenantCode(), tenant.getStatus());
+            subscriptionExpired = true;
         }
 
         // 在指定租户下查找用户
@@ -149,9 +155,9 @@ public class AuthServiceImpl implements AuthService {
             logger.debug("重新查询用户信息 - createdAt: {}, lastLoginAt: {}", user.getCreatedAt(), user.getLastLoginAt());
         }
 
-        // 生成JWT令牌
-        logger.debug("生成JWT令牌");
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId());
+        // 生成JWT令牌（包含订阅过期标识，用于 Gateway 限制 API 访问）
+        logger.debug("生成JWT令牌 - subscriptionExpired: {}", subscriptionExpired);
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId(), subscriptionExpired);
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         // 查询用户角色
@@ -199,6 +205,27 @@ public class AuthServiceImpl implements AuthService {
         response.setIsTenantOwner(isOwner);
         logger.info("设置租户所有者标识 - userId: {}, ownerUserId: {}, isTenantOwner: {}",
                     user.getId(), tenant.getOwnerUserId(), isOwner);
+
+        // 设置订阅过期标识和租户状态
+        response.setSubscriptionExpired(subscriptionExpired);
+        response.setTenantStatus(tenant.getStatus().name());
+        if (subscriptionExpired) {
+            logger.info("用户登录 - 订阅已过期，进入受限模式: userId={}, tenantId={}", user.getId(), tenant.getId());
+        }
+
+        // 获取订阅状态和计划代码
+        try {
+            ApiResponse<Map<String, Object>> subscriptionResponse = merchantServiceClient.getSubscriptionStatus(user.getTenantId());
+            if (subscriptionResponse != null && subscriptionResponse.isSuccess() && subscriptionResponse.getData() != null) {
+                String subscriptionStatus = (String) subscriptionResponse.getData().get("status");
+                String planCode = (String) subscriptionResponse.getData().get("planCode");
+                response.setSubscriptionStatus(subscriptionStatus);
+                response.setPlanCode(planCode);
+                logger.debug("设置订阅状态: {}, 计划代码: {}", subscriptionStatus, planCode);
+            }
+        } catch (Exception e) {
+            logger.warn("获取订阅状态失败: {}", e.getMessage());
+        }
 
         // 获取商户时区信息
         try {

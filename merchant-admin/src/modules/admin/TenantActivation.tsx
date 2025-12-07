@@ -44,7 +44,8 @@ import {
   Visibility as VisibilityIcon,
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { tenantApi, TenantInfo, subscriptionApi, invoiceApi } from '../../services/api';
+import { tenantApi, TenantInfo, subscriptionApi } from '../../services/api';
+// 注：invoiceApi 已移除，账单由 Stripe 自动管理
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -78,7 +79,7 @@ const TenantActivation: React.FC = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
-  const [invoices, setInvoices] = useState<any[]>([]);
+  // 注：invoices 状态已移除，账单由 Stripe 管理
 
   // Menu states
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -149,18 +150,10 @@ const TenantActivation: React.FC = () => {
       } else {
         setSubscription(null);
       }
-
-      // Load invoices data
-      const invoiceResponse = await invoiceApi.getInvoicesByTenantId(tenant.id);
-      if (invoiceResponse.success && invoiceResponse.data) {
-        setInvoices(invoiceResponse.data);
-      } else {
-        setInvoices([]);
-      }
+      // 注：invoices 加载已移除，账单由 Stripe 管理
     } catch (error) {
       console.error('Failed to load tenant details:', error);
       setSubscription(null);
-      setInvoices([]);
     } finally {
       setDetailsLoading(false);
     }
@@ -173,7 +166,6 @@ const TenantActivation: React.FC = () => {
   const handleDetailsDialogExited = () => {
     setSelectedTenant(null);
     setSubscription(null);
-    setInvoices([]);
   };
 
   const handleConfirmAction = async () => {
@@ -585,7 +577,26 @@ const TenantActivation: React.FC = () => {
           />
         </MenuItem>
 
-        {menuTenant && menuTenant.status === 'INACTIVE' ? (
+        {/* ACTIVE 状态显示"禁用"，INACTIVE/SUSPENDED 状态显示"激活" */}
+        {menuTenant && menuTenant.status === 'ACTIVE' ? (
+          <MenuItem
+            onClick={() => menuTenant && handleOpenDialog(menuTenant, 'deactivate')}
+            sx={{
+              py: 1,
+              px: 1.5,
+              fontSize: '0.8125rem',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 28 }}>
+              <CancelIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+            </ListItemIcon>
+            <ListItemText
+              primary={t('admin.tenantActivation.suspend')}
+              primaryTypographyProps={{ fontSize: '0.8125rem' }}
+            />
+          </MenuItem>
+        ) : (
           <MenuItem
             onClick={() => menuTenant && handleOpenDialog(menuTenant, 'activate')}
             sx={{
@@ -600,24 +611,6 @@ const TenantActivation: React.FC = () => {
             </ListItemIcon>
             <ListItemText
               primary={t('admin.tenantActivation.activate')}
-              primaryTypographyProps={{ fontSize: '0.8125rem' }}
-            />
-          </MenuItem>
-        ) : (
-          <MenuItem
-            onClick={() => menuTenant && handleOpenDialog(menuTenant, 'deactivate')}
-            sx={{
-              py: 1,
-              px: 1.5,
-              fontSize: '0.8125rem',
-              '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 28 }}>
-              <CancelIcon sx={{ fontSize: 16, color: '#EF4444' }} />
-            </ListItemIcon>
-            <ListItemText
-              primary={t('admin.tenantActivation.deactivate')}
               primaryTypographyProps={{ fontSize: '0.8125rem' }}
             />
           </MenuItem>
@@ -835,90 +828,6 @@ const TenantActivation: React.FC = () => {
             )}
           </Box>
 
-          {/* Invoice History */}
-          <Box>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a1a', mb: 1.5 }}>
-              {t('admin.tenantActivation.invoiceHistory')}
-            </Typography>
-            {detailsLoading ? (
-              <Box display="flex" justifyContent="center" py={3}>
-                <CircularProgress size={24} sx={{ color: THEME_COLOR }} />
-              </Box>
-            ) : invoices.length > 0 ? (
-              isMobile ? (
-                // 移动端发票卡片视图
-                <Stack spacing={1.5}>
-                  {invoices.map((invoice) => (
-                    <Box
-                      key={invoice.id}
-                      sx={{
-                        p: 1.5,
-                        backgroundColor: '#fafafa',
-                        borderRadius: 2,
-                        border: '1px solid rgba(0,0,0,0.06)',
-                      }}
-                    >
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Typography sx={{ fontSize: '0.75rem', color: '#888' }}>
-                          {invoice.invoiceNumber}
-                        </Typography>
-                        {getStatusChip(invoice.status === 'PAID' ? 'ACTIVE' : invoice.status)}
-                      </Box>
-                      <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: SUCCESS_COLOR, mb: 0.5 }}>
-                        ${invoice.amount.toFixed(2)} {invoice.currency}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.7rem', color: '#888' }}>
-                        {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
-                      </Typography>
-                      {invoice.paymentDate && (
-                        <Typography sx={{ fontSize: '0.7rem', color: '#888', mt: 0.5 }}>
-                          {t('admin.tenantActivation.paymentDate')}: {invoice.paymentDate}
-                        </Typography>
-                      )}
-                    </Box>
-                  ))}
-                </Stack>
-              ) : (
-                // 桌面端发票表格视图
-                <TableContainer sx={{ border: '1px solid rgba(0,0,0,0.06)', borderRadius: 2 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.invoiceNumber')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.amount')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.billingPeriod')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.invoiceStatus')}</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{t('admin.tenantActivation.paymentDate')}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {invoices.map((invoice) => (
-                        <TableRow key={invoice.id} hover sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: '#666', py: 1.5 }}>{invoice.invoiceNumber}</TableCell>
-                          <TableCell>
-                            <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: SUCCESS_COLOR }}>
-                              ${invoice.amount.toFixed(2)} {invoice.currency}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: '#666', py: 1.5 }}>
-                            {invoice.billingPeriodStart} ~ {invoice.billingPeriodEnd}
-                          </TableCell>
-                          <TableCell>{getStatusChip(invoice.status === 'PAID' ? 'ACTIVE' : invoice.status)}</TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: '#888', py: 1.5 }}>
-                            {invoice.paymentDate || '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )
-            ) : (
-              <Typography sx={{ fontSize: '0.8125rem', color: '#888', p: 2, backgroundColor: '#fafafa', borderRadius: 2 }}>
-                {t('admin.tenantActivation.noInvoices')}
-              </Typography>
-            )}
-          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
           <Button

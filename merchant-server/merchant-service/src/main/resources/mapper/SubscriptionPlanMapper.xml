@@ -15,6 +15,10 @@
         <result property="maxAppointmentsPerMonth" column="max_appointments_per_month"/>
         <result property="trialDays" column="trial_days"/>
         <result property="isActive" column="is_active"/>
+        <result property="features" column="features"/>
+        <result property="stripeProductId" column="stripe_product_id"/>
+        <result property="stripeMonthlyPriceId" column="stripe_monthly_price_id"/>
+        <result property="stripeYearlyPriceId" column="stripe_yearly_price_id"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
@@ -23,6 +27,7 @@
     <sql id="Base_Column_List">
         id, plan_code, plan_name_en, plan_name_zh, monthly_price, yearly_price,
         max_users, max_staff, max_appointments_per_month, trial_days, is_active,
+        features, stripe_product_id, stripe_monthly_price_id, stripe_yearly_price_id,
         created_at, updated_at
     </sql>
 
@@ -58,5 +63,15 @@
         FROM subscription_plans
         ORDER BY monthly_price ASC
     </select>
+
+    <!-- 更新 Stripe IDs -->
+    <update id="updateStripeIds">
+        UPDATE subscription_plans
+        SET stripe_product_id = #{stripeProductId},
+            stripe_monthly_price_id = #{stripeMonthlyPriceId},
+            stripe_yearly_price_id = #{stripeYearlyPriceId},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
 
 </mapper>

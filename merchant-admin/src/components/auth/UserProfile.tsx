@@ -878,6 +878,26 @@ const UserProfile: React.FC = () => {
                   },
                 }}
               />
+
+              <TextField
+                fullWidth
+                size={isMobile ? 'small' : 'medium'}
+                label={t('auth.merchantCode')}
+                value={user?.tenantCode || ''}
+                disabled
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: isMobile ? 1.5 : 2,
+                    bgcolor: '#fafafa',
+                    fontSize: isMobile ? '0.875rem' : undefined,
+                    '& fieldset': { borderColor: '#d0d0d0' },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#999',
+                    fontSize: isMobile ? '0.875rem' : undefined,
+                  },
+                }}
+              />
             </Box>
           </Box>
         </CardContent>

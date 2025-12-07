@@ -34,6 +34,26 @@ public class SubscriptionPlan {
 
     private Boolean isActive;
 
+    /**
+     * 功能配置JSON
+     */
+    private String features;
+
+    /**
+     * Stripe Product ID
+     */
+    private String stripeProductId;
+
+    /**
+     * Stripe 月付 Price ID
+     */
+    private String stripeMonthlyPriceId;
+
+    /**
+     * Stripe 年付 Price ID
+     */
+    private String stripeYearlyPriceId;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 

@@ -74,6 +74,13 @@ public class TenantServiceImpl implements TenantService {
 
     @Override
     public void deactivateTenant(Long tenantId) {
+        // 订阅过期时调用，设置为 INACTIVE（允许登录但受限，可续费）
         tenantMapper.updateStatus(tenantId, Tenant.TenantStatus.INACTIVE);
+    }
+
+    @Override
+    public void suspendTenant(Long tenantId) {
+        // 管理员手动禁用，设置为 SUSPENDED（完全禁止登录）
+        tenantMapper.updateStatus(tenantId, Tenant.TenantStatus.SUSPENDED);
     }
 } 

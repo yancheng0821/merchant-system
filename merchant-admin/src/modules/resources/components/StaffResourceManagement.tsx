@@ -51,14 +51,17 @@ import {
     MoreHoriz as MoreHorizIcon,
     Schedule as ScheduleIcon,
     FilterList as FilterListIcon,
+    Lock as LockIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import StaffDialog from './StaffDialog';
 import StaffAvailabilityEditor from './StaffAvailabilityEditor';
+import UpgradePrompt from '../../../components/common/UpgradePrompt';
 import { StaffResource, convertToStaffResource, convertStaffToResource } from '../types';
 import { getFullImageUrl, resourceApi, staffAttendanceApi } from '../../../services/api';
 import { usePermission } from '../../../hooks/usePermission';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useFeature } from '../../../contexts/FeatureContext';
 import { format, parseISO } from 'date-fns';
 import { getMerchantNow } from '../../../utils/timezoneUtils';
 
@@ -66,6 +69,7 @@ const StaffResourceManagement: React.FC = () => {
     const { t } = useTranslation();
     const { hasPermission } = usePermission();
     const { themeMode } = useTheme();
+    const { getLimit, isUnlimited } = useFeature();
     const muiTheme = useMuiTheme();
 
     // 移动端检测
@@ -83,6 +87,7 @@ const StaffResourceManagement: React.FC = () => {
     const [staffDialogOpen, setStaffDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [availabilityEditorOpen, setAvailabilityEditorOpen] = useState(false);
+    const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [expertisePopoverAnchor, setExpertisePopoverAnchor] = useState<null | HTMLElement>(null);
     const [selectedStaffIdForExpertise, setSelectedStaffIdForExpertise] = useState<number | null>(null);
@@ -365,6 +370,33 @@ const StaffResourceManagement: React.FC = () => {
         }
     };
 
+    // 检查是否可以新增员工
+    const canAddStaff = (): boolean => {
+        const maxStaff = getLimit('maxStaff');
+        if (isUnlimited('maxStaff')) return true;
+        // 计算所有员工数量（不含已删除的，staff列表本身已排除DELETED状态）
+        const totalStaffCount = staff.length;
+        return totalStaffCount < maxStaff;
+    };
+
+    // 获取剩余可添加员工数量
+    const getRemainingStaffSlots = (): number => {
+        const maxStaff = getLimit('maxStaff');
+        if (isUnlimited('maxStaff')) return -1;
+        const totalStaffCount = staff.length;
+        return Math.max(0, maxStaff - totalStaffCount);
+    };
+
+    // 处理新增员工按钮点击
+    const handleAddStaffClick = () => {
+        if (canAddStaff()) {
+            setSelectedStaff(null);
+            setStaffDialogOpen(true);
+        } else {
+            setUpgradeDialogOpen(true);
+        }
+    };
+
     // 保存员工
     const handleSaveStaff = async (staffData: Partial<StaffResource>) => {
         try {
@@ -590,10 +622,7 @@ const StaffResourceManagement: React.FC = () => {
                         </IconButton>
                         {hasPermission('staff:create') && (
                             <IconButton
-                                onClick={() => {
-                                    setSelectedStaff(null);
-                                    setStaffDialogOpen(true);
-                                }}
+                                onClick={handleAddStaffClick}
                                 sx={{
                                     bgcolor: themeColor,
                                     borderRadius: 1.5,
@@ -714,10 +743,7 @@ const StaffResourceManagement: React.FC = () => {
                                     size="small"
                                     variant="contained"
                                     startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                                    onClick={() => {
-                                        setSelectedStaff(null);
-                                        setStaffDialogOpen(true);
-                                    }}
+                                    onClick={handleAddStaffClick}
                                     sx={{
                                         borderRadius: 1.5,
                                         py: 0.75,
@@ -1518,6 +1544,31 @@ const StaffResourceManagement: React.FC = () => {
                     </Box>
                 </MenuItem>
             </Menu>
+
+            {/* 升级提示对话框 */}
+            <Dialog
+                open={upgradeDialogOpen}
+                onClose={() => setUpgradeDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2.5,
+                        maxWidth: 360,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    }
+                }}
+            >
+                <DialogContent sx={{ p: 0 }}>
+                    <UpgradePrompt
+                        feature="maxStaff"
+                        featureNameKey="upgrade.features.maxStaff"
+                        requiredPlan="PRO"
+                        variant="dialog"
+                        currentUsage={staff.length}
+                        limit={getLimit('maxStaff')}
+                        onClose={() => setUpgradeDialogOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 };

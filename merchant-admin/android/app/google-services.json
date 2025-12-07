@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "112205915522",
+    "project_id": "vamerchant-8be5d",
+    "storage_bucket": "vamerchant-8be5d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:112205915522:android:994f7ddb945b97b4e7db9b",
+        "android_client_info": {
+          "package_name": "com.vamerchant.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAt66m_-qOBQJN9r_2gTKuA9E6o5zodHQw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

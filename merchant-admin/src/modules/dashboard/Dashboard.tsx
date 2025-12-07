@@ -682,6 +682,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     fetchNewNotifications();
   }, [user?.tenantId, timeRange]);
 
+  // 监听下拉刷新事件
+  useEffect(() => {
+    const handlePullToRefresh = () => {
+      console.log('[Dashboard] Pull to refresh triggered');
+      loadDashboardData();
+      fetchNewNotifications();
+    };
+
+    window.addEventListener('pullToRefresh', handlePullToRefresh);
+    return () => window.removeEventListener('pullToRefresh', handlePullToRefresh);
+  }, [user?.tenantId, timeRange]);
+
   // 请求通知权限
   useEffect(() => {
     requestNotificationPermission();
@@ -944,8 +956,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* 实时通知提醒和快捷操作 */}
       <Grid container spacing={isMobile ? 1 : 2.5} mb={isMobile ? 2 : 3} sx={{ mx: 0, width: '100%' }}>
-        {/* 实时通知提醒 */}
-        <Grid item xs={12} md={8}>
+        {/* 实时通知提醒 - 移动端隐藏（使用通知中心入口） */}
+        <Grid item xs={12} md={8} sx={{ display: { xs: 'none', md: 'block' } }}>
           <Card
             sx={{
               borderRadius: isMobile ? 2 : 2.5,

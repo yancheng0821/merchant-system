@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.exception;
 
+import com.merchant.server.businessservice.aspect.FeatureCheckAspect;
 import com.merchant.server.businessservice.util.MessageUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +97,26 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", "Bind failed: " + fieldErrors.values().stream().collect(Collectors.joining(", ")));
         
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * 处理订阅功能不可用异常
+     * 当用户尝试访问需要更高订阅计划的功能时返回403 Forbidden
+     */
+    @ExceptionHandler(FeatureCheckAspect.FeatureNotAvailableException.class)
+    public ResponseEntity<Map<String, Object>> handleFeatureNotAvailableException(
+            FeatureCheckAspect.FeatureNotAvailableException ex) {
+        log.warn("Feature not available: feature={}, message={}", ex.getFeature(), ex.getMessage());
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("success", false);
+        errorResponse.put("error", "FEATURE_NOT_AVAILABLE");
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("feature", ex.getFeature());
+        errorResponse.put("upgradeRequired", true);
+
+        // 使用403 Forbidden状态码表示功能被限制
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     /**

@@ -1,16 +1,20 @@
 package com.merchant.server.businessservice.service;
 
+import com.merchant.server.businessservice.client.NotificationClient;
 import com.merchant.server.businessservice.entity.BusinessNotification;
 import com.merchant.server.businessservice.mapper.BusinessNotificationMapper;
 import com.merchant.server.businessservice.util.MessageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 系统通知服务
@@ -23,6 +27,7 @@ public class SystemNotificationService {
 
     private final BusinessNotificationMapper notificationMapper;
     private final MessageUtil messageUtil;
+    private final NotificationClient notificationClient;
 
     // 系统时区配置 - 使用 UTC
     private static final ZoneId SYSTEM_ZONE = ZoneId.of("UTC");
@@ -118,6 +123,40 @@ public class SystemNotificationService {
         }
 
         log.info("Created {} copies of system notification for all tenants", tenantIds.size());
+
+        // 异步发送推送通知给所有租户
+        sendPushNotificationsAsync(tenantIds, template);
+    }
+
+    /**
+     * 异步发送推送通知给所有租户
+     */
+    @Async
+    public void sendPushNotificationsAsync(List<Long> tenantIds, BusinessNotification template) {
+        for (Long tenantId : tenantIds) {
+            try {
+                sendPushToTenant(tenantId, template.getTitle(), template.getContent());
+            } catch (Exception e) {
+                log.warn("发送推送通知失败 - tenantId: {}, error: {}", tenantId, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 发送推送通知给租户下的所有用户
+     */
+    private void sendPushToTenant(Long tenantId, String title, String body) {
+        try {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", title);
+            request.put("body", body);
+            request.put("data", Map.of("type", "SYSTEM_NOTIFICATION"));
+
+            notificationClient.sendPushToTenant(tenantId, request);
+            log.debug("推送通知已发送 - tenantId: {}", tenantId);
+        } catch (Exception e) {
+            log.warn("推送通知发送失败 - tenantId: {}, error: {}", tenantId, e.getMessage());
+        }
     }
 
     /**

@@ -362,4 +362,12 @@
         AND day_of_week = #{dayOfWeek}
     </delete>
 
+    <!-- 获取租户下所有员工资源（用于检查员工数量限制，包含所有状态但排除已删除的） -->
+    <select id="findActiveStaffByTenantId" resultMap="ResourceResultMap">
+        SELECT * FROM resource
+        WHERE tenant_id = #{tenantId}
+        AND type = 'STAFF'
+        AND status != 'DELETED'
+    </select>
+
 </mapper>

@@ -108,4 +108,18 @@ public class JwtUtil {
         Date expiration = claims.getExpiration();
         return expiration.before(new Date());
     }
+
+    /**
+     * 提取订阅过期标识
+     */
+    public boolean extractSubscriptionExpired(String token) {
+        Claims claims = extractClaims(token);
+        if (claims == null) return false;
+
+        Object subscriptionExpired = claims.get("subscriptionExpired");
+        if (subscriptionExpired instanceof Boolean) {
+            return (Boolean) subscriptionExpired;
+        }
+        return false;
+    }
 }

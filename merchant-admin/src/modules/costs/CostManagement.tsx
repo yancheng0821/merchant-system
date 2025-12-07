@@ -10,6 +10,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 import CertificateManagement from './components/CertificateManagement';
 import FixedCostManagement from './components/FixedCostManagement';
 import MaterialPurchaseManagement from './components/MaterialPurchaseManagement';
@@ -18,11 +20,29 @@ const CostManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const { hasModule } = useFeature();
   const muiTheme = useMuiTheme();
   const [tabValue, setTabValue] = useState(0);
 
+  // 检查是否有成本管理模块访问权限
+  const isCostsLocked = !hasModule('costs');
+
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 如果成本管理模块被锁定，显示升级提示
+  if (isCostsLocked) {
+    return (
+      <Box sx={{ maxWidth: 500, mx: 'auto', mt: 4 }}>
+        <UpgradePrompt
+          feature="costs"
+          featureNameKey="upgrade.features.costs"
+          requiredPlan="ELITE"
+          variant="card"
+        />
+      </Box>
+    );
+  }
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';

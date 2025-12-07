@@ -57,6 +57,9 @@ public class TenantSubscription {
 
     private String stripeCustomerId;
 
+    // 注意：pendingPlanId, pendingBillingCycle, pendingPlanEffectiveDate 字段已移除
+    // 计划变更现在由 Stripe Subscription Schedules 管理，通过 API 获取
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 

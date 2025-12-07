@@ -72,13 +72,23 @@ public class NotificationController {
     }
 
     /**
-     * 重试失败的通知
+     * 重试失败的通知（批量）
      */
     @PostMapping("/retry")
     public ResponseEntity<Void> retryFailedNotifications() {
         log.info("Retrying failed notifications");
         notificationService.retryFailedNotifications();
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 重试单条通知
+     */
+    @PostMapping("/retry/{logId}")
+    public ResponseEntity<NotificationLog> retrySingleNotification(@PathVariable Long logId) {
+        log.info("Retrying single notification: {}", logId);
+        NotificationLog result = notificationService.retrySingleNotification(logId);
+        return ResponseEntity.ok(result);
     }
 
     /**

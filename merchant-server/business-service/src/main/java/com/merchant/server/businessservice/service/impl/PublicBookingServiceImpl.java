@@ -3,6 +3,7 @@ package com.merchant.server.businessservice.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.merchant.server.businessservice.client.GatewayWebSocketClient;
 import com.merchant.server.businessservice.client.MerchantServiceClient;
+import com.merchant.server.businessservice.client.NotificationClient;
 import com.merchant.server.businessservice.dto.*;
 import com.merchant.server.businessservice.entity.*;
 import com.merchant.server.businessservice.mapper.*;
@@ -41,6 +42,7 @@ public class PublicBookingServiceImpl implements PublicBookingService {
     private final ResourceService resourceService;
     private final AppointmentNotificationService notificationService;
     private final BusinessNotificationService businessNotificationService;
+    private final NotificationClient notificationClient;
 
     @Override
     public PublicMerchantDTO getMerchantByCode(String merchantCode) {
@@ -699,6 +701,37 @@ public class PublicBookingServiceImpl implements PublicBookingService {
         // 5. 发送 WebSocket 实时通知给商户（更新日历视图）
         String customerName = customer != null ? customer.getFullName() : "Unknown";
         sendCancellationWebSocketNotification(appointment.getTenantId(), appointment, customerName);
+
+        // 6. 发送 Firebase 推送通知给商户 (移动端)
+        try {
+            Map<String, Object> pushRequest = new HashMap<>();
+            pushRequest.put("title", "Appointment Cancelled");
+            pushRequest.put("body", String.format("%s cancelled appointment on %s at %s",
+                customerName,
+                appointment.getAppointmentDate().toString(),
+                appointment.getAppointmentTime().toString()));
+
+            Map<String, String> data = new HashMap<>();
+            data.put("type", "APPOINTMENT_CANCELLED");
+            data.put("appointmentId", String.valueOf(appointment.getId()));
+            data.put("date", appointment.getAppointmentDate().toString());
+            data.put("time", appointment.getAppointmentTime().toString());
+
+            // 获取未读通知数作为 iOS badge
+            try {
+                Integer unreadCount = businessNotificationService.getUnreadCount(appointment.getTenantId());
+                data.put("badge", String.valueOf(unreadCount != null ? unreadCount : 1));
+            } catch (Exception e) {
+                data.put("badge", "1");
+            }
+            pushRequest.put("data", data);
+
+            notificationClient.sendPushToTenant(appointment.getTenantId(), pushRequest);
+            log.info("[Firebase] Cancellation push notification sent from public booking - tenantId: {}, appointmentId: {}",
+                appointment.getTenantId(), appointmentId);
+        } catch (Exception e) {
+            log.warn("[Firebase] Failed to send cancellation push notification: {}", e.getMessage());
+        }
     }
 
     /**
@@ -1152,6 +1185,58 @@ public class PublicBookingServiceImpl implements PublicBookingService {
         } catch (Exception e) {
             // 通知失败不影响取消流程
             log.warn("[WebSocket] Failed to send cancellation notification for appointment {}: {}", appointment.getId(), e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean isBookingAvailable(String merchantCode) {
+        log.debug("Checking booking availability for merchant: {}", merchantCode);
+
+        Long tenantId = getTenantIdByMerchantCode(merchantCode);
+        if (tenantId == null) {
+            log.warn("Merchant not found: {}", merchantCode);
+            return false;
+        }
+
+        try {
+            // 获取月预约数量限制
+            com.merchant.server.common.dto.ApiResponse<Integer> limitResponse =
+                merchantServiceClient.getTenantMaxAppointmentsPerMonth(tenantId);
+
+            if (limitResponse == null || limitResponse.getData() == null) {
+                log.warn("Failed to get appointment limit for tenant: {}", tenantId);
+                return true; // 获取失败时默认允许预约
+            }
+
+            Integer maxAppointments = limitResponse.getData();
+
+            // -1 表示无限制
+            if (maxAppointments == -1) {
+                log.debug("Tenant {} has unlimited appointments", tenantId);
+                return true;
+            }
+
+            // 获取当月使用量统计
+            com.merchant.server.common.dto.ApiResponse<Map<String, Object>> statsResponse =
+                merchantServiceClient.getCurrentMonthStats(tenantId);
+
+            int currentCount = 0;
+            if (statsResponse != null && statsResponse.getData() != null) {
+                Object countObj = statsResponse.getData().get("appointmentCount");
+                if (countObj instanceof Number) {
+                    currentCount = ((Number) countObj).intValue();
+                }
+            }
+
+            boolean available = currentCount < maxAppointments;
+            log.debug("Tenant {} booking availability: {} (current: {}, max: {})",
+                tenantId, available, currentCount, maxAppointments);
+
+            return available;
+
+        } catch (Exception e) {
+            log.error("Error checking booking availability for merchant: {}", merchantCode, e);
+            return true; // 出错时默认允许预约，避免影响正常业务
         }
     }
 }

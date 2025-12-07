@@ -1,14 +1,33 @@
 /**
  * 菜单过滤工具
- * 根据用户权限过滤导航菜单
+ * 根据用户权限和订阅计划过滤导航菜单
  */
 
 import { PermissionCode } from '../config/permissions';
 import { RoleCode } from '../config/roles';
 import { MenuItemType } from './navigationConfig';
+import { PlanFeatures } from '../services/api';
 
 // 使用 MenuItemType 作为菜单项类型
 export type MenuItem = MenuItemType;
+
+// 菜单ID到模块名的映射
+const MENU_TO_MODULE: Record<string, keyof PlanFeatures['modules']> = {
+  'dashboard': 'dashboard',
+  'appointments': 'appointments',
+  'schedule': 'schedule',
+  'customers': 'customers',
+  'membership-tiers': 'customers',
+  'orders': 'orders',
+  'products': 'products',
+  'resources': 'resources',
+  'settings': 'settings',
+  'notifications': 'notifications',
+  'marketing': 'marketing',
+  'analytics': 'analytics',
+  'costs': 'costs',
+  'rbac': 'rbac',
+};
 
 /**
  * 检查菜单项权限
@@ -185,4 +204,93 @@ export const getFirstAccessibleMenu = (
   }
 
   return null;
+};
+
+/**
+ * 检查菜单项是否被订阅计划允许
+ * @param item 菜单项
+ * @param planFeatures 订阅计划功能配置
+ * @returns 是否允许访问
+ */
+const hasSubscriptionAccess = (
+  item: MenuItem,
+  planFeatures: PlanFeatures | null
+): boolean => {
+  // 如果没有功能配置，默认允许（向后兼容）
+  if (!planFeatures) {
+    return true;
+  }
+
+  // 获取菜单对应的模块
+  const moduleName = MENU_TO_MODULE[item.id];
+  if (!moduleName) {
+    // 没有映射的菜单默认允许
+    return true;
+  }
+
+  // 检查模块是否启用
+  return planFeatures.modules[moduleName] ?? true;
+};
+
+/**
+ * 结合权限和订阅计划过滤菜单
+ * 权限不足的菜单会被过滤掉
+ * 订阅计划不包含的菜单会保留但标记为 locked
+ * @param menus 菜单列表
+ * @param userPermissions 用户权限代码列表
+ * @param userRoles 用户角色代码列表
+ * @param isSuperAdmin 是否超级管理员
+ * @param planFeatures 订阅计划功能配置（可选）
+ * @returns 过滤后的菜单列表（带 locked 标记）
+ */
+export const filterMenusWithSubscription = (
+  menus: MenuItem[],
+  userPermissions: PermissionCode[],
+  userRoles: RoleCode[],
+  isSuperAdmin: boolean,
+  planFeatures: PlanFeatures | null
+): MenuItem[] => {
+  return menus
+    .filter((item) => {
+      // 只按权限过滤，不按订阅过滤
+      const hasPermission = hasMenuPermission(item, userPermissions, userRoles, isSuperAdmin);
+      if (!hasPermission) {
+        // 检查是否有子菜单有权限
+        if (item.children && item.children.length > 0) {
+          const filteredChildren = filterMenusWithSubscription(
+            item.children,
+            userPermissions,
+            userRoles,
+            isSuperAdmin,
+            planFeatures
+          );
+          return filteredChildren.length > 0;
+        }
+        return false;
+      }
+      return true;
+    })
+    .map((item) => {
+      // 检查订阅状态，标记为 locked
+      const hasSubscription = hasSubscriptionAccess(item, planFeatures);
+
+      // 递归处理子菜单
+      if (item.children && item.children.length > 0) {
+        return {
+          ...item,
+          locked: !hasSubscription,
+          children: filterMenusWithSubscription(
+            item.children,
+            userPermissions,
+            userRoles,
+            isSuperAdmin,
+            planFeatures
+          ),
+        };
+      }
+      return {
+        ...item,
+        locked: !hasSubscription,
+      };
+    });
 };

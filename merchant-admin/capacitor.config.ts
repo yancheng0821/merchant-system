@@ -32,13 +32,13 @@ const devConfig: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert']
     },
     SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#1a1a1a',
+      launchShowDuration: 3000,  // 显示3秒，或直到手动隐藏
+      launchAutoHide: false,  // 手动隐藏，等 Web 加载完成
+      backgroundColor: '#FFFFFF',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
-      splashFullScreen: false,
-      splashImmersive: false
+      splashFullScreen: true,
+      splashImmersive: true
     },
     Keyboard: {
       resize: 'body',
@@ -80,13 +80,13 @@ const prodConfig: CapacitorConfig = {
 
     // 启动画面
     SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#1a1a1a',
+      launchShowDuration: 3000,  // 显示3秒，或直到手动隐藏
+      launchAutoHide: false,  // 手动隐藏，等 Web 加载完成
+      backgroundColor: '#FFFFFF',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
-      splashFullScreen: false,
-      splashImmersive: false
+      splashFullScreen: true,
+      splashImmersive: true
     },
 
     // 键盘

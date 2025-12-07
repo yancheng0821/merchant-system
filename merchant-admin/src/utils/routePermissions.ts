@@ -20,9 +20,11 @@ export interface RoutePermissionConfig {
  * 路由权限映射表
  */
 export const ROUTE_PERMISSIONS: RoutePermissionConfig[] = [
-  // 公共路由
+  // 公共路由（登录后即可访问）
   { path: 'dashboard', permissions: ['dashboard:view'] },
   { path: 'profile', public: true },
+  { path: 'plans', public: true },
+  { path: 'notification-center', public: true }, // 登录用户可访问，前端路由已有JWT保护
 
   // 业务模块路由
   { path: 'products', permissions: ['products:view', 'packages:view'] },

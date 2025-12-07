@@ -64,6 +64,22 @@ public class PublicBookingController {
     }
 
     /**
+     * 检查商户是否可接受预约（检查订阅计划和月预约数量限制）
+     * GET /api/public/booking/merchants/{merchantCode}/booking-availability
+     */
+    @GetMapping("/merchants/{merchantCode}/booking-availability")
+    public ResponseEntity<Map<String, Object>> getBookingAvailability(@PathVariable String merchantCode) {
+        log.debug("Public API: Checking booking availability for merchant: {}", merchantCode);
+
+        boolean available = publicBookingService.isBookingAvailable(merchantCode);
+
+        return ResponseEntity.ok(Map.of(
+            "merchantCode", merchantCode,
+            "available", available
+        ));
+    }
+
+    /**
      * 获取商户服务列表
      * GET /api/public/booking/merchants/{merchantCode}/services
      */

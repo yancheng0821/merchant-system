@@ -18,6 +18,7 @@ EC2_USER="ubuntu"
 DEPLOY_DIR="/home/ubuntu/merchant-system"
 IMAGES_DIR="/Users/aisenyc/merchant-system/deployment/images"
 SERVER_DIR="/Users/aisenyc/merchant-system/merchant-server"
+FIREBASE_CREDENTIALS="/Users/aisenyc/merchant-system/deployment/vamerchant-8be5d-firebase-adminsdk-fbsvc-7512b438d7.json"
 
 # All available services
 ALL_SERVICES=("eureka-server" "gateway-service" "auth-service" "merchant-service" "business-service" "notification-service" "analytics-service")
@@ -243,6 +244,24 @@ upload_to_ec2() {
     else
         print_error "配置文件上传失败"
         exit 1
+    fi
+
+    # 上传 Firebase 凭证文件（如果部署 notification-service 或全部服务）
+    if [[ " ${DEPLOY_SERVICES[*]} " =~ " notification-service " ]] || [ ${#DEPLOY_SERVICES[@]} -eq ${#ALL_SERVICES[@]} ]; then
+        echo ""
+        echo -e "${YELLOW}上传 Firebase 凭证文件...${NC}"
+        if [ -f "$FIREBASE_CREDENTIALS" ]; then
+            scp -i "$SSH_KEY" "$FIREBASE_CREDENTIALS" ${EC2_USER}@${EC2_HOST}:${DEPLOY_DIR}/firebase-credentials.json
+            if [ $? -eq 0 ]; then
+                print_success "Firebase 凭证文件上传成功"
+                # 设置文件权限（644 让容器内进程可读）
+                ssh -i "$SSH_KEY" ${EC2_USER}@${EC2_HOST} "chmod 644 ${DEPLOY_DIR}/firebase-credentials.json"
+            else
+                print_warning "Firebase 凭证文件上传失败（推送通知可能不可用）"
+            fi
+        else
+            print_warning "Firebase 凭证文件不存在: $FIREBASE_CREDENTIALS"
+        fi
     fi
 }
 

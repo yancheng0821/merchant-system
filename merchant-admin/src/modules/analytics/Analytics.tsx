@@ -55,6 +55,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 import { analyticsApi, appointmentApi } from '../../services/api';
 import { getMerchantNow, getMerchantTimezone, merchantTimeToUtc } from '../../utils/timezoneUtils';
 import {
@@ -102,10 +104,14 @@ const Analytics: React.FC = () => {
   const { user } = useAuth();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const { hasModule } = useFeature();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 检查是否有数据分析模块访问权限
+  const isAnalyticsLocked = !hasModule('analytics');
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -553,6 +559,20 @@ const Analytics: React.FC = () => {
     }
     return null;
   };
+
+  // 如果模块被锁定，显示升级提示
+  if (isAnalyticsLocked) {
+    return (
+      <Box sx={{ maxWidth: 500, mx: 'auto', mt: 4 }}>
+        <UpgradePrompt
+          feature="analytics"
+          featureNameKey="upgrade.features.analytics"
+          requiredPlan="ELITE"
+          variant="card"
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box>

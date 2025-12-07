@@ -611,4 +611,30 @@ public class ResourceController {
         }
     }
 
+    /**
+     * 获取租户的员工数量（不含已删除的）
+     * 用于账单页面显示当前员工数量
+     * GET /api/business/resources/tenant/{tenantId}/staff-count
+     */
+    @GetMapping("/tenant/{tenantId}/staff-count")
+    public ResponseEntity<Map<String, Integer>> getStaffCount(@PathVariable Long tenantId) {
+        log.info("Getting staff count for tenant: {}", tenantId);
+        try {
+            List<Resource> staffResources = resourceService.getResourcesByType(tenantId, "STAFF");
+            // 只计算非删除状态的员工
+            int staffCount = (int) staffResources.stream()
+                .filter(r -> r.getStatus() != Resource.ResourceStatus.DELETED)
+                .count();
+
+            Map<String, Integer> result = new HashMap<>();
+            result.put("staffCount", staffCount);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error getting staff count for tenant {}", tenantId, e);
+            Map<String, Integer> result = new HashMap<>();
+            result.put("staffCount", 0);
+            return ResponseEntity.ok(result);
+        }
+    }
+
 }

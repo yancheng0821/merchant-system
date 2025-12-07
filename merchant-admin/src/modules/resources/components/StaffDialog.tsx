@@ -892,6 +892,7 @@ const StaffDialog: React.FC<StaffDialogProps> = ({
                     sx={{
                         borderRadius: 1.5,
                         px: 2.5,
+                        minWidth: 72,
                         textTransform: 'none',
                         fontWeight: 500,
                         fontSize: '0.8125rem',

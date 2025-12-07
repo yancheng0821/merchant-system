@@ -54,6 +54,8 @@ import { format } from 'date-fns';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
 import { auditApi, handleApiError } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 
 interface AuditLog {
   id: number;
@@ -75,10 +77,14 @@ const AuditLogs: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { themeMode } = useTheme();
+  const { hasFeature } = useFeature();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 检查是否有审计日志功能访问权限
+  const isAuditLogLocked = !hasFeature('auditLog');
 
   // 根据主题模式动态设置主题色
   const isMonochrome = themeMode === 'monochrome';
@@ -684,6 +690,20 @@ const AuditLogs: React.FC = () => {
       );
     }
   };
+
+  // 如果功能被锁定，显示升级提示
+  if (isAuditLogLocked) {
+    return (
+      <Box sx={{ maxWidth: 500, mx: 'auto', mt: 4 }}>
+        <UpgradePrompt
+          feature="auditLog"
+          featureNameKey="upgrade.features.auditLog"
+          requiredPlan="ELITE"
+          variant="card"
+        />
+      </Box>
+    );
+  }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>

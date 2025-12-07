@@ -87,27 +87,7 @@ public class AppointmentController {
             @RequestBody AppointmentCreateDTO appointmentDTO,
             @RequestHeader(value = "Accept-Language", defaultValue = "zh") String language) {
         Appointment created = appointmentService.createAppointmentWithServices(appointmentDTO);
-        
-        // 创建业务通知
-        try {
-            CustomerDTO customerDTO = customerService.getCustomerById(created.getCustomerId());
-            // 转换CustomerDTO为Customer实体
-            Customer customer = new Customer();
-            customer.setId(customerDTO.getId());
-            customer.setFirstName(customerDTO.getFirstName());
-            customer.setLastName(customerDTO.getLastName());
-            customer.setPhone(customerDTO.getPhone());
-            customer.setEmail(customerDTO.getEmail());
-            
-            // 获取第一个服务的ID（预约可能包含多个服务）
-            Long serviceId = created.getAppointmentServices() != null && !created.getAppointmentServices().isEmpty() 
-                ? created.getAppointmentServices().get(0).getServiceId() : null;
-            String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
-            notificationService.createNewAppointmentNotification(created, customer, serviceName, language);
-        } catch (Exception e) {
-            log.error("Failed to create notification for appointment: {}", created.getId(), e);
-        }
-        
+        // 业务通知已在 Service 层创建，无需在此重复创建
         return ResponseEntity.ok(created);
     }
 
@@ -124,27 +104,25 @@ public class AppointmentController {
         String status = statusUpdate.get("status");
         Appointment updated = appointmentService.updateAppointmentStatus(id, status);
         
-        // 根据状态变化创建相应的通知
+        // 根据状态变化创建业务通知（显示在 App 通知中心）
+        // 注意：CANCELLED 通知已在 Service 层处理，这里只处理 CONFIRMED
         try {
-            CustomerDTO customerDTO = customerService.getCustomerById(updated.getCustomerId());
-            // 转换CustomerDTO为Customer实体
-            Customer customer = new Customer();
-            customer.setId(customerDTO.getId());
-            customer.setFirstName(customerDTO.getFirstName());
-            customer.setLastName(customerDTO.getLastName());
-            customer.setPhone(customerDTO.getPhone());
-            customer.setEmail(customerDTO.getEmail());
-            
-            // 获取第一个服务的ID（预约可能包含多个服务）
-            Long serviceId = updated.getAppointmentServices() != null && !updated.getAppointmentServices().isEmpty() 
-                ? updated.getAppointmentServices().get(0).getServiceId() : null;
-            String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
-            
             if ("CONFIRMED".equals(status)) {
+                CustomerDTO customerDTO = customerService.getCustomerById(updated.getCustomerId());
+                Customer customer = new Customer();
+                customer.setId(customerDTO.getId());
+                customer.setFirstName(customerDTO.getFirstName());
+                customer.setLastName(customerDTO.getLastName());
+                customer.setPhone(customerDTO.getPhone());
+                customer.setEmail(customerDTO.getEmail());
+
+                Long serviceId = updated.getAppointmentServices() != null && !updated.getAppointmentServices().isEmpty()
+                    ? updated.getAppointmentServices().get(0).getServiceId() : null;
+                String serviceName = serviceId != null ? appointmentService.getServiceName(serviceId) : "Unknown Service";
+
                 notificationService.createAppointmentConfirmedNotification(updated, customer, serviceName, language);
-            } else if ("CANCELLED".equals(status)) {
-                notificationService.createAppointmentCancelledNotification(updated, customer, serviceName, language);
             }
+            // CANCELLED 通知已在 AppointmentServiceImpl.updateAppointmentStatus() 中发送，无需重复
         } catch (Exception e) {
             log.error("Failed to create notification for appointment status update: {}", id, e);
         }

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merchant.server.merchantservice.mapper.TenantUsageStatsMapper">
+
+    <resultMap id="BaseResultMap" type="com.merchant.server.merchantservice.entity.TenantUsageStats">
+        <id column="id" property="id"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="stat_month" property="statMonth"/>
+        <result column="appointment_count" property="appointmentCount"/>
+        <result column="email_count" property="emailCount"/>
+        <result column="sms_count" property="smsCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, tenant_id, stat_month, appointment_count, email_count, sms_count, created_at, updated_at
+    </sql>
+
+    <select id="findByTenantIdAndMonth" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenant_usage_stats
+        WHERE tenant_id = #{tenantId} AND stat_month = #{statMonth}
+    </select>
+
+    <select id="getOrCreateCurrentMonthStats" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tenant_usage_stats
+        WHERE tenant_id = #{tenantId} AND stat_month = #{statMonth}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tenant_usage_stats (tenant_id, stat_month, appointment_count, email_count, sms_count)
+        VALUES (#{tenantId}, #{statMonth}, #{appointmentCount}, #{emailCount}, #{smsCount})
+    </insert>
+
+    <update id="update">
+        UPDATE tenant_usage_stats
+        SET appointment_count = #{appointmentCount},
+            email_count = #{emailCount},
+            sms_count = #{smsCount}
+        WHERE id = #{id}
+    </update>
+
+    <update id="incrementAppointmentCount">
+        INSERT INTO tenant_usage_stats (tenant_id, stat_month, appointment_count)
+        VALUES (#{tenantId}, #{statMonth}, 1)
+        ON DUPLICATE KEY UPDATE appointment_count = appointment_count + 1
+    </update>
+
+    <update id="incrementEmailCount">
+        INSERT INTO tenant_usage_stats (tenant_id, stat_month, email_count)
+        VALUES (#{tenantId}, #{statMonth}, 1)
+        ON DUPLICATE KEY UPDATE email_count = email_count + 1
+    </update>
+
+    <update id="incrementSmsCount">
+        INSERT INTO tenant_usage_stats (tenant_id, stat_month, sms_count)
+        VALUES (#{tenantId}, #{statMonth}, 1)
+        ON DUPLICATE KEY UPDATE sms_count = sms_count + 1
+    </update>
+
+</mapper>

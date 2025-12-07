@@ -84,4 +84,11 @@ public interface PublicBookingService {
      * @return 客户信息，不存在则返回null
      */
     PublicCustomerDTO lookupCustomer(String merchantCode, String phone, String email);
+
+    /**
+     * 检查商户是否可以接受在线预约（基于月预约数量限制）
+     * @param merchantCode 商户代码
+     * @return true 如果商户可以接受预约（未达到月预约上限或无限制），false 如果已达上限
+     */
+    boolean isBookingAvailable(String merchantCode);
 }

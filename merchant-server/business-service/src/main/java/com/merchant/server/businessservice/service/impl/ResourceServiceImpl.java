@@ -1,5 +1,6 @@
 package com.merchant.server.businessservice.service.impl;
 
+import com.merchant.server.businessservice.client.MerchantServiceClient;
 import com.merchant.server.businessservice.dto.DayAvailabilityDTO;
 import com.merchant.server.businessservice.dto.TimeSegmentDTO;
 import com.merchant.server.businessservice.dto.WeekAvailabilityDTO;
@@ -11,6 +12,7 @@ import com.merchant.server.businessservice.mapper.ResourceMapper;
 import com.merchant.server.businessservice.mapper.StaffMapper;
 import com.merchant.server.businessservice.service.ResourceService;
 import com.merchant.server.businessservice.util.MessageUtil;
+import com.merchant.server.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -34,6 +36,7 @@ public class ResourceServiceImpl implements ResourceService {
     private final ResourceMapper resourceMapper;
     private final StaffMapper staffMapper;
     private final MessageUtil messageUtil;
+    private final MerchantServiceClient merchantServiceClient;
 
     @Override
     public List<Resource> getAllResourcesByTenantId(Long tenantId) {
@@ -74,6 +77,11 @@ public class ResourceServiceImpl implements ResourceService {
     public Resource createResource(Resource resource) {
         log.info("Creating resource: {}", resource.getName());
 
+        // 如果是创建员工资源，检查员工数量限制
+        if (resource.getType() == Resource.ResourceType.STAFF) {
+            checkStaffLimit(resource.getTenantId());
+        }
+
         // 检查手机号是否已存在
         if (StringUtils.hasText(resource.getPhone())) {
             if (resourceMapper.existsByTenantIdAndPhone(resource.getTenantId(), resource.getPhone())) {
@@ -101,6 +109,45 @@ public class ResourceServiceImpl implements ResourceService {
         log.info("Resource created with ID: {}", resource.getId());
 
         return resource;
+    }
+
+    /**
+     * 检查员工数量限制
+     */
+    private void checkStaffLimit(Long tenantId) {
+        try {
+            // 获取租户的员工数量限制
+            ApiResponse<Integer> response = merchantServiceClient.getTenantMaxStaff(tenantId);
+            if (response == null || !response.isSuccess()) {
+                log.warn("Failed to get max staff limit for tenant {}, allowing creation", tenantId);
+                return;
+            }
+
+            Integer maxStaff = response.getData();
+            if (maxStaff == null || maxStaff == -1) {
+                // -1 表示无限制
+                log.info("Tenant {} has unlimited staff quota", tenantId);
+                return;
+            }
+
+            // 获取当前员工数量（所有非删除状态）
+            List<Resource> allStaff = resourceMapper.findActiveStaffByTenantId(tenantId);
+            int currentStaffCount = allStaff.size();
+
+            log.info("Tenant {} has {}/{} staff", tenantId, currentStaffCount, maxStaff);
+
+            if (currentStaffCount >= maxStaff) {
+                log.warn("Tenant {} has reached staff limit ({}/{})", tenantId, currentStaffCount, maxStaff);
+                throw new RuntimeException(messageUtil.getMessage("staff.limit.reached"));
+            }
+        } catch (RuntimeException e) {
+            // 如果是我们抛出的限制异常，继续抛出
+            if (e.getMessage() != null && e.getMessage().contains(messageUtil.getMessage("staff.limit.reached"))) {
+                throw e;
+            }
+            // 其他异常（如网络错误），记录日志但允许继续创建
+            log.error("Error checking staff limit for tenant {}, allowing creation", tenantId, e);
+        }
     }
 
     @Override

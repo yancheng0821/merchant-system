@@ -37,8 +37,10 @@ interface WebSocketContextType {
   lastMessage: WebSocketMessage | null;
   newAppointment: NewAppointmentNotification | null;
   cancelledAppointment: CancelledAppointmentNotification | null;
+  unreadNotificationCount: number;
   clearNewAppointment: () => void;
   clearCancelledAppointment: () => void;
+  setUnreadNotificationCount: (count: number) => void;
   reconnect: () => void;
 }
 
@@ -62,6 +64,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const [newAppointment, setNewAppointment] = useState<NewAppointmentNotification | null>(null);
   const [cancelledAppointment, setCancelledAppointment] = useState<CancelledAppointmentNotification | null>(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,6 +167,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               console.error('[WebSocket] Failed to parse cancellation data:', e);
             }
           }
+
+          // 注意：未读数增量在 App.tsx 中通过监听 lastMessage 处理
         } catch (e) {
           console.error('[WebSocket] Failed to parse message:', e);
         }
@@ -223,8 +228,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     lastMessage,
     newAppointment,
     cancelledAppointment,
+    unreadNotificationCount,
     clearNewAppointment,
     clearCancelledAppointment,
+    setUnreadNotificationCount,
     reconnect,
   };
 

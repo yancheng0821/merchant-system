@@ -11,6 +11,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
+import { UpgradePrompt } from '../../components/common/UpgradePrompt';
 import CustomerReminders from './CustomerReminders';
 import ReminderHistory from './ReminderHistory';
 
@@ -18,8 +20,12 @@ const MarketingManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const { hasModule } = useFeature();
   const muiTheme = useMuiTheme();
   const [tabValue, setTabValue] = useState(0);
+
+  // 检查是否有营销模块访问权限
+  const isMarketingLocked = !hasModule('marketing');
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
@@ -57,6 +63,20 @@ const MarketingManagement: React.FC = () => {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  // 如果模块被锁定，显示升级提示
+  if (isMarketingLocked) {
+    return (
+      <Box sx={{ maxWidth: 500, mx: 'auto', mt: 4 }}>
+        <UpgradePrompt
+          feature="marketing"
+          featureNameKey="upgrade.features.marketing"
+          requiredPlan="ELITE"
+          variant="card"
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box>

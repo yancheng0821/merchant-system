@@ -28,4 +28,12 @@ public interface SubscriptionPlanMapper {
      * 查询所有订阅计划
      */
     List<SubscriptionPlan> findAll();
+
+    /**
+     * 更新订阅计划的 Stripe IDs
+     */
+    int updateStripeIds(@Param("id") Long id,
+                        @Param("stripeProductId") String stripeProductId,
+                        @Param("stripeMonthlyPriceId") String stripeMonthlyPriceId,
+                        @Param("stripeYearlyPriceId") String stripeYearlyPriceId);
 }

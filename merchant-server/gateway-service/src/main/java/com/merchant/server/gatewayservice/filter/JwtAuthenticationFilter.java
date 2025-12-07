@@ -44,10 +44,30 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/auth/reset-password",
         "/api/auth/validate-reset-token",
         "/api/merchant/webhooks/",  // Stripe webhook - 不需要JWT认证
+        "/api/merchant/stripe/subscription/admin/",  // TODO: 测试完成后移除此行
         "/api/test/",
         "/actuator/",
         "/static/uploads/",
-        "/api/public/"  // 公开预约API - 不需要JWT认证
+        "/api/public/",  // 公开预约API - 不需要JWT认证
+        "/api/merchant/subscription-plan"  // 套餐列表（公开Pricing页面需要）
+    );
+
+    /**
+     * 订阅过期时允许访问的路径（只能访问订阅/支付相关API）
+     */
+    private static final List<String> SUBSCRIPTION_EXPIRED_ALLOWED_PATHS = Arrays.asList(
+        "/api/auth/logout",
+        "/api/auth/validate-token",
+        "/api/auth/validate",  // Token验证（AuthContext初始化需要）
+        "/api/auth/user/",  // 用户信息
+        "/api/merchant/subscription",  // 订阅相关（支持 /subscription 和 /subscription/xxx）
+        "/api/merchant/stripe/",  // Stripe支付相关
+        "/api/merchant/plans",  // 订阅计划
+        "/api/merchant/subscription-plan",  // 套餐列表（Pricing页面需要）
+        "/api/merchant/merchants/",  // 商户基本信息
+        "/api/merchant/notifications/",  // 系统通知（顶部通知栏）
+        "/api/merchant/config/",  // 商户配置（用于显示商户名等）
+        "/api/business/notifications/"  // 业务通知API
     );
 
     /**
@@ -105,13 +125,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         Long userId = jwtUtil.extractUserId(token);
         Long tenantId = jwtUtil.extractTenantId(token);
         String username = jwtUtil.extractUsername(token);
+        boolean subscriptionExpired = jwtUtil.extractSubscriptionExpired(token);
 
         if (userId == null) {
             log.warn("Failed to extract user ID from token");
             return unauthorizedResponse(exchange, "Invalid token payload");
         }
 
-        log.debug("Authenticated user: id={}, username={}, tenantId={}", userId, username, tenantId);
+        log.debug("Authenticated user: id={}, username={}, tenantId={}, subscriptionExpired={}", userId, username, tenantId, subscriptionExpired);
+
+        // 检查订阅过期限制
+        if (subscriptionExpired && !isSubscriptionExpiredAllowedPath(path)) {
+            log.warn("Subscription expired user trying to access restricted path: userId={}, path={}", userId, path);
+            return forbiddenResponse(exchange, "Subscription expired. Please renew your subscription to access this feature.");
+        }
 
         // 将用户信息添加到请求Header中，传递给下游服务
         ServerHttpRequest modifiedRequest = request.mutate()
@@ -119,6 +146,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             .header("X-Tenant-Id", tenantId != null ? String.valueOf(tenantId) : "")
             .header("X-Username", username != null ? username : "")
             .header("X-Authenticated", "true")
+            .header("X-Subscription-Expired", String.valueOf(subscriptionExpired))
             .build();
 
         // 继续请求链
@@ -130,6 +158,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
      */
     private boolean isPublicPath(String path) {
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
+
+    /**
+     * 检查是否是订阅过期时允许访问的路径
+     */
+    private boolean isSubscriptionExpiredAllowedPath(String path) {
+        return SUBSCRIPTION_EXPIRED_ALLOWED_PATHS.stream().anyMatch(path::startsWith);
     }
 
     /**

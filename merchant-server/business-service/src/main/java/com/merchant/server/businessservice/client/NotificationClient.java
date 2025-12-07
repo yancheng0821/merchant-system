@@ -49,4 +49,16 @@ public interface NotificationClient {
      */
     @PostMapping("/v2/appointment-notifications/reminder")
     String sendAppointmentReminder(@RequestBody Object notification);
+
+    /**
+     * 发送推送通知给租户下的所有用户
+     */
+    @PostMapping("/notification/push/tenant/{tenantId}")
+    Object sendPushToTenant(@org.springframework.web.bind.annotation.PathVariable("tenantId") Long tenantId, @RequestBody Map<String, Object> request);
+
+    /**
+     * 发送推送通知给指定用户
+     */
+    @PostMapping("/notification/push/user/{userId}")
+    Object sendPushToUser(@org.springframework.web.bind.annotation.PathVariable("userId") Long userId, @RequestBody Map<String, Object> request);
 }

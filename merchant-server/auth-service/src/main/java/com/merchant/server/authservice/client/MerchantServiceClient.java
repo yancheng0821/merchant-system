@@ -43,4 +43,10 @@ public interface MerchantServiceClient {
      */
     @PostMapping("/api/merchant/subscription/tenant/{tenantId}/free-trial")
     ApiResponse<Map<String, Object>> createFreeTrialSubscription(@PathVariable("tenantId") Long tenantId);
+
+    /**
+     * 获取租户的订阅状态（用于登录时检查订阅是否过期）
+     */
+    @GetMapping("/api/merchant/subscription/tenant/{tenantId}/status")
+    ApiResponse<Map<String, Object>> getSubscriptionStatus(@PathVariable("tenantId") Long tenantId);
 }

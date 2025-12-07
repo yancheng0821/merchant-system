@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { App as CapacitorApp } from '@capacitor/app';
 import {
   Box,
   CssBaseline,
@@ -22,6 +24,7 @@ import {
   CircularProgress,
   useMediaQuery,
   useTheme as useMuiTheme,
+  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -30,15 +33,19 @@ import {
   ExpandLess,
   ExpandMore,
   ChevronLeft as ChevronLeftIcon,
+  Lock as LockIcon,
+  NotificationsOutlined as NotificationsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from 'notistack';
 import { BrowserRouter as Router, useLocation, useNavigate, useSearchParams, Routes, Route } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth, AuthProvider } from './contexts/AuthContext';
 import { TaxProvider } from './contexts/TaxContext';
 import { SessionProvider } from './contexts/SessionContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
+import { FeatureProvider } from './contexts/FeatureContext';
 import { useTheme } from './contexts/ThemeContext';
+import { useWebSocket } from './contexts/WebSocketContext';
 import { LoginPage, UserProfile } from './components';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import {
@@ -60,29 +67,51 @@ import { RBACManagement } from './modules/rbac';
 import { TenantActivation } from './modules/admin';
 import { PublicBooking } from './modules/public-booking';
 import LegalPage from './components/public/LegalPage';
+import PublicPricing from './components/public/PublicPricing';
+import Pricing from './modules/settings/Pricing';
+import SubscriptionExpiredPage from './pages/SubscriptionExpiredPage';
+import NotificationCenter from './pages/NotificationCenter';
 import { generateNavigationConfig, MerchantConfig, MenuItemType } from './utils/navigationConfig';
 import { initializeConfigPreloader } from './utils/configPreloader';
-import { getFullImageUrl, subscriptionApi, TenantSubscription } from './services/api';
+import { getFullImageUrl, subscriptionApi, TenantSubscription, parsePlanFeatures, PlanFeatures, businessNotificationApi } from './services/api';
 import LanguageSwitcher from './components/common/LanguageSwitcher';
 import NotificationBar from './components/common/NotificationBar';
-import UnpaidInvoiceAlert from './components/common/UnpaidInvoiceAlert';
-import { filterMenus } from './utils/menuFilter';
+import PullToRefresh from './components/common/PullToRefresh';
+import { filterMenusWithSubscription } from './utils/menuFilter';
 import { usePermission } from './hooks/usePermission';
+import { useFeature } from './contexts/FeatureContext';
 import { canAccessRoute, ROUTE_PERMISSIONS } from './utils/routePermissions';
 import { Capacitor } from '@capacitor/core';
+import { pushNotificationService } from './services/pushNotification';
 
 const drawerWidth = 260;
 // 检测是否是 Android 原生平台
 const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 const mobileDrawerWidth = 220; // 移动端收窄，减少屏幕占用
 
+// 默认功能配置（当没有订阅或加载失败时使用）
+const DEFAULT_PLAN_FEATURES: PlanFeatures = {
+  limits: { maxStaff: 1, maxAppointmentsPerMonth: 100, maxEmailsPerMonth: 300, maxSmsPerMonth: 0 },
+  modules: {
+    dashboard: true, appointments: true, schedule: true, customers: true,
+    orders: true, products: true, resources: true, settings: true,
+    notifications: true, marketing: false, analytics: false, costs: false, rbac: true,
+  },
+  features: {
+    appLogin: false, onlineBooking: false, notificationTemplateEdit: false,
+    customerImport: false, smsNotification: false, auditLog: false,
+    removeBranding: false, futureFeatures: false,
+  },
+};
+
 const MainAppContent: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, subscriptionExpired } = useAuth();
   const { isDrawerOpen, setDrawerOpen } = useNavigation();
   const { getMenuColor } = useTheme();
   const { userPermissions, isSuperAdmin } = usePermission();
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { unreadNotificationCount, setUnreadNotificationCount, lastMessage } = useWebSocket();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
@@ -92,7 +121,6 @@ const MainAppContent: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileNotificationDismissed, setMobileNotificationDismissed] = useState(false);
 
   // 用于跟踪权限是否已经初始化过
   const permissionsInitialized = React.useRef(false);
@@ -117,6 +145,8 @@ const MainAppContent: React.FC = () => {
   // const [merchantConfig, setMerchantConfig] = useState<MerchantConfig | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
+  const [planFeatures, setPlanFeatures] = useState<PlanFeatures | null>(null);
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
 
   // 标记权限已初始化
   // 只要用户登录了，权限就应该已经加载（即使是空权限）
@@ -125,6 +155,110 @@ const MainAppContent: React.FC = () => {
       permissionsInitialized.current = true;
     }
   }, [user]);
+
+  // 从 API 获取未读通知数
+  const fetchUnreadCount = React.useCallback(async () => {
+    if (!user?.tenantId) return;
+    try {
+      const count = await businessNotificationApi.getUnreadCount(user.tenantId);
+      setUnreadNotificationCount(count);
+      console.log('[App] Fetched unread notification count:', count);
+    } catch (error) {
+      console.error('[App] Failed to fetch unread count:', error);
+    }
+  }, [user?.tenantId, setUnreadNotificationCount]);
+
+  // 用户登录后获取未读数
+  useEffect(() => {
+    if (user?.tenantId) {
+      fetchUnreadCount();
+    }
+  }, [user?.tenantId, fetchUnreadCount]);
+
+  // 监听 WebSocket 消息，重新获取未读数
+  const lastMessageRef = React.useRef<typeof lastMessage>(null);
+  useEffect(() => {
+    if (lastMessage && lastMessage !== lastMessageRef.current) {
+      lastMessageRef.current = lastMessage;
+      if (lastMessage.type === 'NEW_APPOINTMENT' ||
+          lastMessage.type === 'APPOINTMENT_CANCELLED' ||
+          lastMessage.type === 'SYSTEM_NOTIFICATION' ||
+          lastMessage.type === 'NOTIFICATION_UPDATE') {
+        console.log('[App] WebSocket notification received, refreshing unread count');
+        fetchUnreadCount();
+      }
+    }
+  }, [lastMessage, fetchUnreadCount]);
+
+  // 监听原生推送通知事件（来自 pushNotificationService 和原生层）
+  useEffect(() => {
+    const handlePushNotification = () => {
+      console.log('[App] Push notification received, refreshing unread count');
+      fetchUnreadCount();
+    };
+
+    // Android/iOS: 监听原生层发送的推送通知接收事件
+    const handlePushNotificationReceived = () => {
+      console.log('[App] Native push notification received, refreshing unread count');
+      // 延迟 500ms 再刷新，确保后端数据库已提交
+      setTimeout(() => {
+        fetchUnreadCount();
+      }, 500);
+    };
+
+    // Android: 监听App恢复事件
+    const handleAppResumed = () => {
+      console.log('[App] Android app resumed, refreshing unread count');
+      fetchUnreadCount();
+    };
+
+    // Android: 监听通知点击事件
+    const handlePushNotificationTapped = () => {
+      console.log('[App] Push notification tapped, refreshing unread count');
+      fetchUnreadCount();
+    };
+
+    window.addEventListener('pushNotification', handlePushNotification);
+    window.addEventListener('pushNotificationReceived', handlePushNotificationReceived);
+    window.addEventListener('appResumed', handleAppResumed);
+    window.addEventListener('pushNotificationTapped', handlePushNotificationTapped);
+
+    return () => {
+      window.removeEventListener('pushNotification', handlePushNotification);
+      window.removeEventListener('pushNotificationReceived', handlePushNotificationReceived);
+      window.removeEventListener('appResumed', handleAppResumed);
+      window.removeEventListener('pushNotificationTapped', handlePushNotificationTapped);
+    };
+  }, [fetchUnreadCount]);
+
+  // 监听 App 从后台恢复，刷新未读通知数并检查推送权限
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive && user?.tenantId) {
+        console.log('[App] App resumed from background, refreshing unread count');
+        fetchUnreadCount();
+        // 检查推送权限并重新注册（处理用户在设置中重新开启权限的情况）
+        pushNotificationService.checkAndReregister();
+      }
+    });
+
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [user?.tenantId, fetchUnreadCount]);
+
+  // 同步 App Icon Badge 与未读通知数
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      if (unreadNotificationCount > 0) {
+        pushNotificationService.setBadgeCount(unreadNotificationCount);
+      } else {
+        pushNotificationService.clearBadge();
+      }
+    }
+  }, [unreadNotificationCount]);
 
   // 检查并显示注册成功消息
   useEffect(() => {
@@ -164,6 +298,16 @@ const MainAppContent: React.FC = () => {
     }
 
     const path = location.pathname.slice(1) || 'dashboard';
+
+    // 跳过特殊路径的权限检查（登录页、公开页面等）
+    // 这些路径在登录流程中可能会短暂出现，不应触发权限拦截
+    const skipPermissionCheckPaths = ['login', 'pricing', 'reset-password', ''];
+    if (skipPermissionCheckPaths.includes(path)) {
+      // 如果用户已登录但还在登录页，等待 window.location.href 跳转
+      // 不要设置 selectedItem，避免干扰登录后的跳转
+      console.log(`[App] Skipping permission check for path: ${path}`);
+      return;
+    }
 
     // 只有在权限数据已加载时才进行权限检查
     // 避免在刷新页面时，权限未加载导致误判
@@ -226,9 +370,9 @@ const MainAppContent: React.FC = () => {
         // 根据商户配置生成导航菜单
         const dynamicMenuItems = generateNavigationConfig(mockConfig);
 
-        // 只有当权限已初始化时才进行过滤
-        // 如果权限未初始化，显示所有菜单（避免空白）
-        if (permissionsInitialized.current) {
+        // 只有当权限已初始化、订阅已加载、且功能配置已获取时才进行过滤
+        // 如果未加载完成，不设置菜单（避免闪烁）
+        if (permissionsInitialized.current && subscriptionLoaded && planFeatures !== null) {
           console.log('Filtering menus with permissions:', {
             permissionCount: userPermissions.permissionCodes.length,
             roleCount: userPermissions.roles.length,
@@ -240,38 +384,35 @@ const MainAppContent: React.FC = () => {
           console.log('Dynamic menu items before filter:', dynamicMenuItems.map(m => ({ id: m.id, permission: m.permission })));
 
           const userRoleCodes = userPermissions.roles.map(role => role.roleCode);
-          const filteredMenuItems = filterMenus(
+          const filteredMenuItems = filterMenusWithSubscription(
             dynamicMenuItems,
             userPermissions.permissionCodes,
             userRoleCodes as any,
-            userPermissions.isSuperAdmin
+            userPermissions.isSuperAdmin,
+            planFeatures
           );
 
           console.log('Filtered menu items:', filteredMenuItems.length, filteredMenuItems);
           setMenuItems(filteredMenuItems);
         } else {
-          console.log('Permissions not initialized yet, showing all menus temporarily');
-          // 暂时显示所有菜单，等待权限加载
-          setMenuItems(dynamicMenuItems);
+          console.log('Waiting for permissions or subscription to load...');
         }
       } catch (error) {
         console.error('Failed to fetch merchant config:', error);
         // 使用默认配置
         const defaultMenuItems = generateNavigationConfig();
 
-        // 只有当权限已初始化时才进行过滤
-        if (permissionsInitialized.current) {
+        // 只有当权限已初始化、订阅已加载、且功能配置已获取时才进行过滤
+        if (permissionsInitialized.current && subscriptionLoaded && planFeatures !== null) {
           const userRoleCodes = userPermissions.roles.map(role => role.roleCode);
-          const filteredMenuItems = filterMenus(
+          const filteredMenuItems = filterMenusWithSubscription(
             defaultMenuItems,
             userPermissions.permissionCodes,
             userRoleCodes as any,
-            userPermissions.isSuperAdmin
+            userPermissions.isSuperAdmin,
+            planFeatures
           );
           setMenuItems(filteredMenuItems);
-        } else {
-          // 暂时显示所有菜单，等待权限加载
-          setMenuItems(defaultMenuItems);
         }
       }
     };
@@ -279,25 +420,52 @@ const MainAppContent: React.FC = () => {
     if (user) {
       fetchMerchantConfig();
     }
-  }, [user, userPermissions]);
+  }, [user, userPermissions, planFeatures, subscriptionLoaded]);
 
   // 获取订阅信息
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (user && user.tenantId) {
-        try {
-          const response = await subscriptionApi.getActiveSubscription(user.tenantId);
-          if (response.success && response.data) {
-            setSubscription(response.data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch subscription:', error);
+  const fetchSubscription = async () => {
+    if (user && user.tenantId) {
+      try {
+        const response = await subscriptionApi.getActiveSubscription(user.tenantId);
+        if (response.success && response.data) {
+          setSubscription(response.data);
+          // 解析 features JSON
+          const features = parsePlanFeatures(response.data.plan?.features);
+          setPlanFeatures(features || DEFAULT_PLAN_FEATURES);
+        } else {
+          // API 返回失败，使用默认配置
+          setPlanFeatures(DEFAULT_PLAN_FEATURES);
         }
+      } catch (error) {
+        console.error('Failed to fetch subscription:', error);
+        // 加载失败，使用默认配置
+        setPlanFeatures(DEFAULT_PLAN_FEATURES);
+      } finally {
+        setSubscriptionLoaded(true);
       }
-    };
+    } else {
+      // 没有用户，使用默认配置
+      setPlanFeatures(DEFAULT_PLAN_FEATURES);
+      setSubscriptionLoaded(true);
+    }
+  };
 
+  useEffect(() => {
     fetchSubscription();
   }, [user]);
+
+  // 监听订阅变更事件
+  useEffect(() => {
+    const handleSubscriptionChanged = () => {
+      fetchSubscription();
+    };
+
+    window.addEventListener('subscription-changed', handleSubscriptionChanged);
+    return () => {
+      window.removeEventListener('subscription-changed', handleSubscriptionChanged);
+    };
+  }, [user]);
+
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -465,7 +633,7 @@ const MainAppContent: React.FC = () => {
               <ListItemIcon
                 sx={{
                   minWidth: 36,
-                  color: selectedItem === item.id ? getMenuColor(item.color) : '#888',
+                  color: item.locked ? '#bbb' : (selectedItem === item.id ? getMenuColor(item.color) : '#888'),
                   '& .MuiSvgIcon-root': {
                     fontSize: '1.25rem',
                   },
@@ -478,9 +646,12 @@ const MainAppContent: React.FC = () => {
                 primaryTypographyProps={{
                   fontSize: '0.875rem',
                   fontWeight: selectedItem === item.id ? 600 : 500,
-                  color: selectedItem === item.id ? getMenuColor(item.color) : '#333',
+                  color: item.locked ? '#999' : (selectedItem === item.id ? getMenuColor(item.color) : '#333'),
                 }}
               />
+              {item.locked && (
+                <LockIcon sx={{ fontSize: 14, color: '#bbb', mr: 0.5 }} />
+              )}
               {item.children && (expandedMenus[item.id] ? <ExpandLess sx={{ fontSize: 18, color: '#999' }} /> : <ExpandMore sx={{ fontSize: 18, color: '#999' }} />)}
             </ListItemButton>
 
@@ -507,7 +678,7 @@ const MainAppContent: React.FC = () => {
                       selected={selectedItem === child.id}
                       onClick={() => handleChildMenuClick(child.id)}
                     >
-                      <ListItemIcon sx={{ minWidth: 32, '& .MuiSvgIcon-root': { fontSize: '1.1rem' } }}>
+                      <ListItemIcon sx={{ minWidth: 32, color: child.locked ? '#bbb' : 'inherit', '& .MuiSvgIcon-root': { fontSize: '1.1rem' } }}>
                         {child.icon}
                       </ListItemIcon>
                       <ListItemText
@@ -515,8 +686,12 @@ const MainAppContent: React.FC = () => {
                         primaryTypographyProps={{
                           fontSize: '0.8125rem',
                           fontWeight: selectedItem === child.id ? 600 : 400,
+                          color: child.locked ? '#999' : 'inherit',
                         }}
                       />
+                      {child.locked && (
+                        <LockIcon sx={{ fontSize: 12, color: '#bbb' }} />
+                      )}
                     </ListItemButton>
                   ))}
                 </List>
@@ -582,7 +757,28 @@ const MainAppContent: React.FC = () => {
     );
   }
 
+  // 订阅过期检查
+  // - PAST_DUE: 付款失败，只能通过 SubscriptionExpiredPage 跳转 Stripe Customer Portal 更新支付方式
+  //             不能访问 plans 页面（避免重复订阅）
+  // - 其他过期状态 (EXPIRED, CANCELLED): 可以访问 plans 页面续费
+  // 注意：使用 location.pathname 而不是 selectedItem，因为 selectedItem 可能还没更新
+  const currentPath = location.pathname.slice(1) || 'dashboard';
+  if (user && subscriptionExpired) {
+    const isPastDue = user.subscriptionStatus === 'PAST_DUE';
+
+    if (isPastDue) {
+      // PAST_DUE: 所有页面都显示过期页面，用户只能通过"更新支付方式"按钮去 Stripe Portal
+      return <SubscriptionExpiredPage />;
+    } else {
+      // EXPIRED/CANCELLED: 允许访问 plans 页面进行续费
+      if (currentPath !== 'plans') {
+        return <SubscriptionExpiredPage />;
+      }
+    }
+  }
+
   return user ? (
+        <FeatureProvider>
         <TaxProvider>
           <SessionProvider>
         <Box sx={{ display: 'flex', bgcolor: '#f8fafc' }}>
@@ -640,8 +836,39 @@ const MainAppContent: React.FC = () => {
                 </Box>
               </Box>
 
-              {/* 右侧：语言切换、用户信息 */}
+              {/* 右侧：通知、语言切换、用户信息 */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* 移动端通知中心入口 */}
+                <IconButton
+                  onClick={() => {
+                    setSelectedItem('notification-center');
+                    setUnreadNotificationCount(0); // 清除未读数
+                  }}
+                  sx={{
+                    display: { xs: 'flex', md: 'none' },
+                    color: '#666',
+                    width: 36,
+                    height: 36,
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+                  }}
+                >
+                  <Badge
+                    badgeContent={unreadNotificationCount}
+                    color="error"
+                    max={99}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '0.65rem',
+                        minWidth: 16,
+                        height: 16,
+                        padding: '0 4px',
+                      },
+                    }}
+                  >
+                    <NotificationsIcon sx={{ fontSize: 20 }} />
+                  </Badge>
+                </IconButton>
+
                 {/* 语言切换 */}
                 <LanguageSwitcher variant="default" size="medium" />
 
@@ -772,62 +999,43 @@ const MainAppContent: React.FC = () => {
           >
             <Toolbar sx={{ mb: isAndroidNative ? 2 : 0 }} />
 
-            {/* 移动端通知栏 - 可关闭 */}
-            {!mobileNotificationDismissed && (
-              <Box
-                sx={{
-                  display: { xs: 'flex', md: 'none' },
-                  alignItems: 'center',
-                  mb: 1.5,
-                  mx: 0.5,
-                  p: 1,
-                  bgcolor: '#fff',
-                  borderRadius: 1.5,
-                  border: '1px solid rgba(0,0,0,0.06)',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              <PullToRefresh
+                onRefresh={async () => {
+                  console.log('[App] Pull to refresh - refreshing data');
+                  // 刷新未读通知数
+                  fetchUnreadCount();
+                  // 触发自定义事件，让当前页面刷新数据
+                  window.dispatchEvent(new CustomEvent('pullToRefresh'));
+                  // 等待一小段时间让页面处理刷新
+                  await new Promise(resolve => setTimeout(resolve, 800));
                 }}
               >
-                <NotificationBar />
-                <IconButton
-                  size="small"
-                  onClick={() => setMobileNotificationDismissed(true)}
-                  sx={{
-                    ml: 0.5,
-                    p: 0.5,
-                    color: '#999',
-                    flexShrink: 0,
-                    '&:hover': { color: '#666' },
-                  }}
-                >
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Box>
-            )}
+                <Container maxWidth={false} sx={{ px: { xs: 0, sm: 2, md: 3 }, pt: { xs: isAndroidNative ? 1.5 : 0 }, overflowX: 'hidden' }}>
+                  {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
+                  {selectedItem === 'products' && <ServiceManagement />}
+                  {selectedItem === 'orders' && <PaymentManagement onNavigate={setSelectedItem} />}
+                  {selectedItem === 'customers' && <CustomerManagement />}
+                  {selectedItem === 'appointments' && <AppointmentManagement />}
+                  {selectedItem === 'resources' && <ResourceManagement />}
+                  {selectedItem === 'schedule' && <ScheduleManagement />}
+                  {selectedItem === 'notifications' && <NotificationManagement />}
+                  {selectedItem === 'marketing' && <MarketingManagement />}
+                  {selectedItem === 'analytics' && <Analytics />}
+                  {selectedItem === 'costs' && <CostManagement />}
+                  {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}
+                  {selectedItem === 'rbac' && <RBACManagement />}
+                  {selectedItem === 'tenant-activation' && <TenantActivation />}
+                  {selectedItem === 'profile' && <UserProfile />}
+                  {selectedItem === 'plans' && <Pricing />}
+                  {selectedItem === 'notification-center' && <NotificationCenter />}
+                </Container>
+              </PullToRefresh>
 
-            <Container maxWidth={false} sx={{ px: { xs: 0, sm: 2, md: 3 }, pt: { xs: isAndroidNative ? 1.5 : 0 }, overflowX: 'hidden' }}>
-              {selectedItem === 'dashboard' && <Dashboard onNavigate={setSelectedItem} />}
-              {selectedItem === 'products' && <ServiceManagement />}
-              {selectedItem === 'orders' && <PaymentManagement onNavigate={setSelectedItem} />}
-              {selectedItem === 'customers' && <CustomerManagement />}
-              {selectedItem === 'appointments' && <AppointmentManagement />}
-              {selectedItem === 'resources' && <ResourceManagement />}
-              {selectedItem === 'schedule' && <ScheduleManagement />}
-              {selectedItem === 'notifications' && <NotificationManagement />}
-              {selectedItem === 'marketing' && <MarketingManagement />}
-              {selectedItem === 'analytics' && <Analytics />}
-              {selectedItem === 'costs' && <CostManagement />}
-              {selectedItem === 'settings' && <Settings initialTab={searchParams.get('tab') || undefined} />}
-              {selectedItem === 'rbac' && <RBACManagement />}
-              {selectedItem === 'tenant-activation' && <TenantActivation />}
-              {selectedItem === 'profile' && <UserProfile />}
-            </Container>
-
-            {/* 未支付账单提醒 - 浮动在右上角 */}
-            <UnpaidInvoiceAlert />
           </Box>
         </Box>
           </SessionProvider>
         </TaxProvider>
+        </FeatureProvider>
       ) : (
         // 公开页面路由（未登录状态）
         location.pathname === '/reset-password' ? (
@@ -844,6 +1052,11 @@ const PublicBookingWrapper: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
+  // 隐藏启动画面
+  useEffect(() => {
+    SplashScreen.hide();
+  }, []);
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
@@ -854,6 +1067,10 @@ const MainApp: React.FC = () => {
         <Route path="/terms" element={<LegalPage type="terms" />} />
         <Route path="/support" element={<LegalPage type="support" />} />
         <Route path="/delete-account" element={<LegalPage type="delete-account" />} />
+        {/* 公开定价页面 - 不需要登录 */}
+        <Route path="/pricing" element={<PublicPricing />} />
+        {/* 订阅过期页面 */}
+        <Route path="/subscription-expired" element={<SubscriptionExpiredPage />} />
         {/* 其他所有路由走主应用 */}
         <Route path="*" element={
           <NavigationProvider>

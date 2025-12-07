@@ -28,12 +28,17 @@ public class JwtUtil {
     }
     
     public String generateToken(User user) {
+        return generateToken(user, false);
+    }
+
+    public String generateToken(User user, boolean subscriptionExpired) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("tenantId", user.getTenantId());
         claims.put("username", user.getUsername());
         claims.put("realName", user.getRealName());
-        
+        claims.put("subscriptionExpired", subscriptionExpired);
+
         return createToken(claims, user.getUsername(), expiration);
     }
     
@@ -48,10 +53,16 @@ public class JwtUtil {
     
     // 新增方法 - 包含 tenantId
     public String generateAccessToken(Long userId, String username, Long tenantId) {
+        return generateAccessToken(userId, username, tenantId, false);
+    }
+
+    // 新增方法 - 包含 subscriptionExpired
+    public String generateAccessToken(Long userId, String username, Long tenantId, boolean subscriptionExpired) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
         claims.put("tenantId", tenantId);
+        claims.put("subscriptionExpired", subscriptionExpired);
 
         return createToken(claims, username, expiration);
     }
@@ -59,7 +70,7 @@ public class JwtUtil {
     // 兼容旧调用（不推荐使用）
     @Deprecated
     public String generateAccessToken(Long userId, String username) {
-        return generateAccessToken(userId, username, null);
+        return generateAccessToken(userId, username, null, false);
     }
     
     public String generateRefreshToken(Long userId) {

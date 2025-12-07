@@ -128,6 +128,15 @@ public enum NotificationScene {
     }
 
     /**
+     * 是否需要计入用量统计
+     * 系统级通知（验证码、欢迎邮件等）不计入用量
+     * 商户级通知（预约、营销等）计入用量
+     */
+    public boolean shouldCountUsage() {
+        return templateScope == TemplateScope.TENANT;
+    }
+
+    /**
      * 根据code查找场景
      */
     public static NotificationScene fromCode(String code) {

@@ -89,6 +89,11 @@ notification:
       sceneTemplates:
         LOGIN_2FA: SMS_327736525  # 登录验证码
         PACKAGE_VERIFICATION: SMS_327736525  # 套餐消费验证
+  # Firebase推送配置
+  firebase:
+    enabled: ${FIREBASE_ENABLED:true}  # 生产环境启用
+    # 凭证文件路径 - 需要将Firebase服务账号JSON文件放到服务器上
+    credentialsPath: ${FIREBASE_CREDENTIALS_PATH:/etc/merchant/firebase-service-account.json}
 
 # Actuator配置
 management:

@@ -48,12 +48,15 @@ import {
   Subject as SubjectIcon,
   Description as DescriptionIcon,
   Visibility as VisibilityIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { Capacitor } from '@capacitor/core';
 import { notificationApi } from '../../services/api';
 import { usePermission } from '../../hooks/usePermission';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeature } from '../../contexts/FeatureContext';
 import { formatUtcToMerchantTime } from '../../utils/timezoneUtils';
+import UpgradePrompt from '../../components/common/UpgradePrompt';
 
 // 检测是否是原生应用
 const isNativeApp = Capacitor.isNativePlatform();
@@ -96,10 +99,14 @@ const NotificationTemplateManagement: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission } = usePermission();
   const { themeMode } = useTheme();
+  const { hasFeature } = useFeature();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 检查短信通知功能是否被锁定
+  const isSmsLocked = !hasFeature('smsNotification');
 
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -648,13 +655,31 @@ const NotificationTemplateManagement: React.FC = () => {
               }
             }}
           >
-            <Tab label={t('notifications.smsTemplate')} />
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {t('notifications.smsTemplate')}
+                  {isSmsLocked && (
+                    <LockIcon sx={{ fontSize: isMobile ? 12 : 14, color: '#999' }} />
+                  )}
+                </Box>
+              }
+            />
             <Tab label={t('notifications.emailTemplate')} />
           </Tabs>
         </Box>
 
         <TabPanel value={tabValue} index={0} isMobile={isMobile}>
-          {renderTemplateTable(getFilteredTemplates('SMS'))}
+          {isSmsLocked ? (
+            <UpgradePrompt
+              feature="smsNotification"
+              featureNameKey="upgrade.features.smsNotification"
+              requiredPlan="PRO"
+              variant="card"
+            />
+          ) : (
+            renderTemplateTable(getFilteredTemplates('SMS'))
+          )}
         </TabPanel>
 
         <TabPanel value={tabValue} index={1} isMobile={isMobile}>

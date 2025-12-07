@@ -34,6 +34,22 @@ public class LoginResponse {
     @JsonProperty("isTenantOwner")
     private Boolean isTenantOwner;
 
+    // 订阅过期标识 - 用于限制用户只能访问订阅/支付页面
+    @JsonProperty("subscriptionExpired")
+    private Boolean subscriptionExpired;
+
+    // 订阅状态
+    private String subscriptionStatus;
+
+    // 租户状态
+    private String tenantStatus;
+
+    // 订阅计划代码
+    private String planCode;
+
+    // 短信验证设置
+    private Boolean smsVerificationEnabled;
+
     public LoginResponse() {}
 
     public LoginResponse(String token, String refreshToken, User user) {
@@ -43,10 +59,12 @@ public class LoginResponse {
         this.username = user.getUsername();
         this.realName = user.getRealName();
         this.email = user.getEmail();
+        this.phone = user.getPhone();
         this.avatar = user.getAvatarUrl();
         this.tenantId = user.getTenantId();
         this.lastLoginTime = user.getLastLoginAt();
         this.createdAt = user.getCreatedAt();
+        this.smsVerificationEnabled = user.getSmsVerificationEnabled() != null ? user.getSmsVerificationEnabled() : true;
     }
 
     // 创建需要2FA验证的响应

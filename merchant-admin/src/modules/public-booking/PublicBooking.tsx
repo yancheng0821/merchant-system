@@ -66,6 +66,7 @@ interface MerchantInfo {
   widgetColor: string;
   showTechnicianPhotos?: boolean;  // 是否显示技师头像
   showPopularServices?: boolean;   // 是否显示热门服务标签
+  onlineBookingEnabled?: boolean;  // 是否启用在线预约
 }
 
 interface ServiceItem {
@@ -178,6 +179,9 @@ const PublicBooking: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // 预约是否可用（检查商户是否达到月预约上限）
+  const [bookingDisabled, setBookingDisabled] = useState(false);
 
   // 商户信息
   const [merchantInfo, setMerchantInfo] = useState<MerchantInfo | null>(null);
@@ -312,6 +316,27 @@ const PublicBooking: React.FC = () => {
         }
         const data = await response.json();
         setMerchantInfo(data);
+
+        // 检查商户是否启用在线预约
+        if (data.onlineBookingEnabled === false) {
+          setError(t('publicBooking.onlineBookingDisabled'));
+          setLoading(false);
+          return;
+        }
+
+        // 检查商户是否可接受预约（月预约数量限制）
+        try {
+          const availabilityResponse = await fetch(`${API_BASE_URL}/api/public/booking/merchants/${slug}/booking-availability`);
+          if (availabilityResponse.ok) {
+            const availabilityData = await availabilityResponse.json();
+            if (!availabilityData.available) {
+              setBookingDisabled(true);
+            }
+          }
+        } catch {
+          // 检查失败不阻止预约流程
+        }
+
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch merchant info:', err);
@@ -726,7 +751,8 @@ const PublicBooking: React.FC = () => {
   const canProceedNow = useMemo(() => {
     switch (activeStep) {
       case 0:
-        return selectedServices.length > 0;
+        // 如果预约被禁用（商户已达月预约上限），不允许继续
+        return selectedServices.length > 0 && !bookingDisabled;
       case 1:
         return true;
       case 2:
@@ -739,7 +765,7 @@ const PublicBooking: React.FC = () => {
       default:
         return true;
     }
-  }, [activeStep, selectedServices, selectedDate, selectedTime, customerInfo]);
+  }, [activeStep, selectedServices, selectedDate, selectedTime, customerInfo, bookingDisabled]);
 
   // Keep canProceed function for backward compatibility (returns memoized value)
   const canProceed = useCallback(() => canProceedNow, [canProceedNow]);
@@ -1616,6 +1642,23 @@ const PublicBooking: React.FC = () => {
         <Typography sx={{ fontSize: 24, fontWeight: 500, color: '#1a1a1a', mb: 2 }}>
           {t('publicBooking.selectService')}
         </Typography>
+
+        {/* 预约不可用提示 */}
+        {bookingDisabled && (
+          <Alert
+            severity="warning"
+            icon={<InfoIcon />}
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              '& .MuiAlert-message': {
+                fontSize: '0.9rem',
+              },
+            }}
+          >
+            {t('publicBooking.bookingUnavailable', '该商户暂不接受在线预约，请稍后再试或直接联系商户。')}
+          </Alert>
+        )}
 
         {/* 分类Tabs - 移动端用下拉选择，桌面端用Chips */}
         {categories.length >= 2 && (

@@ -330,10 +330,13 @@ services:
       - AWS_SNS_SENDER_ID=${AWS_SNS_SENDER_ID:-VAMerchant}
       - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID}
       - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET}
+      - FIREBASE_ENABLED=true
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase-credentials.json
       - LOGGING_FILE_PATH=/app/logs
       - TZ=America/Vancouver
     volumes:
       - ./logs/notification-service:/app/logs
+      - ./firebase-credentials.json:/app/config/firebase-credentials.json:ro
     depends_on:
       eureka-server:
         condition: service_healthy

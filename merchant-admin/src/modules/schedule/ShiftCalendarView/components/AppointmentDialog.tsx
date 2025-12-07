@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -177,6 +177,10 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [exceedsWorkingHours, setExceedsWorkingHours] = useState(false);
   const [timeConflictError, setTimeConflictError] = useState<string>('');
+
+  // 追踪弹框是否已经初始化，防止WebSocket刷新数据时重置表单
+  const dialogInitializedRef = useRef(false);
+  const previousOpenRef = useRef(false);
   const [staffAttendance, setStaffAttendance] = useState<any>(null);
 
   // 生成占位邮箱的函数
@@ -392,6 +396,19 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       setErrors({});
       setTimeConflictError('');
       setExceedsWorkingHours(false);
+      // 重置初始化标志
+      dialogInitializedRef.current = false;
+      previousOpenRef.current = false;
+      return;
+    }
+
+    // 更新previousOpenRef
+    previousOpenRef.current = open;
+
+    // 如果弹框已经初始化过且处于创建模式，不要因为customers/services变化而重置
+    // 这样可以防止WebSocket刷新数据时清除用户输入的内容
+    if (dialogInitializedRef.current && !editMode) {
+      console.log('AppointmentDialog: skipping re-initialization (already initialized in create mode)');
       return;
     }
 
@@ -421,8 +438,16 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       setErrors({});
       setTimeConflictError('');
       setExceedsWorkingHours(false);
+      // 标记为已初始化
+      dialogInitializedRef.current = true;
     } else if (editMode && existingAppointment && customers.length > 0) {
       // ========== 编辑模式（仅当customers已加载）==========
+      // 编辑模式下，如果已初始化则跳过（防止重复加载）
+      if (dialogInitializedRef.current) {
+        console.log('AppointmentDialog: skipping re-initialization (already initialized in edit mode)');
+        return;
+      }
+
       console.log('AppointmentDialog opened (edit mode) with customers loaded');
 
       // 查找客户
@@ -462,6 +487,8 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
       setErrors({});
       setTimeConflictError('');
       setExceedsWorkingHours(false);
+      // 标记为已初始化
+      dialogInitializedRef.current = true;
     }
   }, [open, editMode, existingAppointment, customers, services, date, startTime, endTime, resourceId]);
 

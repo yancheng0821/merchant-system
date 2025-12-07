@@ -175,6 +175,17 @@ const AppointmentManagement: React.FC = () => {
     loadAppointments();
   }, [loadAppointments]);
 
+  // 监听下拉刷新事件
+  useEffect(() => {
+    const handlePullToRefresh = () => {
+      console.log('[AppointmentManagement] Pull to refresh triggered');
+      loadAppointments();
+    };
+
+    window.addEventListener('pullToRefresh', handlePullToRefresh);
+    return () => window.removeEventListener('pullToRefresh', handlePullToRefresh);
+  }, [loadAppointments]);
+
   // 处理URL参数中的appointmentId
   useEffect(() => {
     const appointmentId = searchParams.get('appointmentId');
@@ -1336,9 +1347,9 @@ const AppointmentManagement: React.FC = () => {
             </IconButton>
           </Box>
         </Box>
-        <DialogContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 1.5, sm: 2 } }}>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 4, sm: 2 }, pb: { xs: 1.5, sm: 2 } }}>
           {selectedAppointment && (
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
+            <Grid container spacing={{ xs: 3.5, sm: 3 }}>
               <Grid item xs={12} sm={6}>
                 <Typography sx={{ fontWeight: 600, mb: { xs: 1, sm: 2 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                   {t('appointments.customerInfo')}
@@ -1467,7 +1478,7 @@ const AppointmentManagement: React.FC = () => {
 
               {selectedAppointment.notes && (
                 <Grid item xs={12}>
-                  <Typography sx={{ fontWeight: 600, mb: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
+                  <Typography sx={{ fontWeight: 600, mb: { xs: 1, sm: 1 }, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                     {t('appointments.notes')}
                   </Typography>
                   <Typography color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>

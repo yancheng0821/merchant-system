@@ -26,12 +26,11 @@
         <result column="deleted" property="deleted"/>
     </resultMap>
 
-    <!-- Get recent notifications (last 7 days) -->
+    <!-- Get recent notifications -->
     <select id="getRecentNotifications" resultMap="BaseResultMap">
         SELECT * FROM business_notifications
         WHERE tenant_id = #{tenantId}
         AND deleted = 0
-        AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
         ORDER BY created_at DESC
         LIMIT #{limit}
     </select>

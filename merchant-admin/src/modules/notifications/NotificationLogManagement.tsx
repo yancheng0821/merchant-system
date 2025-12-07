@@ -105,6 +105,7 @@ const NotificationLogManagement: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [retryingLogId, setRetryingLogId] = useState<number | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // 根据主题模式动态设置主题色
@@ -209,17 +210,20 @@ const NotificationLogManagement: React.FC = () => {
 
   const handleRetrySingle = async (logId: number) => {
     try {
-      setLoading(true);
+      setRetryingLogId(logId);
       await notificationApi.retrySingleNotification(logId);
       setSuccessMessage(t('notifications.retrySingleSuccess'));
       await fetchLogs();
       setError(null);
+      // 成功后关闭菜单
+      handleMenuClose();
     } catch (err) {
       setError(t('notifications.retrySingleFailed', 'Failed to retry notification'));
       console.error('Error retrying single notification:', err);
-    } finally {
-      setLoading(false);
+      // 失败也关闭菜单
       handleMenuClose();
+    } finally {
+      setRetryingLogId(null);
     }
   };
 
@@ -940,11 +944,22 @@ const NotificationLogManagement: React.FC = () => {
          selectedLogId && logs.find(l => l.id === selectedLogId)?.status &&
          (logs.find(l => l.id === selectedLogId)!.status === 'FAILED' ||
           logs.find(l => l.id === selectedLogId)!.status === 'PENDING') && (
-          <MenuItem onClick={handleMenuRetry}>
+          <MenuItem
+            onClick={handleMenuRetry}
+            disabled={retryingLogId === selectedLogId}
+          >
             <ListItemIcon>
-              <RetryIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
+              {retryingLogId === selectedLogId ? (
+                <CircularProgress size={18} sx={{ color: '#3B82F6' }} />
+              ) : (
+                <RetryIcon sx={{ fontSize: 18, color: '#3B82F6' }} />
+              )}
             </ListItemIcon>
-            <Typography variant="body2">{t('notifications.retrySingle', 'Retry Send')}</Typography>
+            <Typography variant="body2">
+              {retryingLogId === selectedLogId
+                ? t('notifications.retrying', 'Retrying...')
+                : t('notifications.retrySingle', 'Retry Send')}
+            </Typography>
           </MenuItem>
         )}
       </Menu>

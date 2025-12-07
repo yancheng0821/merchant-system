@@ -23,6 +23,10 @@ import {
   MenuItem,
   Backdrop,
   Portal,
+  Dialog,
+  DialogContent,
+  useMediaQuery,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import {
   DndContext,
@@ -105,8 +109,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useWebSocket } from '../../../contexts/WebSocketContext';
+import { useFeature } from '../../../contexts/FeatureContext';
 import { usePermission } from '../../../hooks/usePermission';
-import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi, staffAttendanceApi } from '../../../services/api';
+import { resourceApi, serviceApi, getFullImageUrl, api, appointmentApi, staffAttendanceApi, usageStatsApi } from '../../../services/api';
+import UpgradePrompt from '../../../components/common/UpgradePrompt';
 import type { Resource, Service as ApiService, Customer, StaffAttendance } from '../../../services/api';
 import { getMerchantNow, getMerchantTimezone, getCurrencySymbol } from '../../../utils/timezoneUtils';
 
@@ -477,6 +483,9 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
   const { isDrawerOpen, setDrawerOpen } = useNavigation();
   const { themeMode } = useTheme();
   const { newAppointment, clearNewAppointment, cancelledAppointment, clearCancelledAppointment, isConnected } = useWebSocket();
+  const { getLimit, isUnlimited } = useFeature();
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const locale = i18n.language === 'zh-CN' ? zhCNLocale : enUSLocale;
 
   // 根据主题模式动态设置主题色
@@ -560,6 +569,9 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
     severity: 'warning',
     duration: 4000,
   });
+  // 预约用量限制相关状态
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [currentMonthAppointmentCount, setCurrentMonthAppointmentCount] = useState(0);
   // 从localStorage读取视图模式，默认为false
   const [isCompactMode, setIsCompactMode] = useState(() => {
     const saved = localStorage.getItem('scheduleViewCompactMode');
@@ -678,6 +690,22 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
 
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.tenantId]);
+
+  // 加载当月预约用量统计
+  useEffect(() => {
+    const fetchUsageStats = async () => {
+      if (!user?.tenantId) return;
+      try {
+        const response = await usageStatsApi.getCurrentMonthStats(user.tenantId);
+        if (response.success && response.data) {
+          setCurrentMonthAppointmentCount(response.data.appointmentCount || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch usage stats:', error);
+      }
+    };
+    fetchUsageStats();
   }, [user?.tenantId]);
 
   // 加载预约数据
@@ -1750,6 +1778,13 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
         message: t('appointments.staffNotAllowed', 'Staff is not available at this time'),
         severity: 'warning',
       });
+      return;
+    }
+
+    // 检查月预约数量是否已达上限
+    const maxAppointments = getLimit('maxAppointmentsPerMonth');
+    if (!isUnlimited('maxAppointmentsPerMonth') && currentMonthAppointmentCount >= maxAppointments) {
+      setUpgradeDialogOpen(true);
       return;
     }
 
@@ -4127,6 +4162,31 @@ const ShiftCalendarView: React.FC<ShiftCalendarViewProps> = ({
           </Alert>
         </Snackbar>
       </Portal>
+
+      {/* 预约数量限制升级提示 */}
+      <Dialog
+        open={upgradeDialogOpen}
+        onClose={() => setUpgradeDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2.5,
+            maxWidth: 360,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          }
+        }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          <UpgradePrompt
+            feature="maxAppointmentsPerMonth"
+            featureNameKey="upgrade.features.maxAppointmentsPerMonth"
+            requiredPlan="PRO"
+            variant="dialog"
+            currentUsage={currentMonthAppointmentCount}
+            limit={getLimit('maxAppointmentsPerMonth')}
+            onClose={() => setUpgradeDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

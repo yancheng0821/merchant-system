@@ -37,8 +37,10 @@ import {
   Check as CheckIcon,
 } from '@mui/icons-material';
 import ImageUploader from '../../components/common/ImageUploader';
+import UpgradePrompt from '../../components/common/UpgradePrompt';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeature } from '../../contexts/FeatureContext';
 import { onlineBookingApi } from '../../services/api';
 import { Capacitor } from '@capacitor/core';
 
@@ -177,10 +179,14 @@ const width80HiddenBoxSx = { width: 80, visibility: 'hidden' as const };
 const OnlineBookingTab: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hasFeature } = useFeature();
   const muiTheme = useMuiTheme();
 
   // 移动端检测
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+
+  // 检查功能是否被锁定
+  const isFeatureLocked = !hasFeature('onlineBooking');
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<OnlineBookingConfig>(defaultConfig);
   const [notification, setNotification] = useState<{
@@ -472,11 +478,23 @@ const OnlineBookingTab: React.FC = () => {
     });
   };
 
-  if (loading) {
+  if (loading && !isFeatureLocked) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
         <CircularProgress />
       </Box>
+    );
+  }
+
+  // 如果功能被锁定，显示升级提示
+  if (isFeatureLocked) {
+    return (
+      <UpgradePrompt
+        feature="onlineBooking"
+        featureNameKey="upgrade.features.onlineBooking"
+        requiredPlan="PRO"
+        variant="card"
+      />
     );
   }
 

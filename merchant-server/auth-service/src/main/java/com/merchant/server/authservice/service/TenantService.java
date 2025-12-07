@@ -22,6 +22,8 @@ public interface TenantService {
 
     void deactivateTenant(Long tenantId);
 
+    void suspendTenant(Long tenantId);
+
     Tenant save(Tenant tenant);
 
     void deleteById(Long id);
