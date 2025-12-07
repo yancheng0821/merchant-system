@@ -44,7 +44,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/auth/reset-password",
         "/api/auth/validate-reset-token",
         "/api/merchant/webhooks/",  // Stripe webhook - 不需要JWT认证
-        "/api/merchant/stripe/subscription/admin/",  // TODO: 测试完成后移除此行
         "/api/test/",
         "/actuator/",
         "/static/uploads/",
