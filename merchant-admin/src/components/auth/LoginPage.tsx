@@ -47,6 +47,8 @@ import { Capacitor } from '@capacitor/core';
 const isNativeApp = Capacitor.isNativePlatform();
 // 检测是否是 Android 原生平台（用于状态栏适配）
 const isAndroidNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+// 检测是否是 iOS 原生平台（用于安全区域适配）
+const isIosNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 
 
 interface RegisterData {
@@ -620,9 +622,16 @@ const LoginPage: React.FC = () => {
       <Box
         sx={{
           position: 'absolute',
-          top: { xs: 12, sm: 32 },
-          right: { xs: 12, sm: 32 },
+          // 原生平台需要额外的安全区域空间
+          top: isAndroidNative ? 56 : isIosNative ? 52 : { xs: 16, sm: 32 },
+          right: { xs: 16, sm: 32 },
           zIndex: 1000,
+          // 确保有足够的点击区域
+          minHeight: 40,
+          minWidth: 80,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
         }}
       >
         <LanguageSwitcher variant="login" size="small" />

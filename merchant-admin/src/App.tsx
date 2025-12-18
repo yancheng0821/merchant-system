@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SplashScreen } from '@capacitor/splash-screen';
+import { SplashScreen as CapacitorSplashScreen } from '@capacitor/splash-screen';
 import { App as CapacitorApp } from '@capacitor/app';
+import SplashScreen from './components/common/SplashScreen';
 import {
   Box,
   CssBaseline,
@@ -1052,14 +1053,29 @@ const PublicBookingWrapper: React.FC = () => {
 };
 
 const MainApp: React.FC = () => {
-  // 隐藏启动画面
+  // 只在移动端显示启动动画
+  const isNative = Capacitor.isNativePlatform();
+  const [showSplash, setShowSplash] = useState(isNative);
+
+  // 隐藏原生启动画面
   useEffect(() => {
-    SplashScreen.hide();
-  }, []);
+    if (isNative) {
+      CapacitorSplashScreen.hide();
+    }
+  }, [isNative]);
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
+    <>
+      {/* 移动端启动动画 */}
+      {showSplash && isNative && (
+        <SplashScreen
+          minDisplayTime={3500}
+          onComplete={() => setShowSplash(false)}
+        />
+      )}
+
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Routes>
         {/* 公开预约页面 - 不需要登录 */}
         <Route path="/booking/:slug" element={<PublicBookingWrapper />} />
         {/* 公开法律页面 - 不需要登录 */}
@@ -1077,8 +1093,9 @@ const MainApp: React.FC = () => {
             <MainAppContent />
           </NavigationProvider>
         } />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </>
   );
 };
 

@@ -87,7 +87,11 @@
       "5": "Friday",
       "6": "Saturday",
       "7": "Sunday"
-    }
+    },
+    "korean": "Korean",
+    "japanese": "Japanese",
+    "spanish": "Spanish",
+    "french": "French"
   },
   "auth": {
     "and": "and",
@@ -223,31 +227,83 @@
         "Yukon": "Yukon"
       },
       "usStates": {
-        "Alabama": "Alabama", "Alaska": "Alaska", "Arizona": "Arizona", "Arkansas": "Arkansas",
-        "California": "California", "Colorado": "Colorado", "Connecticut": "Connecticut", "Delaware": "Delaware",
-        "Florida": "Florida", "Georgia": "Georgia", "Hawaii": "Hawaii", "Idaho": "Idaho",
-        "Illinois": "Illinois", "Indiana": "Indiana", "Iowa": "Iowa", "Kansas": "Kansas",
-        "Kentucky": "Kentucky", "Louisiana": "Louisiana", "Maine": "Maine", "Maryland": "Maryland",
-        "Massachusetts": "Massachusetts", "Michigan": "Michigan", "Minnesota": "Minnesota", "Mississippi": "Mississippi",
-        "Missouri": "Missouri", "Montana": "Montana", "Nebraska": "Nebraska", "Nevada": "Nevada",
-        "New Hampshire": "New Hampshire", "New Jersey": "New Jersey", "New Mexico": "New Mexico", "New York": "New York",
-        "North Carolina": "North Carolina", "North Dakota": "North Dakota", "Ohio": "Ohio", "Oklahoma": "Oklahoma",
-        "Oregon": "Oregon", "Pennsylvania": "Pennsylvania", "Rhode Island": "Rhode Island", "South Carolina": "South Carolina",
-        "South Dakota": "South Dakota", "Tennessee": "Tennessee", "Texas": "Texas", "Utah": "Utah",
-        "Vermont": "Vermont", "Virginia": "Virginia", "Washington": "Washington", "West Virginia": "West Virginia",
-        "Wisconsin": "Wisconsin", "Wyoming": "Wyoming"
+        "Alabama": "Alabama",
+        "Alaska": "Alaska",
+        "Arizona": "Arizona",
+        "Arkansas": "Arkansas",
+        "California": "California",
+        "Colorado": "Colorado",
+        "Connecticut": "Connecticut",
+        "Delaware": "Delaware",
+        "Florida": "Florida",
+        "Georgia": "Georgia",
+        "Hawaii": "Hawaii",
+        "Idaho": "Idaho",
+        "Illinois": "Illinois",
+        "Indiana": "Indiana",
+        "Iowa": "Iowa",
+        "Kansas": "Kansas",
+        "Kentucky": "Kentucky",
+        "Louisiana": "Louisiana",
+        "Maine": "Maine",
+        "Maryland": "Maryland",
+        "Massachusetts": "Massachusetts",
+        "Michigan": "Michigan",
+        "Minnesota": "Minnesota",
+        "Mississippi": "Mississippi",
+        "Missouri": "Missouri",
+        "Montana": "Montana",
+        "Nebraska": "Nebraska",
+        "Nevada": "Nevada",
+        "New Hampshire": "New Hampshire",
+        "New Jersey": "New Jersey",
+        "New Mexico": "New Mexico",
+        "New York": "New York",
+        "North Carolina": "North Carolina",
+        "North Dakota": "North Dakota",
+        "Ohio": "Ohio",
+        "Oklahoma": "Oklahoma",
+        "Oregon": "Oregon",
+        "Pennsylvania": "Pennsylvania",
+        "Rhode Island": "Rhode Island",
+        "South Carolina": "South Carolina",
+        "South Dakota": "South Dakota",
+        "Tennessee": "Tennessee",
+        "Texas": "Texas",
+        "Utah": "Utah",
+        "Vermont": "Vermont",
+        "Virginia": "Virginia",
+        "Washington": "Washington",
+        "West Virginia": "West Virginia",
+        "Wisconsin": "Wisconsin",
+        "Wyoming": "Wyoming"
       },
       "chinaProvinces": {
-        "Beijing": "Beijing", "Shanghai": "Shanghai", "Guangdong": "Guangdong", "Zhejiang": "Zhejiang",
-        "Jiangsu": "Jiangsu", "Shandong": "Shandong", "Sichuan": "Sichuan", "Hubei": "Hubei", "Other": "Other"
+        "Beijing": "Beijing",
+        "Shanghai": "Shanghai",
+        "Guangdong": "Guangdong",
+        "Zhejiang": "Zhejiang",
+        "Jiangsu": "Jiangsu",
+        "Shandong": "Shandong",
+        "Sichuan": "Sichuan",
+        "Hubei": "Hubei",
+        "Other": "Other"
       },
       "ukRegions": {
-        "England": "England", "Scotland": "Scotland", "Wales": "Wales", "Northern Ireland": "Northern Ireland"
+        "England": "England",
+        "Scotland": "Scotland",
+        "Wales": "Wales",
+        "Northern Ireland": "Northern Ireland"
       },
       "australiaStates": {
-        "New South Wales": "New South Wales", "Victoria": "Victoria", "Queensland": "Queensland",
-        "Western Australia": "Western Australia", "South Australia": "South Australia", "Tasmania": "Tasmania",
-        "Australian Capital Territory": "Australian Capital Territory", "Northern Territory": "Northern Territory"
+        "New South Wales": "New South Wales",
+        "Victoria": "Victoria",
+        "Queensland": "Queensland",
+        "Western Australia": "Western Australia",
+        "South Australia": "South Australia",
+        "Tasmania": "Tasmania",
+        "Australian Capital Territory": "Australian Capital Territory",
+        "Northern Territory": "Northern Territory"
       },
       "timezones": {
         "america_st_johns": "Newfoundland Time (St. John's, UTC-3:30)",
@@ -4419,7 +4475,7 @@
     "upgradeToUnlock": "Upgrade to {{plan}} to unlock {{feature}}",
     "upgradeTo": "Upgrade to {{plan}}",
     "upgradeNow": "Upgrade Now",
-    "unlockFeature": "Unlock This Feature",
+    "unlockFeature": "Unlock More Features",
     "featureRequiresPlan": "{{feature}} requires {{plan}} plan",
     "featureRequiresPlanSimple": "Upgrade to {{plan}} to unlock",
     "viewPlans": "View Plans",
@@ -4431,7 +4487,6 @@
     "currentUsage": "Currently using {{current}}/{{limit}}",
     "currentUsageShort": "{{current}}/{{limit}}",
     "used": "used",
-    "unlockFeature": "Unlock More Features",
     "upgradeForMore": "Upgrade to {{plan}} for more quota",
     "upgradeForMoreShort": "Upgrade to {{plan}}",
     "features": {
@@ -4447,6 +4502,16 @@
       "removeBranding": "Remove Branding",
       "maxStaff": "Staff Limit",
       "maxAppointmentsPerMonth": "Monthly Appointments"
+    }
+  },
+  "splash": {
+    "subtitle": "Smart Merchant Management",
+    "loading": "Loading...",
+    "feature": {
+      "schedule": "Smart Scheduling",
+      "customer": "Customer Management",
+      "analytics": "Data Analytics",
+      "notification": "Notifications"
     }
   }
 }

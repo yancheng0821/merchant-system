@@ -2,6 +2,10 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import zhCN from './locales/zh-CN.json';
 import enUS from './locales/en-US.json';
+import koKR from './locales/ko-KR.json';
+import jaJP from './locales/ja-JP.json';
+import esES from './locales/es-ES.json';
+import frFR from './locales/fr-FR.json';
 
 const resources = {
   'zh-CN': {
@@ -9,6 +13,18 @@ const resources = {
   },
   'en-US': {
     translation: enUS,
+  },
+  'ko-KR': {
+    translation: koKR,
+  },
+  'ja-JP': {
+    translation: jaJP,
+  },
+  'es-ES': {
+    translation: esES,
+  },
+  'fr-FR': {
+    translation: frFR,
   },
 };
 

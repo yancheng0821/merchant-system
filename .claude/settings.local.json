@@ -88,7 +88,9 @@
       "Bash(SSH_KEY=\"/Users/aisenyc/merchant-system/deployment/merchant-system-key.pem\")",
       "Bash(./deploy.sh:*)",
       "Bash(./deployment/deploy.sh:*)",
-      "Bash(./gradlew clean)"
+      "Bash(./gradlew clean)",
+      "Bash(pip3 install:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

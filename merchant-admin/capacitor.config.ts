@@ -32,8 +32,8 @@ const devConfig: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert']
     },
     SplashScreen: {
-      launchShowDuration: 3000,  // 显示3秒，或直到手动隐藏
-      launchAutoHide: false,  // 手动隐藏，等 Web 加载完成
+      launchShowDuration: 0,
+      launchAutoHide: true,
       backgroundColor: '#FFFFFF',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -78,10 +78,10 @@ const prodConfig: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert']
     },
 
-    // 启动画面
+    // 启动画面 - 立即隐藏原生 splash，由 Web 端展示动态动画
     SplashScreen: {
-      launchShowDuration: 3000,  // 显示3秒，或直到手动隐藏
-      launchAutoHide: false,  // 手动隐藏，等 Web 加载完成
+      launchShowDuration: 0,
+      launchAutoHide: true,
       backgroundColor: '#FFFFFF',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
